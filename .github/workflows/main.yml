@@ -1,0 +1,63 @@
+# .github/workflows/deploy-dev.yml
+
+name: Deploy to Dev Server # Имя воркфлоу
+
+on:
+  push:
+    branches:
+      - main # Запускать при пуше в ветку dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest # Использовать последнюю Ubuntu в качестве среды выполнения
+
+    steps:
+      - name: Checkout code # Шаг 1: Скачиваем код репозитория
+        uses: actions/checkout@v4 # Используем стандартный action
+
+      - name: Setup Node.js # Шаг 2: Устанавливаем Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # Укажите вашу версию Node.js (например, '18', '20')
+          cache: 'npm' # Кэшируем зависимости npm для ускорения
+
+      - name: Install dependencies # Шаг 3: Устанавливаем зависимости
+        run: npm ci # Используем 'ci' для быстрой и чистой установки по lock-файлу
+
+      - name: Build Next.js app # Шаг 4: Собираем Next.js приложение
+        run: npm run build # Эта команда должна использовать 'standalone' output из next.config.js
+
+      - name: Deploy to Server via SSH # Шаг 5: Деплоим файлы на сервер
+        uses: easingthemes/ssh-deploy@v5.1.0 # Используем action для деплоя по SSH
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }} # Приватный ключ из секретов
+          REMOTE_HOST: ${{ secrets.SSH_HOST }} # Хост сервера из секретов
+          REMOTE_USER: ${{ secrets.SSH_USER }} # Пользователь на сервере из секретов
+          # Исходная папка: содержимое папки standalone, созданной при сборке
+          # Важно: Не указывайте './.next/standalone/', а именно '.next/standalone/'
+          # Это скопирует СОДЕРЖИМОЕ папки standalone в TARGET_DIR
+          SOURCE: ".next/standalone/"
+          TARGET: ${{ secrets.TARGET_DIR }} # Целевая папка на сервере из секретов
+          ARGS: "-avz --delete" # Опции rsync: архивировать, сжимать, показывать прогресс, удалять лишние файлы в TARGET_DIR
+
+      - name: Restart app on server # Шаг 6 (Опциональный): Перезапускаем приложение на сервере
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }} # Хост сервера
+          username: ${{ secrets.SSH_USER }} # Пользователь
+          key: ${{ secrets.SSH_PRIVATE_KEY }} # Приватный ключ
+          script: | # Команды, которые нужно выполнить на сервере
+            cd ${{ secrets.TARGET_DIR }}
+            echo "Restarting application..."
+            # Пример команды для перезапуска с PM2 (если используется)
+            # Убедитесь, что pm2 установлен глобально или доступен пользователю
+            # Замените PM2_APP_NAME на ваш секрет или имя приложения
+            pm2 restart ${{ secrets.PM2_APP_NAME }} || pm2 start server.js --name ${{ secrets.PM2_APP_NAME }}
+
+            # Если вы не используете pm2, а, например, systemd, команда будет другой:
+            # sudo systemctl restart my-nextjs-app.service
+
+            # Если просто нужно запустить node server.js (не рекомендуется для продакшена без менеджера):
+            # pkill -f 'node server.js' # Остановить старый процесс (осторожно!)
+            # nohup node server.js & # Запустить новый в фоне (очень упрощенно)
+            echo "Application restart command executed."
