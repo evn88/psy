@@ -1,7 +1,7 @@
 "use client";
 
 import React, {useEffect, useState} from "react";
-import {MainPage} from "@/pages/mainPage/ui/MainPage";
+import MainPage from "@/pages/mainPage/ui/MainPage";
 
 
 export default function Home() {

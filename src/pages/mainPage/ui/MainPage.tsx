@@ -1,10 +1,10 @@
-import {FC} from 'react'
+import React, {FC} from 'react'
 
 export type MainPageProps = {
     test: string
 }
 
-export const MainPage: FC<MainPageProps> = ({test}) => {
+const MainPage: FC<MainPageProps> = ({test}) => {
     return (
         <div className="container mx-auto">
             <h1 className="text-4xl font-bold">Welcome to the Main Page!</h1>
@@ -13,3 +13,5 @@ export const MainPage: FC<MainPageProps> = ({test}) => {
         </div>
     );
 }
+
+export default MainPage;
