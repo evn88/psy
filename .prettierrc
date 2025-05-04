@@ -1,0 +1,14 @@
+{
+  "arrowParens": "avoid",
+  "printWidth": 100,
+  "singleQuote": true,
+  "trailingComma": "none",
+  "overrides": [
+    {
+      "files": ".scss",
+      "options": {
+        "parser": "css"
+      }
+    }
+  ]
+}
