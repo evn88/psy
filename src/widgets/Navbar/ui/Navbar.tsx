@@ -8,6 +8,7 @@ interface NavbarProps {
 }
 
 const Navbar: FC<NavbarProps> = ({className = ''}) => {
+    
     return (
         <header className={`bg-gray-800 shadow-md ${className}`}>
             <div className="container mx-auto px-0 py-3 flex justify-between items-center">
