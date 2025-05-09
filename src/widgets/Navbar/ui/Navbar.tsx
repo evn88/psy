@@ -32,9 +32,9 @@ const Navbar: FC<NavbarProps> = ({className = ''}) => {
                           className="text-white-800 hover:text-blue-300 font-medium px-4 py-2 rounded-md transition-colors duration-300 hover:bg-gray-600">
                         About
                     </Link>
-                    <Link href="/admin"
+                    <Link href="/auth"
                           className="text-white-800 hover:text-blue-300 font-medium px-4 py-2 rounded-md transition-colors duration-300 hover:bg-gray-600">
-                        Admin
+                        Login
                     </Link>
                 </nav>
             </div>
