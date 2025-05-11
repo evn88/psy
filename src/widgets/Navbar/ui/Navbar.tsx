@@ -2,13 +2,15 @@ import React, {FC} from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import logoImg from '@/assets/images/logo.svg';
+import prisma from "@/shared/lib/prisma";
+
 
 interface NavbarProps {
     className?: string;
 }
 
-const Navbar: FC<NavbarProps> = ({className = ''}) => {
-    
+const Navbar: FC<NavbarProps> = async ({className = ''}) => {
+    const users = await prisma.user.findMany()
     return (
         <header className={`bg-gray-800 shadow-md ${className}`}>
             <div className="container mx-auto px-0 py-3 flex justify-between items-center">
@@ -35,7 +37,7 @@ const Navbar: FC<NavbarProps> = ({className = ''}) => {
                     </Link>
                     <Link href="/auth"
                           className="text-white-800 hover:text-blue-300 font-medium px-4 py-2 rounded-md transition-colors duration-300 hover:bg-gray-600">
-                        Login
+                        Login ({users[0].name})
                     </Link>
                 </nav>
             </div>
