@@ -2,7 +2,6 @@ import React, {FC} from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import logoImg from '@/assets/images/logo.svg';
-import prisma from "@/shared/lib/prisma";
 
 
 interface NavbarProps {
@@ -10,8 +9,6 @@ interface NavbarProps {
 }
 
 const Navbar: FC<NavbarProps> = async ({className = ''}) => {
-    const users = await prisma.user.findMany()
-    console.log('USERS: ', users)
     return (
         <header className={`bg-gray-800 shadow-md ${className}`}>
             <div className="container mx-auto px-0 py-3 flex justify-between items-center">
