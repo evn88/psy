@@ -11,6 +11,7 @@ interface NavbarProps {
 
 const Navbar: FC<NavbarProps> = async ({className = ''}) => {
     const users = await prisma.user.findMany()
+    console.log('USERS: ', users)
     return (
         <header className={`bg-gray-800 shadow-md ${className}`}>
             <div className="container mx-auto px-0 py-3 flex justify-between items-center">
@@ -37,7 +38,7 @@ const Navbar: FC<NavbarProps> = async ({className = ''}) => {
                     </Link>
                     <Link href="/auth"
                           className="text-white-800 hover:text-blue-300 font-medium px-4 py-2 rounded-md transition-colors duration-300 hover:bg-gray-600">
-                        Login ({users[0].name})
+                        Login
                     </Link>
                 </nav>
             </div>
