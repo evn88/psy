@@ -36,7 +36,7 @@ const RootLayout: FC<RootLayoutType> = ({children}) => {
                 className={`${geistSans.variable} ${geistMono.variable} antialiased`}
             >
             <Navbar/>
-            <main className="pt-4">
+            <main className="pt-4 px-4 md:px-0">
                 {children}
             </main>
             <Analytics/>
