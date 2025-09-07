@@ -5,6 +5,7 @@ import {Navbar} from "@/widgets/Navbar";
 import {Analytics} from "@vercel/analytics/next";
 import {SpeedInsights} from "@vercel/speed-insights/next";
 import {FC} from "react";
+import {Providers} from "@/shared/Providers";
 
 const geistSans = localFont({
     src: "./fonts/GeistVF.woff",
@@ -28,20 +29,21 @@ type RootLayoutType = Readonly<{
 
 const RootLayout: FC<RootLayoutType> = ({children}) => {
     return (
-        <html lang="en">
-        <head>
-            <link rel="icon" href="/favicon.ico"/>
-        </head>
-        <body
-            className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
-        <Navbar/>
-        <main className="pt-4">
-            {children}
-        </main>
-        <Analytics/>
-        <SpeedInsights/>
-        </body>
+        <html lang="ru">
+        <Providers>
+
+            <body
+                className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+            >
+            <Navbar/>
+            <main className="pt-4">
+                {children}
+            </main>
+            <Analytics/>
+            <SpeedInsights/>
+            </body>
+
+        </Providers>
         </html>
     );
 }
