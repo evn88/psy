@@ -2,7 +2,9 @@ import React, {FC} from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import logoImg from '@/assets/images/logo.svg';
-import {auth, signOut} from "@/auth";
+import {auth} from "@/auth";
+import LoginButton from './LoginButton';
+import UserDropdown from './UserDropdown';
 
 
 interface NavbarProps {
@@ -40,31 +42,9 @@ const Navbar: FC<NavbarProps> = async ({className = ''}) => {
                     </Link>
 
                     {session ? (
-                        <form action={async () => {
-                            'use server'
-                            await signOut()
-                        }}>
-                            <button className={NAVBAR_LINK_CLASSES}>
-                                <div className="flex items-center gap-2">
-                                    {session.user?.image && (
-                                        <Image
-                                            className="rounded-xl"
-                                            src={session.user.image}
-                                            alt="User Avatar"
-                                            width={32}
-                                            height={32}
-                                        />
-                                    )}
-                                    Выйти
-                                </div>
-                            </button>
-                        </form>
+                        <UserDropdown session={session} className={NAVBAR_LINK_CLASSES}/>
                     ) : (
-                        <Link href="/api/auth/signin" className={NAVBAR_LINK_CLASSES}>
-                            <div className="flex items-center gap-2">
-                                Войти
-                            </div>
-                        </Link>
+                        <LoginButton className={NAVBAR_LINK_CLASSES}/>
                     )}
                 </nav>
             </div>
