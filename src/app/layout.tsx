@@ -4,6 +4,7 @@ import "./globals.css";
 import {Navbar} from "@/widgets/Navbar";
 import {Analytics} from "@vercel/analytics/next";
 import {SpeedInsights} from "@vercel/speed-insights/next";
+import {FC} from "react";
 
 const geistSans = localFont({
     src: "./fonts/GeistVF.woff",
@@ -21,13 +22,16 @@ export const metadata: Metadata = {
     description: "Psychologist",
 };
 
-export default function RootLayout({
-                                       children,
-                                   }: Readonly<{
+type RootLayoutType = Readonly<{
     children: React.ReactNode;
-}>) {
+}>
+
+const RootLayout: FC<RootLayoutType> = ({children}) => {
     return (
         <html lang="en">
+        <head>
+            <link rel="icon" href="/favicon.ico"/>
+        </head>
         <body
             className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
@@ -41,3 +45,5 @@ export default function RootLayout({
         </html>
     );
 }
+
+export default RootLayout;
