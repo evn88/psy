@@ -2,4 +2,4 @@
 
 # Website for a psychologist
 
-[psy.vershkov.com](https://psy.vershkov.com)
+[vershkov.com](https://vershkov.com)
