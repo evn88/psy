@@ -1,0 +1,121 @@
+'use client';
+
+import 'reveal.js/dist/reveal.css';
+import 'reveal.js/dist/theme/black.css';
+import React, {useEffect, useRef, useState} from 'react';
+import logoImg from "@/assets/images/logo.svg";
+import Image from "next/image";
+import Reveal from "reveal.js";
+import "reveal.js/plugin/highlight/monokai.css";
+import SyntaxHighlighter from "react-syntax-highlighter";
+import theme from "react-syntax-highlighter/dist/esm/styles/hljs/atom-one-dark";
+
+const codeString = `'use client'
+import React from 'react';
+import dynamic from "next/dynamic";
+
+const RevealPresentation = dynamic(() => import('./_components/RevealPresentation'), {ssr: false});
+
+const Demo = () => (
+    <div className="w-full h-screen">
+        <RevealPresentation/>
+    </div>
+);
+
+export default Demo;`
+
+const RevealPresentation = () => {
+    const deckDivRef = useRef<HTMLDivElement>(null);
+    const revealRef = useRef<Reveal.Api | null>(null);
+
+    const [currentStep, setCurrentStep] = useState(0);
+
+
+    useEffect(() => {
+        if (revealRef.current) return;
+
+        revealRef.current = new Reveal(deckDivRef.current!, {
+            // embedded: true,
+            hash: true,
+            controls: true,
+            progress: true,
+            center: false,
+            transition: 'slide',
+        });
+
+        revealRef.current.initialize().then(() => {
+            console.log("Reveal.js initialized.");
+
+        })
+
+        // В useEffect подписываемся на события Reveal.js
+        revealRef.current.on('click', event => {
+            console.log('Fragment shown: ', event);
+            setCurrentStep(prevStep => prevStep + 1);
+        });
+
+        // Cleanup при размонтировании
+        return () => {
+            try {
+                if (revealRef.current) {
+                    revealRef.current.destroy();
+                    revealRef.current = null;
+                }
+            } catch (e) {
+                console.warn("Reveal.js destroy call failed.", e);
+            }
+        };
+    }, []);
+
+
+    return (
+        <>
+            <div className="reveal" ref={deckDivRef}>
+                <div className="slides">
+                    <section className="h-full">
+                        <div className="flex justify-center items-center  h-full">
+                            <Image
+                                src={logoImg}
+                                alt="Logo"
+                                width={64}
+                                height={64}
+                                className="bg-white rounded-lg p-1"
+                            />
+                        </div>
+                    </section>
+                    <section>
+                        <h2>Второй слайд</h2>
+                        <p>Содержимое второго слайда</p>
+                    </section>
+                    <section>
+                        <h2>Слайд с кодом</h2>
+                        <SyntaxHighlighter
+                            language="javascript"
+                            style={theme}
+                            wrapLines={true}
+                            showLineNumbers={true}
+                            lineProps={lineNumber => ({
+                                style: {
+                                    backgroundColor: lineNumber === currentStep ? '#2d323b' : 'transparent',
+                                    display: 'block'
+                                }
+                            })}
+                        >
+                            {codeString}
+                        </SyntaxHighlighter>
+                    </section>
+                    <section>
+                        <section>
+                            <h2>Вертикальный слайд 1</h2>
+                        </section>
+                        <section>
+                            <h2>Вертикальный слайд 2</h2>
+                        </section>
+                    </section>
+                </div>
+            </div>
+        </>
+    );
+};
+
+export default RevealPresentation;

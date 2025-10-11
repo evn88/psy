@@ -1,51 +1,48 @@
 import type {Metadata} from "next";
 import localFont from "next/font/local";
-import "./globals.css";
-import {Navbar} from "@/widgets/Navbar";
+import "../../globals.css";
 import {Analytics} from "@vercel/analytics/next";
 import {SpeedInsights} from "@vercel/speed-insights/next";
 import {FC} from "react";
 import {Providers} from "@/shared/Providers";
 
 const geistSans = localFont({
-    src: "./fonts/GeistVF.woff",
+    src: "./../../fonts/GeistVF.woff",
     variable: "--font-geist-sans",
     weight: "100 900",
 });
 const geistMono = localFont({
-    src: "./fonts/GeistMonoVF.woff",
+    src: "./../../fonts/GeistMonoVF.woff",
     variable: "--font-geist-mono",
     weight: "100 900",
 });
 
 export const metadata: Metadata = {
-    title: "vershkov.com",
-    description: "Psychologist",
+    title: "Demo zone - vershkov.com",
+    description: "Demo zone",
 };
 
-type RootLayoutType = Readonly<{
+type DemoLayoutType = Readonly<{
     children: React.ReactNode;
 }>
 
-const RootLayout: FC<RootLayoutType> = ({children}) => {
+const DemoLayout: FC<DemoLayoutType> = ({children}) => {
     return (
         <html lang="ru">
         <Providers>
-
             <body
                 className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+                style={{margin: 0, padding: 0, overflow: 'hidden'}}
             >
-            <Navbar/>
-            <main className="pt-4 px-4 md:px-0">
+            <main>
                 {children}
             </main>
             <Analytics/>
             <SpeedInsights/>
             </body>
-
         </Providers>
         </html>
     );
 }
 
-export default RootLayout;
+export default DemoLayout;
