@@ -10,7 +10,7 @@ export const HelloSection = () => {
 
     useEffect(() => {
         scope.current = createScope({root}).add(() => {
-            const pulse = animate('.smlogo', {
+            animate('.smlogo', {
                 scale: [{
                     to: 1.5,
                     ease: 'inOut(3)',
