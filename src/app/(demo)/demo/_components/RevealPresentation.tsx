@@ -34,10 +34,10 @@ const RevealPresentation = () => {
         if (revealRef.current) return;
 
         revealRef.current = new Reveal(deckDivRef.current!, {
-            // embedded: true,
+            embedded: true,
             hash: true,
-            controls: true,
-            progress: true,
+            controls: false,
+            progress: false,
             center: false,
             transition: 'slide',
         });
