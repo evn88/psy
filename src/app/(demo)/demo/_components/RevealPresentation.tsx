@@ -3,12 +3,11 @@
 import 'reveal.js/dist/reveal.css';
 import 'reveal.js/dist/theme/black.css';
 import React, {useEffect, useRef, useState} from 'react';
-import logoImg from "@/assets/images/logo.svg";
-import Image from "next/image";
 import Reveal from "reveal.js";
 import "reveal.js/plugin/highlight/monokai.css";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import theme from "react-syntax-highlighter/dist/esm/styles/hljs/atom-one-dark";
+import {HelloSection} from "@/app/(demo)/demo/_components/sections/HelloSection";
 
 const codeString = `'use client'
 import React from 'react';
@@ -72,17 +71,7 @@ const RevealPresentation = () => {
         <>
             <div className="reveal" ref={deckDivRef}>
                 <div className="slides">
-                    <section className="h-full">
-                        <div className="flex justify-center items-center  h-full">
-                            <Image
-                                src={logoImg}
-                                alt="Logo"
-                                width={64}
-                                height={64}
-                                className="bg-white rounded-lg p-1"
-                            />
-                        </div>
-                    </section>
+                    <HelloSection/>
                     <section>
                         <h2>Второй слайд</h2>
                         <p>Содержимое второго слайда</p>
