@@ -8,9 +8,6 @@ const nextConfig = {
             new URL('https://www.amcharts.com/wp-content/themes/amcharts4/css/img/*')
         ],
     },
-    experimental: {
-        reactCompiler: true, // Включаем компилятор который мемоизирует автоматически все что нужно
-    },
 };
 
 export default nextConfig;
