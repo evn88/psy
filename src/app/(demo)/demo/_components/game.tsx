@@ -1,39 +1,9 @@
+'use client';
+
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
-
-// ==============================================
-// 1. УТИЛИТЫ ЗАГРУЗКИ (LOADING UTILS)
-// ==============================================
-
-const checkGlobal = (key) => {
-    if (key === 'am5themes_Animated') {
-        return window.am5 && window.am5.themes && window.am5.themes.Animated;
-    }
-    return typeof window[key] !== 'undefined';
-};
-
-const loadScript = (src) => {
-    return new Promise((resolve, reject) => {
-        if (document.querySelector(`script[src="${src}"]`)) {
-            resolve();
-            return;
-        }
-        const script = document.createElement("script");
-        script.src = src;
-        script.async = true;
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error(`Не удалось загрузить скрипт: ${src}`));
-        document.head.appendChild(script);
-    });
-};
-
-const waitForGlobal = async (key, timeout = 10000) => {
-    const startTime = Date.now();
-    const interval = 200;
-    while (!checkGlobal(key)) {
-        if (Date.now() - startTime > timeout) throw new Error(`Timeout waiting for: ${key}`);
-        await new Promise(resolve => setTimeout(resolve, interval));
-    }
-};
+import * as am5 from '@amcharts/amcharts5';
+import * as am5xy from '@amcharts/amcharts5/xy';
+import am5themes_Animated from '@amcharts/amcharts5/themes/Animated';
 
 // ==============================================
 // 2. КОНФИГУРАЦИЯ
@@ -50,11 +20,19 @@ const DEFAULT_GAME_SPEED = 5;
 const DEFAULT_GRAVITY = 0.4;
 const JUMP_STRENGTH = 8;
 
+interface PipeData {
+    x: number;
+    bottomY: number;
+    topY: number;
+    topOpen: number;
+    zero?: number;
+}
+
 // ==============================================
 // 3. ЛОГИКА ИГРЫ
 // ==============================================
 
-const generatePipeData = (xAxisValue, gapSize = 35, minPipeHeight = 10) => {
+const generatePipeData = (xAxisValue: number, gapSize = 35, minPipeHeight = 10) => {
     const fieldHeight = 100;
     // Оставляем место для труб
     const safeMin = minPipeHeight + gapSize / 2;
@@ -69,7 +47,7 @@ const generatePipeData = (xAxisValue, gapSize = 35, minPipeHeight = 10) => {
     };
 };
 
-const checkCollision = (birdY, pipesData, currentXAxisMin, parentHeight) => {
+const checkCollision = (birdY: number, pipesData: PipeData[], currentXAxisMin: number, parentHeight: number) => {
     // 1. Пол и потолок
     if (birdY > parentHeight || birdY < 0) return true;
 
@@ -105,9 +83,6 @@ const checkCollision = (birdY, pipesData, currentXAxisMin, parentHeight) => {
 // ==============================================
 
 export default function FlappyBirdAmCharts() {
-    const [isLibLoaded, setIsLibLoaded] = useState(false);
-    const [loadingError, setLoadingError] = useState(null);
-
     const [score, setScore] = useState(0);
     const [isGameRunning, setIsGameRunning] = useState(false);
     const [isGameOver, setIsGameOver] = useState(false);
@@ -115,14 +90,20 @@ export default function FlappyBirdAmCharts() {
     const [gameSpeed, setGameSpeed] = useState(DEFAULT_GAME_SPEED);
     const [gravity, setGravity] = useState(DEFAULT_GRAVITY);
 
-    const rootRef = useRef(null);
-    const chartRef = useRef(null);
-    const birdSpriteRef = useRef(null);
-    const xAxisRef = useRef(null);
-    const bottomSeriesRef = useRef(null);
-    const topSeriesRef = useRef(null);
+    const rootRef = useRef<am5.Root | null>(null);
+    const chartRef = useRef<am5xy.XYChart | null>(null);
+    const birdSpriteRef = useRef<am5.Container | null>(null);
+    const xAxisRef = useRef<am5xy.ValueAxis<am5xy.AxisRenderer> | null>(null);
+    const bottomSeriesRef = useRef<am5xy.ColumnSeries | null>(null);
+    const topSeriesRef = useRef<am5xy.ColumnSeries | null>(null);
 
-    const gameStateRef = useRef({
+    const gameStateRef = useRef<{
+        birdY: number;
+        birdVelocity: number;
+        pipes: PipeData[];
+        axisXOffset: number;
+        lastPipeX: number;
+    }>({
         birdY: 250,
         birdVelocity: 0,
         pipes: [],
@@ -135,38 +116,8 @@ export default function FlappyBirdAmCharts() {
         settingsRef.current = { speed: Number(gameSpeed), gravity: Number(gravity) };
     }, [gameSpeed, gravity]);
 
-    // --- Загрузка ---
-    useEffect(() => {
-        let isMounted = true;
-        const initAmCharts = async () => {
-            try {
-                if (isMounted) setLoadingError(null);
-                await loadScript("https://cdn.amcharts.com/lib/5/index.js");
-                await waitForGlobal("am5", 10000);
-                await loadScript("https://cdn.amcharts.com/lib/5/xy.js");
-                await waitForGlobal("am5xy", 10000);
-                try {
-                    await loadScript("https://cdn.amcharts.com/lib/5/themes/Animated.js");
-                    await waitForGlobal("am5themes_Animated", 3000);
-                } catch (e) { console.warn("No animations"); }
-
-                if (isMounted) setIsLibLoaded(true);
-            } catch (e) {
-                if (isMounted) setLoadingError(String(e.message || e));
-            }
-        };
-        if (checkGlobal("am5") && checkGlobal("am5xy")) setIsLibLoaded(true);
-        else initAmCharts();
-        return () => { isMounted = false; };
-    }, []);
-
     // --- График ---
     useLayoutEffect(() => {
-        if (!isLibLoaded) return;
-        const am5 = window.am5;
-        const am5xy = window.am5xy;
-        if (!am5 || !am5xy) return;
-
         if (rootRef.current) {
             rootRef.current.dispose();
             rootRef.current = null;
@@ -175,8 +126,7 @@ export default function FlappyBirdAmCharts() {
         const root = am5.Root.new("chartdiv");
         rootRef.current = root;
 
-        const am5themes_Animated = window.am5?.themes?.Animated;
-        if (am5themes_Animated) root.setThemes([am5themes_Animated.new(root)]);
+        root.setThemes([am5themes_Animated.new(root)]);
 
         const chart = root.container.children.push(
             am5xy.XYChart.new(root, { panX: false, panY: false, wheelX: "none", wheelY: "none", interactive: false })
@@ -260,12 +210,12 @@ export default function FlappyBirdAmCharts() {
                 rootRef.current = null;
             }
         };
-    }, [isLibLoaded]);
+    }, []);
 
     // --- Цикл ---
     useEffect(() => {
         if (!isGameRunning || isGameOver) return;
-        let animationFrameId;
+        let animationFrameId: number;
         const loop = () => {
             const state = gameStateRef.current;
             const config = settingsRef.current;
@@ -335,7 +285,7 @@ export default function FlappyBirdAmCharts() {
     const gameOver = () => { setIsGameOver(true); setIsGameRunning(false); };
 
     useEffect(() => {
-        const handleSpaceKey = (e) => {
+        const handleSpaceKey = (e: KeyboardEvent) => {
             if (e.code === 'KeyJ') {
                 e.preventDefault();
                 if (!isGameRunning && !isGameOver) startGame();
@@ -347,8 +297,6 @@ export default function FlappyBirdAmCharts() {
         return () => window.removeEventListener("keydown", handleSpaceKey);
     }, [isGameRunning, isGameOver]);
 
-    if (loadingError) return <div className="text-red-500 p-4 text-center">Ошибка: {String(loadingError)} <br /><button onClick={() => window.location.reload()} className="mt-2 underline">Обновить</button></div>;
-    if (!isLibLoaded) return <div className="flex h-screen items-center justify-center text-xl animate-pulse text-gray-600">Загрузка...</div>;
 
     return (
         <div className="flex flex-col items-center justify-center w-full max-w-3xl mx-auto p-4 font-sans">
