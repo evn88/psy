@@ -21,6 +21,11 @@ const geistMono = localFont({
 export const metadata: Metadata = {
     title: "vershkov.com",
     description: "Psychologist",
+    appleWebApp: {
+        title: "Vershkov",
+        statusBarStyle: "default", // или "black-translucent"
+        capable: true, // добавит apple-mobile-web-app-capable
+    },
 };
 
 type RootLayoutType = Readonly<{
