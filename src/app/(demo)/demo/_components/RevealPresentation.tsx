@@ -4,13 +4,14 @@ import 'reveal.js/dist/reveal.css';
 import 'reveal.js/dist/theme/black.css';
 import './presentation.scss';
 
-import React, {useEffect, useRef, useState} from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Reveal from "reveal.js";
 import "reveal.js/plugin/highlight/monokai.css";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import theme from "react-syntax-highlighter/dist/esm/styles/hljs/atom-one-dark";
-import {HelloSection} from "@/app/(demo)/demo/_components/sections/HelloSection";
+import { HelloSection } from "@/app/(demo)/demo/_components/sections/HelloSection";
 import AboutPresentation from "@/app/(demo)/demo/_components/sections/AboutPresentation";
+import { GameSection } from "@/app/(demo)/demo/_components/sections/GameSection";
 import RevealMarkdown from "reveal.js/plugin/markdown/markdown";
 
 const codeString = `'use client'
@@ -76,8 +77,9 @@ const RevealPresentation = () => {
         <>
             <div className="reveal" ref={deckDivRef}>
                 <div className="slides">
-                    <HelloSection/>
-                    <AboutPresentation/>
+                    <HelloSection />
+                    <AboutPresentation />
+                    <GameSection />
                     <section>
                         <h2>Слайд с кодом</h2>
                         <SyntaxHighlighter
