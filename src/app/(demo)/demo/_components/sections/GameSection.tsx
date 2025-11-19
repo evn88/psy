@@ -1,10 +1,10 @@
 'use client'
-import Game from "../game";
+import FlappyBirdAmCharts from "../Game";
 
 export const GameSection = () => {
     return (
         <section>
-            <Game />
+            <FlappyBirdAmCharts />
         </section>
     );
 };
