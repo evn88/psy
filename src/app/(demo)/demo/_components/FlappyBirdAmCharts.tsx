@@ -1,6 +1,6 @@
 'use client';
 
-import React, {useEffect, useLayoutEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useLayoutEffect, useRef, useState} from 'react';
 import * as am5 from '@amcharts/amcharts5';
 import * as am5xy from '@amcharts/amcharts5/xy';
 import am5themes_Animated from '@amcharts/amcharts5/themes/Animated';
@@ -345,10 +345,10 @@ export default function FlappyBirdAmCharts({
         };
         animationFrameId = requestAnimationFrame(loop);
         return () => cancelAnimationFrame(animationFrameId);
-    }, [isGameRunning, isGameOver]);
+    }, [isGameRunning, isGameOver, containerHeight, containerWidth, showDebug, score]);
 
     // --- UI ---
-    const startGame = () => {
+    const startGame = useCallback(() => {
         if (!rootRef.current || !chartRef.current) return;
         // Используем фиксированную высоту контейнера
         gameStateRef.current = {birdY: containerHeight / 2, birdVelocity: 0, pipes: [], axisXOffset: 0, lastPipeX: 400};
@@ -362,7 +362,7 @@ export default function FlappyBirdAmCharts({
             xAxisRef.current.set("max", 1000);
         }
         jump();
-    };
+    }, [containerHeight]);
     const jump = () => {
         gameStateRef.current.birdVelocity = -JUMP_STRENGTH;
     };
@@ -382,7 +382,7 @@ export default function FlappyBirdAmCharts({
         };
         window.addEventListener("keydown", handleSpaceKey);
         return () => window.removeEventListener("keydown", handleSpaceKey);
-    }, [isGameRunning, isGameOver]);
+    }, [isGameRunning, isGameOver, startGame]);
 
 
     return (
