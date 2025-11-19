@@ -1,23 +1,23 @@
 'use client';
 
-import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
+import React, {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import * as am5 from '@amcharts/amcharts5';
 import * as am5xy from '@amcharts/amcharts5/xy';
 import am5themes_Animated from '@amcharts/amcharts5/themes/Animated';
+import birdSvg from '@/assets/images/bird.svg';
 
 // ==============================================
 // 2. КОНФИГУРАЦИЯ
 // ==============================================
 
-const BIRD_SVG_PATH = "M5,10 L15,5 L25,10 L25,20 L15,25 L5,20 Z";
 const BIRD_COLOR = "#F4D03F";
 const BIRD_STROKE = "#D4AC0D";
 const PIPE_COLOR = "#73C6B6";
 const PIPE_STROKE = "#16A085";
 const PIPE_WIDTH = 60; // Визуальная ширина трубы в пикселях
 
-const DEFAULT_GAME_SPEED = 5;
-const DEFAULT_GRAVITY = 0.4;
+const DEFAULT_GAME_SPEED = 6;
+const DEFAULT_GRAVITY = 0.5;
 const JUMP_STRENGTH = 8;
 
 interface PipeData {
@@ -76,7 +76,7 @@ const checkCollision = (birdY: number, pipesData: PipeData[], currentXAxisMin: n
         // Проверяем, находится ли центр трубы достаточно близко к центру птицы по оси X
         const distance = Math.abs(pipe.x - currentBirdAxisX);
         if (debug && distance < 100) {
-            console.log('Pipe distance:', { pipeX: pipe.x, birdX: currentBirdAxisX, distance, collisionMargin });
+            console.log('Pipe distance:', {pipeX: pipe.x, birdX: currentBirdAxisX, distance, collisionMargin});
         }
         return distance < collisionMargin;
     });
@@ -90,7 +90,7 @@ const checkCollision = (birdY: number, pipesData: PipeData[], currentXAxisMin: n
         const gapTop = collidingPipe.topOpen;
 
         if (debug) {
-            console.log('Y collision check:', { birdY, birdYValue, gapBottom, gapTop });
+            console.log('Y collision check:', {birdY, birdYValue, gapBottom, gapTop});
         }
 
         // Увеличенный допуск для более мягкой коллизии
@@ -109,9 +109,15 @@ interface FlappyBirdAmChartsProps {
     containerHeight?: number;
     containerWidth?: number;
     showDebug?: boolean; // Параметр для отображения границ коллизий
+    showSettings?: boolean; // Показывать настройки скорости и гравитации
 }
 
-export default function FlappyBirdAmCharts({ containerHeight = 200, containerWidth = 200, showDebug = false }: FlappyBirdAmChartsProps) {
+export default function FlappyBirdAmCharts({
+                                               containerHeight = 200,
+                                               containerWidth = 200,
+                                               showDebug = false,
+                                               showSettings = false
+                                           }: FlappyBirdAmChartsProps) {
     const [score, setScore] = useState(0);
     const [isGameRunning, setIsGameRunning] = useState(false);
     const [isGameOver, setIsGameOver] = useState(false);
@@ -140,9 +146,9 @@ export default function FlappyBirdAmCharts({ containerHeight = 200, containerWid
         lastPipeX: 0
     });
 
-    const settingsRef = useRef({ speed: DEFAULT_GAME_SPEED, gravity: DEFAULT_GRAVITY });
+    const settingsRef = useRef({speed: DEFAULT_GAME_SPEED, gravity: DEFAULT_GRAVITY});
     useEffect(() => {
-        settingsRef.current = { speed: Number(gameSpeed), gravity: Number(gravity) };
+        settingsRef.current = {speed: Number(gameSpeed), gravity: Number(gravity)};
     }, [gameSpeed, gravity]);
 
     // --- График ---
@@ -181,7 +187,7 @@ export default function FlappyBirdAmCharts({ containerHeight = 200, containerWid
 
         const xAxis = chart.xAxes.push(
             am5xy.ValueAxis.new(root, {
-                renderer: am5xy.AxisRendererX.new(root, { minGridDistance: 100 }),
+                renderer: am5xy.AxisRendererX.new(root, {minGridDistance: 100}),
                 min: 0, max: 1000, strictMinMax: true
             })
         );
@@ -242,18 +248,19 @@ export default function FlappyBirdAmCharts({ containerHeight = 200, containerWid
         const birdContainer = chart.plotContainer.children.push(am5.Container.new(root, {
             x: 100, y: 250, centerX: am5.p50, centerY: am5.p50
         }));
-        birdContainer.children.push(am5.Graphics.new(root, {
-            svgPath: BIRD_SVG_PATH,
-            fill: am5.color(BIRD_COLOR),
-            stroke: am5.color(BIRD_STROKE),
-            scale: 1.5
+        birdContainer.children.push(am5.Picture.new(root, {
+            width: 45,  // 30px (база) * 1.5 (ваше масштабирование)
+            height: 30, // 20px (база) * 1.5
+            centerX: am5.p50,
+            centerY: am5.p50,
+            src: birdSvg.src, // .src берет URL из импорта Next.js
         }));
 
         // Debug: границы коллизий птицы
         if (showDebug) {
             birdContainer.children.push(am5.Rectangle.new(root, {
-                width: 30,
-                height: 20,
+                width: 45,
+                height: 30,
                 fill: am5.color(0xff0000),
                 fillOpacity: 0.3,
                 stroke: am5.color(0xff0000),
@@ -315,7 +322,7 @@ export default function FlappyBirdAmCharts({ containerHeight = 200, containerWid
             if (state.axisXOffset + viewportWidth > state.lastPipeX + 400) {
                 const newPipeX = state.lastPipeX + 400;
                 const pipeData = generatePipeData(newPipeX);
-                const dataItem = { ...pipeData, zero: 0 };
+                const dataItem = {...pipeData, zero: 0};
                 state.pipes.push(dataItem);
                 state.lastPipeX = newPipeX;
 
@@ -346,15 +353,25 @@ export default function FlappyBirdAmCharts({ containerHeight = 200, containerWid
     const startGame = () => {
         if (!rootRef.current || !chartRef.current) return;
         // Используем фиксированную высоту контейнера
-        gameStateRef.current = { birdY: containerHeight / 2, birdVelocity: 0, pipes: [], axisXOffset: 0, lastPipeX: 400 };
-        setScore(0); setIsGameRunning(true); setIsGameOver(false);
+        gameStateRef.current = {birdY: containerHeight / 2, birdVelocity: 0, pipes: [], axisXOffset: 0, lastPipeX: 400};
+        setScore(0);
+        setIsGameRunning(true);
+        setIsGameOver(false);
         if (bottomSeriesRef.current) bottomSeriesRef.current.data.clear();
         if (topSeriesRef.current) topSeriesRef.current.data.clear();
-        if (xAxisRef.current) { xAxisRef.current.set("min", 0); xAxisRef.current.set("max", 1000); }
+        if (xAxisRef.current) {
+            xAxisRef.current.set("min", 0);
+            xAxisRef.current.set("max", 1000);
+        }
         jump();
     };
-    const jump = () => { gameStateRef.current.birdVelocity = -JUMP_STRENGTH; };
-    const gameOver = () => { setIsGameOver(true); setIsGameRunning(false); };
+    const jump = () => {
+        gameStateRef.current.birdVelocity = -JUMP_STRENGTH;
+    };
+    const gameOver = () => {
+        setIsGameOver(true);
+        setIsGameRunning(false);
+    };
 
     useEffect(() => {
         const handleSpaceKey = (e: KeyboardEvent) => {
@@ -399,7 +416,7 @@ export default function FlappyBirdAmCharts({ containerHeight = 200, containerWid
                         boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
                     }}
                 >
-                    <div id="chartdiv" style={{ width: `${containerWidth}px`, height: `${containerHeight}px` }}></div>
+                    <div id="chartdiv" style={{width: `${containerWidth}px`, height: `${containerHeight}px`}}></div>
                     <div style={{
                         position: 'absolute',
                         top: '16px',
@@ -468,7 +485,8 @@ export default function FlappyBirdAmCharts({ containerHeight = 200, containerWid
                                             }}
                                             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#dc2626'}
                                             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ef4444'}
-                                        >ЗАНОВО (Пробел)</button>
+                                        >ЗАНОВО (J)
+                                        </button>
                                     </>
                                 ) : (
                                     <>
@@ -496,85 +514,88 @@ export default function FlappyBirdAmCharts({ containerHeight = 200, containerWid
                                             }}
                                             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0284c7'}
                                             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0ea5e9'}
-                                        >СТАРТ (Пробел)</button>
+                                        >СТАРТ (J)
+                                        </button>
                                     </>
                                 )}
                             </div>
                         </div>
                     )}
                 </div>
-                <div style={{
-                    marginTop: '24px',
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gap: '24px',
-                    backgroundColor: '#f9fafb',
-                    padding: '24px',
-                    borderRadius: '12px',
-                    border: '1px solid #e5e7eb',
-                    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-                    width: `${containerWidth}px`
-                }}>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <label style={{
-                            fontSize: '14px',
-                            fontWeight: '600',
-                            color: '#374151',
-                            marginBottom: '8px',
-                            display: 'flex',
-                            justifyContent: 'space-between'
-                        }}>
-                            <span>Скорость:</span>
-                            <span style={{ color: '#0284c7' }}>{gameSpeed}</span>
-                        </label>
-                        <input
-                            type="range"
-                            min="2"
-                            max="15"
-                            step="1"
-                            value={gameSpeed}
-                            onChange={(e) => setGameSpeed(Number(e.target.value))}
-                            disabled={isGameRunning}
-                            style={{
-                                width: '100%',
-                                height: '8px',
-                                backgroundColor: '#d1d5db',
-                                borderRadius: '8px',
-                                cursor: 'pointer',
-                                accentColor: '#0284c7'
-                            }}
-                        />
+                {showSettings &&
+                    <div style={{
+                        marginTop: '24px',
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 1fr',
+                        gap: '24px',
+                        backgroundColor: '#f9fafb',
+                        padding: '24px',
+                        borderRadius: '12px',
+                        border: '1px solid #e5e7eb',
+                        boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                        width: `${containerWidth}px`
+                    }}>
+                        <div style={{display: 'flex', flexDirection: 'column'}}>
+                            <label style={{
+                                fontSize: '14px',
+                                fontWeight: '600',
+                                color: '#374151',
+                                marginBottom: '8px',
+                                display: 'flex',
+                                justifyContent: 'space-between'
+                            }}>
+                                <span>Скорость:</span>
+                                <span style={{color: '#0284c7'}}>{gameSpeed}</span>
+                            </label>
+                            <input
+                                type="range"
+                                min="2"
+                                max="15"
+                                step="1"
+                                value={gameSpeed}
+                                onChange={(e) => setGameSpeed(Number(e.target.value))}
+                                disabled={isGameRunning}
+                                style={{
+                                    width: '100%',
+                                    height: '8px',
+                                    backgroundColor: '#d1d5db',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    accentColor: '#0284c7'
+                                }}
+                            />
+                        </div>
+                        <div style={{display: 'flex', flexDirection: 'column'}}>
+                            <label style={{
+                                fontSize: '14px',
+                                fontWeight: '600',
+                                color: '#374151',
+                                marginBottom: '8px',
+                                display: 'flex',
+                                justifyContent: 'space-between'
+                            }}>
+                                <span>Гравитация:</span>
+                                <span style={{color: '#0284c7'}}>{gravity}</span>
+                            </label>
+                            <input
+                                type="range"
+                                min="0.2"
+                                max="1.5"
+                                step="0.1"
+                                value={gravity}
+                                onChange={(e) => setGravity(Number(e.target.value))}
+                                style={{
+                                    width: '100%',
+                                    height: '8px',
+                                    backgroundColor: '#d1d5db',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    accentColor: '#0284c7'
+                                }}
+                            />
+                        </div>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <label style={{
-                            fontSize: '14px',
-                            fontWeight: '600',
-                            color: '#374151',
-                            marginBottom: '8px',
-                            display: 'flex',
-                            justifyContent: 'space-between'
-                        }}>
-                            <span>Гравитация:</span>
-                            <span style={{ color: '#0284c7' }}>{gravity}</span>
-                        </label>
-                        <input
-                            type="range"
-                            min="0.2"
-                            max="1.5"
-                            step="0.1"
-                            value={gravity}
-                            onChange={(e) => setGravity(Number(e.target.value))}
-                            style={{
-                                width: '100%',
-                                height: '8px',
-                                backgroundColor: '#d1d5db',
-                                borderRadius: '8px',
-                                cursor: 'pointer',
-                                accentColor: '#0284c7'
-                            }}
-                        />
-                    </div>
-                </div>
+                }
             </div>
         </div>
     );
