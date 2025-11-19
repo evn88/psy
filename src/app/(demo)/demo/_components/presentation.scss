@@ -6,7 +6,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&display=swap');
 
 // SCSS Variables
-$primary-font: 'Caveat', cursive;
+$primary-font: 'Inter', sans-serif;
 $font-weights: (
         normal: 400,
         medium: 500,
@@ -15,8 +15,12 @@ $font-weights: (
 );
 
 // SCSS Nesting and functions
+.presentation {
+  font-family: $primary-font;
+}
+
 .caveat-font {
-  font-family: $primary-font !important;
+  font-family: 'Caveat', cursive !important;
 
   &.light {
     font-weight: map.get($font-weights, normal);
