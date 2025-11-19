@@ -15,11 +15,6 @@ export interface GameState {
     lastPipeX: number;
 }
 
-export interface SettingsState {
-    speed: number;
-    gravity: number;
-}
-
 export interface GameRefs {
     rootRef: MutableRef<am5.Root>;
     xAxisRef: MutableRef<am5xy.ValueAxis<am5xy.AxisRenderer>>;
@@ -27,7 +22,6 @@ export interface GameRefs {
     bottomSeriesRef: MutableRef<am5xy.ColumnSeries>;
     topSeriesRef: MutableRef<am5xy.ColumnSeries>;
     gameStateRef: MutableRef<GameState>;
-    settingsRef: MutableRef<SettingsState>;
 }
 
 interface UseFlappyLoopParams {
@@ -38,6 +32,8 @@ interface UseFlappyLoopParams {
     showDebug: boolean;
     score: number;
     setScore: (s: number) => void;
+    speed: number;
+    gravity: number;
     refs: GameRefs;
     onGameOver: () => void;
 }
@@ -54,6 +50,8 @@ export default function useFlappyLoop({
                                           showDebug,
                                           score,
                                           setScore,
+                                          speed,
+                                          gravity,
                                           refs,
                                           onGameOver,
                                       }: UseFlappyLoopParams) {
@@ -62,29 +60,28 @@ export default function useFlappyLoop({
         let animationFrameId: number;
 
         const loop = () => {
-            const state = (refs.gameStateRef as any).current as GameState;
-            const config = (refs.settingsRef as any).current as SettingsState;
-            const root = (refs.rootRef as any).current as am5.Root | null;
+            const state = refs.gameStateRef.current as GameState;
+            const root = refs.rootRef.current as am5.Root | null;
 
-            if (!root || !(refs.xAxisRef as any).current || !(refs.birdSpriteRef as any).current) {
+            if (!root || !refs.xAxisRef.current || !(refs.birdSpriteRef).current) {
                 animationFrameId = requestAnimationFrame(loop);
                 return;
             }
 
             // Физика
-            state.birdVelocity += config.gravity;
+            state.birdVelocity += gravity;
             state.birdY += state.birdVelocity;
-            (refs.birdSpriteRef as any).current.set('y', state.birdY);
-            (refs.birdSpriteRef as any).current.set(
+            refs.birdSpriteRef.current.set('y', state.birdY);
+            refs.birdSpriteRef.current.set(
                 'rotation',
                 Math.min(Math.max(state.birdVelocity * 3, -30), 90)
             );
 
             // Мир
-            state.axisXOffset += config.speed;
+            state.axisXOffset += speed;
             const viewportWidth = VIEWPORT_WIDTH;
-            (refs.xAxisRef as any).current.set('min', state.axisXOffset);
-            (refs.xAxisRef as any).current.set('max', state.axisXOffset + viewportWidth);
+            refs.xAxisRef.current.set('min', state.axisXOffset);
+            refs.xAxisRef.current.set('max', state.axisXOffset + viewportWidth);
 
             // Генерация
             if (state.axisXOffset + viewportWidth > state.lastPipeX + 400) {
@@ -97,10 +94,10 @@ export default function useFlappyLoop({
                 const cleanPipes = state.pipes.filter((p) => p.x > state.axisXOffset - 200);
                 state.pipes = cleanPipes;
 
-                if ((refs.bottomSeriesRef as any).current)
-                    (refs.bottomSeriesRef as any).current.data.setAll(cleanPipes);
-                if ((refs.topSeriesRef as any).current)
-                    (refs.topSeriesRef as any).current.data.setAll(cleanPipes);
+                if (refs.bottomSeriesRef.current)
+                    refs.bottomSeriesRef.current.data.setAll(cleanPipes);
+                if (refs.topSeriesRef.current)
+                    refs.topSeriesRef.current.data.setAll(cleanPipes);
             }
 
             // Коллизии
@@ -135,6 +132,8 @@ export default function useFlappyLoop({
         showDebug,
         score,
         setScore,
+        speed,
+        gravity,
         onGameOver,
     ]);
 }

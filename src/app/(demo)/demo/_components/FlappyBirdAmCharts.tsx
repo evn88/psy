@@ -17,13 +17,6 @@ import type {PipeData} from './flappy/types';
 import FlappySettings from './flappy/FlappySettings';
 import useFlappyLoop from './flappy/useFlappyLoop';
 
-// ==============================================
-// 2–3. КОНФИГУРАЦИЯ И ЛОГИКА — вынесены в модули ./flappy
-// ==============================================
-
-// ==============================================
-// 4. КОМПОНЕНТ
-// ==============================================
 
 interface FlappyBirdAmChartsProps {
     containerHeight?: number;
@@ -42,6 +35,7 @@ export default function FlappyBirdAmCharts({
     const [isGameRunning, setIsGameRunning] = useState(false);
     const [isGameOver, setIsGameOver] = useState(false);
 
+    // Настройки игры (gameSpeed, gravity)
     const [gameSpeed, setGameSpeed] = useState(DEFAULT_GAME_SPEED);
     const [gravity, setGravity] = useState(DEFAULT_GRAVITY);
 
@@ -69,10 +63,6 @@ export default function FlappyBirdAmCharts({
         lastPipeX: 0
     });
 
-    const settingsRef = useRef({speed: DEFAULT_GAME_SPEED, gravity: DEFAULT_GRAVITY});
-    useEffect(() => {
-        settingsRef.current = {speed: Number(gameSpeed), gravity: Number(gravity)};
-    }, [gameSpeed, gravity]);
 
     // --- График ---
     useLayoutEffect(() => {
@@ -113,9 +103,46 @@ export default function FlappyBirdAmCharts({
         };
     }, []);
 
-    // --- Цикл --- вынесен в кастомный хук
-
     // --- UI ---
+    /**
+     * Представляет функцию, которая инициирует действие прыжка птицы в игре.
+     * Обновляет вертикальную скорость птицы на отрицательное значение, позволяя ей двигаться вверх.
+     * Это достигается путем установки свойства `birdVelocity` в `gameStateRef.current` в значение `-JUMP_STRENGTH`.
+     *
+     * Сила или высота прыжка определяется константой `JUMP_STRENGTH`.
+     */
+    const jump = () => {
+        gameStateRef.current.birdVelocity = -JUMP_STRENGTH;
+    };
+
+    /**
+     * Инициализирует и запускает игру.
+     * Эта функция устанавливает начальное состояние игры, включая сброс
+     * позиции птицы, скорости, труб и счета. Также очищает предыдущие
+     * игровые данные и устанавливает статусы запуска и окончания игры.
+     *
+     * Зависимости:
+     * - rootRef: Ссылка на корневой контейнер.
+     * - chartRef: Ссылка на компонент графика.
+     * - gameStateRef: Ссылка, хранящая позицию птицы, скорость, трубы,
+     *   смещение оси и позицию последней трубы по X.
+     * - bottomSeriesRef, topSeriesRef: Ссылки, используемые для управления
+     *   сериями графических элементов.
+     * - xAxisRef: Ссылка на ось X для установки границ видимой области.
+     * - containerHeight: Фиксированная высота игрового контейнера.
+     * - setScore: Функция для сброса или обновления игрового счета.
+     * - setIsGameRunning: Функция для переключения состояния игры в режим запуска.
+     * - setIsGameOver: Функция для переключения статуса окончания игры.
+     * - jump: Функция, вызывающая прыжок птицы.
+     *
+     * Поведение:
+     * - Возвращается немедленно, если необходимые ссылки (rootRef, chartRef) недоступны.
+     * - Очищает предыдущие данные серий для bottomSeriesRef и topSeriesRef.
+     * - Сбрасывает видимую область оси X к предопределенным границам.
+     * - Инициализирует переменные состояния игры, такие как позиция птицы,
+     *   скорость и трубы в начале игры.
+     * - Запускает игру, включая состояние запуска и отключая состояние окончания игры.
+     */
     const startGame = useCallback(() => {
         if (!rootRef.current || !chartRef.current) return;
         // Используем фиксированную высоту контейнера
@@ -131,9 +158,14 @@ export default function FlappyBirdAmCharts({
         }
         jump();
     }, [containerHeight]);
-    const jump = () => {
-        gameStateRef.current.birdVelocity = -JUMP_STRENGTH;
-    };
+
+
+    /**
+     * Функция обратного вызова, которая устанавливает состояние игры,
+     * указывающее на её окончание. Вызов этой функции устанавливает
+     * состояние `isGameOver` в true и состояние `isGameRunning` в false,
+     * что эффективно останавливает игру.
+     */
     const gameOver = useCallback(() => {
         setIsGameOver(true);
         setIsGameRunning(false);
@@ -148,6 +180,8 @@ export default function FlappyBirdAmCharts({
         showDebug,
         score,
         setScore,
+        speed: gameSpeed,
+        gravity: gravity,
         refs: {
             rootRef,
             xAxisRef,
@@ -155,11 +189,13 @@ export default function FlappyBirdAmCharts({
             bottomSeriesRef,
             topSeriesRef,
             gameStateRef,
-            settingsRef,
         },
         onGameOver: gameOver,
     });
 
+    /**
+     * Реагируем на нажатие клавиши J
+     */
     useEffect(() => {
         const handleSpaceKey = (e: KeyboardEvent) => {
             if (e.code === 'KeyJ') {
