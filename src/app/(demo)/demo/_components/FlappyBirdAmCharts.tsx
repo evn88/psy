@@ -10,8 +10,6 @@ import birdSvg from '@/assets/images/bird.svg';
 // 2. КОНФИГУРАЦИЯ
 // ==============================================
 
-const BIRD_COLOR = "#F4D03F";
-const BIRD_STROKE = "#D4AC0D";
 const PIPE_COLOR = "#73C6B6";
 const PIPE_STROKE = "#16A085";
 const PIPE_WIDTH = 60; // Визуальная ширина трубы в пикселях
