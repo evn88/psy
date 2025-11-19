@@ -1,10 +1,12 @@
 'use client'
-import FlappyBirdAmCharts from "../Game";
+
+import FlappyBirdAmCharts from "../FlappyBirdAmCharts";
+
 
 export const GameSection = () => {
     return (
         <section>
-            <FlappyBirdAmCharts />
+            <FlappyBirdAmCharts containerHeight={600} containerWidth={600} showDebug={true} />
         </section>
     );
 };
