@@ -16,11 +16,11 @@
     "@vercel/analytics": "^1.5.0",
     "@vercel/speed-insights": "^1.2.0",
     "animejs": "^4.2.2",
-    "next": "15.5.7",
+    "next": "^15.5.7",
     "next-auth": "beta",
     "react": "^18",
     "react-dom": "^18",
-    "react-syntax-highlighter": "^15.6.6",
+    "react-syntax-highlighter": "^16.1.0",
     "reveal.js": "^5.2.1"
   },
   "devDependencies": {
@@ -31,7 +31,7 @@
     "@types/reveal.js": "^5.2.1",
     "babel-plugin-react-compiler": "^1.0.0",
     "eslint": "^8",
-    "eslint-config-next": "14.2.15",
+    "eslint-config-next": "^16.0.7",
     "postcss": "^8",
     "prettier": "3.6.2",
     "prisma": "^6.7.0",
