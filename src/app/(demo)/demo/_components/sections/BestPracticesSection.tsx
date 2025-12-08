@@ -1,6 +1,6 @@
 'use client';
-import React, { useEffect, useRef } from 'react';
-import { animate, createScope, Scope, stagger } from 'animejs';
+import React, {useEffect, useRef} from 'react';
+import {animate, createScope, Scope, stagger} from 'animejs';
 
 export const BestPracticesSection = () => {
   const root = useRef(null!);
@@ -25,7 +25,7 @@ export const BestPracticesSection = () => {
   };
 
   useEffect(() => {
-    const section = root.current.closest('section');
+    const section = (root.current as HTMLElement)?.closest('section');
     if (!section) return;
 
     const observer = new MutationObserver(mutations => {
