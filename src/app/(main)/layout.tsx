@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import '../globals.css';
-import { Navbar } from '@/widgets/Navbar';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { FC, ReactNode } from 'react';
@@ -27,12 +26,13 @@ type RootLayoutType = Readonly<{
   children: ReactNode;
 }>;
 
+// Uncomment the navigation bar when the site is ready.
 const RootLayout: FC<RootLayoutType> = ({ children }) => {
   return (
     <html lang="ru">
       <Providers>
         <body className={inter.className}>
-          <Navbar />
+          {/*<Navbar />*/}
           <main className="pt-4 px-4 md:px-0">{children}</main>
           <Analytics />
           <SpeedInsights />
