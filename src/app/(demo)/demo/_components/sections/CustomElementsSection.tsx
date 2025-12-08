@@ -3,7 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import { animate, createScope, Scope } from 'animejs';
 
 export const CustomElementsSection = () => {
-  const root = useRef<HTMLElement | null>(null);
+  const root = useRef<HTMLDivElement | null>(null);
   const scope = useRef<Scope>(null!);
 
   const playAnimation = () => {
