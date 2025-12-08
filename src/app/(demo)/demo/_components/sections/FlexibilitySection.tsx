@@ -3,7 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import { animate, createScope, Scope, stagger } from 'animejs';
 
 export const FlexibilitySection = () => {
-  const root = useRef(null!);
+  const root = useRef<HTMLDivElement | null>(null);
   const scope = useRef<Scope>(null!);
 
   const playAnimation = () => {
@@ -25,7 +25,7 @@ export const FlexibilitySection = () => {
   };
 
   useEffect(() => {
-    const section = root.current.closest('section');
+    const section = root.current?.closest('section');
     if (!section) return;
 
     const observer = new MutationObserver(mutations => {

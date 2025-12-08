@@ -1,9 +1,9 @@
 'use client';
-import React, {useEffect, useRef} from 'react';
-import {animate, createScope, Scope, stagger} from 'animejs';
+import React, { useEffect, useRef } from 'react';
+import { animate, createScope, Scope, stagger } from 'animejs';
 
 export const BestPracticesSection = () => {
-  const root = useRef(null!);
+  const root = useRef<HTMLDivElement | null>(null);
   const scope = useRef<Scope>(null!);
 
   const playAnimation = () => {
