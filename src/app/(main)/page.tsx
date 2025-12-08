@@ -1,14 +1,15 @@
-"use client";
+'use client';
 
-import React, {Suspense} from "react";
-import MainPage from "@/pages/mainPage/ui/MainPage";
-
+import TempPage from '@/pages/TempPage/TempPage';
+import React, { Suspense } from 'react';
 
 const HomePage = () => (
-    <>
-        <Suspense>
-            <MainPage/>
-        </Suspense>
-    </>)
+  <>
+    <Suspense>
+      {/*<MainPage/>*/}
+      <TempPage />
+    </Suspense>
+  </>
+);
 
 export default HomePage;
