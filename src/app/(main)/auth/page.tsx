@@ -1,99 +1,216 @@
-"use client";
+"use client"
 
-import React, {useState} from 'react';
-import {useRouter} from 'next/navigation';
+import { useState } from "react"
+import { signIn } from "next-auth/react"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
-const AuthPage = () => {
-    const router = useRouter();
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
+export default function AuthPage() {
+  const router = useRouter()
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-        setLoading(true);
+  // Login Form States
+  const [loginEmail, setLoginEmail] = useState("")
+  const [loginPassword, setLoginPassword] = useState("")
 
-        // Basic validation
-        if (!email || !password) {
-            setError('Email and password are required');
-            setLoading(false);
-            return;
+  // Register Form States
+  const [registerName, setRegisterName] = useState("")
+  const [registerEmail, setRegisterEmail] = useState("")
+  const [registerPassword, setRegisterPassword] = useState("")
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setLoading(true)
+
+    try {
+      const result = await signIn("credentials", {
+        email: loginEmail,
+        password: loginPassword,
+        redirect: false,
+      })
+
+      if (result?.error) {
+        setError("Invalid email or password")
+      } else {
+        router.push("/profile")
+        router.refresh()
+      }
+    } catch (err) {
+      setError("An unexpected error occurred")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setLoading(true)
+
+    try {
+        // Implement registration logic here (likely a server action or API route)
+        // For now, let's assume we have an API endpoint /api/auth/register
+        const res = await fetch('/api/auth/register', {
+            method: 'POST',
+            body: JSON.stringify({ name: registerName, email: registerEmail, password: registerPassword }),
+            headers: { 'Content-Type': 'application/json' }
+        })
+
+        if (!res.ok) {
+            const data = await res.json()
+            throw new Error(data.message || 'Registration failed')
         }
 
-        // Here you would typically make an API call to authenticate the user
-        try {
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
+        // Auto login after registration
+        await signIn("credentials", {
+            email: registerEmail,
+            password: registerPassword,
+            redirect: false,
+        })
+        
+        router.push("/profile")
+        router.refresh()
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
 
-            // For demo purposes, just redirect to admin page
-            // In a real app, you would verify credentials and set auth state
-            console.log('Login attempt with:', {email, password});
-            router.push('/admin');
-        } catch (err) {
-            setError('Authentication failed. Please try again.');
-            console.error('Auth error:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
+  const handleGoogleSignIn = () => {
+    signIn("google", { callbackUrl: "/profile" })
+  }
 
-    return (
-        <div className="container mx-auto max-w-md py-12">
-            <div className="bg-gray-800 shadow-md rounded-lg p-8">
-                <h1 className="text-3xl font-bold text-center mb-6">Login</h1>
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gray-900 p-4">
+      <Card className="w-full max-w-md bg-gray-800 border-gray-700 text-white">
+        <CardHeader>
+          <CardTitle className="text-2xl text-center">Welcome Back</CardTitle>
+          <CardDescription className="text-gray-400 text-center">
+            Sign in to access your account or create a new one.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="login" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 bg-gray-700">
+              <TabsTrigger value="login">Login</TabsTrigger>
+              <TabsTrigger value="register">Register</TabsTrigger>
+            </TabsList>
+            
+            {error && (
+                <Alert variant="destructive" className="mt-4 bg-red-900 border-red-800 text-red-200">
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
+            )}
 
-                {error && (
-                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
-                        <span className="block sm:inline">{error}</span>
-                    </div>
-                )}
+            <TabsContent value="login">
+              <form onSubmit={handleLogin} className="space-y-4 mt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="login-email">Email</Label>
+                  <Input 
+                    id="login-email" 
+                    type="email" 
+                    placeholder="m@example.com" 
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    required
+                    className="bg-gray-700 border-gray-600 focus:border-blue-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="login-password">Password</Label>
+                  <Input 
+                    id="login-password" 
+                    type="password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    required
+                    className="bg-gray-700 border-gray-600 focus:border-blue-500"
+                  />
+                </div>
+                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading}>
+                  {loading ? "Signing in..." : "Sign In"}
+                </Button>
+              </form>
+            </TabsContent>
 
-                <form onSubmit={handleSubmit}>
-                    <div className="mb-4">
-                        <label htmlFor="email" className="block text-gray-300 text-sm font-bold mb-2">
-                            Email
-                        </label>
-                        <input
-                            type="email"
-                            id="email"
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            placeholder="Enter your email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                        />
-                    </div>
+            <TabsContent value="register">
+              <form onSubmit={handleRegister} className="space-y-4 mt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="register-name">Name</Label>
+                  <Input 
+                    id="register-name" 
+                    placeholder="John Doe" 
+                    value={registerName}
+                    onChange={(e) => setRegisterName(e.target.value)}
+                    required
+                    className="bg-gray-700 border-gray-600 focus:border-blue-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="register-email">Email</Label>
+                  <Input 
+                    id="register-email" 
+                    type="email" 
+                    placeholder="m@example.com"
+                    value={registerEmail}
+                    onChange={(e) => setRegisterEmail(e.target.value)}
+                    required
+                    className="bg-gray-700 border-gray-600 focus:border-blue-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="register-password">Password</Label>
+                  <Input 
+                    id="register-password" 
+                    type="password"
+                    value={registerPassword}
+                    onChange={(e) => setRegisterPassword(e.target.value)}
+                    required
+                    className="bg-gray-700 border-gray-600 focus:border-blue-500"
+                  />
+                </div>
+                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading}>
+                  {loading ? "Creating Account..." : "Create Account"}
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
 
-                    <div className="mb-6">
-                        <label htmlFor="password" className="block text-gray-300 text-sm font-bold mb-2">
-                            Password
-                        </label>
-                        <input
-                            type="password"
-                            id="password"
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            placeholder="Enter your password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                        />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                        <button
-                            type="submit"
-                            className={`bg-gray-700 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            disabled={loading}
-                        >
-                            {loading ? 'Logging in...' : 'Login'}
-                        </button>
-                    </div>
-                </form>
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-gray-600" />
             </div>
-        </div>
-    );
-};
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-gray-800 px-2 text-gray-400">Or continue with</span>
+            </div>
+          </div>
 
-export default AuthPage;
+          <div className="grid grid-cols-1 gap-2">
+             <Button variant="outline" type="button" onClick={handleGoogleSignIn} className="bg-white text-gray-900 hover:bg-gray-100">
+               <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path></svg>
+               Google
+             </Button>
+             
+
+          </div>
+
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
