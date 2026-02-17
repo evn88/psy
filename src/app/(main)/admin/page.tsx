@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client"
 import prisma from "@/shared/lib/prisma"
 import {
   Table,
@@ -9,6 +10,10 @@ import {
 } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+
+type UserWithSessions = Prisma.UserGetPayload<{
+  include: { sessions: true }
+}>
 
 export default async function AdminPage() {
   const users = await prisma.user.findMany({
@@ -44,7 +49,7 @@ export default async function AdminPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {users.map((user) => {
+                        {users.map((user: UserWithSessions) => {
                             const lastSession = user.sessions[0]
                             const isOnline = lastSession && new Date(lastSession.expires) > new Date()
                             
