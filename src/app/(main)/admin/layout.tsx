@@ -1,39 +1,24 @@
-import { auth } from "@/auth"
-import { redirect } from "next/navigation"
-import { cookies } from "next/headers"
+import { auth } from '@/auth';
+import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 
-import { AppSidebar } from "@/components/admin/app-sidebar"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar"
+import { AppSidebar } from '@/components/admin/app-sidebar';
+import { AdminBreadcrumbs } from '@/components/admin/admin-breadcrumbs';
+import { Separator } from '@/components/ui/separator';
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 
-export default async function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  const session = await auth()
-  const cookieStore = await cookies()
-  const defaultOpen = cookieStore.get("sidebar:state")?.value === "true"
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth();
+  const cookieStore = await cookies();
+  const defaultOpen = cookieStore.get('sidebar:state')?.value === 'true';
 
   if (!session?.user) {
-    redirect("/auth")
+    redirect('/auth');
   }
 
   // @ts-ignore
-  if (session.user.role !== "ADMIN") {
-    redirect("/profile")
+  if (session.user.role !== 'ADMIN') {
+    redirect('/profile');
   }
 
   return (
@@ -44,25 +29,11 @@ export default async function AdminLayout({
           <div className="flex items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">
-                    Admin Panel
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Dashboard</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
+            <AdminBreadcrumbs />
           </div>
         </header>
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-6">
-          {children}
-        </div>
+        <div className="flex flex-1 flex-col gap-4 p-4 pt-6">{children}</div>
       </SidebarInset>
     </SidebarProvider>
-  )
+  );
 }
