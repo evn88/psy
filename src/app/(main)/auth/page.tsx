@@ -1,99 +1,103 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { useState } from 'react';
+import { signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Card,
   CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+  CardTitle
+} from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function AuthPage() {
-  const router = useRouter()
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   // Login Form States
-  const [loginEmail, setLoginEmail] = useState("")
-  const [loginPassword, setLoginPassword] = useState("")
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
 
   // Register Form States
-  const [registerName, setRegisterName] = useState("")
-  const [registerEmail, setRegisterEmail] = useState("")
-  const [registerPassword, setRegisterPassword] = useState("")
+  const [registerName, setRegisterName] = useState('');
+  const [registerEmail, setRegisterEmail] = useState('');
+  const [registerPassword, setRegisterPassword] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setLoading(true)
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
 
     try {
-      const result = await signIn("credentials", {
+      const result = await signIn('credentials', {
         email: loginEmail,
         password: loginPassword,
-        redirect: false,
-      })
+        redirect: false
+      });
 
       if (result?.error) {
-        setError("Invalid email or password")
+        setError('Invalid email or password');
       } else {
-        router.push("/profile")
-        router.refresh()
+        router.push('/admin');
+        router.refresh();
       }
     } catch (err) {
-      setError("An unexpected error occurred")
+      setError('An unexpected error occurred');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setLoading(true)
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
 
     try {
-        // Implement registration logic here (likely a server action or API route)
-        // For now, let's assume we have an API endpoint /api/auth/register
-        const res = await fetch('/api/auth/register', {
-            method: 'POST',
-            body: JSON.stringify({ name: registerName, email: registerEmail, password: registerPassword }),
-            headers: { 'Content-Type': 'application/json' }
-        })
+      // Implement registration logic here (likely a server action or API route)
+      // For now, let's assume we have an API endpoint /api/auth/register
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: registerName,
+          email: registerEmail,
+          password: registerPassword
+        }),
+        headers: { 'Content-Type': 'application/json' }
+      });
 
-        if (!res.ok) {
-            const data = await res.json()
-            throw new Error(data.message || 'Registration failed')
-        }
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || 'Registration failed');
+      }
 
-        // Auto login after registration
-        await signIn("credentials", {
-            email: registerEmail,
-            password: registerPassword,
-            redirect: false,
-        })
-        
-        router.push("/profile")
-        router.refresh()
+      // Auto login after registration
+      await signIn('credentials', {
+        email: registerEmail,
+        password: registerPassword,
+        redirect: false
+      });
+
+      router.push('/admin');
+      router.refresh();
     } catch (err: any) {
-      setError(err.message)
+      setError(err.message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleGoogleSignIn = () => {
-    signIn("google", { callbackUrl: "/profile" })
-  }
+    signIn('google', { callbackUrl: '/admin' });
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-900 p-4">
@@ -110,40 +114,44 @@ export default function AuthPage() {
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="register">Register</TabsTrigger>
             </TabsList>
-            
+
             {error && (
-                <Alert variant="destructive" className="mt-4 bg-red-900 border-red-800 text-red-200">
-                    <AlertDescription>{error}</AlertDescription>
-                </Alert>
+              <Alert variant="destructive" className="mt-4 bg-red-900 border-red-800 text-red-200">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
 
             <TabsContent value="login">
               <form onSubmit={handleLogin} className="space-y-4 mt-4">
                 <div className="space-y-2">
                   <Label htmlFor="login-email">Email</Label>
-                  <Input 
-                    id="login-email" 
-                    type="email" 
-                    placeholder="m@example.com" 
+                  <Input
+                    id="login-email"
+                    type="email"
+                    placeholder="m@example.com"
                     value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
+                    onChange={e => setLoginEmail(e.target.value)}
                     required
                     className="bg-gray-700 border-gray-600 focus:border-blue-500"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="login-password">Password</Label>
-                  <Input 
-                    id="login-password" 
+                  <Input
+                    id="login-password"
                     type="password"
                     value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
+                    onChange={e => setLoginPassword(e.target.value)}
                     required
                     className="bg-gray-700 border-gray-600 focus:border-blue-500"
                   />
                 </div>
-                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading}>
-                  {loading ? "Signing in..." : "Sign In"}
+                <Button
+                  type="submit"
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  disabled={loading}
+                >
+                  {loading ? 'Signing in...' : 'Sign In'}
                 </Button>
               </form>
             </TabsContent>
@@ -152,40 +160,44 @@ export default function AuthPage() {
               <form onSubmit={handleRegister} className="space-y-4 mt-4">
                 <div className="space-y-2">
                   <Label htmlFor="register-name">Name</Label>
-                  <Input 
-                    id="register-name" 
-                    placeholder="John Doe" 
+                  <Input
+                    id="register-name"
+                    placeholder="John Doe"
                     value={registerName}
-                    onChange={(e) => setRegisterName(e.target.value)}
+                    onChange={e => setRegisterName(e.target.value)}
                     required
                     className="bg-gray-700 border-gray-600 focus:border-blue-500"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="register-email">Email</Label>
-                  <Input 
-                    id="register-email" 
-                    type="email" 
+                  <Input
+                    id="register-email"
+                    type="email"
                     placeholder="m@example.com"
                     value={registerEmail}
-                    onChange={(e) => setRegisterEmail(e.target.value)}
+                    onChange={e => setRegisterEmail(e.target.value)}
                     required
                     className="bg-gray-700 border-gray-600 focus:border-blue-500"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="register-password">Password</Label>
-                  <Input 
-                    id="register-password" 
+                  <Input
+                    id="register-password"
                     type="password"
                     value={registerPassword}
-                    onChange={(e) => setRegisterPassword(e.target.value)}
+                    onChange={e => setRegisterPassword(e.target.value)}
                     required
                     className="bg-gray-700 border-gray-600 focus:border-blue-500"
                   />
                 </div>
-                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading}>
-                  {loading ? "Creating Account..." : "Create Account"}
+                <Button
+                  type="submit"
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  disabled={loading}
+                >
+                  {loading ? 'Creating Account...' : 'Create Account'}
                 </Button>
               </form>
             </TabsContent>
@@ -201,16 +213,32 @@ export default function AuthPage() {
           </div>
 
           <div className="grid grid-cols-1 gap-2">
-             <Button variant="outline" type="button" onClick={handleGoogleSignIn} className="bg-white text-gray-900 hover:bg-gray-100">
-               <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path></svg>
-               Google
-             </Button>
-             
-
+            <Button
+              variant="outline"
+              type="button"
+              onClick={handleGoogleSignIn}
+              className="bg-white text-gray-900 hover:bg-gray-100"
+            >
+              <svg
+                className="mr-2 h-4 w-4"
+                aria-hidden="true"
+                focusable="false"
+                data-prefix="fab"
+                data-icon="google"
+                role="img"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 488 512"
+              >
+                <path
+                  fill="currentColor"
+                  d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"
+                ></path>
+              </svg>
+              Google
+            </Button>
           </div>
-
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
