@@ -5,11 +5,15 @@ import { Role } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
+// ... imports
+import bcrypt from 'bcryptjs';
+
 const updateUserSchema = z.object({
   id: z.string(),
   name: z.string().optional(),
   email: z.string().email().optional(),
-  role: z.nativeEnum(Role).optional()
+  role: z.nativeEnum(Role).optional(),
+  password: z.string().optional()
 });
 
 export type UpdateUserSchema = z.infer<typeof updateUserSchema>;
@@ -27,13 +31,24 @@ export async function updateUser(data: UpdateUserSchema) {
   }
 
   try {
+    const updateData: {
+      name?: string;
+      email?: string;
+      role?: Role;
+      password?: string;
+    } = {
+      name: data.name,
+      email: data.email,
+      role: data.role
+    };
+
+    if (data.password) {
+      updateData.password = await bcrypt.hash(data.password, 10);
+    }
+
     const user = await prisma.user.update({
       where: { id: data.id },
-      data: {
-        name: data.name,
-        email: data.email,
-        role: data.role
-      }
+      data: updateData
     });
 
     revalidatePath('/admin/users');

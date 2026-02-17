@@ -39,7 +39,14 @@ const formSchema = z.object({
     message: 'Name must be at least 2 characters.'
   }),
   email: z.string().email(),
-  role: z.nativeEnum(Role)
+  role: z.nativeEnum(Role),
+  password: z
+    .string()
+    .min(6, {
+      message: 'Password must be at least 6 characters.'
+    })
+    .optional()
+    .or(z.literal(''))
 });
 
 interface EditUserDialogProps {
@@ -63,7 +70,8 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
       id: user.id,
       name: user.name || '',
       email: user.email,
-      role: user.role
+      role: user.role,
+      password: ''
     }
   });
 
@@ -113,6 +121,19 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
                   <FormLabel>Email</FormLabel>
                   <FormControl>
                     <Input placeholder="john@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>New Password</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="Leave empty to keep current" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
