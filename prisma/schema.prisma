@@ -1,10 +1,9 @@
-// Define database connection via the `DATABASE_URL` env var
+// Определение подключения к базе данных через переменную окружения `DATABASE_URL`
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
-// Define custom output path for generated Prisma Client
+// Определение пути вывода для сгенерированного Prisma Client
 generator client {
   provider = "prisma-client-js"
 }
@@ -24,7 +23,7 @@ model User {
   role          Role            @default(GUEST)
   accounts      Account[]
   sessions      Session[]
-  // Optional for WebAuthn support
+  // Опционально для поддержки WebAuthn
   Authenticator Authenticator[]
 
   createdAt DateTime @default(now())
@@ -70,7 +69,7 @@ model VerificationToken {
   @@id([identifier, token])
 }
 
-// Optional for WebAuthn support
+// Опционально для поддержки WebAuthn
 model Authenticator {
   credentialID         String  @unique
   userId               String

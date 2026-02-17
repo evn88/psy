@@ -2,12 +2,10 @@ import NextAuth from "next-auth"
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter"
-import { PrismaClient } from "@prisma/client"
+import prisma from "@/shared/lib/prisma"
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { authConfig } from "./auth.config"
-
-const prisma = new PrismaClient()
 
 async function getUser(email: string) {
   try {

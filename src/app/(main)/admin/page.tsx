@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client"
+import prisma from "@/shared/lib/prisma"
 import {
   Table,
   TableBody,
@@ -9,8 +9,6 @@ import {
 } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-
-const prisma = new PrismaClient()
 
 export default async function AdminPage() {
   const users = await prisma.user.findMany({

@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { PrismaClient, type User } from "@prisma/client";
+import { type User } from "@prisma/client";
+import prisma from "@/shared/lib/prisma";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-
-const prisma = new PrismaClient();
 
 const registerSchema = z.object({
   name: z.string().min(1, "Name is required"),
