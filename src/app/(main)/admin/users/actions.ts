@@ -36,7 +36,7 @@ export async function updateUser(data: UpdateUserSchema) {
       }
     });
 
-    revalidatePath('/admin');
+    revalidatePath('/admin/users');
     return { success: true, user };
   } catch (error) {
     console.error('Failed to update user:', error);
@@ -55,7 +55,7 @@ export async function deleteUser(userId: string) {
       where: { id: userId }
     });
 
-    revalidatePath('/admin');
+    revalidatePath('/admin/users');
     return { success: true };
   } catch (error) {
     console.error('Failed to delete user:', error);
