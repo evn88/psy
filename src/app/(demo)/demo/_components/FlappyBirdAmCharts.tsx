@@ -104,7 +104,7 @@ export const FlappyBirdAmCharts = ({
         rootRef.current = null;
       }
     };
-  }, []);
+  }, [containerHeight, containerWidth, showDebug]);
 
   // --- UI ---
   /**
@@ -190,14 +190,17 @@ export const FlappyBirdAmCharts = ({
     setScore,
     speed: gameSpeed,
     gravity: gravity,
-    refs: {
-      rootRef,
-      xAxisRef,
-      birdSpriteRef,
-      bottomSeriesRef,
-      topSeriesRef,
-      gameStateRef
-    },
+    refs: React.useMemo(
+      () => ({
+        rootRef,
+        xAxisRef,
+        birdSpriteRef,
+        bottomSeriesRef,
+        topSeriesRef,
+        gameStateRef
+      }),
+      []
+    ),
     onGameOver: gameOver
   });
 
