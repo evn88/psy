@@ -6,10 +6,14 @@ async function getStats() {
   const userCount = await prisma.user.count();
 
   // Count active sessions as a proxy for online users
-  const activeSessionsCount = await prisma.session.count({
+  // Count active sessions as a proxy for online users
+  const OFFLINE_THRESHOLD = 5 * 60 * 1000;
+  const activeThreshold = new Date(Date.now() - OFFLINE_THRESHOLD);
+
+  const activeSessionsCount = await prisma.user.count({
     where: {
-      expires: {
-        gt: new Date()
+      lastSeen: {
+        gt: activeThreshold
       }
     }
   });

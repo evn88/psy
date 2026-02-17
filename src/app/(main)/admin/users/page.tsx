@@ -19,9 +19,15 @@ export default async function AdminPage() {
     }
   });
 
+  // eslint-disable-next-line react-hooks/purity
+  const now = Date.now();
+  const OFFLINE_THRESHOLD = 5 * 60 * 1000;
+
   const formattedUsers = users.map((user: UserWithSessions) => {
     const lastSession = user.sessions[0];
-    const isOnline = lastSession && new Date(lastSession.expires) > new Date();
+
+    // 5 minutes threshold for online status
+    const isOnline = user.lastSeen && now - new Date(user.lastSeen).getTime() < OFFLINE_THRESHOLD;
 
     return {
       ...user,
