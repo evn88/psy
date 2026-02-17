@@ -64,7 +64,9 @@ export function AdminUserRow({ user }: AdminUserRowProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuLabel className="font-normal text-xs text-muted-foreground">
+                Actions
+              </DropdownMenuLabel>
               <DropdownMenuItem onClick={() => navigator.clipboard.writeText(user.id)}>
                 Copy User ID
               </DropdownMenuItem>
