@@ -1,6 +1,6 @@
-"use client"
+'use client';
 
-import * as React from "react"
+import * as React from 'react';
 import {
   LayoutDashboard,
   LogOut,
@@ -8,21 +8,14 @@ import {
   User,
   Users,
   Home,
-  Moon,
-  Sun,
   ChevronsUpDown,
   Brain
-} from "lucide-react"
-import { usePathname } from "next/navigation"
-import Link from "next/link"
-import { signOut } from "next-auth/react"
-import { useTheme } from "next-themes"
+} from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
+import { signOut } from 'next-auth/react';
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,8 +23,8 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import {
   Sidebar,
   SidebarContent,
@@ -41,41 +34,34 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-  useSidebar,
-} from "@/components/ui/sidebar"
+  useSidebar
+} from '@/components/ui/sidebar';
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   user: {
-    name?: string | null
-    email?: string | null
-    image?: string | null
-  }
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  };
 }
 
 export function AppSidebar({ user, ...props }: AppSidebarProps) {
-  const pathname = usePathname()
-  const { setTheme, theme } = useTheme()
+  const pathname = usePathname();
 
   const routes = [
     {
-      title: "Dashboard",
-      url: "/admin",
+      title: 'Dashboard',
+      url: '/admin',
       icon: LayoutDashboard,
-      isActive: pathname === "/admin",
+      isActive: pathname === '/admin'
     },
     {
-      title: "Users",
-      url: "/admin/users",
+      title: 'Users',
+      url: '/admin/users',
       icon: Users,
-      isActive: pathname === "/admin/users",
-    },
-    {
-      title: "Settings",
-      url: "/admin/settings",
-      icon: Settings,
-      isActive: pathname === "/admin/settings",
-    },
-  ]
+      isActive: pathname === '/admin/users'
+    }
+  ];
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -98,7 +84,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
-          {routes.map((item) => (
+          {routes.map(item => (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton asChild isActive={item.isActive} tooltip={item.title}>
                 <Link href={item.url}>
@@ -120,8 +106,8 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                   className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                 >
                   <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarImage src={user.image || ""} alt={user.name || ""} />
-                    <AvatarFallback className="rounded-lg">{user.name?.[0] || "U"}</AvatarFallback>
+                    <AvatarImage src={user.image || ''} alt={user.name || ''} />
+                    <AvatarFallback className="rounded-lg">{user.name?.[0] || 'U'}</AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:!hidden">
                     <span className="truncate font-semibold">{user.name}</span>
@@ -139,8 +125,10 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                 <DropdownMenuLabel className="p-0 font-normal">
                   <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                     <Avatar className="h-8 w-8 rounded-lg">
-                      <AvatarImage src={user.image || ""} alt={user.name || ""} />
-                      <AvatarFallback className="rounded-lg">{user.name?.[0] || "U"}</AvatarFallback>
+                      <AvatarImage src={user.image || ''} alt={user.name || ''} />
+                      <AvatarFallback className="rounded-lg">
+                        {user.name?.[0] || 'U'}
+                      </AvatarFallback>
                     </Avatar>
                     <div className="grid flex-1 text-left text-sm leading-tight">
                       <span className="truncate font-semibold">{user.name}</span>
@@ -151,25 +139,30 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
                   <DropdownMenuItem asChild>
-                     <Link href="/profile" className="flex items-center cursor-pointer">
-                        <User className="mr-2 h-4 w-4" />
-                        Profile
-                     </Link>
+                    <Link href="/profile" className="flex items-center cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      Profile
+                    </Link>
                   </DropdownMenuItem>
-                   <DropdownMenuItem asChild>
-                      <Link href="/" className="flex items-center cursor-pointer">
-                        <Home className="mr-2 h-4 w-4" />
-                        Back to Site
-                      </Link>
+                  <DropdownMenuItem asChild>
+                    <Link href="/" className="flex items-center cursor-pointer">
+                      <Home className="mr-2 h-4 w-4" />
+                      Back to Site
+                    </Link>
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
-                    {theme === 'dark' ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
-                    Toggle Theme
+                <DropdownMenuItem asChild>
+                  <Link href="/admin/settings" className="flex items-center cursor-pointer">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/" })} className="text-red-600 focus:text-red-600 focus:bg-red-50">
+                <DropdownMenuItem
+                  onClick={() => signOut({ callbackUrl: '/' })}
+                  className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                >
                   <LogOut className="mr-2 h-4 w-4" />
                   Log out
                 </DropdownMenuItem>
@@ -180,5 +173,5 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }

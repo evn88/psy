@@ -1,85 +1,59 @@
-import { Prisma } from "@prisma/client"
-import prisma from "@/shared/lib/prisma"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import prisma from '@/shared/lib/prisma';
+import { Users, Activity } from 'lucide-react';
 
-type UserWithSessions = Prisma.UserGetPayload<{
-  include: { sessions: true }
-}>
+async function getStats() {
+  const userCount = await prisma.user.count();
 
-export default async function AdminPage() {
-  const users = await prisma.user.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: {
-        sessions: {
-            orderBy: { expires: 'desc' },
-            take: 1
-        }
+  // Count active sessions as a proxy for online users
+  // Count active sessions as a proxy for online users
+  const OFFLINE_THRESHOLD = 5 * 60 * 1000;
+  const activeThreshold = new Date(Date.now() - OFFLINE_THRESHOLD);
+
+  const activeSessionsCount = await prisma.user.count({
+    where: {
+      lastSeen: {
+        gt: activeThreshold
+      }
     }
-  })
+  });
+
+  return {
+    userCount,
+    activeSessionsCount
+  };
+}
+
+export default async function AdminDashboardPage() {
+  const { userCount, activeSessionsCount } = await getStats();
 
   return (
     <div className="space-y-4">
-        <div className="flex justify-between items-center">
-            <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-             {/* Note: In a real app, extract this to a client component <CreateUserDialog /> */}
-            <CreateUserDialog /> 
-        </div>
-        <Card>
-            <CardHeader>
-                <CardTitle>Users</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Email</TableHead>
-                            <TableHead>Role</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Joined</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {users.map((user: UserWithSessions) => {
-                            const lastSession = user.sessions[0]
-                            const isOnline = lastSession && new Date(lastSession.expires) > new Date()
-                            
-                            return (
-                                <TableRow key={user.id}>
-                                    <TableCell>{user.name || 'No Name'}</TableCell>
-                                    <TableCell>{user.email}</TableCell>
-                                    <TableCell>
-                                        <Badge variant={user.role === 'ADMIN' ? 'default' : 'secondary'}>
-                                            {user.role}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        {isOnline ? (
-                                            <Badge variant="outline" className="text-green-600 border-green-600">Online</Badge>
-                                        ) : (
-                                            <Badge variant="outline" className="text-gray-500">Offline</Badge>
-                                        )}
-                                    </TableCell>
-                                     <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
-                                </TableRow>
-                            )
-                        })}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
-    </div>
-  )
-}
+      <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
 
-// Simple Client Component for Create User (Mocked for single file for now, ideally separate)
-import { CreateUserDialog } from "./_components/create-user-dialog"
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{userCount}</div>
+            <p className="text-xs text-muted-foreground">Registered users on the platform</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Online Now</CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{activeSessionsCount}</div>
+            <p className="text-xs text-muted-foreground">Active sessions currently valid</p>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
