@@ -81,8 +81,8 @@ export const FlexibilitySection = () => {
           ))}
         </div>
         <p className="quote mt-8 text-gray-400 text-lg italic font-serif border-l-4 border-green-500 pl-4">
-          "Если вы можете это представить, <span className="text-green-400">amCharts</span> может
-          это нарисовать"
+          &quot;Если вы можете это представить, <span className="text-green-400">amCharts</span>{' '}
+          может это нарисовать&quot;
         </p>
       </div>
     </section>

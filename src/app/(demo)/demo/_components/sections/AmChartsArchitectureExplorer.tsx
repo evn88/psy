@@ -125,7 +125,8 @@ export default function AmChartsArchitectureExplorer() {
               onMouseLeave={handleMouseLeave}
             >
               <span className="c-keyword">let</span> root = am5.Root.
-              <span className="c-func">new</span>(<span className="c-string">"chartdiv"</span>);
+              <span className="c-func">new</span>(
+              <span className="c-string">&quot;chartdiv&quot;</span>);
             </div>
             <div className="mb-4"></div>
 
@@ -175,7 +176,7 @@ export default function AmChartsArchitectureExplorer() {
               onMouseEnter={() => handleMouseEnter('y-axis')}
               onMouseLeave={handleMouseLeave}
             >
-              <span className="c-comment">// Ось Y (Сетка и лейблы слева)</span>
+              <span className="c-comment">{'// Ось Y (Сетка и лейблы слева)'}</span>
             </div>
             <div
               className="interactive-line"
@@ -229,7 +230,7 @@ export default function AmChartsArchitectureExplorer() {
               onMouseEnter={() => handleMouseEnter('x-axis')}
               onMouseLeave={handleMouseLeave}
             >
-              <span className="c-comment">// Ось X (Категории снизу)</span>
+              <span className="c-comment">{'// Ось X (Категории снизу)'}</span>
             </div>
             <div
               className="interactive-line"
@@ -259,7 +260,8 @@ export default function AmChartsArchitectureExplorer() {
               onMouseEnter={() => handleMouseEnter('x-axis')}
               onMouseLeave={handleMouseLeave}
             >
-              renderer: xRenderer, categoryField: <span className="c-string">"category"</span>
+              renderer: xRenderer, categoryField:{' '}
+              <span className="c-string">&quot;category&quot;</span>
             </div>
             <div
               className="interactive-line pl-4"
@@ -283,7 +285,7 @@ export default function AmChartsArchitectureExplorer() {
               onMouseEnter={() => handleMouseEnter('series')}
               onMouseLeave={handleMouseLeave}
             >
-              <span className="c-comment">// Серия (Контейнер для всех столбцов)</span>
+              <span className="c-comment">{'// Серия (Контейнер для всех столбцов)'}</span>
             </div>
             <div
               className="interactive-line"
@@ -305,9 +307,9 @@ export default function AmChartsArchitectureExplorer() {
               onMouseEnter={() => handleMouseEnter('series')}
               onMouseLeave={handleMouseLeave}
             >
-              name: <span className="c-string">"Series 1"</span>, xAxis: xAxis, yAxis: yAxis,
-              valueYField: <span className="c-string">"value"</span>, categoryXField:{' '}
-              <span className="c-string">"category"</span>
+              name: <span className="c-string">&quot;Series 1&quot;</span>, xAxis: xAxis, yAxis:
+              yAxis, valueYField: <span className="c-string">&quot;value&quot;</span>,
+              categoryXField: <span className="c-string">&quot;category&quot;</span>
             </div>
             <div
               className="interactive-line pl-4"
@@ -331,7 +333,7 @@ export default function AmChartsArchitectureExplorer() {
               onMouseEnter={() => handleMouseEnter('column-template')}
               onMouseLeave={handleMouseLeave}
             >
-              <span className="c-comment">// Шаблон (Влияет на каждый столбец)</span>
+              <span className="c-comment">{'// Шаблон (Влияет на каждый столбец)'}</span>
             </div>
             <div
               className="interactive-line"
@@ -353,7 +355,7 @@ export default function AmChartsArchitectureExplorer() {
               onMouseLeave={handleMouseLeave}
             >
               fillOpacity: <span className="c-obj">0</span>{' '}
-              <span className="c-comment">// Скрываем стандартный прямоугольник</span>
+              <span className="c-comment">{'// Скрываем стандартный прямоугольник'}</span>
             </div>
             <div
               className="interactive-line"
@@ -369,7 +371,7 @@ export default function AmChartsArchitectureExplorer() {
               onMouseEnter={() => handleMouseEnter('svg-graphic')}
               onMouseLeave={handleMouseLeave}
             >
-              <span className="c-comment">// Добавляем "Гриб" внутрь столбца</span>
+              <span className="c-comment">{'// Добавляем "Гриб" внутрь столбца'}</span>
             </div>
             <div
               className="interactive-line"
@@ -390,11 +392,11 @@ export default function AmChartsArchitectureExplorer() {
               onMouseEnter={() => handleMouseEnter('svg-graphic')}
               onMouseLeave={handleMouseLeave}
             >
-              svgPath: <span className="c-string">"M..."</span>, width: am5.
+              svgPath: <span className="c-string">&quot;M...&quot;</span>, width: am5.
               <span className="c-obj">p100</span>,{' '}
-              <span className="c-comment">// Растянуть ширину</span>
+              <span className="c-comment">{'// Растянуть ширину'}</span>
               height: am5.<span className="c-obj">p100</span>{' '}
-              <span className="c-comment">// Растянуть высоту</span>
+              <span className="c-comment">{'// Растянуть высоту'}</span>
             </div>
             <div
               className="interactive-line pl-4"

@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/shared/lib/prisma";
 import { auth } from "@/auth";
 import { z } from "zod";
-
-const prisma = new PrismaClient();
 
 const updateProfileSchema = z.object({
   name: z.string().min(1, "Name is required"),
