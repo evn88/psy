@@ -119,29 +119,31 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-900 p-4">
-      <Card className="w-full max-w-md bg-gray-800 border-gray-700 text-white">
-        <CardHeader>
-          <CardTitle className="text-2xl text-center">Welcome Back</CardTitle>
-          <CardDescription className="text-gray-400 text-center">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md border-border shadow-lg">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold tracking-tight text-center">
+            Welcome Back
+          </CardTitle>
+          <CardDescription className="text-center">
             Sign in to access your account or create a new one.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-gray-700">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="register">Register</TabsTrigger>
             </TabsList>
 
             {error && (
-              <Alert variant="destructive" className="mt-4 bg-red-900 border-red-800 text-red-200">
+              <Alert variant="destructive" className="mb-6">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
 
             <TabsContent value="login">
-              <form onSubmit={handleLogin} className="space-y-4 mt-4">
+              <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="login-email">Email</Label>
                   <Input
@@ -151,7 +153,6 @@ export default function AuthPage() {
                     value={loginEmail}
                     onChange={e => setLoginEmail(e.target.value)}
                     required
-                    className="bg-gray-700 border-gray-600 focus:border-blue-500"
                   />
                 </div>
                 <div className="space-y-2">
@@ -162,21 +163,16 @@ export default function AuthPage() {
                     value={loginPassword}
                     onChange={e => setLoginPassword(e.target.value)}
                     required
-                    className="bg-gray-700 border-gray-600 focus:border-blue-500"
                   />
                 </div>
-                <Button
-                  type="submit"
-                  className="w-full bg-blue-600 hover:bg-blue-700"
-                  disabled={loading}
-                >
+                <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? 'Signing in...' : 'Sign In'}
                 </Button>
               </form>
             </TabsContent>
 
             <TabsContent value="register">
-              <form onSubmit={handleRegister} className="space-y-4 mt-4">
+              <form onSubmit={handleRegister} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="register-name">Name</Label>
                   <Input
@@ -185,7 +181,6 @@ export default function AuthPage() {
                     value={registerName}
                     onChange={e => setRegisterName(e.target.value)}
                     required
-                    className="bg-gray-700 border-gray-600 focus:border-blue-500"
                   />
                 </div>
                 <div className="space-y-2">
@@ -197,7 +192,6 @@ export default function AuthPage() {
                     value={registerEmail}
                     onChange={e => setRegisterEmail(e.target.value)}
                     required
-                    className="bg-gray-700 border-gray-600 focus:border-blue-500"
                   />
                 </div>
                 <div className="space-y-2">
@@ -208,14 +202,9 @@ export default function AuthPage() {
                     value={registerPassword}
                     onChange={e => setRegisterPassword(e.target.value)}
                     required
-                    className="bg-gray-700 border-gray-600 focus:border-blue-500"
                   />
                 </div>
-                <Button
-                  type="submit"
-                  className="w-full bg-blue-600 hover:bg-blue-700"
-                  disabled={loading}
-                >
+                <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? 'Creating Account...' : 'Create Account'}
                 </Button>
               </form>
@@ -224,20 +213,17 @@ export default function AuthPage() {
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-gray-600" />
+              <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-gray-800 px-2 text-gray-400">Or continue with</span>
+              <span className="bg-card px-2 text-muted-foreground border border-border shadow-sm rounded-md">
+                Or continue with
+              </span>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-2">
-            <Button
-              variant="outline"
-              type="button"
-              onClick={handleGoogleSignIn}
-              className="bg-white text-gray-900 hover:bg-gray-100"
-            >
+          <div className="grid grid-cols-2 gap-4">
+            <Button variant="outline" type="button" onClick={handleGoogleSignIn} className="w-full">
               <svg
                 className="mr-2 h-4 w-4"
                 aria-hidden="true"
@@ -259,7 +245,7 @@ export default function AuthPage() {
               variant="outline"
               type="button"
               onClick={handleWebAuthnSignIn}
-              className="bg-white text-gray-900 hover:bg-gray-100 mt-2"
+              className="w-full"
               disabled={loading}
             >
               <svg

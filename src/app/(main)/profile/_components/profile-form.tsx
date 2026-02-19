@@ -13,13 +13,15 @@ interface ProfileFormProps {
     name?: string | null;
     email?: string | null;
   };
+  hasPasskeys: boolean;
 }
 
-export function ProfileForm({ user }: ProfileFormProps) {
+export function ProfileForm({ user, hasPasskeys: initialHasPasskeys }: ProfileFormProps) {
   const router = useRouter();
   const { update } = useSession();
   const [name, setName] = useState(user.name ?? '');
   const [loading, setLoading] = useState(false);
+  const [hasPasskeys, setHasPasskeys] = useState(initialHasPasskeys);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,6 +72,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
       const verificationResult = await verifyResp.json();
 
       if (verificationResult.verified) {
+        setHasPasskeys(true);
         alert('Passkey created successfully!');
       } else {
         throw new Error(verificationResult.error || 'Failed to verify passkey');
@@ -99,6 +102,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
         method: 'DELETE'
       });
       if (res.ok) {
+        setHasPasskeys(false);
         alert('All passkeys cleared! You can now create a new one.');
       } else {
         alert('Failed to clear passkeys');
@@ -139,7 +143,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
               variant="destructive"
               type="button"
               onClick={handleClearPasskeys}
-              disabled={loading}
+              disabled={loading || !hasPasskeys}
             >
               Clear Passkeys
             </Button>
@@ -147,7 +151,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
               variant="outline"
               type="button"
               onClick={handleCreatePasskey}
-              disabled={loading}
+              disabled={loading || hasPasskeys}
             >
               Create Passkey
             </Button>
