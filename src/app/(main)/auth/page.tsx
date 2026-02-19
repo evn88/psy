@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
+import { signIn as webAuthnSignIn } from 'next-auth/webauthn';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -99,30 +100,50 @@ export default function AuthPage() {
     signIn('google', { callbackUrl: '/admin' });
   };
 
+  const handleWebAuthnSignIn = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const result = await webAuthnSignIn('webauthn', { redirect: false });
+      if (result?.error) {
+        setError('Passkey login failed or was canceled.');
+      } else {
+        router.push('/admin');
+        router.refresh();
+      }
+    } catch (err) {
+      setError('An unexpected error occurred with Passkey login.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-900 p-4">
-      <Card className="w-full max-w-md bg-gray-800 border-gray-700 text-white">
-        <CardHeader>
-          <CardTitle className="text-2xl text-center">Welcome Back</CardTitle>
-          <CardDescription className="text-gray-400 text-center">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md border-border shadow-lg">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold tracking-tight text-center">
+            Welcome Back
+          </CardTitle>
+          <CardDescription className="text-center">
             Sign in to access your account or create a new one.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-gray-700">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="register">Register</TabsTrigger>
             </TabsList>
 
             {error && (
-              <Alert variant="destructive" className="mt-4 bg-red-900 border-red-800 text-red-200">
+              <Alert variant="destructive" className="mb-6">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
 
             <TabsContent value="login">
-              <form onSubmit={handleLogin} className="space-y-4 mt-4">
+              <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="login-email">Email</Label>
                   <Input
@@ -132,7 +153,6 @@ export default function AuthPage() {
                     value={loginEmail}
                     onChange={e => setLoginEmail(e.target.value)}
                     required
-                    className="bg-gray-700 border-gray-600 focus:border-blue-500"
                   />
                 </div>
                 <div className="space-y-2">
@@ -143,21 +163,16 @@ export default function AuthPage() {
                     value={loginPassword}
                     onChange={e => setLoginPassword(e.target.value)}
                     required
-                    className="bg-gray-700 border-gray-600 focus:border-blue-500"
                   />
                 </div>
-                <Button
-                  type="submit"
-                  className="w-full bg-blue-600 hover:bg-blue-700"
-                  disabled={loading}
-                >
+                <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? 'Signing in...' : 'Sign In'}
                 </Button>
               </form>
             </TabsContent>
 
             <TabsContent value="register">
-              <form onSubmit={handleRegister} className="space-y-4 mt-4">
+              <form onSubmit={handleRegister} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="register-name">Name</Label>
                   <Input
@@ -166,7 +181,6 @@ export default function AuthPage() {
                     value={registerName}
                     onChange={e => setRegisterName(e.target.value)}
                     required
-                    className="bg-gray-700 border-gray-600 focus:border-blue-500"
                   />
                 </div>
                 <div className="space-y-2">
@@ -178,7 +192,6 @@ export default function AuthPage() {
                     value={registerEmail}
                     onChange={e => setRegisterEmail(e.target.value)}
                     required
-                    className="bg-gray-700 border-gray-600 focus:border-blue-500"
                   />
                 </div>
                 <div className="space-y-2">
@@ -189,14 +202,9 @@ export default function AuthPage() {
                     value={registerPassword}
                     onChange={e => setRegisterPassword(e.target.value)}
                     required
-                    className="bg-gray-700 border-gray-600 focus:border-blue-500"
                   />
                 </div>
-                <Button
-                  type="submit"
-                  className="w-full bg-blue-600 hover:bg-blue-700"
-                  disabled={loading}
-                >
+                <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? 'Creating Account...' : 'Create Account'}
                 </Button>
               </form>
@@ -205,20 +213,17 @@ export default function AuthPage() {
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-gray-600" />
+              <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-gray-800 px-2 text-gray-400">Or continue with</span>
+              <span className="bg-card px-2 text-muted-foreground border border-border shadow-sm rounded-md">
+                Or continue with
+              </span>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-2">
-            <Button
-              variant="outline"
-              type="button"
-              onClick={handleGoogleSignIn}
-              className="bg-white text-gray-900 hover:bg-gray-100"
-            >
+          <div className="grid grid-cols-2 gap-4">
+            <Button variant="outline" type="button" onClick={handleGoogleSignIn} className="w-full">
               <svg
                 className="mr-2 h-4 w-4"
                 aria-hidden="true"
@@ -235,6 +240,30 @@ export default function AuthPage() {
                 ></path>
               </svg>
               Google
+            </Button>
+            <Button
+              variant="outline"
+              type="button"
+              onClick={handleWebAuthnSignIn}
+              className="w-full"
+              disabled={loading}
+            >
+              <svg
+                className="mr-2 h-4 w-4"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+              Passkey
             </Button>
           </div>
         </CardContent>
