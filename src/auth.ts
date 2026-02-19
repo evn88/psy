@@ -7,6 +7,7 @@ import prisma from '@/shared/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { authConfig } from './auth.config';
+import { getRPID } from '@/app/api/profile/passkeys/register/config';
 
 async function getUser(email: string) {
   try {
@@ -28,10 +29,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google,
     WebAuthn({
       relayingParty: {
-        id:
-          process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.NEXT_PUBLIC_APP_URL
-            ? new URL(process.env.NEXT_PUBLIC_APP_URL as string).hostname
-            : 'localhost',
+        id: getRPID(),
         name: 'Vershkov App'
       }
     }),
