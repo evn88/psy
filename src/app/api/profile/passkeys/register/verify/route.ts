@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { verifyRegistrationResponse } from '@simplewebauthn/server';
 import prisma from '@/shared/lib/prisma';
 import { cookies } from 'next/headers';
-import { getRPID, rpID } from '../options/route';
+import { getRPID } from '../config';
 
 /**
  * POST handler для проверки и сохранения Passkey
