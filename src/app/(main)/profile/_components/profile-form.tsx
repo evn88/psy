@@ -5,6 +5,17 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from '@/components/ui/alert-dialog';
 import { useSession } from 'next-auth/react';
 import { startRegistration } from '@simplewebauthn/browser';
 
@@ -22,6 +33,18 @@ export function ProfileForm({ user, hasPasskeys: initialHasPasskeys }: ProfileFo
   const [name, setName] = useState(user.name ?? '');
   const [loading, setLoading] = useState(false);
   const [hasPasskeys, setHasPasskeys] = useState(initialHasPasskeys);
+
+  const [alertInfo, setAlertInfo] = useState<{ open: boolean; title: string; description: string }>(
+    {
+      open: false,
+      title: '',
+      description: ''
+    }
+  );
+
+  const showAlert = (title: string, description: string) => {
+    setAlertInfo({ open: true, title, description });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +67,7 @@ export function ProfileForm({ user, hasPasskeys: initialHasPasskeys }: ProfileFo
       router.refresh();
     } catch (error) {
       console.error(error);
-      alert('Failed to update profile');
+      showAlert('Error', 'Failed to update profile');
       setLoading(false);
     }
   };
@@ -73,7 +96,7 @@ export function ProfileForm({ user, hasPasskeys: initialHasPasskeys }: ProfileFo
 
       if (verificationResult.verified) {
         setHasPasskeys(true);
-        alert('Passkey created successfully!');
+        showAlert('Success', 'Passkey created successfully!');
       } else {
         throw new Error(verificationResult.error || 'Failed to verify passkey');
       }
@@ -83,19 +106,11 @@ export function ProfileForm({ user, hasPasskeys: initialHasPasskeys }: ProfileFo
         // пользователь отменил
         return;
       }
-      alert(`Failed to create passkey: ${error.message}`);
+      showAlert('Error', `Failed to create passkey: ${error.message}`);
     }
   };
 
   const handleClearPasskeys = async () => {
-    if (
-      !confirm(
-        "Are you sure you want to delete all saved passkeys? You won't be able to log in with them anymore."
-      )
-    ) {
-      return;
-    }
-
     setLoading(true);
     try {
       const res = await fetch('/api/profile/passkeys', {
@@ -103,61 +118,99 @@ export function ProfileForm({ user, hasPasskeys: initialHasPasskeys }: ProfileFo
       });
       if (res.ok) {
         setHasPasskeys(false);
-        alert('All passkeys cleared! You can now create a new one.');
+        showAlert('Success', 'All passkeys cleared! You can now create a new one.');
       } else {
-        alert('Failed to clear passkeys');
+        showAlert('Error', 'Failed to clear passkeys');
       }
     } catch (error) {
       console.error(error);
-      alert('Error clearing passkeys');
+      showAlert('Error', 'Error clearing passkeys');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid gap-2">
-        <Label htmlFor="name">Name</Label>
-        <div className="flex gap-2">
-          <Input id="name" value={name} onChange={e => setName(e.target.value)} />
-          <Button type="submit" disabled={loading}>
-            {loading ? 'Saving...' : 'Save'}
-          </Button>
-        </div>
-      </div>
-      <div className="grid gap-2">
-        <Label>Email</Label>
-        <Input defaultValue={user.email ?? ''} disabled className="bg-muted" />
-      </div>
-
-      <div className="grid gap-2 pt-4 border-t border-border">
-        <Label>Security</Label>
-        <div className="flex items-center justify-between rounded-lg border border-border p-4 bg-card">
-          <div className="space-y-0.5">
-            <div className="font-medium">Passkeys</div>
-            <div className="text-sm text-muted-foreground">Secure your account with a passkey.</div>
-          </div>
+    <>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid gap-2">
+          <Label htmlFor="name">Name</Label>
           <div className="flex gap-2">
-            <Button
-              variant="destructive"
-              type="button"
-              onClick={handleClearPasskeys}
-              disabled={loading || !hasPasskeys}
-            >
-              Clear Passkeys
-            </Button>
-            <Button
-              variant="outline"
-              type="button"
-              onClick={handleCreatePasskey}
-              disabled={loading || hasPasskeys}
-            >
-              Create Passkey
+            <Input id="name" value={name} onChange={e => setName(e.target.value)} />
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Saving...' : 'Save'}
             </Button>
           </div>
         </div>
-      </div>
-    </form>
+        <div className="grid gap-2">
+          <Label>Email</Label>
+          <Input defaultValue={user.email ?? ''} disabled className="bg-muted" />
+        </div>
+
+        <div className="grid gap-2 pt-4 border-t border-border">
+          <Label>Security</Label>
+          <div className="flex items-center justify-between rounded-lg border border-border p-4 bg-card">
+            <div className="space-y-0.5">
+              <div className="font-medium">Passkeys</div>
+              <div className="text-sm text-muted-foreground">
+                Secure your account with a passkey.
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" type="button" disabled={loading || !hasPasskeys}>
+                    Clear Passkeys
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete all your saved
+                      passkeys. You won&apos;t be able to log in with them anymore.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleClearPasskeys}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Delete Passkeys
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              <Button
+                variant="outline"
+                type="button"
+                onClick={handleCreatePasskey}
+                disabled={loading || hasPasskeys}
+              >
+                Create Passkey
+              </Button>
+            </div>
+          </div>
+        </div>
+      </form>
+
+      <AlertDialog
+        open={alertInfo.open}
+        onOpenChange={open => setAlertInfo(prev => ({ ...prev, open }))}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertInfo.title}</AlertDialogTitle>
+            <AlertDialogDescription>{alertInfo.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setAlertInfo(prev => ({ ...prev, open: false }))}>
+              OK
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
