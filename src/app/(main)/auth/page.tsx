@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
+import { signIn as webAuthnSignIn } from 'next-auth/webauthn';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -97,6 +98,24 @@ export default function AuthPage() {
 
   const handleGoogleSignIn = () => {
     signIn('google', { callbackUrl: '/admin' });
+  };
+
+  const handleWebAuthnSignIn = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const result = await webAuthnSignIn('webauthn', { redirect: false });
+      if (result?.error) {
+        setError('Passkey login failed or was canceled.');
+      } else {
+        router.push('/admin');
+        router.refresh();
+      }
+    } catch (err) {
+      setError('An unexpected error occurred with Passkey login.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -235,6 +254,30 @@ export default function AuthPage() {
                 ></path>
               </svg>
               Google
+            </Button>
+            <Button
+              variant="outline"
+              type="button"
+              onClick={handleWebAuthnSignIn}
+              className="bg-white text-gray-900 hover:bg-gray-100 mt-2"
+              disabled={loading}
+            >
+              <svg
+                className="mr-2 h-4 w-4"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+              Passkey
             </Button>
           </div>
         </CardContent>
