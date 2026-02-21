@@ -6,11 +6,13 @@ import {
   LogOut,
   Settings,
   User,
-  Users,
-  Home,
+  ClipboardList,
+  CalendarDays,
+  CreditCard,
+  FileText,
   ChevronsUpDown,
   Brain,
-  ClipboardList
+  Home
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -34,53 +36,75 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarRail
+  SidebarRail,
+  useSidebar
 } from '@/components/ui/sidebar';
 import { useTranslations } from 'next-intl';
 
-interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+interface MySidebarProps extends React.ComponentProps<typeof Sidebar> {
   user: {
     name?: string | null;
     email?: string | null;
     image?: string | null;
+    role?: string | null;
   };
 }
 
 /**
- * Sidebar компонент для админ-панели.
- * Содержит навигацию: Dashboard, Users, Surveys, Profile.
+ * Sidebar компонент для личного кабинета пользователя.
+ * Отображает навигацию в зависимости от роли (USER видит всё, GUEST — только Профиль).
  */
-export function AppSidebar({ user, ...props }: AppSidebarProps) {
+export const MySidebar = ({ user, ...props }: MySidebarProps) => {
   const pathname = usePathname();
-  const tItems = useTranslations('Admin.sidebarMenu');
+  const t = useTranslations('My.sidebarMenu');
   const tAuth = useTranslations('Auth');
 
-  const routes = [
+  const isGuest = user.role === 'GUEST';
+
+  /** Полный список маршрутов для роли USER */
+  const allRoutes = [
     {
-      title: tItems('dashboard'),
-      url: '/admin',
+      title: t('dashboard'),
+      url: '/my',
       icon: LayoutDashboard,
-      isActive: pathname === '/admin'
+      isActive: pathname === '/my'
     },
     {
-      title: tItems('users'),
-      url: '/admin/users',
-      icon: Users,
-      isActive: pathname.startsWith('/admin/users')
-    },
-    {
-      title: tItems('surveys'),
-      url: '/admin/surveys',
+      title: t('surveys'),
+      url: '/my/surveys',
       icon: ClipboardList,
-      isActive: pathname.startsWith('/admin/surveys')
+      isActive: pathname.startsWith('/my/surveys')
     },
     {
-      title: tItems('profile'),
-      url: '/admin/profile',
+      title: t('sessions'),
+      url: '/my/sessions',
+      icon: CalendarDays,
+      isActive: pathname.startsWith('/my/sessions')
+    },
+    {
+      title: t('payments'),
+      url: '/my/payments',
+      icon: CreditCard,
+      isActive: pathname.startsWith('/my/payments')
+    },
+    {
+      title: t('data'),
+      url: '/my/data',
+      icon: FileText,
+      isActive: pathname.startsWith('/my/data')
+    },
+    {
+      title: t('profile'),
+      url: '/my/profile',
       icon: User,
-      isActive: pathname.startsWith('/admin/profile')
+      isActive: pathname.startsWith('/my/profile')
     }
   ];
+
+  /** Маршруты для GUEST — только Профиль */
+  const guestRoutes = allRoutes.filter(r => r.url === '/my/profile');
+
+  const routes = isGuest ? guestRoutes : allRoutes;
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -88,12 +112,12 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
-              <Link href="/admin">
+              <Link href="/my">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                   <Brain className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:!hidden">
-                  <span className="truncate font-semibold">Vershkov Admin</span>
+                  <span className="truncate font-semibold">{t('title')}</span>
                   <span className="truncate text-xs">v1.0.0</span>
                 </div>
               </Link>
@@ -160,15 +184,15 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                   <DropdownMenuItem asChild>
                     <Link href="/" className="flex items-center cursor-pointer">
                       <Home className="mr-2 h-4 w-4" />
-                      {tItems('backToSite')}
+                      {t('backToSite')}
                     </Link>
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/admin/settings" className="flex items-center cursor-pointer">
+                  <Link href="/my/settings" className="flex items-center cursor-pointer">
                     <Settings className="mr-2 h-4 w-4" />
-                    {tItems('settings')}
+                    {t('settings')}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -187,4 +211,4 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
       <SidebarRail />
     </Sidebar>
   );
-}
+};

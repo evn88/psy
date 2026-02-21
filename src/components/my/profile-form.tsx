@@ -31,7 +31,7 @@ interface ProfileFormProps {
 /**
  * Форма профиля пользователя.
  * Позволяет обновить имя, управлять passkeys.
- * Использует next-intl для интернационализации.
+ * Используется как в личном кабинете (/my/profile), так и в админке (/admin/profile).
  */
 export const ProfileForm = ({ user, hasPasskeys: initialHasPasskeys }: ProfileFormProps) => {
   const t = useTranslations('Profile');
@@ -150,7 +150,7 @@ export const ProfileForm = ({ user, hasPasskeys: initialHasPasskeys }: ProfileFo
     <>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid gap-2">
-          <Label htmlFor="name">Name</Label>
+          <Label htmlFor="name">{t('nameLabel')}</Label>
           <div className="flex flex-col sm:flex-row gap-2">
             <Input id="name" value={name} onChange={e => setName(e.target.value)} />
             <Button type="submit" disabled={loading} className="w-full sm:w-auto">
