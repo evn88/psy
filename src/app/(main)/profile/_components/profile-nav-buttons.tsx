@@ -29,12 +29,12 @@ export const ProfileNavButtons = () => {
   };
 
   return (
-    <div className="flex gap-2 items-center">
-      <Button variant="outline" onClick={handleBack}>
+    <div className="flex flex-col sm:flex-row gap-2 items-center w-full sm:w-auto">
+      <Button variant="outline" onClick={handleBack} className="w-full sm:w-auto">
         <ArrowLeft className="w-4 h-4 mr-2" />
         {t('goBack')}
       </Button>
-      <Button variant="outline" onClick={handleHome}>
+      <Button variant="outline" onClick={handleHome} className="w-full sm:w-auto">
         <Home className="w-4 h-4 mr-2" />
         {t('goToHome')}
       </Button>

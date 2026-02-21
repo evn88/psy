@@ -1,7 +1,14 @@
 import { auth, signOut } from '@/auth';
 import { redirect } from 'next/navigation';
 import prisma from '@/shared/lib/prisma';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle
+} from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -37,21 +44,21 @@ export default async function ProfilePage() {
               <Label>{t('roleLabel')}</Label>
               <Input defaultValue={session.user.role ?? 'GUEST'} disabled className="bg-muted" />
             </div>
-
-            <div className="pt-4 border-t border-border mt-6 flex justify-between items-center">
-              <ProfileNavButtons />
-              <form
-                action={async () => {
-                  'use server';
-                  await signOut({ redirectTo: '/auth' });
-                }}
-              >
-                <Button variant="destructive" type="submit">
-                  {t('signOut')}
-                </Button>
-              </form>
-            </div>
           </CardContent>
+          <CardFooter className="px-6 pb-6 pt-4 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4">
+            <ProfileNavButtons />
+            <form
+              action={async () => {
+                'use server';
+                await signOut({ redirectTo: '/auth' });
+              }}
+              className="w-full sm:w-auto"
+            >
+              <Button variant="destructive" type="submit" className="w-full sm:w-auto">
+                {t('signOut')}
+              </Button>
+            </form>
+          </CardFooter>
         </Card>
       </div>
     </div>

@@ -263,7 +263,10 @@ export default function AuthPage() {
             </div>
           </div>
 
-          <div className={`grid gap-4 ${activeTab === 'login' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+          <div
+            className={`grid gap-4 ${activeTab === 'login' ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}
+          >
+            {' '}
             <Button variant="outline" type="button" onClick={handleGoogleSignIn} className="w-full">
               <svg
                 className="mr-2 h-4 w-4"
