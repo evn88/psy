@@ -21,18 +21,27 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import { useTranslations } from 'next-intl';
 
-export function CreateUserDialog() {
+/**
+ * Диалог создания нового пользователя.
+ * Использует next-intl для интернационализации.
+ */
+export const CreateUserDialog = () => {
+  const t = useTranslations('Admin');
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Form state
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('GUEST');
 
+  /**
+   * Отправляет запрос на создание пользователя.
+   * @param e - событие формы
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -45,19 +54,18 @@ export function CreateUserDialog() {
       });
 
       if (!res.ok) {
-        throw new Error('Failed to create user');
+        throw new Error(t('createFailed'));
       }
 
       setOpen(false);
       router.refresh();
-      // Reset form
       setName('');
       setEmail('');
       setPassword('');
       setRole('GUEST');
     } catch (error) {
       console.error(error);
-      alert('Failed to create user');
+      alert(t('createFailed'));
     } finally {
       setLoading(false);
     }
@@ -66,18 +74,18 @@ export function CreateUserDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>Create User</Button>
+        <Button>{t('createUser')}</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Create User</DialogTitle>
-            <DialogDescription>Add a new user to the system.</DialogDescription>
+            <DialogTitle>{t('createUser')}</DialogTitle>
+            <DialogDescription>{t('createUserDescription')}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">
-                Name
+                {t('nameLabel')}
               </Label>
               <Input
                 id="name"
@@ -89,7 +97,7 @@ export function CreateUserDialog() {
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="email" className="text-right">
-                Email
+                {t('emailLabel')}
               </Label>
               <Input
                 id="email"
@@ -102,7 +110,7 @@ export function CreateUserDialog() {
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="password" className="text-right">
-                Password
+                {t('passwordLabel')}
               </Label>
               <Input
                 id="password"
@@ -116,26 +124,26 @@ export function CreateUserDialog() {
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="role" className="text-right">
-                Role
+                {t('roleLabel')}
               </Label>
               <Select value={role} onValueChange={setRole}>
                 <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select a role" />
+                  <SelectValue placeholder={t('selectRole')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="GUEST">Guest</SelectItem>
-                  <SelectItem value="ADMIN">Admin</SelectItem>
+                  <SelectItem value="GUEST">{t('roleGuest')}</SelectItem>
+                  <SelectItem value="ADMIN">{t('roleAdmin')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Creating...' : 'Create'}
+              {loading ? t('creating') : t('create')}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
   );
-}
+};

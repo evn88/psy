@@ -13,6 +13,7 @@ import {
 import { deleteUser } from '../actions';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 interface DeleteUserDialogProps {
   userId: string;
@@ -20,11 +21,19 @@ interface DeleteUserDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function DeleteUserDialog({ userId, open, onOpenChange }: DeleteUserDialogProps) {
+/**
+ * Диалог подтверждения удаления пользователя.
+ * Использует next-intl для интернационализации.
+ */
+export const DeleteUserDialog = ({ userId, open, onOpenChange }: DeleteUserDialogProps) => {
+  const t = useTranslations('Admin');
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  async function onDelete() {
+  /**
+   * Выполняет удаление пользователя через server action.
+   */
+  const onDelete = async () => {
     setLoading(true);
     const result = await deleteUser(userId);
     setLoading(false);
@@ -35,20 +44,17 @@ export function DeleteUserDialog({ userId, open, onOpenChange }: DeleteUserDialo
     } else {
       console.error(result.error);
     }
-  }
+  };
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete the user account and remove
-            their data from our servers.
-          </AlertDialogDescription>
+          <AlertDialogTitle>{t('deleteUserTitle')}</AlertDialogTitle>
+          <AlertDialogDescription>{t('deleteUserDescription')}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={loading}>{t('cancel')}</AlertDialogCancel>
           <AlertDialogAction
             onClick={e => {
               e.preventDefault();
@@ -56,10 +62,10 @@ export function DeleteUserDialog({ userId, open, onOpenChange }: DeleteUserDialo
             }}
             disabled={loading}
           >
-            {loading ? 'Deleting...' : 'Continue'}
+            {loading ? t('deleting') : t('delete')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   );
-}
+};

@@ -36,6 +36,7 @@ import {
   SidebarRail,
   useSidebar
 } from '@/components/ui/sidebar';
+import { useTranslations } from 'next-intl';
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   user: {
@@ -47,6 +48,8 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 
 export function AppSidebar({ user, ...props }: AppSidebarProps) {
   const pathname = usePathname();
+  const tItems = useTranslations('Admin.sidebarMenu');
+  const tAuth = useTranslations('Auth');
 
   const routes = [
     {
@@ -141,13 +144,13 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                   <DropdownMenuItem asChild>
                     <Link href="/profile" className="flex items-center cursor-pointer">
                       <User className="mr-2 h-4 w-4" />
-                      Profile
+                      {tItems('profile')}
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/" className="flex items-center cursor-pointer">
                       <Home className="mr-2 h-4 w-4" />
-                      Back to Site
+                      {tItems('backToSite')}
                     </Link>
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
@@ -155,7 +158,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                 <DropdownMenuItem asChild>
                   <Link href="/admin/settings" className="flex items-center cursor-pointer">
                     <Settings className="mr-2 h-4 w-4" />
-                    Settings
+                    {tItems('settings')}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -164,7 +167,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                   className="text-red-600 focus:text-red-600 focus:bg-red-50"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  Log out
+                  {tAuth('signOut')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

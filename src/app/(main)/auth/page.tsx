@@ -7,18 +7,53 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useTranslations } from 'next-intl';
+
+/**
+ * Определяет язык браузера пользователя и возвращает поддерживаемый locale.
+ * Если язык не поддерживается — возвращает 'en' по умолчанию.
+ * @returns 'en' | 'ru'
+ */
+const detectBrowserLanguage = (): 'en' | 'ru' => {
+  if (typeof navigator === 'undefined') return 'en';
+
+  const supportedLocales: string[] = ['en', 'ru'];
+  const languages = navigator.languages?.length ? navigator.languages : [navigator.language];
+
+  for (const lang of languages) {
+    const code = lang.split('-')[0].toLowerCase();
+    if (supportedLocales.includes(code)) {
+      return code as 'en' | 'ru';
+    }
+  }
+
+  return 'en';
+};
+
+/**
+ * Сохраняет язык пользователя в БД и устанавливает cookie NEXT_LOCALE.
+ * Вызывается после успешной авторизации или регистрации.
+ * @param locale - определённый или выбранный locale
+ */
+const applyUserLanguage = async (locale: 'en' | 'ru'): Promise<void> => {
+  document.cookie = `NEXT_LOCALE=${locale}; path=/; max-age=31536000; SameSite=Lax`;
+
+  try {
+    await fetch('/api/settings/language', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ language: locale })
+    });
+  } catch {
+    // Не критично — cookie уже установлено
+  }
+};
 
 export default function AuthPage() {
+  const t = useTranslations('Auth');
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -46,13 +81,15 @@ export default function AuthPage() {
       });
 
       if (result?.error) {
-        setError('Invalid email or password');
+        setError(t('invalidCredentials'));
       } else {
+        const detectedLocale = detectBrowserLanguage();
+        await applyUserLanguage(detectedLocale);
         router.push('/admin');
         router.refresh();
       }
-    } catch (err) {
-      setError('An unexpected error occurred');
+    } catch {
+      setError(t('unexpectedError'));
     } finally {
       setLoading(false);
     }
@@ -64,8 +101,6 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
-      // Implement registration logic here (likely a server action or API route)
-      // For now, let's assume we have an API endpoint /api/auth/register
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         body: JSON.stringify({
@@ -78,7 +113,7 @@ export default function AuthPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.message || 'Registration failed');
+        throw new Error(data.message || t('registrationFailed'));
       }
 
       // Auto login after registration
@@ -88,16 +123,21 @@ export default function AuthPage() {
         redirect: false
       });
 
+      const detectedLocale = detectBrowserLanguage();
+      await applyUserLanguage(detectedLocale);
+
       router.push('/admin');
       router.refresh();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : t('unexpectedError'));
     } finally {
       setLoading(false);
     }
   };
 
   const handleGoogleSignIn = () => {
+    const detectedLocale = detectBrowserLanguage();
+    document.cookie = `NEXT_LOCALE=${detectedLocale}; path=/; max-age=31536000; SameSite=Lax`;
     signIn('google', { callbackUrl: '/admin' });
   };
 
@@ -107,13 +147,15 @@ export default function AuthPage() {
     try {
       const result = await webAuthnSignIn('webauthn', { redirect: false });
       if (result?.error) {
-        setError('Passkey login failed or was canceled.');
+        setError(t('passkeyFailed'));
       } else {
+        const detectedLocale = detectBrowserLanguage();
+        await applyUserLanguage(detectedLocale);
         router.push('/admin');
         router.refresh();
       }
-    } catch (err) {
-      setError('An unexpected error occurred with Passkey login.');
+    } catch {
+      setError(t('passkeyError'));
     } finally {
       setLoading(false);
     }
@@ -124,17 +166,15 @@ export default function AuthPage() {
       <Card className="w-full max-w-md border-border shadow-lg">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold tracking-tight text-center">
-            Welcome Back
+            {t('title')}
           </CardTitle>
-          <CardDescription className="text-center">
-            Sign in to access your account or create a new one.
-          </CardDescription>
+          <CardDescription className="text-center">{t('description')}</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Register</TabsTrigger>
+              <TabsTrigger value="login">{t('loginTab')}</TabsTrigger>
+              <TabsTrigger value="register">{t('registerTab')}</TabsTrigger>
             </TabsList>
 
             {error && (
@@ -146,7 +186,7 @@ export default function AuthPage() {
             <TabsContent value="login">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
+                  <Label htmlFor="login-email">{t('emailLabel')}</Label>
                   <Input
                     id="login-email"
                     type="email"
@@ -157,7 +197,7 @@ export default function AuthPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="login-password">Password</Label>
+                  <Label htmlFor="login-password">{t('passwordLabel')}</Label>
                   <Input
                     id="login-password"
                     type="password"
@@ -167,7 +207,7 @@ export default function AuthPage() {
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Signing in...' : 'Sign In'}
+                  {loading ? t('signingIn') : t('signInButton')}
                 </Button>
               </form>
             </TabsContent>
@@ -175,17 +215,17 @@ export default function AuthPage() {
             <TabsContent value="register">
               <form onSubmit={handleRegister} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="register-name">Name</Label>
+                  <Label htmlFor="register-name">{t('nameLabel')}</Label>
                   <Input
                     id="register-name"
-                    placeholder="John Doe"
+                    placeholder={t('namePlaceholder')}
                     value={registerName}
                     onChange={e => setRegisterName(e.target.value)}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="register-email">Email</Label>
+                  <Label htmlFor="register-email">{t('emailLabel')}</Label>
                   <Input
                     id="register-email"
                     type="email"
@@ -196,7 +236,7 @@ export default function AuthPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="register-password">Password</Label>
+                  <Label htmlFor="register-password">{t('passwordLabel')}</Label>
                   <Input
                     id="register-password"
                     type="password"
@@ -206,7 +246,7 @@ export default function AuthPage() {
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Creating Account...' : 'Create Account'}
+                  {loading ? t('creatingAccount') : t('createAccount')}
                 </Button>
               </form>
             </TabsContent>
@@ -218,7 +258,7 @@ export default function AuthPage() {
             </div>
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-card px-2 text-muted-foreground border border-border shadow-sm rounded-md">
-                Or continue with
+                {t('orContinueWith')}
               </span>
             </div>
           </div>

@@ -7,6 +7,8 @@ import { Providers } from '@/shared/Providers';
 import { Inter } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
 import { HeartbeatProvider } from '@/components/heartbeat-provider';
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
@@ -29,24 +31,29 @@ type RootLayoutType = Readonly<{
 }>;
 
 // Uncomment the navigation bar when the site is ready.
-const RootLayout: FC<RootLayoutType> = ({ children }) => {
+const RootLayout: FC<RootLayoutType> = async ({ children }) => {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="ru" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <Providers>
         <body className={inter.className}>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <HeartbeatProvider>
-              {/*<Navbar />*/}
-              <main className="px-4 md:px-0">{children}</main>
-              <Analytics />
-              <SpeedInsights />
-            </HeartbeatProvider>
-          </ThemeProvider>
+          <NextIntlClientProvider locale={locale} messages={messages}>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <HeartbeatProvider>
+                {/*<Navbar />*/}
+                <main className="px-4 md:px-0">{children}</main>
+                <Analytics />
+                <SpeedInsights />
+              </HeartbeatProvider>
+            </ThemeProvider>
+          </NextIntlClientProvider>
         </body>
       </Providers>
     </html>

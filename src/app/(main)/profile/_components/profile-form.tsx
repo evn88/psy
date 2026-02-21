@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useSession } from 'next-auth/react';
 import { startRegistration } from '@simplewebauthn/browser';
+import { useTranslations } from 'next-intl';
 
 interface ProfileFormProps {
   user: {
@@ -27,7 +28,13 @@ interface ProfileFormProps {
   hasPasskeys: boolean;
 }
 
-export function ProfileForm({ user, hasPasskeys: initialHasPasskeys }: ProfileFormProps) {
+/**
+ * Форма профиля пользователя.
+ * Позволяет обновить имя, управлять passkeys.
+ * Использует next-intl для интернационализации.
+ */
+export const ProfileForm = ({ user, hasPasskeys: initialHasPasskeys }: ProfileFormProps) => {
+  const t = useTranslations('Profile');
   const router = useRouter();
   const { update } = useSession();
   const [name, setName] = useState(user.name ?? '');
@@ -42,10 +49,19 @@ export function ProfileForm({ user, hasPasskeys: initialHasPasskeys }: ProfileFo
     }
   );
 
+  /**
+   * Отображает информационное диалоговое окно.
+   * @param title - заголовок диалога
+   * @param description - описание
+   */
   const showAlert = (title: string, description: string) => {
     setAlertInfo({ open: true, title, description });
   };
 
+  /**
+   * Отправляет запрос на обновление имени пользователя.
+   * @param e - событие формы
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -58,23 +74,23 @@ export function ProfileForm({ user, hasPasskeys: initialHasPasskeys }: ProfileFo
       });
 
       if (!res.ok) {
-        throw new Error('Failed to update profile');
+        throw new Error(t('updateFailed'));
       }
 
-      // Update session
       await update({ name });
-
       router.refresh();
     } catch (error) {
       console.error(error);
-      showAlert('Error', 'Failed to update profile');
+      showAlert(t('errorTitle'), t('updateFailed'));
       setLoading(false);
     }
   };
 
+  /**
+   * Запускает процесс создания нового passkey через WebAuthn.
+   */
   const handleCreatePasskey = async () => {
     try {
-      // 1. Получаем опции с сервера
       const resp = await fetch('/api/profile/passkeys/register/options');
       const options = await resp.json();
 
@@ -82,10 +98,8 @@ export function ProfileForm({ user, hasPasskeys: initialHasPasskeys }: ProfileFo
         throw new Error(options.error);
       }
 
-      // 2. Открываем системный диалог для создания ключа
       const attResp = await startRegistration(options);
 
-      // 3. Отправляем ответ обратно на сервер для проверки и сохранения
       const verifyResp = await fetch('/api/profile/passkeys/register/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -96,20 +110,23 @@ export function ProfileForm({ user, hasPasskeys: initialHasPasskeys }: ProfileFo
 
       if (verificationResult.verified) {
         setHasPasskeys(true);
-        showAlert('Success', 'Passkey created successfully!');
+        showAlert(t('successTitle'), t('passkeySuccess'));
       } else {
-        throw new Error(verificationResult.error || 'Failed to verify passkey');
+        throw new Error(verificationResult.error || t('passkeyVerifyFailed'));
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
-      if (error.name === 'NotAllowedError') {
-        // пользователь отменил
+      if (error instanceof Error && error.name === 'NotAllowedError') {
         return;
       }
-      showAlert('Error', `Failed to create passkey: ${error.message}`);
+      const message = error instanceof Error ? error.message : t('passkeyCreateFailed');
+      showAlert(t('errorTitle'), `${t('passkeyCreateFailed')}: ${message}`);
     }
   };
 
+  /**
+   * Удаляет все passkeys пользователя.
+   */
   const handleClearPasskeys = async () => {
     setLoading(true);
     try {
@@ -118,13 +135,12 @@ export function ProfileForm({ user, hasPasskeys: initialHasPasskeys }: ProfileFo
       });
       if (res.ok) {
         setHasPasskeys(false);
-        showAlert('Success', 'All passkeys cleared! You can now create a new one.');
+        showAlert(t('successTitle'), t('clearSuccess'));
       } else {
-        showAlert('Error', 'Failed to clear passkeys');
+        showAlert(t('errorTitle'), t('clearFailed'));
       }
-    } catch (error) {
-      console.error(error);
-      showAlert('Error', 'Error clearing passkeys');
+    } catch {
+      showAlert(t('errorTitle'), t('clearError'));
     } finally {
       setLoading(false);
     }
@@ -134,50 +150,47 @@ export function ProfileForm({ user, hasPasskeys: initialHasPasskeys }: ProfileFo
     <>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid gap-2">
-          <Label htmlFor="name">Name</Label>
+          <Label htmlFor="name">{t('nameLabel')}</Label>
           <div className="flex gap-2">
             <Input id="name" value={name} onChange={e => setName(e.target.value)} />
             <Button type="submit" disabled={loading}>
-              {loading ? 'Saving...' : 'Save'}
+              {loading ? t('saving') : t('save')}
             </Button>
           </div>
         </div>
         <div className="grid gap-2">
-          <Label>Email</Label>
+          <Label>{t('emailLabel')}</Label>
           <Input defaultValue={user.email ?? ''} disabled className="bg-muted" />
         </div>
 
         <div className="grid gap-2 pt-4 border-t border-border">
-          <Label>Security</Label>
+          <Label>{t('securityLabel')}</Label>
           <div className="flex items-center justify-between rounded-lg border border-border p-4 bg-card">
             <div className="space-y-0.5">
-              <div className="font-medium">Passkeys</div>
-              <div className="text-sm text-muted-foreground">
-                Secure your account with a passkey.
-              </div>
+              <div className="font-medium">{t('passkeysTitle')}</div>
+              <div className="text-sm text-muted-foreground">{t('passkeysDescription')}</div>
             </div>
             <div className="flex gap-2">
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive" type="button" disabled={loading || !hasPasskeys}>
-                    Clear Passkeys
+                    {t('clearPasskeys')}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogTitle>{t('clearPasskeysConfirmTitle')}</AlertDialogTitle>
                     <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete all your saved
-                      passkeys. You won&apos;t be able to log in with them anymore.
+                      {t('clearPasskeysConfirmDescription')}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={handleClearPasskeys}
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
-                      Delete Passkeys
+                      {t('deletePasskeys')}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -188,7 +201,7 @@ export function ProfileForm({ user, hasPasskeys: initialHasPasskeys }: ProfileFo
                 onClick={handleCreatePasskey}
                 disabled={loading || hasPasskeys}
               >
-                Create Passkey
+                {t('createPasskey')}
               </Button>
             </div>
           </div>
@@ -206,11 +219,11 @@ export function ProfileForm({ user, hasPasskeys: initialHasPasskeys }: ProfileFo
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogAction onClick={() => setAlertInfo(prev => ({ ...prev, open: false }))}>
-              OK
+              {t('ok')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>
   );
-}
+};

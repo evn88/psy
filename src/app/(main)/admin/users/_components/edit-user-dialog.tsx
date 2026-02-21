@@ -32,6 +32,7 @@ import { z } from 'zod';
 import { updateUser } from '../actions';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 const formSchema = z.object({
   id: z.string(),
@@ -60,7 +61,12 @@ interface EditUserDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps) {
+/**
+ * Диалог редактирования пользователя.
+ * Использует next-intl для интернационализации.
+ */
+export const EditUserDialog = ({ user, open, onOpenChange }: EditUserDialogProps) => {
+  const t = useTranslations('Admin');
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -75,7 +81,11 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
     }
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  /**
+   * Отправляет форму редактирования пользователя.
+   * @param values - данные формы
+   */
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
     const result = await updateUser(values);
     setLoading(false);
@@ -84,19 +94,16 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
       onOpenChange(false);
       router.refresh();
     } else {
-      // TODO: Handle error (e.g., toast)
       console.error(result.error);
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Edit User</DialogTitle>
-          <DialogDescription>
-            Make changes to the user profile here. Click save when you&apos;re done.
-          </DialogDescription>
+          <DialogTitle>{t('editUserTitle')}</DialogTitle>
+          <DialogDescription>{t('editUserDescription')}</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -105,7 +112,7 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>{t('nameLabel')}</FormLabel>
                   <FormControl>
                     <Input placeholder="John Doe" {...field} />
                   </FormControl>
@@ -118,7 +125,7 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>{t('emailLabel')}</FormLabel>
                   <FormControl>
                     <Input placeholder="john@example.com" {...field} />
                   </FormControl>
@@ -131,7 +138,7 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>New Password</FormLabel>
+                  <FormLabel>{t('passwordLabel')}</FormLabel>
                   <FormControl>
                     <Input type="password" placeholder="Leave empty to keep current" {...field} />
                   </FormControl>
@@ -144,16 +151,16 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
               name="role"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Role</FormLabel>
+                  <FormLabel>{t('roleLabel')}</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a role" />
+                        <SelectValue placeholder={t('selectRole')} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value={Role.ADMIN}>Admin</SelectItem>
-                      <SelectItem value={Role.GUEST}>Guest</SelectItem>
+                      <SelectItem value={Role.ADMIN}>{t('roleAdmin')}</SelectItem>
+                      <SelectItem value={Role.GUEST}>{t('roleGuest')}</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -162,7 +169,7 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
             />
             <DialogFooter>
               <Button type="submit" disabled={loading}>
-                {loading ? 'Saving...' : 'Save changes'}
+                {loading ? t('saving') : t('save')}
               </Button>
             </DialogFooter>
           </form>
@@ -170,4 +177,4 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
       </DialogContent>
     </Dialog>
   );
-}
+};
