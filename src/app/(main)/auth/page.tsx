@@ -22,6 +22,7 @@ export default function AuthPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('login');
 
   // Login Form States
   const [loginEmail, setLoginEmail] = useState('');
@@ -130,7 +131,7 @@ export default function AuthPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="login" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="register">Register</TabsTrigger>
@@ -222,7 +223,7 @@ export default function AuthPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className={`grid gap-4 ${activeTab === 'login' ? 'grid-cols-2' : 'grid-cols-1'}`}>
             <Button variant="outline" type="button" onClick={handleGoogleSignIn} className="w-full">
               <svg
                 className="mr-2 h-4 w-4"
@@ -241,30 +242,32 @@ export default function AuthPage() {
               </svg>
               Google
             </Button>
-            <Button
-              variant="outline"
-              type="button"
-              onClick={handleWebAuthnSignIn}
-              className="w-full"
-              disabled={loading}
-            >
-              <svg
-                className="mr-2 h-4 w-4"
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+            {activeTab === 'login' && (
+              <Button
+                variant="outline"
+                type="button"
+                onClick={handleWebAuthnSignIn}
+                className="w-full"
+                disabled={loading}
               >
-                <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
-              Passkey
-            </Button>
+                <svg
+                  className="mr-2 h-4 w-4"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                Passkey
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
