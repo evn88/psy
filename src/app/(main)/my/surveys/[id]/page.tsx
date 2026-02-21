@@ -2,6 +2,7 @@ import { auth } from '@/auth';
 import { redirect, notFound } from 'next/navigation';
 import prisma from '@/shared/lib/prisma';
 import { SurveyForm } from '../_components/survey-form';
+import { BreadcrumbSetter } from '@/components/breadcrumb-setter';
 import type { QuestionType } from '@prisma/client';
 
 interface SurveyPageProps {
@@ -52,11 +53,14 @@ export default async function TakeSurveyPage({ params }: SurveyPageProps) {
   );
 
   return (
-    <SurveyForm
-      assignmentId={assignment.id}
-      surveyTitle={assignment.survey.title}
-      surveyDescription={assignment.survey.description}
-      questions={mappedQuestions}
-    />
+    <>
+      <BreadcrumbSetter segment={id} title={assignment.survey.title} />
+      <SurveyForm
+        assignmentId={assignment.id}
+        surveyTitle={assignment.survey.title}
+        surveyDescription={assignment.survey.description}
+        questions={mappedQuestions}
+      />
+    </>
   );
 }

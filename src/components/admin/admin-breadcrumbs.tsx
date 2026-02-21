@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/breadcrumb';
 import React from 'react';
 import Link from 'next/link';
+import { useBreadcrumbContext } from '@/components/breadcrumb-context';
 
 const routeNameMap: Record<string, string> = {
   admin: 'Dashboard',
@@ -21,11 +22,15 @@ const routeNameMap: Record<string, string> = {
   create: 'Create'
 };
 
-export function AdminBreadcrumbs() {
+/**
+ * Breadcrumbs для админ-панели.
+ * Поддерживает динамические сегменты через BreadcrumbContext.
+ */
+export const AdminBreadcrumbs = () => {
   const pathname = usePathname();
+  const { dynamicSegments } = useBreadcrumbContext();
   const segments = (pathname || '').split('/').filter(Boolean);
 
-  // Remove 'admin' from segments to handle it separately as root or first item
   const adminIndex = segments.indexOf('admin');
   const displaySegments = segments.slice(adminIndex + 1);
 
@@ -41,10 +46,13 @@ export function AdminBreadcrumbs() {
         {displaySegments.map((segment, index) => {
           const isLast = index === displaySegments.length - 1;
           const href = `/admin/${displaySegments.slice(0, index + 1).join('/')}`;
-          const name = routeNameMap[segment] || segment.charAt(0).toUpperCase() + segment.slice(1);
+          const name =
+            dynamicSegments[segment] ??
+            routeNameMap[segment] ??
+            segment.charAt(0).toUpperCase() + segment.slice(1);
 
           return (
-            <React.Fragment key={segment}>
+            <React.Fragment key={`${segment}-${index}`}>
               <BreadcrumbItem>
                 {isLast ? (
                   <BreadcrumbPage>{name}</BreadcrumbPage>
@@ -66,4 +74,4 @@ export function AdminBreadcrumbs() {
       </BreadcrumbList>
     </Breadcrumb>
   );
-}
+};

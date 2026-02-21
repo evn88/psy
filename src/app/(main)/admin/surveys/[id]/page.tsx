@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import prisma from '@/shared/lib/prisma';
 import { SurveyDetail } from '../_components/survey-detail';
+import { BreadcrumbSetter } from '@/components/breadcrumb-setter';
 import type { QuestionType, AssignmentStatus } from '@prisma/client';
 
 interface SurveyDetailPageProps {
@@ -38,9 +39,9 @@ export default async function SurveyDetailPage({ params }: SurveyDetailPageProps
     notFound();
   }
 
-  // Все пользователи с ролями USER и GUEST
+  // Все пользователи кроме GUEST
   const allUsers = await prisma.user.findMany({
-    where: { role: { in: ['USER', 'GUEST'] } },
+    where: { role: { not: 'GUEST' } },
     select: { id: true, name: true, email: true }
   });
 
@@ -98,13 +99,16 @@ export default async function SurveyDetailPage({ params }: SurveyDetailPageProps
   );
 
   return (
-    <SurveyDetail
-      surveyId={survey.id}
-      title={survey.title}
-      description={survey.description}
-      questions={mappedQuestions}
-      assignments={mappedAssignments}
-      allUsers={allUsers}
-    />
+    <>
+      <BreadcrumbSetter segment={id} title={survey.title} />
+      <SurveyDetail
+        surveyId={survey.id}
+        title={survey.title}
+        description={survey.description}
+        questions={mappedQuestions}
+        assignments={mappedAssignments}
+        allUsers={allUsers}
+      />
+    </>
   );
 }
