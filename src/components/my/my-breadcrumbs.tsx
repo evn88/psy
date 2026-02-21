@@ -11,41 +11,43 @@ import {
 } from '@/components/ui/breadcrumb';
 import React from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useBreadcrumbContext } from '@/components/breadcrumb-context';
 
-const routeNameMap: Record<string, string> = {
-  admin: 'Dashboard',
-  users: 'Users',
-  settings: 'Settings',
-  surveys: 'Surveys',
-  profile: 'Profile',
-  create: 'Create'
-};
-
 /**
- * Breadcrumbs для админ-панели.
+ * Breadcrumbs компонент для навигации внутри личного кабинета.
  * Поддерживает динамические сегменты через BreadcrumbContext.
  */
-export const AdminBreadcrumbs = () => {
+export const MyBreadcrumbs = () => {
   const pathname = usePathname();
+  const t = useTranslations('My.breadcrumbs');
   const { dynamicSegments } = useBreadcrumbContext();
   const segments = (pathname || '').split('/').filter(Boolean);
 
-  const adminIndex = segments.indexOf('admin');
-  const displaySegments = segments.slice(adminIndex + 1);
+  const myIndex = segments.indexOf('my');
+  const displaySegments = segments.slice(myIndex + 1);
+
+  const routeNameMap: Record<string, string> = {
+    profile: t('profile'),
+    surveys: t('surveys'),
+    sessions: t('sessions'),
+    payments: t('payments'),
+    data: t('data'),
+    settings: t('settings')
+  };
 
   return (
     <Breadcrumb>
       <BreadcrumbList>
         <BreadcrumbItem className="hidden md:block">
           <BreadcrumbLink asChild>
-            <Link href="/admin">Admin Panel</Link>
+            <Link href="/my">{t('home')}</Link>
           </BreadcrumbLink>
         </BreadcrumbItem>
         {displaySegments.length > 0 && <BreadcrumbSeparator className="hidden md:block" />}
         {displaySegments.map((segment, index) => {
           const isLast = index === displaySegments.length - 1;
-          const href = `/admin/${displaySegments.slice(0, index + 1).join('/')}`;
+          const href = `/my/${displaySegments.slice(0, index + 1).join('/')}`;
           const name =
             dynamicSegments[segment] ??
             routeNameMap[segment] ??
@@ -68,7 +70,7 @@ export const AdminBreadcrumbs = () => {
         })}
         {displaySegments.length === 0 && (
           <BreadcrumbItem>
-            <BreadcrumbPage>Dashboard</BreadcrumbPage>
+            <BreadcrumbPage>{t('dashboard')}</BreadcrumbPage>
           </BreadcrumbItem>
         )}
       </BreadcrumbList>

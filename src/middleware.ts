@@ -31,9 +31,10 @@ const resolveLocale = (req: NextRequest): string => {
 
 export default auth(req => {
   const isLoggedIn = !!req.auth;
-  const isAuthPage = req.nextUrl.pathname.startsWith('/auth');
-  const isAdminRoute = req.nextUrl.pathname.startsWith('/admin');
-  const isProfileRoute = req.nextUrl.pathname.startsWith('/profile');
+  const pathname = req.nextUrl.pathname;
+  const isAuthPage = pathname.startsWith('/auth');
+  const isAdminRoute = pathname.startsWith('/admin');
+  const isMyRoute = pathname.startsWith('/my');
 
   // Устанавливаем cookie NEXT_LOCALE если оно ещё не задано
   const resolvedLocale = resolveLocale(req);
@@ -42,10 +43,15 @@ export default auth(req => {
   if (isAuthPage) {
     if (isLoggedIn) {
       // @ts-ignore
-      if (req.auth?.user?.role === 'ADMIN') {
+      const role = req.auth?.user?.role;
+      if (role === 'ADMIN') {
         return NextResponse.redirect(new URL('/admin', req.nextUrl));
       }
-      return NextResponse.redirect(new URL('/profile', req.nextUrl));
+      if (role === 'USER') {
+        return NextResponse.redirect(new URL('/my', req.nextUrl));
+      }
+      // GUEST → только профиль в ЛК
+      return NextResponse.redirect(new URL('/my/profile', req.nextUrl));
     }
 
     if (!hasLocaleCookie) {
@@ -63,15 +69,28 @@ export default auth(req => {
     }
     // @ts-ignore
     if (req.auth.user.role !== 'ADMIN') {
-      return NextResponse.redirect(new URL('/profile', req.nextUrl));
+      return NextResponse.redirect(new URL('/my', req.nextUrl));
     }
     return null;
   }
 
-  if (isProfileRoute) {
+  if (isMyRoute) {
     if (!isLoggedIn) {
       return NextResponse.redirect(new URL('/auth', req.nextUrl));
     }
+
+    // @ts-ignore
+    const role = req.auth?.user?.role;
+
+    // GUEST может видеть только /my/profile и /my/settings
+    if (role === 'GUEST') {
+      const allowedGuestPaths = ['/my/profile', '/my/settings'];
+      const isAllowed = allowedGuestPaths.some(p => pathname.startsWith(p));
+      if (!isAllowed) {
+        return NextResponse.redirect(new URL('/my/profile', req.nextUrl));
+      }
+    }
+
     return null;
   }
 });
