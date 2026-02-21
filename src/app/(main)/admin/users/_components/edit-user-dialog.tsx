@@ -160,6 +160,7 @@ export const EditUserDialog = ({ user, open, onOpenChange }: EditUserDialogProps
                     </FormControl>
                     <SelectContent>
                       <SelectItem value={Role.ADMIN}>{t('roleAdmin')}</SelectItem>
+                      <SelectItem value={Role.USER}>{t('roleUser')}</SelectItem>
                       <SelectItem value={Role.GUEST}>{t('roleGuest')}</SelectItem>
                     </SelectContent>
                   </Select>

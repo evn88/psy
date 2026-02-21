@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { signIn } from 'next-auth/react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,11 +14,8 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger
+  AlertDialogTitle
 } from '@/components/ui/alert-dialog';
-import { useSession, signIn } from 'next-auth/react';
-import { startRegistration } from '@simplewebauthn/browser';
 import { useTranslations } from 'next-intl';
 
 interface ProfileFormProps {
@@ -27,140 +25,73 @@ interface ProfileFormProps {
   };
   hasPasskeys: boolean;
   isGoogleLinked: boolean;
+  googleLinkedAt?: Date | null;
 }
 
 /**
- * Форма профиля пользователя.
- * Позволяет обновить имя, управлять passkeys.
- * Используется как в личном кабинете (/my/profile), так и в админке (/admin/profile).
+ * Форма управления профилем пользователя.
+ * Позволяет обновлять имя, управлять passkeys и привязкой Google.
  */
 export const ProfileForm = ({
   user,
   hasPasskeys: initialHasPasskeys,
-  isGoogleLinked: initialIsGoogleLinked
+  isGoogleLinked: initialIsGoogleLinked,
+  googleLinkedAt
 }: ProfileFormProps) => {
   const t = useTranslations('Profile');
   const router = useRouter();
-  const { update } = useSession();
-  const [name, setName] = useState(user.name ?? '');
   const [loading, setLoading] = useState(false);
-  const [hasPasskeys, setHasPasskeys] = useState(initialHasPasskeys);
+  const [name, setName] = useState(user.name || '');
   const [isGoogleLinked, setIsGoogleLinked] = useState(initialIsGoogleLinked);
-
-  const [alertInfo, setAlertInfo] = useState<{ open: boolean; title: string; description: string }>(
-    {
-      open: false,
-      title: '',
-      description: ''
-    }
-  );
+  const [showAlertOpen, setShowAlertOpen] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({ title: '', message: '' });
 
   /**
-   * Отображает информационное диалоговое окно.
-   * @param title - заголовок диалога
-   * @param description - описание
+   * Показывает диалоговое окно с сообщением.
    */
-  const showAlert = (title: string, description: string) => {
-    setAlertInfo({ open: true, title, description });
+  const showAlert = (title: string, message: string) => {
+    setAlertConfig({ title, message });
+    setShowAlertOpen(true);
   };
 
   /**
-   * Отправляет запрос на обновление имени пользователя.
-   * @param e - событие формы
+   * Обрабатывает сохранение имени пользователя.
    */
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       const res = await fetch('/api/profile/update', {
-        method: 'PUT',
+        method: 'POST',
         body: JSON.stringify({ name }),
         headers: { 'Content-Type': 'application/json' }
       });
 
-      if (!res.ok) {
-        throw new Error(t('updateFailed'));
-      }
-
-      await update({ name });
-      router.refresh();
-    } catch (error) {
-      console.error(error);
-      showAlert(t('errorTitle'), t('updateFailed'));
-      setLoading(false);
-    }
-  };
-
-  /**
-   * Запускает процесс создания нового passkey через WebAuthn.
-   */
-  const handleCreatePasskey = async () => {
-    try {
-      const resp = await fetch('/api/profile/passkeys/register/options');
-      const options = await resp.json();
-
-      if (options.error) {
-        throw new Error(options.error);
-      }
-
-      const attResp = await startRegistration(options);
-
-      const verifyResp = await fetch('/api/profile/passkeys/register/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(attResp)
-      });
-
-      const verificationResult = await verifyResp.json();
-
-      if (verificationResult.verified) {
-        setHasPasskeys(true);
-        showAlert(t('successTitle'), t('passkeySuccess'));
-      } else {
-        throw new Error(verificationResult.error || t('passkeyVerifyFailed'));
-      }
-    } catch (error: unknown) {
-      console.error(error);
-      if (error instanceof Error && error.name === 'NotAllowedError') {
-        return;
-      }
-      const message = error instanceof Error ? error.message : t('passkeyCreateFailed');
-      showAlert(t('errorTitle'), `${t('passkeyCreateFailed')}: ${message}`);
-    }
-  };
-
-  /**
-   * Удаляет все passkeys пользователя.
-   */
-  const handleClearPasskeys = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/profile/passkeys', {
-        method: 'DELETE'
-      });
       if (res.ok) {
-        setHasPasskeys(false);
-        showAlert(t('successTitle'), t('clearSuccess'));
+        router.refresh();
+        showAlert(t('successTitle'), t('successTitle'));
       } else {
-        showAlert(t('errorTitle'), t('clearFailed'));
+        showAlert(t('errorTitle'), t('updateFailed'));
       }
     } catch {
-      showAlert(t('errorTitle'), t('clearError'));
+      showAlert(t('errorTitle'), t('updateFailed'));
     } finally {
       setLoading(false);
     }
   };
+
   /**
-   * Запускает процесс привязки Google аккаунта.
+   * Инициирует привязку Google аккаунта.
    */
   const handleLinkGoogle = async () => {
     setLoading(true);
+    // При входе через провайдера NextAuth автоматически привяжет аккаунт к текущему пользователю
     await signIn('google', { callbackUrl: window.location.href });
   };
 
   /**
-   * Отвязывает Google аккаунт.
+   * Обрабатывает отвязку Google аккаунта.
    */
   const handleUnlinkGoogle = async () => {
     setLoading(true);
@@ -183,74 +114,29 @@ export const ProfileForm = ({
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSave} className="space-y-4">
         <div className="grid gap-2">
           <Label htmlFor="name">{t('nameLabel')}</Label>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Input id="name" value={name} onChange={e => setName(e.target.value)} />
-            <Button type="submit" disabled={loading} className="w-full sm:w-auto">
-              {loading ? t('saving') : t('save')}
-            </Button>
-          </div>
+          <Input
+            id="name"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            disabled={loading}
+          />
         </div>
+
         <div className="grid gap-2">
-          <Label>{t('emailLabel')}</Label>
-          <Input defaultValue={user.email ?? ''} disabled className="bg-muted" />
+          <Label htmlFor="email">{t('emailLabel')}</Label>
+          <Input id="email" value={user.email || ''} disabled className="bg-muted" />
         </div>
 
-        <div className="grid gap-2 pt-4 border-t border-border">
-          <Label>{t('securityLabel')}</Label>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border border-border p-4 bg-card">
-            <div className="space-y-0.5">
-              <div className="font-medium">{t('passkeysTitle')}</div>
-              <div className="text-sm text-muted-foreground">{t('passkeysDescription')}</div>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="destructive"
-                    type="button"
-                    disabled={loading || !hasPasskeys}
-                    className="w-full sm:w-auto"
-                  >
-                    {t('clearPasskeys')}
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>{t('clearPasskeysConfirmTitle')}</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      {t('clearPasskeysConfirmDescription')}
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleClearPasskeys}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      {t('deletePasskeys')}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-              <Button
-                variant="outline"
-                type="button"
-                onClick={handleCreatePasskey}
-                disabled={loading || hasPasskeys}
-                className="w-full sm:w-auto"
-              >
-                {t('createPasskey')}
-              </Button>
-            </div>
-          </div>
-        </div>
+        <Button type="submit" disabled={loading || name === user.name}>
+          {loading ? t('saving') : t('save')}
+        </Button>
 
-        <div className="grid gap-2 pt-4 border-t border-border">
+        <div className="pt-4 border-t border-border">
           <Label>{t('googleAccount')}</Label>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border border-border p-4 bg-card">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border border-border p-4 bg-card mt-2">
             <div className="space-y-0.5">
               <div className="font-medium">{t('googleAccount')}</div>
               <div className="text-sm text-muted-foreground">{t('googleAccountDescription')}</div>
@@ -297,22 +183,27 @@ export const ProfileForm = ({
               )}
             </div>
           </div>
+          {isGoogleLinked && (
+            <div className="text-sm text-muted-foreground mt-2">
+              <span className="font-medium text-foreground">{t('linkedAccount')} </span>
+              {t('linkedAccountInfo', {
+                name: user.name || 'N/A',
+                email: user.email || 'N/A',
+                date: googleLinkedAt ? new Date(googleLinkedAt).toLocaleDateString('ru-RU') : 'N/A'
+              })}
+            </div>
+          )}
         </div>
       </form>
 
-      <AlertDialog
-        open={alertInfo.open}
-        onOpenChange={open => setAlertInfo(prev => ({ ...prev, open }))}
-      >
+      <AlertDialog open={showAlertOpen} onOpenChange={setShowAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{alertInfo.title}</AlertDialogTitle>
-            <AlertDialogDescription>{alertInfo.description}</AlertDialogDescription>
+            <AlertDialogTitle>{alertConfig.title}</AlertDialogTitle>
+            <AlertDialogDescription>{alertConfig.message}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setAlertInfo(prev => ({ ...prev, open: false }))}>
-              {t('ok')}
-            </AlertDialogAction>
+            <AlertDialogAction onClick={() => setShowAlertOpen(false)}>{t('ok')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -27,6 +27,7 @@ export default async function MyProfilePage() {
   const googleAccount = await prisma.account.findFirst({
     where: { userId: session.user.id, provider: 'google' }
   });
+  const googleLinkedAt = googleAccount?.createdAt;
   const isGoogleLinked = !!googleAccount;
 
   return (
@@ -42,6 +43,7 @@ export default async function MyProfilePage() {
             user={session.user}
             hasPasskeys={hasPasskeys}
             isGoogleLinked={isGoogleLinked}
+            googleLinkedAt={googleLinkedAt}
           />
 
           <div className="grid gap-2">

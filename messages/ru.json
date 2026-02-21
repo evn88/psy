@@ -71,6 +71,8 @@
     "googleSuccess": "Google аккаунт привязан!",
     "googleUnlinkSuccess": "Google аккаунт отвязан!",
     "googleError": "Ошибка при работе с Google аккаунтом",
+    "linkedAccount": "Привязан аккаунт:",
+    "linkedAccountInfo": "Имя: {name}, Email: {email}, Дата привязки: {date}",
     "signOut": "Выйти",
     "ok": "OK",
     "errorTitle": "Ошибка",

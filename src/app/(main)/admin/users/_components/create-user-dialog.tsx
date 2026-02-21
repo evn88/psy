@@ -132,6 +132,7 @@ export const CreateUserDialog = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="GUEST">{t('roleGuest')}</SelectItem>
+                  <SelectItem value="USER">{t('roleUser')}</SelectItem>
                   <SelectItem value="ADMIN">{t('roleAdmin')}</SelectItem>
                 </SelectContent>
               </Select>

@@ -47,7 +47,13 @@ export const AdminUserRow = ({ user }: AdminUserRowProps) => {
         <TableCell>{user.name || t('noName')}</TableCell>
         <TableCell>{user.email}</TableCell>
         <TableCell>
-          <Badge variant={user.role === 'ADMIN' ? 'default' : 'secondary'}>{user.role}</Badge>
+          <Badge
+            variant={
+              user.role === 'ADMIN' ? 'default' : user.role === 'USER' ? 'outline' : 'secondary'
+            }
+          >
+            {user.role}
+          </Badge>
         </TableCell>
         <TableCell>
           {user.isOnline ? (
