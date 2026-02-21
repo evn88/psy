@@ -135,9 +135,9 @@ export function ProfileForm({ user, hasPasskeys: initialHasPasskeys }: ProfileFo
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid gap-2">
           <Label htmlFor="name">Name</Label>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Input id="name" value={name} onChange={e => setName(e.target.value)} />
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="w-full sm:w-auto">
               {loading ? 'Saving...' : 'Save'}
             </Button>
           </div>
@@ -149,17 +149,22 @@ export function ProfileForm({ user, hasPasskeys: initialHasPasskeys }: ProfileFo
 
         <div className="grid gap-2 pt-4 border-t border-border">
           <Label>Security</Label>
-          <div className="flex items-center justify-between rounded-lg border border-border p-4 bg-card">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border border-border p-4 bg-card">
             <div className="space-y-0.5">
               <div className="font-medium">Passkeys</div>
               <div className="text-sm text-muted-foreground">
                 Secure your account with a passkey.
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive" type="button" disabled={loading || !hasPasskeys}>
+                  <Button
+                    variant="destructive"
+                    type="button"
+                    disabled={loading || !hasPasskeys}
+                    className="w-full sm:w-auto"
+                  >
                     Clear Passkeys
                   </Button>
                 </AlertDialogTrigger>
@@ -187,6 +192,7 @@ export function ProfileForm({ user, hasPasskeys: initialHasPasskeys }: ProfileFo
                 type="button"
                 onClick={handleCreatePasskey}
                 disabled={loading || hasPasskeys}
+                className="w-full sm:w-auto"
               >
                 Create Passkey
               </Button>
