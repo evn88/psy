@@ -164,7 +164,14 @@
     "completedAt": "Пройден {date}",
     "textPlaceholder": "Введите ваш ответ...",
     "submit": "Отправить ответы",
-    "submitting": "Отправляю..."
+    "submitting": "Отправляю...",
+    "viewResults": "Посмотреть результаты",
+    "resultsTitle": "Результаты опроса",
+    "yourAnswers": "Ваши ответы",
+    "commentsTitle": "Обсуждение с администратором",
+    "addCommentPlaceholder": "Напишите ответ...",
+    "sendReply": "Отправить",
+    "noComments": "Комментариев пока нет."
   },
   "AdminSurveys": {
     "title": "Опросы",

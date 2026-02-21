@@ -34,7 +34,7 @@ interface SurveyComment {
   id: string;
   text: string;
   createdAt: string;
-  admin: { name: string | null };
+  author: { name: string | null };
 }
 
 interface SurveyResultData {
@@ -241,7 +241,7 @@ export const SurveyDetail = ({
                               <div key={comment.id} className="p-2 rounded border bg-card text-sm">
                                 <p>{comment.text}</p>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                  {comment.admin.name} ·{' '}
+                                  {comment.author.name || 'User'} ·{' '}
                                   {new Date(comment.createdAt).toLocaleDateString('ru-RU')}
                                 </p>
                               </div>

@@ -185,8 +185,8 @@ model SurveyComment {
   id       String       @id @default(cuid())
   resultId String
   result   SurveyResult @relation(fields: [resultId], references: [id], onDelete: Cascade)
-  adminId  String
-  admin    User         @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  authorId String
+  author   User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
   text     String
 
   createdAt DateTime @default(now())

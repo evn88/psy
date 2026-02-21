@@ -83,13 +83,18 @@ export default async function MySurveysPage() {
                     <Link href={`/my/surveys/${assignment.id}`}>{t('startSurvey')}</Link>
                   </Button>
                 ) : (
-                  <p className="text-sm text-muted-foreground">
-                    {t('completedAt', {
-                      date: assignment.result?.completedAt
-                        ? new Date(assignment.result.completedAt).toLocaleDateString('ru-RU')
-                        : ''
-                    })}
-                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                    <p className="text-sm text-muted-foreground">
+                      {t('completedAt', {
+                        date: assignment.result?.completedAt
+                          ? new Date(assignment.result.completedAt).toLocaleDateString('ru-RU')
+                          : ''
+                      })}
+                    </p>
+                    <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
+                      <Link href={`/my/surveys/${assignment.id}`}>{t('viewResults')}</Link>
+                    </Button>
+                  </div>
                 )}
               </CardContent>
             </Card>

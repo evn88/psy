@@ -164,7 +164,14 @@
     "completedAt": "Completed on {date}",
     "textPlaceholder": "Enter your answer...",
     "submit": "Submit Answers",
-    "submitting": "Submitting..."
+    "submitting": "Submitting...",
+    "viewResults": "View Results",
+    "resultsTitle": "Survey Results",
+    "yourAnswers": "Your Answers",
+    "commentsTitle": "Discussion with Administrator",
+    "addCommentPlaceholder": "Write a reply...",
+    "sendReply": "Send",
+    "noComments": "No comments yet."
   },
   "AdminSurveys": {
     "title": "Surveys",

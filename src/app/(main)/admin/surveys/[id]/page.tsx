@@ -25,7 +25,7 @@ export default async function SurveyDetailPage({ params }: SurveyDetailPageProps
           result: {
             include: {
               comments: {
-                include: { admin: { select: { name: true } } },
+                include: { author: { select: { name: true } } },
                 orderBy: { createdAt: 'asc' }
               }
             }
@@ -68,7 +68,7 @@ export default async function SurveyDetailPage({ params }: SurveyDetailPageProps
           id: string;
           text: string;
           createdAt: Date;
-          admin: { name: string | null };
+          author: { name: string | null };
         }>;
       } | null;
     }) => ({
@@ -85,12 +85,12 @@ export default async function SurveyDetailPage({ params }: SurveyDetailPageProps
                 id: string;
                 text: string;
                 createdAt: Date;
-                admin: { name: string | null };
+                author: { name: string | null };
               }) => ({
                 id: c.id,
                 text: c.text,
                 createdAt: c.createdAt.toISOString(),
-                admin: c.admin
+                author: c.author
               })
             )
           }

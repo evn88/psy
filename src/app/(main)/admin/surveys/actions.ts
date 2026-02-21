@@ -98,7 +98,7 @@ export const addComment = async (resultId: string, text: string) => {
     await prisma.surveyComment.create({
       data: {
         resultId,
-        adminId: session.user.id,
+        authorId: session.user.id,
         text
       }
     });
