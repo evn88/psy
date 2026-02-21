@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ProfileForm } from './_components/profile-form';
+import { ProfileNavButtons } from './_components/profile-nav-buttons';
 
 export default async function ProfilePage() {
   const session = await auth();
@@ -35,7 +36,8 @@ export default async function ProfilePage() {
               <Input defaultValue={session.user.role ?? 'GUEST'} disabled className="bg-muted" />
             </div>
 
-            <div className="pt-4 border-t border-border mt-6">
+            <div className="pt-4 border-t border-border mt-6 flex justify-between items-center">
+              <ProfileNavButtons />
               <form
                 action={async () => {
                   'use server';
