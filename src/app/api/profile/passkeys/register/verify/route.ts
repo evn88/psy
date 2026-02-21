@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { verifyRegistrationResponse } from '@simplewebauthn/server';
 import prisma from '@/shared/lib/prisma';
 import { cookies } from 'next/headers';
-import { getRPID } from '../config';
+import { getRPID, getExpectedOrigin } from '../config';
 
 /**
  * POST handler для проверки и сохранения Passkey
@@ -36,10 +36,7 @@ export async function POST(req: Request) {
     let verification;
     try {
       const currentRpID = getRPID();
-      const origin =
-        process.env.NEXT_PUBLIC_APP_URL ||
-        process.env.VERCEL_PROJECT_PRODUCTION_URL ||
-        `http://localhost:${process.env.PORT || 3000}`;
+      const origin = getExpectedOrigin();
 
       verification = await verifyRegistrationResponse({
         response: body,
