@@ -14,9 +14,11 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ProfileForm } from './_components/profile-form';
 import { ProfileNavButtons } from './_components/profile-nav-buttons';
+import { getTranslations } from 'next-intl/server';
 
 export default async function ProfilePage() {
   const session = await auth();
+  const t = await getTranslations('Profile');
 
   if (!session?.user) {
     redirect('/auth');
@@ -32,14 +34,14 @@ export default async function ProfilePage() {
       <div className="container mx-auto">
         <Card className="max-w-2xl mx-auto bg-card text-card-foreground border-border">
           <CardHeader>
-            <CardTitle>Profile</CardTitle>
-            <CardDescription>Manage your account settings.</CardDescription>
+            <CardTitle>{t('title')}</CardTitle>
+            <CardDescription>{t('description')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <ProfileForm user={session.user} hasPasskeys={hasPasskeys} />
 
             <div className="grid gap-2">
-              <Label>Role</Label>
+              <Label>{t('roleLabel')}</Label>
               <Input defaultValue={session.user.role ?? 'GUEST'} disabled className="bg-muted" />
             </div>
           </CardContent>
@@ -53,7 +55,7 @@ export default async function ProfilePage() {
               className="w-full sm:w-auto"
             >
               <Button variant="destructive" type="submit" className="w-full sm:w-auto">
-                Sign Out
+                {t('signOut')}
               </Button>
             </form>
           </CardFooter>

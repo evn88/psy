@@ -17,6 +17,7 @@ import { TableCell, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { EditUserDialog } from './edit-user-dialog';
 import { DeleteUserDialog } from './delete-user-dialog';
+import { useTranslations } from 'next-intl';
 
 interface AdminUserRowProps {
   user: {
@@ -26,19 +27,24 @@ interface AdminUserRowProps {
     role: Role;
     createdAt: Date;
     sessions: { expires: Date }[];
-    isOnline: boolean;
+    isOnline: boolean | null;
     fmtCreatedAt: string;
   };
 }
 
-export function AdminUserRow({ user }: AdminUserRowProps) {
+/**
+ * Строка таблицы пользователя в admin-панели.
+ * Использует next-intl для интернационализации.
+ */
+export const AdminUserRow = ({ user }: AdminUserRowProps) => {
+  const t = useTranslations('Admin');
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   return (
     <>
       <TableRow>
-        <TableCell>{user.name || 'No Name'}</TableCell>
+        <TableCell>{user.name || t('noName')}</TableCell>
         <TableCell>{user.email}</TableCell>
         <TableCell>
           <Badge variant={user.role === 'ADMIN' ? 'default' : 'secondary'}>{user.role}</Badge>
@@ -46,11 +52,11 @@ export function AdminUserRow({ user }: AdminUserRowProps) {
         <TableCell>
           {user.isOnline ? (
             <Badge variant="outline" className="text-green-600 border-green-600">
-              Online
+              {t('online')}
             </Badge>
           ) : (
             <Badge variant="outline" className="text-gray-500">
-              Offline
+              {t('offline')}
             </Badge>
           )}
         </TableCell>
@@ -59,21 +65,23 @@ export function AdminUserRow({ user }: AdminUserRowProps) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
+                <span className="sr-only">{t('actions')}</span>
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel className="font-normal text-xs text-muted-foreground">
-                Actions
+                {t('actions')}
               </DropdownMenuLabel>
               <DropdownMenuItem onClick={() => navigator.clipboard.writeText(user.id)}>
-                Copy User ID
+                {t('copyId')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setShowEditDialog(true)}>Edit User</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowEditDialog(true)}>
+                {t('editUser')}
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-red-600">
-                Delete User
+                {t('deleteUser')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -88,4 +96,4 @@ export function AdminUserRow({ user }: AdminUserRowProps) {
       />
     </>
   );
-}
+};

@@ -2,9 +2,11 @@ import { auth } from '@/auth';
 import prisma from '@/shared/lib/prisma';
 import { redirect } from 'next/navigation';
 import { SettingsForm } from './_components/settings-form';
+import { getTranslations } from 'next-intl/server';
 
 export default async function SettingsPage() {
   const session = await auth();
+  const t = await getTranslations('Settings');
 
   if (!session?.user?.id) {
     redirect('/auth/signin');
@@ -21,10 +23,10 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
+      <h2 className="text-3xl font-bold tracking-tight">{t('title')}</h2>
       <SettingsForm
         initialSettings={{
-          language: user.language || 'ru',
+          language: user.language || 'en',
           theme: user.theme || 'system'
         }}
       />
