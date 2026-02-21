@@ -24,6 +24,11 @@ export default async function MyProfilePage() {
   });
   const hasPasskeys = authenticatorCount > 0;
 
+  const googleAccount = await prisma.account.findFirst({
+    where: { userId: session.user.id, provider: 'google' }
+  });
+  const isGoogleLinked = !!googleAccount;
+
   return (
     <div className="space-y-4">
       <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">{t('title')}</h2>
@@ -33,7 +38,11 @@ export default async function MyProfilePage() {
           <CardDescription>{t('description')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <ProfileForm user={session.user} hasPasskeys={hasPasskeys} />
+          <ProfileForm
+            user={session.user}
+            hasPasskeys={hasPasskeys}
+            isGoogleLinked={isGoogleLinked}
+          />
 
           <div className="grid gap-2">
             <Label>{t('roleLabel')}</Label>

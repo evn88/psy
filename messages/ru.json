@@ -36,7 +36,9 @@
     "unexpectedError": "Произошла непредвиденная ошибка",
     "registrationFailed": "Ошибка регистрации",
     "passkeyFailed": "Вход с помощью Passkey не удался или был отменён.",
-    "passkeyError": "Произошла непредвиденная ошибка при входе с Passkey."
+    "passkeyError": "Произошла непредвиденная ошибка при входе с Passkey.",
+    "userExists": "Пользователь с таким email уже зарегистрирован другим способом. Пожалуйста, войдите с помощью пароля или привяжите Google аккаунт в профиле.",
+    "oauthAccountNotLinked": "Этот Google аккаунт не привязан к вашему профилю. Привяжите его в настройках профиля."
   },
   "Profile": {
     "title": "Профиль",
@@ -62,6 +64,13 @@
     "passkeySuccess": "Passkey успешно создан!",
     "passkeyVerifyFailed": "Не удалось верифицировать passkey",
     "passkeyCreateFailed": "Не удалось создать passkey",
+    "googleAccount": "Аккаунт Google",
+    "googleAccountDescription": "Привяжите ваш Google аккаунт для быстрого входа.",
+    "linkGoogle": "Привязать Google",
+    "unlinkGoogle": "Отвязать",
+    "googleSuccess": "Google аккаунт привязан!",
+    "googleUnlinkSuccess": "Google аккаунт отвязан!",
+    "googleError": "Ошибка при работе с Google аккаунтом",
     "signOut": "Выйти",
     "ok": "OK",
     "errorTitle": "Ошибка",

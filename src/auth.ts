@@ -26,7 +26,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma) as any,
   session: { strategy: 'jwt' },
   providers: [
-    Google,
+    Google({
+      allowDangerousEmailAccountLinking: true
+    }),
     WebAuthn({
       relayingParty: {
         id: getRPID(),
@@ -83,6 +85,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     // which rely on the initial login token data.
 
     async signIn({ user, account, profile }) {
+      if (account?.provider === 'google') {
+        const existingUser = await prisma.user.findUnique({
+          where: { email: user.email as string },
+          include: { accounts: true }
+        });
+
+        if (existingUser) {
+          const isLinkedInDB = existingUser.accounts.some((acc: any) => acc.provider === 'google');
+          // If the account is NOT linked yet and it's NOT the special user
+          if (!isLinkedInDB && user.email !== 'evn88fx64@gmail.com') {
+            // Check if user was trying to register or sign in.
+            // If they have a password, they already have an account.
+            return '/auth?error=UserExists';
+          }
+        }
+      }
+
       if (user.email === 'evn88fx64@gmail.com') {
         // Force ADMIN role in database if not already set
         // @ts-ignore

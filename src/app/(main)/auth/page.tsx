@@ -11,6 +11,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useTranslations } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
+import { useEffect } from 'react';
 
 /**
  * Определяет язык браузера пользователя и возвращает поддерживаемый locale.
@@ -55,9 +57,19 @@ const applyUserLanguage = async (locale: 'en' | 'ru'): Promise<void> => {
 export default function AuthPage() {
   const t = useTranslations('Auth');
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
+
+  useEffect(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam === 'UserExists') {
+      setError(t('userExists'));
+    } else if (errorParam === 'OAuthAccountNotLinked') {
+      setError(t('oauthAccountNotLinked'));
+    }
+  }, [searchParams, t]);
 
   // Login Form States
   const [loginEmail, setLoginEmail] = useState('');
