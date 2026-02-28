@@ -171,7 +171,8 @@
     "commentsTitle": "Discussion with Administrator",
     "addCommentPlaceholder": "Write a reply...",
     "sendReply": "Send",
-    "noComments": "No comments yet."
+    "noComments": "No comments yet.",
+    "clearDraft": "Clear Draft"
   },
   "AdminSurveys": {
     "title": "Surveys",
@@ -218,7 +219,8 @@
     "comments": "Comments",
     "noComments": "No comments yet.",
     "addCommentPlaceholder": "Add a comment...",
-    "notCompleted": "User hasn't completed the survey yet."
+    "notCompleted": "User hasn't completed the survey yet.",
+    "clearDraft": "Clear Draft"
   },
   "Settings": {
     "title": "Settings",

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Card,
@@ -49,6 +49,40 @@ export const SurveyForm = ({
   const router = useRouter();
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [loading, setLoading] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Восстановление из локального хранилища
+  useEffect(() => {
+    const loadDraft = () => {
+      const savedDraft = localStorage.getItem(`survey_draft_${assignmentId}`);
+      if (savedDraft) {
+        try {
+          const parsed = JSON.parse(savedDraft);
+          if (parsed && typeof parsed === 'object') {
+            setAnswers(parsed);
+          }
+        } catch (e) {
+          console.error('Failed to parse survey draft', e);
+        }
+      }
+      setIsLoaded(true);
+    };
+
+    const timer = setTimeout(loadDraft, 0);
+    return () => clearTimeout(timer);
+  }, [assignmentId]);
+
+  // Автосохранение при изменении данных
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem(`survey_draft_${assignmentId}`, JSON.stringify(answers));
+    }
+  }, [answers, assignmentId, isLoaded]);
+
+  const handleClearDraft = () => {
+    setAnswers({});
+    localStorage.removeItem(`survey_draft_${assignmentId}`);
+  };
 
   /** Обновляет ответ на конкретный вопрос */
   const updateAnswer = (questionId: string, value: unknown) => {
@@ -71,6 +105,7 @@ export const SurveyForm = ({
     setLoading(false);
 
     if (result.success) {
+      localStorage.removeItem(`survey_draft_${assignmentId}`);
       router.push('/my/surveys');
       router.refresh();
     } else {
@@ -169,7 +204,15 @@ export const SurveyForm = ({
         </Card>
       ))}
 
-      <div className="flex justify-end">
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+        <Button
+          variant="destructive"
+          onClick={handleClearDraft}
+          type="button"
+          className="w-full sm:w-auto"
+        >
+          {t('clearDraft')}
+        </Button>
         <Button onClick={handleSubmit} disabled={loading} size="lg" className="w-full sm:w-auto">
           {loading ? t('submitting') : t('submit')}
         </Button>

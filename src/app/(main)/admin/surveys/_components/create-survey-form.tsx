@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   DndContext,
@@ -170,6 +170,45 @@ export const CreateSurveyForm = () => {
   const [description, setDescription] = useState('');
   const [questions, setQuestions] = useState<QuestionDraft[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Восстановление из локального хранилища
+  useEffect(() => {
+    const loadDraft = () => {
+      const savedDraft = localStorage.getItem('admin_survey_draft');
+      if (savedDraft) {
+        try {
+          const parsed = JSON.parse(savedDraft);
+          if (parsed.title) setTitle(parsed.title);
+          if (parsed.description) setDescription(parsed.description);
+          if (parsed.questions && Array.isArray(parsed.questions)) {
+            setQuestions(parsed.questions);
+          }
+        } catch (e) {
+          console.error('Failed to parse survey draft', e);
+        }
+      }
+      setIsLoaded(true);
+    };
+
+    const timer = setTimeout(loadDraft, 0);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Автосохранение при изменении данных
+  useEffect(() => {
+    if (isLoaded) {
+      const draft = { title, description, questions };
+      localStorage.setItem('admin_survey_draft', JSON.stringify(draft));
+    }
+  }, [title, description, questions, isLoaded]);
+
+  const handleClearDraft = () => {
+    setTitle('');
+    setDescription('');
+    setQuestions([]);
+    localStorage.removeItem('admin_survey_draft');
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -269,6 +308,7 @@ export const CreateSurveyForm = () => {
     setLoading(false);
 
     if (result.success) {
+      localStorage.removeItem('admin_survey_draft');
       router.push('/admin/surveys');
       router.refresh();
     } else {
@@ -329,7 +369,10 @@ export const CreateSurveyForm = () => {
         {t('addQuestion')}
       </Button>
 
-      <div className="flex justify-end">
+      <div className="flex justify-between items-center">
+        <Button variant="destructive" onClick={handleClearDraft} type="button">
+          {t('clearDraft')}
+        </Button>
         <Button
           onClick={handleSubmit}
           disabled={loading || !title.trim() || questions.length === 0}

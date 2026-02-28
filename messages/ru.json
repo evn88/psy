@@ -182,7 +182,8 @@
     "commentsTitle": "Обсуждение с администратором",
     "addCommentPlaceholder": "Напишите ответ...",
     "sendReply": "Отправить",
-    "noComments": "Комментариев пока нет."
+    "noComments": "Комментариев пока нет.",
+    "clearDraft": "Очистить черновик"
   },
   "AdminSurveys": {
     "title": "Опросы",
@@ -229,7 +230,8 @@
     "comments": "Комментарии",
     "noComments": "Комментариев пока нет.",
     "addCommentPlaceholder": "Добавить комментарий...",
-    "notCompleted": "Пользователь ещё не прошёл опрос."
+    "notCompleted": "Пользователь ещё не прошёл опрос.",
+    "clearDraft": "Очистить черновик"
   },
   "Settings": {
     "title": "Настройки",
