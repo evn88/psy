@@ -17,6 +17,7 @@ import {
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
+import { cn } from '@/lib/utils';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -48,13 +49,14 @@ interface MySidebarProps extends React.ComponentProps<typeof Sidebar> {
     image?: string | null;
     role?: string | null;
   };
+  unreadSurveysCount?: number;
 }
 
 /**
  * Sidebar компонент для личного кабинета пользователя.
  * Отображает навигацию в зависимости от роли (USER видит всё, GUEST — только Профиль).
  */
-export const MySidebar = ({ user, ...props }: MySidebarProps) => {
+export const MySidebar = ({ user, unreadSurveysCount = 0, ...props }: MySidebarProps) => {
   const pathname = usePathname();
   const t = useTranslations('My.sidebarMenu');
   const tAuth = useTranslations('Auth');
@@ -132,6 +134,12 @@ export const MySidebar = ({ user, ...props }: MySidebarProps) => {
               <SidebarMenuButton asChild isActive={item.isActive} tooltip={item.title}>
                 <Link href={item.url}>
                   <item.icon />
+                  <div
+                    className={cn(
+                      'absolute right-2 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-destructive animate-pulse group-data-[collapsible=icon]:right-1.5 group-data-[collapsible=icon]:top-1.5 group-data-[collapsible=icon]:translate-y-0',
+                      item.url === '/my/surveys' && unreadSurveysCount > 0 ? 'block' : 'hidden'
+                    )}
+                  />
                   <span>{item.title}</span>
                 </Link>
               </SidebarMenuButton>

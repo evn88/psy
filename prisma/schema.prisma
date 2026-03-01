@@ -189,6 +189,9 @@ model SurveyComment {
   author   User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
   text     String
 
+  isReadByAdmin Boolean @default(false)
+  isReadByUser  Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

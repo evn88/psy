@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -21,8 +21,43 @@ import {
   AccordionTrigger
 } from '@/components/ui/accordion';
 import { UserPlus, CheckCircle2, Clock, MessageSquare, Send } from 'lucide-react';
-import { assignSurvey, addComment } from '../actions';
+import { assignSurvey, addComment, markAsReadByAdmin } from '../actions';
 import { useTranslations } from 'next-intl';
+
+function VisibilityObserver({
+  onVisible,
+  children,
+  className
+}: {
+  onVisible: () => void;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          onVisible();
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [onVisible]);
+
+  return (
+    <div ref={ref} className={className}>
+      {children}
+    </div>
+  );
+}
 
 interface SurveyUser {
   id: string;
@@ -35,6 +70,7 @@ interface SurveyComment {
   text: string;
   createdAt: string;
   author: { name: string | null };
+  isNew?: boolean;
 }
 
 interface SurveyResultData {
@@ -84,6 +120,44 @@ export const SurveyDetail = ({
   const [selectedUserId, setSelectedUserId] = useState('');
   const [commentText, setCommentText] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+
+  const [newCommentIds, setNewCommentIds] = useState(() => {
+    const ids = new Set<string>();
+    assignments.forEach(a => {
+      a.result?.comments.forEach(c => {
+        if (c.isNew) ids.add(c.id);
+      });
+    });
+    return ids;
+  });
+
+  const hasMarkedRead = useRef(false);
+
+  const handleCommentVisible = useCallback(
+    (commentId: string) => {
+      // Вызываем экшен для сервера только 1 раз на опрос при первом скролле
+      if (!hasMarkedRead.current) {
+        markAsReadByAdmin(surveyId);
+        hasMarkedRead.current = true;
+      }
+
+      setNewCommentIds(prev => {
+        if (!prev.has(commentId)) return prev;
+
+        // Запускаем таймер исчезновения для конкретного сообщения-бейджа
+        setTimeout(() => {
+          setNewCommentIds(innerPrev => {
+            const next = new Set(innerPrev);
+            next.delete(commentId);
+            return next;
+          });
+        }, 5000);
+
+        return prev;
+      });
+    },
+    [surveyId]
+  );
 
   const assignedUserIds = assignments.map(a => a.user.id);
   const unassignedUsers = allUsers.filter(u => !assignedUserIds.includes(u.id));
@@ -182,104 +256,158 @@ export const SurveyDetail = ({
             <p className="text-muted-foreground text-sm">{t('noAssignments')}</p>
           ) : (
             <Accordion type="multiple" className="w-full">
-              {assignments.map(assignment => (
-                <AccordionItem key={assignment.id} value={assignment.id}>
-                  <AccordionTrigger className="hover:no-underline">
-                    <div className="flex items-center gap-2 text-left">
-                      <span className="font-medium">
-                        {assignment.user.name || assignment.user.email}
-                      </span>
-                      <Badge
-                        variant={assignment.status === 'COMPLETED' ? 'default' : 'secondary'}
-                        className="shrink-0"
-                      >
-                        {assignment.status === 'COMPLETED' ? (
-                          <span className="flex items-center gap-1">
-                            <CheckCircle2 className="h-3 w-3" />
-                            {t('completed')}
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {t('pending')}
-                          </span>
-                        )}
-                      </Badge>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    {assignment.result ? (
-                      <div className="space-y-4 pl-2">
-                        {/* Ответы */}
-                        <div className="space-y-2">
-                          <h4 className="font-medium text-sm">{t('answers')}</h4>
-                          {questions
-                            .sort((a, b) => a.order - b.order)
-                            .map(q => (
-                              <div key={q.id} className="p-2 rounded bg-muted/30 text-sm">
-                                <p className="font-medium">{q.text}</p>
-                                <p className="text-muted-foreground mt-1">
-                                  {JSON.stringify(
-                                    (assignment.result!.answers as Record<string, unknown>)[q.id] ??
-                                      '—'
-                                  )}
-                                </p>
-                              </div>
-                            ))}
-                        </div>
+              {assignments.map(assignment => {
+                const hasNewMessages =
+                  assignment.result?.comments.some(c => newCommentIds.has(c.id)) ?? false;
 
-                        <Separator />
-
-                        {/* Комментарии */}
-                        <div className="space-y-2">
-                          <h4 className="font-medium text-sm flex items-center gap-1">
-                            <MessageSquare className="h-4 w-4" />
-                            {t('comments')}
-                          </h4>
-                          {assignment.result.comments.length > 0 ? (
-                            assignment.result.comments.map(comment => (
-                              <div key={comment.id} className="p-2 rounded border bg-card text-sm">
-                                <p>{comment.text}</p>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  {comment.author.name || 'User'} ·{' '}
-                                  {new Date(comment.createdAt).toLocaleDateString('ru-RU')}
-                                </p>
-                              </div>
-                            ))
-                          ) : (
-                            <p className="text-sm text-muted-foreground">{t('noComments')}</p>
+                return (
+                  <AccordionItem key={assignment.id} value={assignment.id}>
+                    <AccordionTrigger className="hover:no-underline">
+                      <div className="flex items-center gap-2 text-left">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-medium">
+                            {assignment.user.name || assignment.user.email}
+                          </span>
+                          {hasNewMessages && (
+                            <span className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive"></span>
+                            </span>
                           )}
+                        </div>
+                        <Badge
+                          variant={assignment.status === 'COMPLETED' ? 'default' : 'secondary'}
+                          className="shrink-0"
+                        >
+                          {assignment.status === 'COMPLETED' ? (
+                            <span className="flex items-center gap-1">
+                              <CheckCircle2 className="h-3 w-3" />
+                              {t('completed')}
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {t('pending')}
+                            </span>
+                          )}
+                        </Badge>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      {assignment.result ? (
+                        <div className="space-y-4 pl-2">
+                          {/* Ответы */}
+                          <div className="space-y-2">
+                            <h4 className="font-medium text-sm">{t('answers')}</h4>
+                            {questions
+                              .sort((a, b) => a.order - b.order)
+                              .map(q => (
+                                <div key={q.id} className="p-2 rounded bg-muted/30 text-sm">
+                                  <p className="font-medium">{q.text}</p>
+                                  <p className="text-muted-foreground mt-1">
+                                    {JSON.stringify(
+                                      (assignment.result!.answers as Record<string, unknown>)[
+                                        q.id
+                                      ] ?? '—'
+                                    )}
+                                  </p>
+                                </div>
+                              ))}
+                          </div>
 
-                          {/* Добавить комментарий */}
-                          <div className="flex gap-2 mt-2">
-                            <Textarea
-                              value={commentText[assignment.result.id] || ''}
-                              onChange={e =>
-                                setCommentText(prev => ({
-                                  ...prev,
-                                  [assignment.result!.id]: e.target.value
-                                }))
-                              }
-                              placeholder={t('addCommentPlaceholder')}
-                              className="min-h-[60px]"
-                            />
-                            <Button
-                              size="icon"
-                              onClick={() => handleComment(assignment.result!.id)}
-                              disabled={!commentText[assignment.result!.id]?.trim() || loading}
-                              className="shrink-0 self-end"
-                            >
-                              <Send className="h-4 w-4" />
-                            </Button>
+                          <Separator />
+
+                          {/* Комментарии */}
+                          <div className="space-y-2">
+                            <h4 className="font-medium text-sm flex items-center gap-1">
+                              <MessageSquare className="h-4 w-4" />
+                              {t('comments')}
+                            </h4>
+                            {assignment.result.comments.length > 0 ? (
+                              assignment.result.comments.map(comment => {
+                                const isNewComment = newCommentIds.has(comment.id);
+
+                                const commentContent = (
+                                  <div
+                                    className={`p-3 rounded-lg border text-sm transition-all duration-500 ${
+                                      isNewComment
+                                        ? 'bg-primary/10 border-primary shadow-sm'
+                                        : 'bg-card'
+                                    }`}
+                                  >
+                                    <div className="flex items-start sm:items-center justify-between mb-1 gap-2 flex-wrap sm:flex-nowrap">
+                                      <div className="font-semibold flex items-center gap-2 min-w-0">
+                                        <span className="truncate">
+                                          {comment.author.name || 'User'}
+                                        </span>
+                                        {isNewComment && (
+                                          <Badge
+                                            variant="default"
+                                            className="text-[10px] h-4 px-1.5 py-0 uppercase shrink-0"
+                                          >
+                                            Новое
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      <p
+                                        className="text-xs text-muted-foreground shrink-0"
+                                        suppressHydrationWarning
+                                      >
+                                        {new Date(comment.createdAt).toLocaleDateString('ru-RU')}
+                                      </p>
+                                    </div>
+                                    <p className="whitespace-pre-wrap">{comment.text}</p>
+                                  </div>
+                                );
+
+                                if (isNewComment) {
+                                  return (
+                                    <VisibilityObserver
+                                      key={comment.id}
+                                      onVisible={() => handleCommentVisible(comment.id)}
+                                    >
+                                      {commentContent}
+                                    </VisibilityObserver>
+                                  );
+                                }
+
+                                return <div key={comment.id}>{commentContent}</div>;
+                              })
+                            ) : (
+                              <p className="text-sm text-muted-foreground">{t('noComments')}</p>
+                            )}
+
+                            {/* Добавить комментарий */}
+                            <div className="flex gap-2 mt-2">
+                              <Textarea
+                                value={commentText[assignment.result.id] || ''}
+                                onChange={e =>
+                                  setCommentText(prev => ({
+                                    ...prev,
+                                    [assignment.result!.id]: e.target.value
+                                  }))
+                                }
+                                placeholder={t('addCommentPlaceholder')}
+                                className="min-h-[60px]"
+                              />
+                              <Button
+                                size="icon"
+                                onClick={() => handleComment(assignment.result!.id)}
+                                disabled={!commentText[assignment.result!.id]?.trim() || loading}
+                                className="shrink-0 self-end"
+                              >
+                                <Send className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground pl-2">{t('notCompleted')}</p>
-                    )}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
+                      ) : (
+                        <p className="text-sm text-muted-foreground pl-2">{t('notCompleted')}</p>
+                      )}
+                    </AccordionContent>
+                  </AccordionItem>
+                );
+              })}
             </Accordion>
           )}
         </CardContent>

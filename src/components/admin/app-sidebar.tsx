@@ -15,6 +15,7 @@ import {
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
+import { cn } from '@/lib/utils';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -44,13 +45,14 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
     email?: string | null;
     image?: string | null;
   };
+  unreadSurveysCount?: number;
 }
 
 /**
  * Sidebar компонент для админ-панели.
  * Содержит навигацию: Dashboard, Users, Surveys, Profile.
  */
-export function AppSidebar({ user, ...props }: AppSidebarProps) {
+export function AppSidebar({ user, unreadSurveysCount = 0, ...props }: AppSidebarProps) {
   const pathname = usePathname();
   const tItems = useTranslations('Admin.sidebarMenu');
   const tAuth = useTranslations('Auth');
@@ -108,6 +110,12 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
               <SidebarMenuButton asChild isActive={item.isActive} tooltip={item.title}>
                 <Link href={item.url}>
                   <item.icon />
+                  <div
+                    className={cn(
+                      'absolute right-2 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-destructive animate-pulse group-data-[collapsible=icon]:right-1.5 group-data-[collapsible=icon]:top-1.5 group-data-[collapsible=icon]:translate-y-0',
+                      item.url === '/admin/surveys' && unreadSurveysCount > 0 ? 'block' : 'hidden'
+                    )}
+                  />
                   <span>{item.title}</span>
                 </Link>
               </SidebarMenuButton>

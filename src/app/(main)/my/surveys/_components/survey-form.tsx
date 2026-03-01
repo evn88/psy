@@ -53,6 +53,7 @@ export const SurveyForm = ({
 
   // Восстановление из локального хранилища
   useEffect(() => {
+    /** Загружает черновик ответов из локального хранилища */
     const loadDraft = () => {
       const savedDraft = localStorage.getItem(`survey_draft_${assignmentId}`);
       if (savedDraft) {
@@ -62,7 +63,7 @@ export const SurveyForm = ({
             setAnswers(parsed);
           }
         } catch (e) {
-          console.error('Failed to parse survey draft', e);
+          console.error('Ошибка при чтении черновика опроса', e);
         }
       }
       setIsLoaded(true);

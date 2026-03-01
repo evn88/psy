@@ -99,7 +99,9 @@ export const addComment = async (resultId: string, text: string) => {
       data: {
         resultId,
         authorId: session.user.id,
-        text
+        text,
+        isReadByAdmin: true,
+        isReadByUser: false
       }
     });
 
@@ -108,6 +110,89 @@ export const addComment = async (resultId: string, text: string) => {
   } catch (error) {
     console.error('Ошибка добавления комментария:', error);
     return { error: 'Не удалось добавить комментарий' };
+  }
+};
+
+/**
+ * Отмечает все сообщения в указанном опросе как прочитанные администратором.
+ * @param surveyId - ID опроса
+ */
+export const markAsReadByAdmin = async (surveyId: string) => {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== 'ADMIN') {
+    return { error: 'Недостаточно прав' };
+  }
+
+  try {
+    const survey = await prisma.survey.findUnique({
+      where: { id: surveyId },
+      include: {
+        assignments: {
+          include: {
+            result: true
+          }
+        }
+      }
+    });
+
+    if (!survey) {
+      return { error: 'Опрос не найден' };
+    }
+
+    const resultIds = survey.assignments
+      .map((a: any) => a.result?.id)
+      .filter((id: any): id is string => Boolean(id));
+
+    if (resultIds.length > 0) {
+      await prisma.surveyComment.updateMany({
+        where: {
+          resultId: { in: resultIds },
+          isReadByAdmin: false
+        },
+        data: {
+          isReadByAdmin: true
+        }
+      });
+      revalidatePath('/admin', 'layout');
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Ошибка отметки сообщений как прочитанных:', error);
+    return { error: 'Не удалось отметить сообщения как прочитанные' };
+  }
+};
+
+/**
+ * Получает количество опросов с непрочитанными комментариями для администратора.
+ */
+export const getAdminUnreadSurveysCount = async () => {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== 'ADMIN') {
+    return 0;
+  }
+
+  try {
+    const unreadSurveys = await prisma.survey.count({
+      where: {
+        assignments: {
+          some: {
+            result: {
+              comments: {
+                some: {
+                  isReadByAdmin: false
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    return unreadSurveys;
+  } catch (error) {
+    console.error('Ошибка получения кол-ва непрочитанных опросов:', error);
+    return 0;
   }
 };
 

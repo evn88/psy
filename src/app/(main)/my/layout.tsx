@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 import { MySidebar } from '@/components/my/my-sidebar';
 import { MyBreadcrumbs } from '@/components/my/my-breadcrumbs';
 import { BreadcrumbProvider } from '@/components/breadcrumb-context';
+import { getUserUnreadSurveysCount } from './surveys/actions';
 import { Separator } from '@/components/ui/separator';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 
@@ -21,9 +22,11 @@ export default async function MyLayout({ children }: { children: React.ReactNode
     redirect('/auth');
   }
 
+  const unreadSurveysCount = await getUserUnreadSurveysCount();
+
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
-      <MySidebar user={session.user} />
+      <MySidebar user={session.user} unreadSurveysCount={unreadSurveysCount} />
       <SidebarInset>
         <BreadcrumbProvider>
           <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">

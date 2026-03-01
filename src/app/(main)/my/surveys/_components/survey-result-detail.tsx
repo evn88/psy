@@ -1,13 +1,49 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { MessageSquare, Send, User, ShieldCheck } from 'lucide-react';
-import { addResultComment } from '../actions';
+import { addResultComment, markAsReadByUser } from '../actions';
 import { useTranslations } from 'next-intl';
+
+function VisibilityObserver({
+  onVisible,
+  children,
+  className
+}: {
+  onVisible: () => void;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          onVisible();
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [onVisible]);
+
+  return (
+    <div ref={ref} className={className}>
+      {children}
+    </div>
+  );
+}
 
 interface SurveyQuestion {
   id: string;
@@ -22,6 +58,7 @@ interface SurveyComment {
   text: string;
   createdAt: string;
   author: { id: string; name: string | null; role: string };
+  isNew?: boolean;
 }
 
 interface SurveyResultDetailProps {
@@ -51,6 +88,40 @@ export const SurveyResultDetail = ({
   const router = useRouter();
   const [commentText, setCommentText] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const [newCommentIds, setNewCommentIds] = useState(() => {
+    const ids = new Set<string>();
+    comments.forEach(c => {
+      if (c.isNew) ids.add(c.id);
+    });
+    return ids;
+  });
+
+  const hasMarkedRead = useRef(false);
+
+  const handleCommentVisible = useCallback(
+    (commentId: string) => {
+      if (!hasMarkedRead.current) {
+        markAsReadByUser(resultId);
+        hasMarkedRead.current = true;
+      }
+
+      setNewCommentIds(prev => {
+        if (!prev.has(commentId)) return prev;
+
+        setTimeout(() => {
+          setNewCommentIds(innerPrev => {
+            const next = new Set(innerPrev);
+            next.delete(commentId);
+            return next;
+          });
+        }, 5000);
+
+        return prev;
+      });
+    },
+    [resultId]
+  );
 
   /** Отправляет новый комментарий (ответ администратору) */
   const handleSendComment = async () => {
@@ -106,30 +177,57 @@ export const SurveyResultDetail = ({
             comments.map(comment => {
               const isAdmin = comment.author.role === 'ADMIN';
               const isMe = comment.author.id === currentUserId;
+              const isNewComment = newCommentIds.has(comment.id);
+
+              const commentContent = (
+                <div
+                  className={`max-w-[85%] p-3 rounded-2xl relative border transition-all duration-500 ${
+                    isNewComment
+                      ? `bg-primary/10 text-foreground border-primary shadow-sm ${isMe ? 'rounded-tr-none' : 'rounded-tl-none'}`
+                      : isMe
+                        ? 'bg-primary text-primary-foreground rounded-tr-none border-transparent'
+                        : 'bg-muted rounded-tl-none border-border'
+                  }`}
+                >
+                  <div className="flex items-start sm:items-center justify-between gap-2 sm:gap-4 mb-1.5 opacity-80 flex-wrap sm:flex-nowrap">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      {isAdmin ? (
+                        <ShieldCheck className="h-3 w-3 shrink-0" />
+                      ) : (
+                        <User className="h-3 w-3 shrink-0" />
+                      )}
+                      <span className="text-[10px] uppercase font-bold tracking-wider truncate">
+                        {isAdmin ? 'Admin' : comment.author.name || 'User'}
+                      </span>
+                    </div>
+                    {isNewComment && (
+                      <Badge
+                        variant="default"
+                        className="text-[9px] h-4 px-1.5 py-0 uppercase tracking-wider shrink-0"
+                      >
+                        Новое
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{comment.text}</p>
+                  <p className="text-[10px] mt-2 opacity-60 text-right" suppressHydrationWarning>
+                    {new Date(comment.createdAt).toLocaleString()}
+                  </p>
+                </div>
+              );
 
               return (
                 <div
                   key={comment.id}
                   className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
                 >
-                  <div
-                    className={`max-w-[85%] p-3 rounded-2xl ${
-                      isMe
-                        ? 'bg-primary text-primary-foreground rounded-tr-none'
-                        : 'bg-muted rounded-tl-none border'
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5 mb-1.5 opacity-80">
-                      {isAdmin ? <ShieldCheck className="h-3 w-3" /> : <User className="h-3 w-3" />}
-                      <span className="text-[10px] uppercase font-bold tracking-wider">
-                        {isAdmin ? 'Admin' : comment.author.name || 'User'}
-                      </span>
-                    </div>
-                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{comment.text}</p>
-                    <p className="text-[10px] mt-2 opacity-60 text-right">
-                      {new Date(comment.createdAt).toLocaleString()}
-                    </p>
-                  </div>
+                  {isNewComment ? (
+                    <VisibilityObserver onVisible={() => handleCommentVisible(comment.id)}>
+                      {commentContent}
+                    </VisibilityObserver>
+                  ) : (
+                    commentContent
+                  )}
                 </div>
               );
             })

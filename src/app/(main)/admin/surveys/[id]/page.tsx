@@ -39,7 +39,7 @@ export default async function SurveyDetailPage({ params }: SurveyDetailPageProps
     notFound();
   }
 
-  // Все пользователи кроме GUEST
+  // Сбор всех пользователей
   const allUsers = await prisma.user.findMany({
     where: { role: { not: 'GUEST' } },
     select: { id: true, name: true, email: true }
@@ -69,6 +69,7 @@ export default async function SurveyDetailPage({ params }: SurveyDetailPageProps
           text: string;
           createdAt: Date;
           author: { name: string | null };
+          isReadByAdmin: boolean;
         }>;
       } | null;
     }) => ({
@@ -86,11 +87,13 @@ export default async function SurveyDetailPage({ params }: SurveyDetailPageProps
                 text: string;
                 createdAt: Date;
                 author: { name: string | null };
+                isReadByAdmin: boolean;
               }) => ({
                 id: c.id,
                 text: c.text,
                 createdAt: c.createdAt.toISOString(),
-                author: c.author
+                author: c.author,
+                isNew: !c.isReadByAdmin
               })
             )
           }

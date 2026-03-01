@@ -10,7 +10,20 @@ import { ClipboardList, CheckCircle2, Clock } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 
 type AssignmentWithSurvey = Prisma.SurveyAssignmentGetPayload<{
-  include: { survey: true; result: true };
+  include: {
+    survey: true;
+    result: {
+      include: {
+        _count: {
+          select: {
+            comments: {
+              where: { isReadByUser: false };
+            };
+          };
+        };
+      };
+    };
+  };
 }>;
 
 /**
@@ -29,7 +42,17 @@ export default async function MySurveysPage() {
     where: { userId: session.user.id },
     include: {
       survey: true,
-      result: true
+      result: {
+        include: {
+          _count: {
+            select: {
+              comments: {
+                where: { isReadByUser: false }
+              }
+            }
+          }
+        }
+      }
     },
     orderBy: { createdAt: 'desc' }
   });
@@ -50,8 +73,8 @@ export default async function MySurveysPage() {
           {assignments.map(assignment => (
             <Card key={assignment.id}>
               <CardHeader>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="space-y-1 min-w-0">
+                <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                  <div className="space-y-1 min-w-0 w-full sm:w-auto">
                     <CardTitle className="text-lg truncate">{assignment.survey.title}</CardTitle>
                     {assignment.survey.description && (
                       <CardDescription className="line-clamp-2">
@@ -59,22 +82,30 @@ export default async function MySurveysPage() {
                       </CardDescription>
                     )}
                   </div>
-                  <Badge
-                    variant={assignment.status === 'COMPLETED' ? 'default' : 'secondary'}
-                    className="shrink-0"
-                  >
-                    {assignment.status === 'COMPLETED' ? (
-                      <span className="flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3" />
-                        {t('completed')}
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {t('pending')}
-                      </span>
+                  <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 shrink-0 flex-wrap">
+                    <Badge
+                      variant={assignment.status === 'COMPLETED' ? 'default' : 'secondary'}
+                      className="shrink-0"
+                    >
+                      {assignment.status === 'COMPLETED' ? (
+                        <span className="flex items-center gap-1">
+                          <CheckCircle2 className="h-3 w-3" />
+                          {t('completed')}
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {t('pending')}
+                        </span>
+                      )}
+                    </Badge>
+                    {(assignment.result?._count?.comments ?? 0) > 0 && (
+                      <Badge variant="destructive" className="shrink-0 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                        Новое сообщение
+                      </Badge>
                     )}
-                  </Badge>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
