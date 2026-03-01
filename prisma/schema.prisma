@@ -137,13 +137,14 @@ model Survey {
 
 /// Вопрос опроса
 model SurveyQuestion {
-  id       String       @id @default(cuid())
-  surveyId String
-  survey   Survey       @relation(fields: [surveyId], references: [id], onDelete: Cascade)
-  text     String
-  type     QuestionType
-  options  Json? // Варианты ответа для SINGLE_CHOICE / MULTI_CHOICE / SCALE
-  order    Int          @default(0)
+  id        String       @id @default(cuid())
+  surveyId  String
+  survey    Survey       @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  text      String
+  type      QuestionType
+  options   Json? // Варианты ответа для SINGLE_CHOICE / MULTI_CHOICE / SCALE
+  order     Int          @default(0)
+  isDeleted Boolean      @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -151,12 +152,13 @@ model SurveyQuestion {
 
 /// Назначение опроса пользователю
 model SurveyAssignment {
-  id       String           @id @default(cuid())
-  surveyId String
-  survey   Survey           @relation(fields: [surveyId], references: [id], onDelete: Cascade)
-  userId   String
-  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  status   AssignmentStatus @default(PENDING)
+  id         String           @id @default(cuid())
+  surveyId   String
+  survey     Survey           @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status     AssignmentStatus @default(PENDING)
+  isArchived Boolean          @default(false)
 
   result SurveyResult?
 

@@ -1,15 +1,24 @@
 'use server';
 
 import prisma from '@/shared/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 const questionSchema = z.object({
+  id: z.string().optional(),
   text: z.string().min(1),
   type: z.enum(['SINGLE_CHOICE', 'MULTI_CHOICE', 'TEXT', 'SCALE']),
   options: z.array(z.string()).optional(),
   order: z.number()
+});
+
+const updateSurveySchema = z.object({
+  id: z.string(),
+  title: z.string().min(1),
+  description: z.string().optional(),
+  questions: z.array(questionSchema).min(1)
 });
 
 const createSurveySchema = z.object({
@@ -44,7 +53,7 @@ export const createSurvey = async (data: z.infer<typeof createSurveySchema>) => 
           create: parsed.data.questions.map((q, index) => ({
             text: q.text,
             type: q.type,
-            options: q.options || null,
+            options: q.options ? q.options : Prisma.DbNull,
             order: q.order ?? index
           }))
         }
@@ -76,10 +85,58 @@ export const assignSurvey = async (surveyId: string, userId: string) => {
     });
 
     revalidatePath('/admin/surveys');
+    revalidatePath(`/admin/surveys/${surveyId}`);
     return { success: true };
   } catch (error) {
     console.error('Ошибка назначения опроса:', error);
     return { error: 'Не удалось назначить опрос' };
+  }
+};
+
+/**
+ * Удаляет назначение опроса пользователю.
+ * @param surveyId - ID опроса
+ * @param userId - ID пользователя
+ * @param deleteResults - Удалять ли результаты прохождения
+ */
+export const removeAssignment = async (
+  surveyId: string,
+  userId: string,
+  deleteResults: boolean
+) => {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== 'ADMIN') {
+    return { error: 'Недостаточно прав' };
+  }
+
+  try {
+    const assignment = await prisma.surveyAssignment.findUnique({
+      where: {
+        surveyId_userId: { surveyId, userId }
+      }
+    });
+
+    if (!assignment) {
+      return { error: 'Назначение не найдено' };
+    }
+
+    if (deleteResults) {
+      await prisma.surveyAssignment.delete({
+        where: { id: assignment.id }
+      });
+    } else {
+      await prisma.surveyAssignment.update({
+        where: { id: assignment.id },
+        data: { isArchived: true }
+      });
+    }
+
+    revalidatePath('/admin/surveys');
+    revalidatePath(`/admin/surveys/${surveyId}`);
+    return { success: true };
+  } catch (error) {
+    console.error('Ошибка удаления назначения:', error);
+    return { error: 'Не удалось удалить назначение' };
   }
 };
 
@@ -239,5 +296,76 @@ export const clearComments = async (resultId: string) => {
   } catch (error) {
     console.error('Ошибка очистки комментариев:', error);
     return { error: 'Не удалось очистить комментарии' };
+  }
+};
+
+/**
+ * Обновляет опрос и его вопросы.
+ */
+export const updateSurvey = async (data: z.infer<typeof updateSurveySchema>) => {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== 'ADMIN') {
+    return { error: 'Недостаточно прав' };
+  }
+
+  const parsed = updateSurveySchema.safeParse(data);
+  if (!parsed.success) {
+    return { error: 'Некорректные данные' };
+  }
+
+  try {
+    const { id, title, description, questions } = parsed.data;
+
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      await tx.survey.update({
+        where: { id },
+        data: { title, description }
+      });
+
+      const existingQuestions = await tx.surveyQuestion.findMany({
+        where: { surveyId: id, isDeleted: false }
+      });
+
+      const inputQuestionIds = questions.filter((q: any) => q.id).map((q: any) => q.id as string);
+
+      const toDelete = existingQuestions.filter((q: any) => !inputQuestionIds.includes(q.id));
+      if (toDelete.length > 0) {
+        await tx.surveyQuestion.updateMany({
+          where: { id: { in: toDelete.map((q: any) => q.id) } },
+          data: { isDeleted: true }
+        });
+      }
+
+      for (const q of questions) {
+        if (q.id && existingQuestions.some((eq: any) => eq.id === q.id)) {
+          await tx.surveyQuestion.update({
+            where: { id: q.id },
+            data: {
+              text: q.text,
+              type: q.type,
+              options: q.options ? q.options : Prisma.DbNull,
+              order: q.order
+            }
+          });
+        } else {
+          await tx.surveyQuestion.create({
+            data: {
+              surveyId: id,
+              text: q.text,
+              type: q.type,
+              options: q.options ? q.options : Prisma.DbNull,
+              order: q.order
+            }
+          });
+        }
+      }
+    });
+
+    revalidatePath('/admin/surveys');
+    revalidatePath(`/admin/surveys/${id}`);
+    return { success: true };
+  } catch (error) {
+    console.error('Ошибка обновления опроса:', error);
+    return { error: 'Не удалось обновить опрос' };
   }
 };
