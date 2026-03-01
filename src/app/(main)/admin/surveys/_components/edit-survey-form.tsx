@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   DndContext,
@@ -31,12 +31,12 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import { Plus, Trash2, GripVertical } from 'lucide-react';
-import { createSurvey } from '../actions';
+import { Plus, Trash2, GripVertical, CheckCircle2 } from 'lucide-react';
+import { updateSurvey } from '../actions';
 import { useTranslations } from 'next-intl';
 
 interface QuestionDraft {
-  id: string;
+  id?: string;
   text: string;
   type: 'SINGLE_CHOICE' | 'MULTI_CHOICE' | 'TEXT' | 'SCALE';
   options: string[];
@@ -54,10 +54,6 @@ interface SortableQuestionProps {
   onUpdateOption: (optionIndex: number, value: string) => void;
 }
 
-/**
- * Сортируемая карточка вопроса с поддержкой DnD.
- * Использует @dnd-kit/sortable для перетаскивания.
- */
 const SortableQuestion = ({
   question,
   index,
@@ -69,8 +65,10 @@ const SortableQuestion = ({
   onRemoveOption,
   onUpdateOption
 }: SortableQuestionProps) => {
+  // Используем index как fallback id для новых вопросов при сортировке, если нет id
+  const dndId = question.id || `new-${index}`;
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: question.id
+    id: dndId
   });
 
   const style = {
@@ -83,7 +81,7 @@ const SortableQuestion = ({
     <Card
       ref={setNodeRef}
       style={style}
-      className={isDragging ? 'shadow-lg ring-2 ring-primary' : ''}
+      className={isDragging ? 'shadow-lg ring-2 ring-primary relative z-50' : ''}
     >
       <CardHeader>
         <div className="flex items-center justify-between">
@@ -159,56 +157,43 @@ const SortableQuestion = ({
   );
 };
 
-/**
- * Форма создания нового опроса с поддержкой DnD-сортировки вопросов.
- * Вопросы можно перетаскивать для изменения порядка.
- */
-export const CreateSurveyForm = () => {
+interface EditSurveyFormProps {
+  surveyId: string;
+  initialTitle: string;
+  initialDescription: string | null;
+  initialQuestions: {
+    id: string;
+    text: string;
+    type: string;
+    options: string[] | null;
+    order: number;
+  }[];
+}
+
+export const EditSurveyForm = ({
+  surveyId,
+  initialTitle,
+  initialDescription,
+  initialQuestions
+}: EditSurveyFormProps) => {
   const t = useTranslations('AdminSurveys');
   const router = useRouter();
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [questions, setQuestions] = useState<QuestionDraft[]>([]);
+
+  const [title, setTitle] = useState(initialTitle);
+  const [description, setDescription] = useState(initialDescription || '');
+  const [questions, setQuestions] = useState<QuestionDraft[]>(() => {
+    return initialQuestions
+      .sort((a, b) => a.order - b.order)
+      .map(q => ({
+        id: q.id,
+        text: q.text,
+        type: q.type as any,
+        options: q.options || ['']
+      }));
+  });
+
   const [loading, setLoading] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  // Восстановление из локального хранилища
-  useEffect(() => {
-    const loadDraft = () => {
-      const savedDraft = localStorage.getItem('admin_survey_draft');
-      if (savedDraft) {
-        try {
-          const parsed = JSON.parse(savedDraft);
-          if (parsed.title) setTitle(parsed.title);
-          if (parsed.description) setDescription(parsed.description);
-          if (parsed.questions && Array.isArray(parsed.questions)) {
-            setQuestions(parsed.questions);
-          }
-        } catch (e) {
-          console.error('Failed to parse survey draft', e);
-        }
-      }
-      setIsLoaded(true);
-    };
-
-    const timer = setTimeout(loadDraft, 0);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Автосохранение при изменении данных
-  useEffect(() => {
-    if (isLoaded) {
-      const draft = { title, description, questions };
-      localStorage.setItem('admin_survey_draft', JSON.stringify(draft));
-    }
-  }, [title, description, questions, isLoaded]);
-
-  const handleClearDraft = () => {
-    setTitle('');
-    setDescription('');
-    setQuestions([]);
-    localStorage.removeItem('admin_survey_draft');
-  };
+  const [saved, setSaved] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -219,24 +204,23 @@ export const CreateSurveyForm = () => {
     })
   );
 
-  /** Обрабатывает событие окончания перетаскивания */
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
       setQuestions(prev => {
-        const oldIndex = prev.findIndex(q => q.id === active.id);
-        const newIndex = prev.findIndex(q => q.id === over.id);
+        const activeId = active.id.toString();
+        const overId = over.id.toString();
+        const oldIndex = prev.findIndex((q, i) => (q.id || `new-${i}`) === activeId);
+        const newIndex = prev.findIndex((q, i) => (q.id || `new-${i}`) === overId);
         return arrayMove(prev, oldIndex, newIndex);
       });
     }
   };
 
-  /** Добавляет новый вопрос */
   const addQuestion = () => {
     setQuestions(prev => [
       ...prev,
       {
-        id: crypto.randomUUID(),
         text: '',
         type: 'SINGLE_CHOICE',
         options: ['']
@@ -244,29 +228,24 @@ export const CreateSurveyForm = () => {
     ]);
   };
 
-  /** Удаляет вопрос по индексу */
   const removeQuestion = (index: number) => {
     setQuestions(prev => prev.filter((_, i) => i !== index));
   };
 
-  /** Обновляет текст вопроса */
   const updateQuestionText = (index: number, text: string) => {
     setQuestions(prev => prev.map((q, i) => (i === index ? { ...q, text } : q)));
   };
 
-  /** Обновляет тип вопроса */
   const updateQuestionType = (index: number, type: QuestionDraft['type']) => {
     setQuestions(prev => prev.map((q, i) => (i === index ? { ...q, type } : q)));
   };
 
-  /** Добавляет вариант ответа к вопросу */
   const addOption = (questionIndex: number) => {
     setQuestions(prev =>
       prev.map((q, i) => (i === questionIndex ? { ...q, options: [...q.options, ''] } : q))
     );
   };
 
-  /** Удаляет вариант ответа */
   const removeOption = (questionIndex: number, optionIndex: number) => {
     setQuestions(prev =>
       prev.map((q, i) =>
@@ -275,7 +254,6 @@ export const CreateSurveyForm = () => {
     );
   };
 
-  /** Обновляет текст варианта ответа */
   const updateOption = (questionIndex: number, optionIndex: number, value: string) => {
     setQuestions(prev =>
       prev.map((q, i) =>
@@ -289,18 +267,21 @@ export const CreateSurveyForm = () => {
     );
   };
 
-  /** Отправляет форму на сервер */
   const handleSubmit = async () => {
     if (!title.trim() || questions.length === 0) return;
 
     setLoading(true);
-    const result = await createSurvey({
+    setSaved(false);
+
+    const result = await updateSurvey({
+      id: surveyId,
       title,
       description: description || undefined,
       questions: questions.map((q, i) => ({
+        id: q.id,
         text: q.text,
         type: q.type,
-        options: q.type === 'TEXT' ? undefined : q.options.filter(o => o.trim()),
+        options: q.type === 'TEXT' ? [] : q.options.filter(o => o.trim()),
         order: i
       }))
     });
@@ -308,12 +289,27 @@ export const CreateSurveyForm = () => {
     setLoading(false);
 
     if (result.success) {
-      localStorage.removeItem('admin_survey_draft');
-      router.push('/admin/surveys');
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
       router.refresh();
     } else {
       console.error(result.error);
     }
+  };
+
+  const resetForm = () => {
+    setTitle(initialTitle);
+    setDescription(initialDescription || '');
+    setQuestions(
+      initialQuestions
+        .sort((a, b) => a.order - b.order)
+        .map(q => ({
+          id: q.id,
+          text: q.text,
+          type: q.type as any,
+          options: q.options || ['']
+        }))
+    );
   };
 
   return (
@@ -321,7 +317,7 @@ export const CreateSurveyForm = () => {
       <Card>
         <CardHeader>
           <CardTitle>{t('surveyDetails')}</CardTitle>
-          <CardDescription>{t('surveyDetailsDesc')}</CardDescription>
+          <CardDescription>{t('editSurveyDetailsDesc') || t('surveyDetailsDesc')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -345,42 +341,55 @@ export const CreateSurveyForm = () => {
         </CardContent>
       </Card>
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={questions.map(q => q.id)} strategy={verticalListSortingStrategy}>
-          {questions.map((question, qIndex) => (
-            <SortableQuestion
-              key={question.id}
-              question={question}
-              index={qIndex}
-              t={t}
-              onRemove={() => removeQuestion(qIndex)}
-              onUpdateText={text => updateQuestionText(qIndex, text)}
-              onUpdateType={type => updateQuestionType(qIndex, type)}
-              onAddOption={() => addOption(qIndex)}
-              onRemoveOption={oIndex => removeOption(qIndex, oIndex)}
-              onUpdateOption={(oIndex, val) => updateOption(qIndex, oIndex, val)}
-            />
-          ))}
-        </SortableContext>
-      </DndContext>
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium">{t('questions')}</h3>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext
+            items={questions.map((q, i) => q.id || `new-${i}`)}
+            strategy={verticalListSortingStrategy}
+          >
+            {questions.map((question, qIndex) => (
+              <SortableQuestion
+                key={question.id || `new-${qIndex}`}
+                question={question}
+                index={qIndex}
+                t={t}
+                onRemove={() => removeQuestion(qIndex)}
+                onUpdateText={text => updateQuestionText(qIndex, text)}
+                onUpdateType={type => updateQuestionType(qIndex, type)}
+                onAddOption={() => addOption(qIndex)}
+                onRemoveOption={oIndex => removeOption(qIndex, oIndex)}
+                onUpdateOption={(oIndex, val) => updateOption(qIndex, oIndex, val)}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
+      </div>
 
       <Button variant="outline" onClick={addQuestion} className="w-full">
         <Plus className="mr-2 h-4 w-4" />
         {t('addQuestion')}
       </Button>
 
-      <div className="flex justify-between items-center">
-        <Button variant="destructive" onClick={handleClearDraft} type="button">
-          {t('clearDraft')}
+      <div className="flex justify-between items-center pt-4 border-t">
+        <Button variant="ghost" onClick={resetForm} type="button" disabled={loading}>
+          {t('cancelChanges') || 'Отменить изменения'}
         </Button>
         <Button
           onClick={handleSubmit}
           disabled={loading || !title.trim() || questions.length === 0}
           size="lg"
         >
-          {loading ? t('creating') : t('createSurvey')}
+          {loading ? t('saving') || 'Сохранение...' : t('saveChanges') || 'Сохранить изменения'}
         </Button>
       </div>
+
+      {saved && (
+        <div className="text-sm text-green-600 dark:text-green-400 flex items-center justify-end gap-2 animate-in fade-in slide-in-from-bottom-2">
+          <CheckCircle2 className="h-4 w-4" />
+          {t('surveyUpdated') || 'Изменения сохранены'}
+        </div>
+      )}
     </div>
   );
 };

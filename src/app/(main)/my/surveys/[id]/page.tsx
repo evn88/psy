@@ -79,11 +79,13 @@ export default async function TakeSurveyPage({ params }: SurveyPageProps) {
               text: string;
               createdAt: Date;
               author: { id: string; name: string | null; role: string };
+              isReadByUser: boolean;
             }) => ({
               id: c.id,
               text: c.text,
               createdAt: c.createdAt.toISOString(),
-              author: c.author
+              author: c.author,
+              isNew: !c.isReadByUser
             })
           )}
           currentUserId={session.user.id}

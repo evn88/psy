@@ -11,6 +11,21 @@ type SurveyWithCounts = Prisma.SurveyGetPayload<{
   include: {
     _count: { select: { assignments: true; questions: true } };
     createdBy: { select: { name: true } };
+    assignments: {
+      select: {
+        result: {
+          select: {
+            _count: {
+              select: {
+                comments: {
+                  where: { isReadByAdmin: false };
+                };
+              };
+            };
+          };
+        };
+      };
+    };
   };
 }>;
 
@@ -24,7 +39,22 @@ export default async function AdminSurveysPage() {
   const surveys: SurveyWithCounts[] = await prisma.survey.findMany({
     include: {
       _count: { select: { assignments: true, questions: true } },
-      createdBy: { select: { name: true } }
+      createdBy: { select: { name: true } },
+      assignments: {
+        select: {
+          result: {
+            select: {
+              _count: {
+                select: {
+                  comments: {
+                    where: { isReadByAdmin: false }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     },
     orderBy: { createdAt: 'desc' }
   });
@@ -53,10 +83,24 @@ export default async function AdminSurveysPage() {
           {surveys.map(survey => (
             <Card key={survey.id} className="hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle className="text-lg truncate">{survey.title}</CardTitle>
-                {survey.description && (
-                  <CardDescription className="line-clamp-2">{survey.description}</CardDescription>
-                )}
+                <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                  <div className="space-y-1 min-w-0 w-full sm:w-auto">
+                    <CardTitle className="text-lg truncate">{survey.title}</CardTitle>
+                    {survey.description && (
+                      <CardDescription className="line-clamp-2">
+                        {survey.description}
+                      </CardDescription>
+                    )}
+                  </div>
+                  {survey.assignments.some(a => (a.result?._count?.comments ?? 0) > 0) && (
+                    <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 shrink-0 flex-wrap">
+                      <Badge variant="destructive" className="shrink-0 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                        Новое сообщение
+                      </Badge>
+                    </div>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex flex-wrap gap-2">

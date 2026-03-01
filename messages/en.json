@@ -171,7 +171,8 @@
     "commentsTitle": "Discussion with Administrator",
     "addCommentPlaceholder": "Write a reply...",
     "sendReply": "Send",
-    "noComments": "No comments yet."
+    "noComments": "No comments yet.",
+    "clearDraft": "Clear Draft"
   },
   "AdminSurveys": {
     "title": "Surveys",
@@ -218,7 +219,24 @@
     "comments": "Comments",
     "noComments": "No comments yet.",
     "addCommentPlaceholder": "Add a comment...",
-    "notCompleted": "User hasn't completed the survey yet."
+    "notCompleted": "User hasn't completed the survey yet.",
+    "clearDraft": "Clear Draft",
+    "clearComments": "Clear All Comments",
+    "clearCommentsConfirm": "Are you sure you want to delete all messages in this dialogue? This action cannot be undone.",
+    "clearing": "Clearing...",
+    "deleteSurvey": "Delete Survey",
+    "deleteSurveyConfirm": "Are you sure you want to delete this survey? All assignments and results will be permanently deleted.",
+    "tabsResults": "Assignments & Answers",
+    "tabsEdit": "Settings",
+    "removeAssignment": "Remove Assignment",
+    "removeAssignmentConfirm": "Are you sure you want to remove this user from the survey? You can delete their results permanently, or keep them in the archive.",
+    "removeKeepResults": "Keep Results",
+    "removeWithResults": "Delete with Results",
+    "editSurveyDetailsDesc": "Modify survey parameters.",
+    "cancelChanges": "Cancel changes",
+    "saveChanges": "Save changes",
+    "saving": "Saving...",
+    "surveyUpdated": "Changes saved"
   },
   "Settings": {
     "title": "Settings",

@@ -82,7 +82,9 @@ export const addResultComment = async (resultId: string, text: string) => {
       data: {
         resultId,
         authorId: session.user.id,
-        text
+        text,
+        isReadByUser: true,
+        isReadByAdmin: false
       }
     });
 
@@ -91,5 +93,76 @@ export const addResultComment = async (resultId: string, text: string) => {
   } catch (error) {
     console.error('Ошибка добавления комментария:', error);
     return { error: 'Не удалось добавить комментарий' };
+  }
+};
+
+/**
+ * Отмечает все сообщения в указанном результате как прочитанные пользователем.
+ * @param resultId - ID результата
+ */
+export const markAsReadByUser = async (resultId: string) => {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { error: 'Не авторизован' };
+  }
+
+  try {
+    const result = await prisma.surveyResult.findUnique({
+      where: { id: resultId },
+      include: {
+        assignment: { select: { userId: true } }
+      }
+    });
+
+    if (!result || result.assignment.userId !== session.user.id) {
+      return { error: 'Результат не найден или нет доступа' };
+    }
+
+    await prisma.surveyComment.updateMany({
+      where: {
+        resultId,
+        isReadByUser: false
+      },
+      data: {
+        isReadByUser: true
+      }
+    });
+
+    revalidatePath('/my', 'layout');
+
+    return { success: true };
+  } catch (error) {
+    console.error('Ошибка отметки сообщений как прочитанных:', error);
+    return { error: 'Не удалось отметить сообщения как прочитанные' };
+  }
+};
+
+/**
+ * Получает количество назначений опросов с непрочитанными комментариями для пользователя.
+ */
+export const getUserUnreadSurveysCount = async () => {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return 0;
+  }
+
+  try {
+    const unreadSurveys = await prisma.surveyAssignment.count({
+      where: {
+        userId: session.user.id,
+        result: {
+          comments: {
+            some: {
+              isReadByUser: false
+            }
+          }
+        }
+      }
+    });
+
+    return unreadSurveys;
+  } catch (error) {
+    console.error('Ошибка получения кол-ва непрочитанных опросов:', error);
+    return 0;
   }
 };
