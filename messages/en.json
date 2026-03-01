@@ -235,6 +235,7 @@
     "editSurveyDetailsDesc": "Modify survey parameters.",
     "cancelChanges": "Cancel changes",
     "saveChanges": "Save changes",
+    "saving": "Saving...",
     "surveyUpdated": "Changes saved"
   },
   "Settings": {

@@ -10,20 +10,20 @@ const questionSchema = z.object({
   id: z.string().optional(),
   text: z.string().min(1),
   type: z.enum(['SINGLE_CHOICE', 'MULTI_CHOICE', 'TEXT', 'SCALE']),
-  options: z.array(z.string()).optional(),
+  options: z.array(z.string().min(1)).optional(),
   order: z.number()
 });
 
 const updateSurveySchema = z.object({
   id: z.string(),
   title: z.string().min(1),
-  description: z.string().optional(),
+  description: z.string().optional().or(z.literal('')),
   questions: z.array(questionSchema).min(1)
 });
 
 const createSurveySchema = z.object({
   title: z.string().min(1),
-  description: z.string().optional(),
+  description: z.string().optional().or(z.literal('')),
   questions: z.array(questionSchema).min(1)
 });
 
@@ -310,7 +310,8 @@ export const updateSurvey = async (data: z.infer<typeof updateSurveySchema>) => 
 
   const parsed = updateSurveySchema.safeParse(data);
   if (!parsed.success) {
-    return { error: 'Некорректные данные' };
+    console.error('Validation error updating survey:', parsed.error.format());
+    return { error: 'Некорректные данные проверьте консоль' };
   }
 
   try {

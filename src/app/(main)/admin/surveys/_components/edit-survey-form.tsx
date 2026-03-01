@@ -281,7 +281,7 @@ export const EditSurveyForm = ({
         id: q.id,
         text: q.text,
         type: q.type,
-        options: q.type === 'TEXT' ? undefined : q.options.filter(o => o.trim()),
+        options: q.type === 'TEXT' ? [] : q.options.filter(o => o.trim()),
         order: i
       }))
     });

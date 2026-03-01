@@ -246,6 +246,7 @@
     "editSurveyDetailsDesc": "Измените параметры опроса.",
     "cancelChanges": "Отменить изменения",
     "saveChanges": "Сохранить изменения",
+    "saving": "Сохраняю...",
     "surveyUpdated": "Изменения сохранены"
   },
   "Settings": {
