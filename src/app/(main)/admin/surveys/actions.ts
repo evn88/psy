@@ -218,3 +218,26 @@ export const deleteSurvey = async (surveyId: string) => {
     return { error: 'Не удалось удалить опрос' };
   }
 };
+
+/**
+ * Удаляет все комментарии для определенного результата (пользователя) в опросе.
+ * @param resultId - ID результата
+ */
+export const clearComments = async (resultId: string) => {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== 'ADMIN') {
+    return { error: 'Недостаточно прав' };
+  }
+
+  try {
+    await prisma.surveyComment.deleteMany({
+      where: { resultId }
+    });
+
+    revalidatePath('/admin/surveys');
+    return { success: true };
+  } catch (error) {
+    console.error('Ошибка очистки комментариев:', error);
+    return { error: 'Не удалось очистить комментарии' };
+  }
+};

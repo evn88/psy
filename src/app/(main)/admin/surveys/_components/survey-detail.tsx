@@ -20,8 +20,19 @@ import {
   AccordionItem,
   AccordionTrigger
 } from '@/components/ui/accordion';
-import { UserPlus, CheckCircle2, Clock, MessageSquare, Send } from 'lucide-react';
-import { assignSurvey, addComment, markAsReadByAdmin } from '../actions';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from '@/components/ui/alert-dialog';
+import { UserPlus, CheckCircle2, Clock, MessageSquare, Send, Trash2 } from 'lucide-react';
+import { assignSurvey, addComment, markAsReadByAdmin, clearComments } from '../actions';
 import { useTranslations } from 'next-intl';
 
 function VisibilityObserver({
@@ -116,10 +127,12 @@ export const SurveyDetail = ({
   allUsers
 }: SurveyDetailProps) => {
   const t = useTranslations('AdminSurveys');
+  const tCommon = useTranslations('Common');
   const router = useRouter();
   const [selectedUserId, setSelectedUserId] = useState('');
   const [commentText, setCommentText] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [clearingId, setClearingId] = useState<string | null>(null);
 
   const [newCommentIds, setNewCommentIds] = useState(() => {
     const ids = new Set<string>();
@@ -158,6 +171,17 @@ export const SurveyDetail = ({
     },
     [surveyId]
   );
+
+  /** Сброс всех комментариев в опросе */
+  const handleClearComments = async (resultId: string) => {
+    setClearingId(resultId);
+    const result = await clearComments(resultId);
+    if (result.success) {
+      router.refresh();
+      // Вызываем reload или refresh, чтобы данные подтянулись заново.
+    }
+    setClearingId(null);
+  };
 
   const assignedUserIds = assignments.map(a => a.user.id);
   const unassignedUsers = allUsers.filter(u => !assignedUserIds.includes(u.id));
@@ -319,10 +343,50 @@ export const SurveyDetail = ({
 
                           {/* Комментарии */}
                           <div className="space-y-2">
-                            <h4 className="font-medium text-sm flex items-center gap-1">
-                              <MessageSquare className="h-4 w-4" />
-                              {t('comments')}
-                            </h4>
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-medium text-sm flex items-center gap-1">
+                                <MessageSquare className="h-4 w-4" />
+                                {t('comments')}
+                              </h4>
+                              {assignment.result.comments.length > 0 && (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                      disabled={clearingId === assignment.result.id}
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      {clearingId === assignment.result.id
+                                        ? t('clearing')
+                                        : t('clearComments')}
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>
+                                        {tCommon('back') === 'Back'
+                                          ? 'Are you absolutely sure?'
+                                          : 'Вы уверены?'}
+                                      </AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        {t('clearCommentsConfirm')}
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>{tCommon('cancel')}</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                        onClick={() => handleClearComments(assignment.result!.id)}
+                                      >
+                                        {t('clearComments')}
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
+                            </div>
                             {assignment.result.comments.length > 0 ? (
                               assignment.result.comments.map(comment => {
                                 const isNewComment = newCommentIds.has(comment.id);

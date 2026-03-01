@@ -220,7 +220,10 @@
     "noComments": "No comments yet.",
     "addCommentPlaceholder": "Add a comment...",
     "notCompleted": "User hasn't completed the survey yet.",
-    "clearDraft": "Clear Draft"
+    "clearDraft": "Clear Draft",
+    "clearComments": "Clear All Comments",
+    "clearCommentsConfirm": "Are you sure you want to delete all messages in this dialogue? This action cannot be undone.",
+    "clearing": "Clearing..."
   },
   "Settings": {
     "title": "Settings",
