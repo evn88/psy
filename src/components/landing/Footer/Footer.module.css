@@ -1,0 +1,5 @@
+.footer {
+  /* TODO: стили Footer */
+  background-color: var(--color-dark);
+  color: var(--color-white);
+}
