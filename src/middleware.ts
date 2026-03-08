@@ -1,19 +1,15 @@
-import NextAuth from 'next-auth';
-import { authConfig } from './auth.config';
-import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+import NextAuth from 'next-auth';
 import { routing } from './i18n/routing';
+import { authConfig } from '@/auth.config';
 
+// Инициализируем auth специально для Edge
 const { auth } = NextAuth(authConfig);
 
 const SUPPORTED_LOCALES = routing.locales as unknown as string[];
 const DEFAULT_LOCALE = routing.defaultLocale;
 
-/**
- * Определяет locale из cookie или Accept-Language заголовка.
- * @param req - входящий запрос
- * @returns поддерживаемый locale или defaultLocale
- */
 const resolveLocale = (req: NextRequest): string => {
   const cookieLocale = req.cookies.get('NEXT_LOCALE')?.value;
   if (cookieLocale && SUPPORTED_LOCALES.includes(cookieLocale)) {
@@ -29,28 +25,27 @@ const resolveLocale = (req: NextRequest): string => {
   return preferred ?? DEFAULT_LOCALE;
 };
 
-export default auth(req => {
-  const isLoggedIn = !!req.auth;
+// Классическое объявление функции middleware
+export default async function middleware(req: NextRequest) {
+  // 1. Получаем сессию вручную асинхронным вызовом
+  const session = await auth();
+  const isLoggedIn = !!session;
+  // 2. Обращаемся к роли пользователя через session, а не через req.auth
+  const userRole = session?.user?.role;
+
   const pathname = req.nextUrl.pathname;
   const isAuthPage = pathname.startsWith('/auth');
   const isAdminRoute = pathname.startsWith('/admin');
   const isMyRoute = pathname.startsWith('/my');
 
-  // Устанавливаем cookie NEXT_LOCALE если оно ещё не задано
   const resolvedLocale = resolveLocale(req);
   const hasLocaleCookie = !!req.cookies.get('NEXT_LOCALE')?.value;
 
   if (isAuthPage) {
     if (isLoggedIn) {
-      // @ts-ignore
-      const role = req.auth?.user?.role;
-      if (role === 'ADMIN') {
-        return NextResponse.redirect(new URL('/admin', req.nextUrl));
-      }
-      if (role === 'USER') {
-        return NextResponse.redirect(new URL('/my', req.nextUrl));
-      }
-      // GUEST → только профиль в ЛК
+      if (userRole === 'ADMIN') return NextResponse.redirect(new URL('/admin', req.nextUrl));
+      if (userRole === 'USER') return NextResponse.redirect(new URL('/my', req.nextUrl));
+
       return NextResponse.redirect(new URL('/my/profile', req.nextUrl));
     }
 
@@ -64,36 +59,24 @@ export default auth(req => {
   }
 
   if (isAdminRoute) {
-    if (!isLoggedIn) {
-      return NextResponse.redirect(new URL('/auth', req.nextUrl));
-    }
-    // @ts-ignore
-    if (req.auth.user.role !== 'ADMIN') {
-      return NextResponse.redirect(new URL('/my', req.nextUrl));
-    }
+    if (!isLoggedIn) return NextResponse.redirect(new URL('/auth', req.nextUrl));
+    if (userRole !== 'ADMIN') return NextResponse.redirect(new URL('/my', req.nextUrl));
     return null;
   }
 
   if (isMyRoute) {
-    if (!isLoggedIn) {
-      return NextResponse.redirect(new URL('/auth', req.nextUrl));
-    }
+    if (!isLoggedIn) return NextResponse.redirect(new URL('/auth', req.nextUrl));
 
-    // @ts-ignore
-    const role = req.auth?.user?.role;
-
-    // GUEST может видеть только /my/profile и /my/settings
-    if (role === 'GUEST') {
+    if (userRole === 'GUEST') {
       const allowedGuestPaths = ['/my/profile', '/my/settings'];
       const isAllowed = allowedGuestPaths.some(p => pathname.startsWith(p));
       if (!isAllowed) {
         return NextResponse.redirect(new URL('/my/profile', req.nextUrl));
       }
     }
-
     return null;
   }
-});
+}
 
 export const config = {
   matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)']
