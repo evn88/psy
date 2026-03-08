@@ -14,7 +14,7 @@ import { Footer } from '@/components/landing/Footer/Footer';
  */
 const HomePage = () => {
   return (
-    <div className="landing">
+    <div className={'landing'}>
       <Hero />
       <About />
       <Problems />

@@ -55,7 +55,7 @@ const RootLayout: FC<RootLayoutType> = async ({ children }) => {
             >
               <HeartbeatProvider>
                 {/*<Navbar />*/}
-                <main className="px-4 md:px-0">{children}</main>
+                <main>{children}</main>
                 <Analytics />
                 <SpeedInsights />
               </HeartbeatProvider>
