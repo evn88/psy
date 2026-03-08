@@ -11,10 +11,6 @@ const nextConfig = {
       new URL('https://lh3.googleusercontent.com/a/**'),
       new URL('https://www.amcharts.com/wp-content/themes/amcharts4/css/img/*')
     ]
-  },
-  eslint: {
-    // Это разрешит сборку даже при ошибках линтера
-    ignoreDuringBuilds: true
   }
 };
 
