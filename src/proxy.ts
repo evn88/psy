@@ -26,7 +26,7 @@ const resolveLocale = (req: NextRequest): string => {
 };
 
 // Классическое объявление функции middleware
-export default async function middleware(req: NextRequest) {
+export default async function proxy(req: NextRequest) {
   // 1. Получаем сессию вручную асинхронным вызовом
   const session = await auth();
   const isLoggedIn = !!session;
