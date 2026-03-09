@@ -62,6 +62,19 @@ const config: Config = {
           'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))'
+        },
+        brand: {
+          pink: {
+            DEFAULT: 'var(--color-pink)',
+            light: 'var(--color-pink-light)',
+            soft: 'var(--color-pink-soft)'
+          },
+          blue: {
+            DEFAULT: 'var(--color-blue)',
+            soft: 'var(--color-blue-soft)'
+          },
+          dark: 'var(--color-dark)',
+          grey: 'var(--color-grey)'
         }
       },
       borderRadius: {
