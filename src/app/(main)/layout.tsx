@@ -43,9 +43,13 @@ const RootLayout: FC<RootLayoutType> = async ({ children }) => {
   const messages = await getMessages();
 
   return (
-    <html lang={locale} suppressHydrationWarning>
+    <html
+      lang={locale}
+      suppressHydrationWarning
+      className={`${inter.variable} ${sunlessDay.variable}`}
+    >
       <Providers>
-        <body className={`${inter.variable} ${sunlessDay.variable}`}>
+        <body>
           <NextIntlClientProvider locale={locale} messages={messages}>
             <ThemeProvider
               attribute="class"

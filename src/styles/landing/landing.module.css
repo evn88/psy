@@ -1,18 +1,20 @@
 /* ============================================================
-   LANDING — БАЗОВЫЕ СТИЛИ
-   Импортирует токены, задаёт типографику и утилиты.
-   Всё скоупировано под .landing — admin/my не затронуты.
+   LANDING — БАЗОВЫЕ СТИЛИ (CSS Module)
+   Все стили скоупированы на .landingWrapper, 
+   чтобы не влиять на admin/my страницы.
    ============================================================ */
-@import './variables.css';
 
-/* ---- Базовый wrapper ---- */
-.landing {
+.landingWrapper {
+  /* ---- Базовый wrapper ---- */
   /* 1em = 10px внутри лендинга.
      rem НЕ меняем — Tailwind/Shadcn остаются нетронутыми. */
   font-size: 10px;
   font-family: var(--font-body), serif;
-  color: var(--color-dark);
-  background-color: var(--color-white);
+  color: var(--landing-text);
+  background-color: var(--landing-bg);
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 
   /* Сброс отступов от layout */
   margin: 0;
@@ -21,51 +23,88 @@
   overflow-x: hidden;
 }
 
+/* ---- Theme Toggle Button ---- */
+.themeToggle {
+  position: fixed;
+  top: 2.4rem;
+  right: 2.4rem;
+  width: 2.8rem;
+  height: 2.8rem;
+  z-index: 50;
+  padding: 0.8rem;
+  border-radius: var(--radius-pill);
+  background-color: var(--landing-surface);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--landing-border);
+  color: var(--landing-text);
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.themeToggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.themeToggle:hover:not(:disabled) {
+  background-color: var(--landing-border);
+}
+
+.themeToggleIcon {
+  width: 2rem;
+  height: 2rem;
+}
+
 /* ---- Изображения: адаптивные по умолчанию ---- */
-.landing img,
-.landing picture {
+.landingWrapper img,
+.landingWrapper picture {
   max-width: 100%;
   height: auto;
   display: block;
 }
 
 /* ---- Типографика ---- */
-.landing h1 {
+.landingWrapper h1 {
   font-family: var(--font-heading), serif;
   font-size: var(--text-h1);
   line-height: var(--lh-heading);
   font-weight: 400;
 }
 
-.landing h2 {
+.landingWrapper h2 {
   font-family: var(--font-heading), serif;
   font-size: var(--text-h2);
   line-height: var(--lh-heading);
   font-weight: 400;
 }
 
-.landing h3 {
+.landingWrapper h3 {
   font-family: var(--font-heading), serif;
   font-size: var(--text-h3);
   line-height: var(--lh-heading);
   font-weight: 400;
 }
 
-.landing h4 {
+.landingWrapper h4 {
   font-family: var(--font-body), serif;
   font-size: var(--text-h4);
   line-height: var(--lh-heading);
   font-weight: 600;
 }
 
-.landing p {
+.landingWrapper p {
   font-family: var(--font-body), serif;
   font-size: var(--text-body);
   line-height: var(--lh-body);
 }
 
 /* ---- Контейнер ---- */
-.landing .container {
+.landingWrapper .container {
   width: 100%;
   max-width: var(--container-max);
   margin-inline: auto;
@@ -73,33 +112,33 @@
 }
 
 /* ---- Утилиты ---- */
-.landing .text-heading {
+.landingWrapper .text-heading {
   font-family: var(--font-heading), serif;
 }
 
-.landing .text-pink {
+.landingWrapper .text-pink {
   color: var(--color-pink);
 }
 
-.landing .text-blue {
+.landingWrapper .text-blue {
   color: var(--color-blue);
 }
 
-.landing .bg-pink-soft {
+.landingWrapper .bg-pink-soft {
   background-color: var(--color-pink-soft);
 }
 
-.landing .bg-blue-soft {
+.landingWrapper .bg-blue-soft {
   background-color: var(--color-blue-soft);
 }
 
 /* ---- Fluid image-контейнер ---- */
-.landing .img-fluid {
+.landingWrapper .img-fluid {
   width: clamp(28em, 40vw, 60em);
 }
 
 /* ---- Секция (общий паттерн) ---- */
-.landing section {
+.landingWrapper section {
   width: 100%;
   padding-block: var(--space-xl);
 }
