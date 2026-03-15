@@ -1,0 +1,20 @@
+{
+  "verification": {
+    "subject": "Confirm your email — Vershkov.com",
+    "heading": "Email Verification",
+    "greeting": "Hello, {name}!",
+    "message": "Thank you for registering on vershkov.com. Please confirm your email address by clicking the button below.",
+    "button": "Verify Email",
+    "linkHint": "Or copy this link into your browser:",
+    "expiry": "This link will expire in 24 hours.",
+    "footer": "If you did not create an account, you can safely ignore this email."
+  },
+  "welcomeGoogle": {
+    "subject": "Welcome to Vershkov.com",
+    "heading": "Welcome!",
+    "greeting": "Hello, {name}!",
+    "message": "Your account has been successfully created using Google Sign-In. You can now access all available features.",
+    "button": "Go to Dashboard",
+    "footer": "This is an automated message. Please do not reply."
+  }
+}
