@@ -38,3 +38,9 @@ next-env.d.ts
 /.env
 
 /generated/prisma
+/.claude
+/.agent
+/.agents
+skills-lock.json
+/.vscode
+/.tmp-install
