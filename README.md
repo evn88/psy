@@ -122,6 +122,7 @@ npm run dev
 | `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
 | `RESEND_API_KEY` | Resend API key for emails |
 | `NEXT_PUBLIC_APP_URL` | Base URL of the application |
+| `PROD_DOMAIN` | Production domain with protocol (e.g., https://example.com) - required for production emails |
 
 ---
 
