@@ -1,0 +1,141 @@
+/* ==============================================
+   HERO — Первый экран лендинга
+   ============================================== */
+
+/* Секция — розовый фон, полный экран */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  background: var(--color-pink);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: clamp(6em, 10vw, 14em); /* место под горы */
+}
+
+/* Синие горы (фото) */
+.hero__mountains {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 42%;
+  z-index: 0;
+}
+
+/* Крафт-конверт */
+.hero__envelope {
+  position: relative;
+  z-index: 1;
+  max-width: 116em;
+  width: calc(100% - clamp(2em, 4vw, 8em));
+  margin: clamp(3em, 5vw, 6em) auto 0;
+  border-radius: 0.6em;
+}
+
+/* Картинка конверта — фоновый слой */
+.hero__envelopImg {
+  position: absolute !important;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+  border-radius: 0.6em;
+  z-index: 0;
+}
+
+/* Белая карточка поверх конверта */
+.hero__card {
+  position: relative;
+  z-index: 1;
+  background: var(--color-white);
+  border-radius: 0.6em 0.6em 0 0;
+  overflow: visible;
+}
+
+/* Контентная область (отступы, чтобы освободить место под фото) */
+.hero__content {
+  padding: clamp(2em, 3vw, 4em) clamp(8em, 16vw, 22em);
+  text-align: center;
+}
+
+/* Заголовок */
+.hero__title {
+  font-family: var(--font-heading);
+  font-size: var(--text-h1);
+  line-height: 0.9;
+  color: var(--color-dark);
+  margin-bottom: 0.5em;
+}
+
+/* Обёртка для «ты устал» + SVG овал */
+.hero__titleCircled {
+  position: relative;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* SVG овал — абсолютно поверх текста */
+.hero__oval {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 115%;
+  height: 160%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+/* Подзаголовок */
+.hero__sub {
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: 1.5;
+  color: var(--color-dark);
+  max-width: 46em;
+  margin: 0 auto 1.2em;
+}
+
+/* Вопрос с хайлайтом */
+.hero__question {
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: 1.6;
+  color: var(--color-dark);
+  max-width: 46em;
+  margin: 0 auto 2em;
+}
+
+/* Розовый хайлайт */
+.hero__highlight {
+  background: var(--color-pink);
+  border-radius: 0.3em;
+  padding: 0.15em 0.5em;
+  font-weight: 600;
+}
+
+/* Стрелка вниз */
+.hero__arrow {
+  display: flex;
+  justify-content: center;
+  padding-bottom: clamp(2em, 4vw, 5em);
+}
+
+/* Фото кота — абсолютно, слева */
+.hero__cat {
+  position: absolute;
+  bottom: 0;
+  left: clamp(-2em, -4vw, -6em);
+  width: clamp(12em, 16vw, 22em);
+  pointer-events: none;
+}
+
+/* Фото собаки — абсолютно, справа */
+.hero__dog {
+  position: absolute;
+  bottom: 0;
+  right: clamp(-2em, -4vw, -6em);
+  width: clamp(10em, 14vw, 18em);
+  pointer-events: none;
+}
