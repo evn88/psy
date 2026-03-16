@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import { signIn } from 'next-auth/react';
 import {
   AlertDialog,
@@ -26,17 +27,26 @@ interface ProfileFormProps {
   hasPasskeys: boolean;
   isGoogleLinked: boolean;
   googleLinkedAt?: Date | null;
+  /** Есть ли у пользователя пароль (credentials) */
+  hasPassword: boolean;
+  /** Дата последнего входа */
+  lastLoginAt?: Date | null;
+  /** IP последнего входа */
+  lastLoginIp?: string | null;
 }
 
 /**
  * Форма управления профилем пользователя.
- * Позволяет обновлять имя, управлять passkeys и привязкой Google.
+ * Позволяет обновлять имя, управлять Google привязкой, менять пароль.
  */
 export const ProfileForm = ({
   user,
   hasPasskeys: initialHasPasskeys,
   isGoogleLinked: initialIsGoogleLinked,
-  googleLinkedAt
+  googleLinkedAt,
+  hasPassword,
+  lastLoginAt,
+  lastLoginIp
 }: ProfileFormProps) => {
   const t = useTranslations('Profile');
   const router = useRouter();
@@ -46,8 +56,14 @@ export const ProfileForm = ({
   const [showAlertOpen, setShowAlertOpen] = useState(false);
   const [alertConfig, setAlertConfig] = useState({ title: '', message: '' });
 
+  // Состояние формы смены пароля
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
+
   /**
-   * Показывает диалоговое окно с сообщением.
+   * Показывает информационный диалог.
    */
   const showAlert = (title: string, message: string) => {
     setAlertConfig({ title, message });
@@ -82,11 +98,45 @@ export const ProfileForm = ({
   };
 
   /**
+   * Обрабатывает смену пароля.
+   */
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordLoading(true);
+
+    try {
+      const res = await fetch('/api/profile/password', {
+        method: 'POST',
+        body: JSON.stringify({ currentPassword, newPassword }),
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (res.ok) {
+        setCurrentPassword('');
+        setNewPassword('');
+        setShowPasswordForm(false);
+        showAlert(t('successTitle'), t('passwordChangeSuccess'));
+      } else {
+        const data = await res.json();
+        showAlert(
+          t('errorTitle'),
+          data.message === 'Current password is incorrect'
+            ? t('passwordCurrentIncorrect')
+            : t('passwordChangeFailed')
+        );
+      }
+    } catch {
+      showAlert(t('errorTitle'), t('passwordChangeFailed'));
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  /**
    * Инициирует привязку Google аккаунта.
    */
   const handleLinkGoogle = async () => {
     setLoading(true);
-    // При входе через провайдера NextAuth автоматически привяжет аккаунт к текущему пользователю
     await signIn('google', { callbackUrl: window.location.href });
   };
 
@@ -112,6 +162,42 @@ export const ProfileForm = ({
     }
   };
 
+  /**
+   * Форматирует дату Google привязки.
+   */
+  const formatGoogleLinkedDate = (date: Date | null | undefined): string => {
+    if (!date) return '';
+    const d = new Date(date);
+    return (
+      d.toLocaleDateString('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      }) +
+      ' ' +
+      t('at') +
+      ' ' +
+      d.toLocaleTimeString('ru-RU', {
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    );
+  };
+
+  /**
+   * Форматирует дату последнего входа.
+   */
+  const formatLastLogin = (date: Date | null | undefined): string => {
+    if (!date) return '—';
+    return new Date(date).toLocaleString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   return (
     <>
       <form onSubmit={handleSave} className="space-y-4">
@@ -134,7 +220,98 @@ export const ProfileForm = ({
           {loading ? t('saving') : t('save')}
         </Button>
 
-        <div className="pt-4 border-t border-border">
+        {/* Последний вход */}
+        {lastLoginAt && (
+          <>
+            <Separator />
+            <div className="space-y-2">
+              <Label>{t('lastLoginTitle')}</Label>
+              <div className="text-sm text-muted-foreground space-y-1">
+                <div>
+                  {t('lastLoginDate')}: {formatLastLogin(lastLoginAt)}
+                </div>
+                {lastLoginIp && (
+                  <div>
+                    IP: <span className="font-mono text-xs">{lastLoginIp}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Смена пароля — только для credentials */}
+        {hasPassword && (
+          <>
+            <Separator />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>{t('passwordTitle')}</Label>
+                {!showPasswordForm && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowPasswordForm(true)}
+                  >
+                    {t('changePassword')}
+                  </Button>
+                )}
+              </div>
+              {showPasswordForm && (
+                <div className="space-y-3 rounded-lg border p-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="currentPassword">{t('currentPassword')}</Label>
+                    <Input
+                      id="currentPassword"
+                      type="password"
+                      value={currentPassword}
+                      onChange={e => setCurrentPassword(e.target.value)}
+                      disabled={passwordLoading}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="newPassword">{t('newPassword')}</Label>
+                    <Input
+                      id="newPassword"
+                      type="password"
+                      value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)}
+                      disabled={passwordLoading}
+                      minLength={6}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={passwordLoading || !currentPassword || !newPassword}
+                      onClick={handlePasswordChange}
+                    >
+                      {passwordLoading ? t('saving') : t('save')}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setShowPasswordForm(false);
+                        setCurrentPassword('');
+                        setNewPassword('');
+                      }}
+                    >
+                      {t('cancel')}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Google аккаунт */}
+        <Separator />
+        <div>
           <Label>{t('googleAccount')}</Label>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border border-border p-4 bg-card mt-2">
             <div className="space-y-0.5">
@@ -183,14 +360,9 @@ export const ProfileForm = ({
               )}
             </div>
           </div>
-          {isGoogleLinked && (
+          {isGoogleLinked && googleLinkedAt && (
             <div className="text-sm text-muted-foreground mt-2">
-              <span className="font-medium text-foreground">{t('linkedAccount')} </span>
-              {t('linkedAccountInfo', {
-                name: user.name || 'N/A',
-                email: user.email || 'N/A',
-                date: googleLinkedAt ? new Date(googleLinkedAt).toLocaleDateString('ru-RU') : 'N/A'
-              })}
+              {t('linkedToGoogle', { date: formatGoogleLinkedDate(googleLinkedAt) })}
             </div>
           )}
         </div>

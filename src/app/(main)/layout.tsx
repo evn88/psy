@@ -8,6 +8,7 @@ import { Inter } from 'next/font/google';
 import localFont from 'next/font/local';
 import { ThemeProvider } from '@/components/theme-provider';
 import { HeartbeatProvider } from '@/components/heartbeat-provider';
+import { Toaster } from 'sonner';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 
@@ -63,6 +64,7 @@ const RootLayout: FC<RootLayoutType> = async ({ children }) => {
                 <Analytics />
                 <SpeedInsights />
               </HeartbeatProvider>
+              <Toaster position="bottom-right" richColors closeButton />
             </ThemeProvider>
           </NextIntlClientProvider>
         </body>

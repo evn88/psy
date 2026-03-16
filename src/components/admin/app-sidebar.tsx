@@ -2,15 +2,16 @@
 
 import * as React from 'react';
 import {
+  Brain,
+  ChevronsUpDown,
+  ClipboardList,
+  Home,
   LayoutDashboard,
   LogOut,
+  Send,
   Settings,
   User,
-  Users,
-  Home,
-  ChevronsUpDown,
-  Brain,
-  ClipboardList
+  Users
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -75,6 +76,12 @@ export function AppSidebar({ user, unreadSurveysCount = 0, ...props }: AppSideba
       url: '/admin/surveys',
       icon: ClipboardList,
       isActive: pathname.startsWith('/admin/surveys')
+    },
+    {
+      title: tItems('sendEmail'),
+      url: '/admin/send-email',
+      icon: Send,
+      isActive: pathname.startsWith('/admin/send-email')
     },
     {
       title: tItems('profile'),

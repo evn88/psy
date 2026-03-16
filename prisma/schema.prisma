@@ -35,14 +35,17 @@ model User {
   image         String?
   password      String?
   role          Role            @default(GUEST)
+  isDisabled    Boolean         @default(false)
   accounts      Account[]
   sessions      Session[]
   // Опционально для поддержки WebAuthn
   Authenticator Authenticator[]
+  loginHistory  UserLoginHistory[]
 
-  language String    @default("ru")
-  theme    String    @default("system")
-  lastSeen DateTime? @default(now())
+  language       String    @default("ru")
+  theme          String    @default("system")
+  lastSeen       DateTime? @default(now())
+  registrationIp String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -196,4 +199,14 @@ model SurveyComment {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+/// История входов пользователя (хранится не более 3 записей на пользователя)
+model UserLoginHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ip        String?
+  provider  String   // "credentials", "google", "webauthn"
+  createdAt DateTime @default(now())
 }

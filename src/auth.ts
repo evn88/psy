@@ -8,6 +8,11 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { authConfig } from './auth.config';
 import { getRPID } from '@/app/api/profile/passkeys/register/config';
+import { sendWelcomeGoogleEmail } from '@/shared/lib/email';
+import { headers } from 'next/headers';
+
+/** Максимальное количество записей истории входов на пользователя */
+const MAX_LOGIN_HISTORY = 3;
 
 async function getUser(email: string) {
   try {
@@ -18,6 +23,53 @@ async function getUser(email: string) {
   } catch (error) {
     console.error('Failed to fetch user:', error);
     throw new Error('Failed to fetch user.');
+  }
+}
+
+/**
+ * Получает IP адрес из заголовков запроса.
+ * @returns IP адрес или null
+ */
+async function getClientIp(): Promise<string | null> {
+  try {
+    const hdrs = await headers();
+    return hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() ?? hdrs.get('x-real-ip') ?? null;
+  } catch (_error: unknown) {
+    return null;
+  }
+}
+
+/**
+ * Записывает вход пользователя в историю.
+ * Хранит не более MAX_LOGIN_HISTORY записей, удаляя старые.
+ * @param userId - ID пользователя
+ * @param provider - провайдер авторизации
+ */
+async function recordLoginHistory(userId: string, provider: string): Promise<void> {
+  try {
+    const ip = await getClientIp();
+
+    // Создаём новую запись
+    await prisma.userLoginHistory.create({
+      data: { userId, ip, provider }
+    });
+
+    // Удаляем старые записи, оставляя только последние MAX_LOGIN_HISTORY
+    const allEntries = await prisma.userLoginHistory.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true }
+    });
+
+    if (allEntries.length > MAX_LOGIN_HISTORY) {
+      const idsToDelete = allEntries.slice(MAX_LOGIN_HISTORY).map((e: { id: string }) => e.id);
+      await prisma.userLoginHistory.deleteMany({
+        where: { id: { in: idsToDelete } }
+      });
+    }
+  } catch (error) {
+    // Не блокируем вход при ошибке записи истории
+    console.error('Failed to record login history:', error);
   }
 }
 
@@ -65,26 +117,53 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             return null;
           }
 
+          // Проверяем подтверждение email
+          if (!user.emailVerified) {
+            throw new Error('EmailNotVerified');
+          }
+
+          // Проверяем, не отключена ли учётная запись
+          if (user.isDisabled) {
+            throw new Error('AccountDisabled');
+          }
+
           const passwordsMatch = await bcrypt.compare(password, user.password);
-          if (passwordsMatch) return user;
+          if (passwordsMatch) {
+            // Записываем вход в историю
+            await recordLoginHistory(user.id, 'credentials');
+            return user;
+          }
 
           // Record failed attempt
           await prisma.loginAttempt.create({ data: { email } });
         }
-        console.log('Invalid credentials');
         return null;
       }
     })
   ],
   callbacks: {
     ...authConfig.callbacks,
-    // We can override/extend callbacks here if we need server-side specific logic (like refreshing role from DB)
-    // BUT for now, let's rely on the token info to be safe and consistent with middleware.
-    // If we really need DB refresh, we can add it here, but it won't run on Edge.
-    // For simplicity and preventing "mixed behavior", let's stick to the authConfig callbacks
-    // which rely on the initial login token data.
 
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account }) {
+      // Проверяем isDisabled для всех провайдеров
+      if (user.email) {
+        const dbUser = await prisma.user.findUnique({
+          where: { email: user.email },
+          select: { isDisabled: true, id: true }
+        });
+
+        if (dbUser?.isDisabled) {
+          return '/auth?error=AccountDisabled';
+        }
+
+        // Записываем вход для Google и WebAuthn
+        if (account?.provider === 'google' || account?.provider === 'webauthn') {
+          if (dbUser?.id) {
+            await recordLoginHistory(dbUser.id, account.provider);
+          }
+        }
+      }
+
       if (account?.provider === 'google') {
         const existingUser = await prisma.user.findUnique({
           where: { email: user.email as string },
@@ -93,29 +172,66 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (existingUser) {
           const isLinkedInDB = existingUser.accounts.some((acc: any) => acc.provider === 'google');
-          // If the account is NOT linked yet and it's NOT the special user
+          // Если аккаунт НЕ привязан и это НЕ специальный пользователь
           if (!isLinkedInDB && user.email !== 'evn88fx64@gmail.com') {
-            // Check if user was trying to register or sign in.
-            // If they have a password, they already have an account.
             return '/auth?error=UserExists';
           }
         }
       }
 
       if (user.email === 'evn88fx64@gmail.com') {
-        // Force ADMIN role in database if not already set
         // @ts-ignore
         if (user.role !== 'ADMIN') {
           await prisma.user.update({
             where: { email: user.email },
             data: { role: 'ADMIN' }
           });
-          // Update the user object in memory so the JWT callback sees the new role immediately
           // @ts-ignore
           user.role = 'ADMIN';
         }
       }
       return true;
+    }
+  },
+  events: {
+    /**
+     * Событие createUser срабатывает при создании нового пользователя через PrismaAdapter (Google OAuth).
+     * Сохраняем email как подтверждённый (Google уже верифицировал).
+     */
+    async createUser({ user }) {
+      if (user.id) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { emailVerified: new Date() }
+        });
+      }
+    },
+    /**
+     * Событие linkAccount срабатывает после создания аккаунта и привязки к провайдеру.
+     * Отправляем welcome email при первой Google регистрации.
+     */
+    async linkAccount({ user, account }) {
+      if (account.provider === 'google' && user.id) {
+        const userAccounts = await prisma.account.findMany({
+          where: { userId: user.id }
+        });
+
+        // Если у пользователя только 1 аккаунт — это первая регистрация
+        if (userAccounts.length === 1) {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: user.id },
+            select: { language: true }
+          });
+
+          const locale = dbUser?.language ?? 'en';
+
+          await sendWelcomeGoogleEmail({
+            email: user.email as string,
+            name: user.name ?? 'User',
+            locale
+          });
+        }
+      }
     }
   }
 });

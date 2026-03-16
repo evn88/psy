@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
+import { toast } from 'sonner';
 
 /**
  * Определяет язык браузера пользователя и возвращает поддерживаемый locale.
@@ -33,6 +34,20 @@ const detectBrowserLanguage = (): 'en' | 'ru' => {
   }
 
   return 'en';
+};
+
+/**
+ * Получает текущий locale из cookie NEXT_LOCALE.
+ * Если cookie нет — определяет по браузеру.
+ * @returns текущий locale
+ */
+const getCurrentLocale = (): string => {
+  if (typeof document === 'undefined') return 'en';
+
+  const match = document.cookie.match(/NEXT_LOCALE=([^;]+)/);
+  if (match) return match[1];
+
+  return detectBrowserLanguage();
 };
 
 /**
@@ -61,13 +76,26 @@ export default function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
 
   useEffect(() => {
     const errorParam = searchParams.get('error');
+    const verified = searchParams.get('verified');
+
+    if (verified === 'true') {
+      toast.success(t('emailVerifiedSuccess'));
+    }
+
     if (errorParam === 'UserExists') {
       setError(t('userExists'));
     } else if (errorParam === 'OAuthAccountNotLinked') {
       setError(t('oauthAccountNotLinked'));
+    } else if (errorParam === 'VerificationFailed') {
+      toast.error(t('verificationFailed'));
+    } else if (errorParam === 'VerificationExpired') {
+      toast.error(t('verificationExpired'));
+    } else if (errorParam === 'AccountDisabled') {
+      toast.error(t('accountDisabled'));
     }
   }, [searchParams, t]);
 
@@ -93,7 +121,14 @@ export default function AuthPage() {
       });
 
       if (result?.error) {
-        setError(t('invalidCredentials'));
+        // Проверяем, связана ли ошибка с неподтверждённым email
+        if (result.error.includes('EmailNotVerified')) {
+          toast.error(t('emailNotVerified'));
+        } else if (result.error.includes('AccountDisabled')) {
+          toast.error(t('accountDisabled'));
+        } else {
+          setError(t('invalidCredentials'));
+        }
       } else {
         const detectedLocale = detectBrowserLanguage();
         await applyUserLanguage(detectedLocale);
@@ -113,12 +148,15 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
+      const locale = getCurrentLocale();
+
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         body: JSON.stringify({
           name: registerName,
           email: registerEmail,
-          password: registerPassword
+          password: registerPassword,
+          locale
         }),
         headers: { 'Content-Type': 'application/json' }
       });
@@ -128,18 +166,9 @@ export default function AuthPage() {
         throw new Error(data.message || t('registrationFailed'));
       }
 
-      // Auto login after registration
-      await signIn('credentials', {
-        email: registerEmail,
-        password: registerPassword,
-        redirect: false
-      });
-
-      const detectedLocale = detectBrowserLanguage();
-      await applyUserLanguage(detectedLocale);
-
-      router.push('/admin');
-      router.refresh();
+      // Показываем сообщение «проверьте email» вместо автологина
+      setRegistrationSuccess(true);
+      toast.success(t('checkEmailTitle'));
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : t('unexpectedError'));
     } finally {
@@ -172,6 +201,53 @@ export default function AuthPage() {
       setLoading(false);
     }
   };
+
+  // Экран подтверждения email после регистрации
+  if (registrationSuccess) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md border-border shadow-lg">
+          <CardHeader className="space-y-1 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-primary"
+              >
+                <rect width="20" height="16" x="2" y="4" rx="2" />
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+              </svg>
+            </div>
+            <CardTitle className="text-2xl font-bold tracking-tight">
+              {t('checkEmailTitle')}
+            </CardTitle>
+            <CardDescription className="text-base">
+              {t('checkEmailMessage', { email: registerEmail })}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setRegistrationSuccess(false);
+                setActiveTab('login');
+              }}
+              className="mt-2"
+            >
+              {t('backToLogin')}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
