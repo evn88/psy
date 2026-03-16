@@ -1,7 +1,7 @@
 [![Deploy Status](https://img.shields.io/badge/deploy-live-brightgreen?style=flat-square&logo=vercel)](https://vershkov.com)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
-[![License](https://img.shields.io/badge/license-private-red?style=flat-square)](/)
+[![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm_Noncommercial_1.0.0-blue.svg)](LICENSE)
 
 # 🧠 Vershkov.com
 
@@ -171,4 +171,4 @@ messages/
 
 ## 📄 License
 
-This is a private project. All rights reserved.
+This project is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE). Commercial use is strictly prohibited.
