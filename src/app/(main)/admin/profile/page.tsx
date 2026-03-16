@@ -9,26 +9,43 @@ import { getTranslations } from 'next-intl/server';
 
 /**
  * Страница профиля администратора внутри админ-панели.
- * Переиспользует ProfileForm из общего расположения.
+ * С отображением роли и последним входом.
  */
 export default async function AdminProfilePage() {
   const session = await auth();
   const t = await getTranslations('Profile');
 
-  if (!session?.user) {
+  if (!session?.user?.id) {
     redirect('/auth');
   }
 
-  const authenticatorCount = await prisma.authenticator.count({
-    where: { userId: session.user.id }
-  });
-  const hasPasskeys = authenticatorCount > 0;
+  const [authenticatorCount, googleAccount, dbUser, lastLogin] = await Promise.all([
+    prisma.authenticator.count({
+      where: { userId: session.user.id }
+    }),
+    prisma.account.findFirst({
+      where: { userId: session.user.id, provider: 'google' }
+    }),
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { password: true }
+    }),
+    (async () => {
+      try {
+        return await (prisma as any).userLoginHistory.findFirst({
+          where: { userId: session.user.id },
+          orderBy: { createdAt: 'desc' }
+        });
+      } catch {
+        return null;
+      }
+    })()
+  ]);
 
-  const googleAccount = await prisma.account.findFirst({
-    where: { userId: session.user.id, provider: 'google' }
-  });
-  const googleLinkedAt = googleAccount?.createdAt;
+  const hasPasskeys = authenticatorCount > 0;
   const isGoogleLinked = !!googleAccount;
+  const googleLinkedAt = googleAccount?.createdAt;
+  const hasPassword = !!dbUser?.password;
 
   return (
     <div className="space-y-4">
@@ -44,6 +61,9 @@ export default async function AdminProfilePage() {
             hasPasskeys={hasPasskeys}
             isGoogleLinked={isGoogleLinked}
             googleLinkedAt={googleLinkedAt}
+            hasPassword={hasPassword}
+            lastLoginAt={lastLogin?.createdAt ?? null}
+            lastLoginIp={lastLogin?.ip ?? null}
           />
 
           <div className="grid gap-2">

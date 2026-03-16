@@ -1,5 +1,5 @@
 import { Resend } from 'resend';
-import { AdminMessageTemplate } from '@/components/email-tamplates/admin-message-template';
+import { AdminMessageTemplate } from '@/components/email-templates/admin-message-template';
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/shared/lib/prisma';

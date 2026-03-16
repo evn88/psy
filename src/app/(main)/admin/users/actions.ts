@@ -4,8 +4,6 @@ import prisma from '@/shared/lib/prisma';
 import { Role } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-
-// ... imports
 import bcrypt from 'bcryptjs';
 
 const updateUserSchema = z.object({
@@ -19,9 +17,9 @@ const updateUserSchema = z.object({
 export type UpdateUserSchema = z.infer<typeof updateUserSchema>;
 
 /**
- * Updates a user's information.
- * @param data The user data to update.
- * @returns The updated user or an error.
+ * Обновляет данные пользователя.
+ * @param data - данные для обновления
+ * @returns результат операции
  */
 export async function updateUser(data: UpdateUserSchema) {
   const result = updateUserSchema.safeParse(data);
@@ -60,9 +58,9 @@ export async function updateUser(data: UpdateUserSchema) {
 }
 
 /**
- * Deletes a user by their ID.
- * @param userId The ID of the user to delete.
- * @returns Success status or an error.
+ * Удаляет пользователя по ID.
+ * @param userId - ID пользователя
+ * @returns результат операции
  */
 export async function deleteUser(userId: string) {
   try {
@@ -75,5 +73,26 @@ export async function deleteUser(userId: string) {
   } catch (error) {
     console.error('Failed to delete user:', error);
     return { error: error instanceof Error ? error.message : 'Failed to delete user' };
+  }
+}
+
+/**
+ * Включает или отключает учётную запись пользователя.
+ * @param userId - ID пользователя
+ * @param isDisabled - новое состояние (true = отключён)
+ * @returns результат операции
+ */
+export async function toggleUserDisabled(userId: string, isDisabled: boolean) {
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { isDisabled }
+    });
+
+    revalidatePath('/admin/users');
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to toggle user status:', error);
+    return { error: 'Failed to toggle user status' };
   }
 }

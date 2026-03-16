@@ -2,32 +2,33 @@
 
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AdminUserRow } from './admin-user-row';
-import { Role } from '@prisma/client';
+import { useTranslations } from 'next-intl';
+import type { AdminUserData } from './types';
 
 interface AdminUserListProps {
-  users: {
-    id: string;
-    name: string | null;
-    email: string;
-    role: Role;
-    createdAt: Date;
-    sessions: { expires: Date }[];
-    isOnline: boolean;
-    fmtCreatedAt: string;
-  }[];
+  users: AdminUserData[];
 }
 
+/**
+ * Таблица пользователей в admin-панели.
+ * Расширена колонками: Provider, Verified, Last Seen.
+ */
 export function AdminUserList({ users }: AdminUserListProps) {
+  const t = useTranslations('Admin');
+
   return (
-    <div className="rounded-md border">
+    <div className="rounded-md border overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Joined</TableHead>
+            <TableHead>{t('nameLabel')}</TableHead>
+            <TableHead>{t('emailLabel')}</TableHead>
+            <TableHead>{t('providerColumn')}</TableHead>
+            <TableHead>{t('roleLabel')}</TableHead>
+            <TableHead>{t('statusColumn')}</TableHead>
+            <TableHead>{t('verifiedColumn')}</TableHead>
+            <TableHead>{t('lastSeenColumn')}</TableHead>
+            <TableHead>{t('joinedColumn')}</TableHead>
             <TableHead className="w-[70px]"></TableHead>
           </TableRow>
         </TableHeader>

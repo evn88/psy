@@ -1,12 +1,7 @@
-import { Prisma } from '@prisma/client';
 import prisma from '@/shared/lib/prisma';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CreateUserDialog } from './_components/create-user-dialog';
 import { AdminUserList } from './_components/admin-user-list';
-
-type UserWithSessions = Prisma.UserGetPayload<{
-  include: { sessions: true };
-}>;
 
 export default async function AdminPage() {
   const users = await prisma.user.findMany({
@@ -15,24 +10,76 @@ export default async function AdminPage() {
       sessions: {
         orderBy: { expires: 'desc' },
         take: 1
+      },
+      accounts: {
+        select: {
+          provider: true,
+          createdAt: true
+        }
       }
     }
   });
 
-  // eslint-disable-next-line react-hooks/purity
+  // Загружаем loginHistory отдельно — модель может ещё не существовать до миграции
+  let loginHistoryMap = new Map<
+    string,
+    { id: string; ip: string | null; provider: string; createdAt: Date }[]
+  >();
+  try {
+    const allHistory = await (prisma as any).userLoginHistory.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+    for (const entry of allHistory) {
+      const existing = loginHistoryMap.get(entry.userId) ?? [];
+      if (existing.length < 3) {
+        existing.push({
+          id: entry.id,
+          ip: entry.ip,
+          provider: entry.provider,
+          createdAt: entry.createdAt
+        });
+        loginHistoryMap.set(entry.userId, existing);
+      }
+    }
+  } catch {
+    // Модель ещё не создана — loginHistory будет пустым
+  }
+
+  // eslint-disable-next-line react-hooks/purity -- Server Component: вычисляется однократно на сервере
   const now = Date.now();
   const OFFLINE_THRESHOLD = 5 * 60 * 1000;
 
-  const formattedUsers = users.map((user: UserWithSessions) => {
-    const lastSession = user.sessions[0];
-
-    // 5 minutes threshold for online status
+  const formattedUsers = users.map((user: (typeof users)[number]) => {
     const isOnline = user.lastSeen && now - new Date(user.lastSeen).getTime() < OFFLINE_THRESHOLD;
 
+    // Определяем провайдер регистрации
+    const providers = user.accounts.map((acc: (typeof user.accounts)[number]) => acc.provider);
+    const hasPassword = Boolean(user.password);
+    const registrationProvider = providers.includes('google')
+      ? 'google'
+      : hasPassword
+        ? 'credentials'
+        : 'unknown';
+
     return {
-      ...user,
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      emailVerified: user.emailVerified,
+      image: user.image,
+      role: user.role,
+      isDisabled: (user as any).isDisabled ?? false,
+      language: user.language,
+      theme: user.theme,
+      lastSeen: user.lastSeen,
+      registrationIp: (user as any).registrationIp ?? null,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
       isOnline,
-      fmtCreatedAt: new Date(user.createdAt).toLocaleDateString('ru-RU')
+      fmtCreatedAt: new Date(user.createdAt).toLocaleDateString('ru-RU'),
+      registrationProvider,
+      providers,
+      loginHistory: loginHistoryMap.get(user.id) ?? []
     };
   });
 

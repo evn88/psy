@@ -2,6 +2,8 @@ import * as React from 'react';
 import { SendEmailForm } from './send-email-form';
 import { getUsersForEmail } from './actions';
 
+export const dynamic = 'force-dynamic';
+
 export default async function SendEmailPage() {
   const users = await getUsersForEmail();
 
