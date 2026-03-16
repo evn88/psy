@@ -3,6 +3,7 @@
 import * as React from 'react';
 import {
   Brain,
+  Calendar,
   ChevronsUpDown,
   ClipboardList,
   Home,
@@ -76,6 +77,12 @@ export function AppSidebar({ user, unreadSurveysCount = 0, ...props }: AppSideba
       url: '/admin/surveys',
       icon: ClipboardList,
       isActive: pathname.startsWith('/admin/surveys')
+    },
+    {
+      title: tItems('schedule'),
+      url: '/admin/schedule',
+      icon: Calendar,
+      isActive: pathname.startsWith('/admin/schedule')
     },
     {
       title: tItems('sendEmail'),

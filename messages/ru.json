@@ -57,6 +57,8 @@
     "save": "Сохранить",
     "saving": "Сохраняю...",
     "updateFailed": "Не удалось обновить профиль",
+    "timezoneLabel": "Часовой пояс (Timezone)",
+    "timezoneDescription": "Часовой пояс используется для корректного отображения расписания и консультаций.",
     "securityLabel": "Безопасность",
     "passkeysTitle": "Passkeys",
     "passkeysDescription": "Защитите аккаунт с помощью passkey.",
@@ -103,6 +105,18 @@
     "registeredUsers": "Зарегистрированных пользователей на платформе",
     "onlineNow": "Сейчас онлайн",
     "activeSessions": "Активных сессий в данный момент",
+    "usersWaitingTitle": "Ждут сессию",
+    "usersWaitingDesc": "В текущем месяце",
+    "upcomingSlotsTitle": "Ближайшие слоты",
+    "upcomingSlotsDesc": "Запланировано",
+    "scheduledHoursTitle": "План работ",
+    "scheduledHoursDesc": "Часов на этой неделе",
+    "bookedUsersTitle": "Клиентов",
+    "bookedUsersDesc": "Всего забронировали время",
+    "freeHoursTitle": "Свободно",
+    "freeHoursDesc": "Часов доступно для записи",
+    "cancelledStatsTitle": "Отмены",
+    "cancelledStatsDesc": "Всего отменено слотов",
     "usersTitle": "Пользователи",
     "addUser": "Добавить пользователя",
     "actions": "Действия",
@@ -120,6 +134,7 @@
     "emailLabel": "Email",
     "passwordLabel": "Пароль",
     "roleLabel": "Роль",
+    "timezoneLabel": "Часовой пояс",
     "selectRole": "Выберите роль",
     "roleGuest": "Гость",
     "roleUser": "Пользователь",
@@ -165,6 +180,7 @@
       "dashboard": "Дашборд",
       "users": "Пользователи",
       "surveys": "Опросы",
+      "schedule": "Расписание",
       "sendEmail": "Рассылка",
       "profile": "Профиль",
       "settings": "Настройки",
@@ -207,6 +223,43 @@
       "payments": "Платежи",
       "data": "Мои данные",
       "settings": "Настройки"
+    },
+    "today": "Сегодня",
+    "daySchedule": "Расписание на день",
+    "weekSchedule": "Расписание на неделю",
+    "dayTab": "День",
+    "weekTab": "Неделя",
+    "noEvents": "Нет событий для выбранной даты.",
+    "more": "ещё",
+    "bookButton": "Записаться",
+    "cancelButton": "Отменить",
+    "detailsLabel": "Детали",
+    "joinMeeting": "Подключиться к звонку",
+    "confirmBookingTitle": "Подтверждение записи",
+    "confirmBookingDesc": "Вы уверены, что хотите записаться на это время?",
+    "cancel": "Назад",
+    "confirmButton": "Подтвердить",
+    "cancelEventTitle": "Отмена записи",
+    "cancelEventDesc": "Пожалуйста, укажите причину отмены. Администратор получит уведомление.",
+    "cancelReasonLabel": "Причина отмены",
+    "cancelReasonPlaceholder": "Я вынужден отменить запись, потому что...",
+    "keepEventButton": "Не отменять",
+    "confirmCancelButton": "Отменить запись",
+    "errorBookingEvent": "Ошибка при записи. Пожалуйста, попробуйте позже.",
+    "errorCancelingEvent": "Ошибка при отмене. Пожалуйста, попробуйте позже.",
+    "eventTypes": {
+      "CONSULTATION": "Консультация",
+      "FREE_SLOT": "Свободное время",
+      "DAY_OFF": "Выходной",
+      "VACATION": "Отпуск",
+      "SICK_LEAVE": "Больничный",
+      "OTHER": "Другое"
+    },
+    "eventStatuses": {
+       "SCHEDULED": "Запланировано",
+       "CANCELLED": "Отменено",
+       "COMPLETED": "Завершено",
+       "PENDING_CONFIRMATION": "Ожидает"
     }
   },
   "Surveys": {
@@ -227,6 +280,33 @@
     "sendReply": "Отправить",
     "noComments": "Комментариев пока нет.",
     "clearDraft": "Очистить черновик"
+  },
+  "AdminEventBooking": {
+    "subject": "Новая запись: {title}",
+    "greeting": "Здравствуй(те), {name}!",
+    "message": "Пользователь записался на свободный слот в вашем расписании.",
+    "details": {
+      "user": "Клиент:",
+      "event": "Событие:",
+      "date": "Дата:",
+      "time": "Время:"
+    },
+    "button": "Перейти в расписание",
+    "footer": "Это автоматическое уведомление. Пожалуйста, не отвечайте на него."
+  },
+  "AdminEventCancellation": {
+    "subject": "Отмена записи: {title}",
+    "greeting": "Здравствуй(те), {name}!",
+    "message": "Пользователь отменил свою запись.",
+    "details": {
+      "user": "Клиент:",
+      "event": "Событие:",
+      "date": "Дата:",
+      "time": "Время:",
+      "reason": "Причина отмены:"
+    },
+    "button": "Перейти в расписание",
+    "footer": "Это автоматическое уведомление. Пожалуйста, не отвечайте на него."
   },
   "AdminSurveys": {
     "title": "Опросы",
@@ -318,5 +398,45 @@
     "ok": "OK",
     "back": "Назад",
     "home": "Главная"
+  },
+  "Schedule": {
+    "title": "Расписание и Записи",
+    "details": "Детали",
+    "calendar": "Календарь",
+    "today": "Сегодня",
+    "day": "День",
+    "week": "Неделя",
+    "addEvent": "Добавить Событие",
+    "newEvent": "Новое Событие",
+    "createEvent": "Создать Событие",
+    "editEvent": "Редактировать Событие",
+    "createEventDesc": "Добавить новое событие в расписание.",
+    "editEventDesc": "Внести изменения в событие расписания.",
+    "eventType": "Тип События",
+    "status": "Статус",
+    "eventTitle": "Заголовок (Необязательно)",
+    "startTime": "Время Начала",
+    "endTime": "Время Окончания",
+    "meetLink": "Ссылка на звонок",
+    "description": "Описание",
+    "delete": "Удалить",
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "saving": "Сохранение...",
+    "noEvents": "Нет событий",
+    "types": {
+      "CONSULTATION": "Консультация",
+      "FREE_SLOT": "Свободный Слот",
+      "DAY_OFF": "Выходной",
+      "VACATION": "Отпуск",
+      "SICK_LEAVE": "Больничный",
+      "OTHER": "Другое"
+    },
+    "statuses": {
+      "SCHEDULED": "Запланировано",
+      "CANCELLED": "Отменено",
+      "COMPLETED": "Завершено",
+      "PENDING_CONFIRMATION": "Ожидает Подтверждения"
+    }
   }
 }

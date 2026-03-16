@@ -13,6 +13,24 @@ enum Role {
   GUEST
 }
 
+/// Статус бронирования события
+enum EventStatus {
+  SCHEDULED
+  CANCELLED
+  COMPLETED
+  PENDING_CONFIRMATION
+}
+
+/// Тип события в календаре
+enum EventType {
+  CONSULTATION
+  FREE_SLOT
+  DAY_OFF
+  VACATION
+  SICK_LEAVE
+  OTHER
+}
+
 /// Тип вопроса в опросе
 enum QuestionType {
   SINGLE_CHOICE
@@ -36,6 +54,7 @@ model User {
   password      String?
   role          Role            @default(GUEST)
   isDisabled    Boolean         @default(false)
+  timezone      String?         @default("UTC")
   accounts      Account[]
   sessions      Session[]
   // Опционально для поддержки WebAuthn
@@ -54,6 +73,10 @@ model User {
   createdSurveys    Survey[]           @relation("SurveyCreator")
   surveyAssignments SurveyAssignment[]
   surveyComments    SurveyComment[]
+
+  // Связи с расписанием
+  createdEvents Event[] @relation("EventCreator")
+  clientEvents  Event[] @relation("EventClient")
 }
 
 model Account {
@@ -209,4 +232,33 @@ model UserLoginHistory {
   ip        String?
   provider  String   // "credentials", "google", "webauthn"
   createdAt DateTime @default(now())
+}
+
+// ============================================================
+// Система расписания и записи (Календарь)
+// ============================================================
+
+model Event {
+  id             String      @id @default(cuid())
+  title          String?
+  type           EventType
+  status         EventStatus @default(SCHEDULED)
+  start          DateTime
+  end            DateTime
+  meetLink       String?
+  cancelReason   String?
+  isGoogleSynced Boolean     @default(false)
+  googleEventId  String?
+
+  authorId String
+  author   User   @relation("EventCreator", fields: [authorId], references: [id], onDelete: Cascade)
+
+  // Юзер, забронировавший слот
+  userId String?
+  user   User?   @relation("EventClient", fields: [userId], references: [id], onDelete: Cascade)
+
+  groupId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

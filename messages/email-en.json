@@ -16,5 +16,29 @@
     "message": "Your account has been successfully created using Google Sign-In. You can now access all available features.",
     "button": "Go to Dashboard",
     "footer": "This is an automated message. Please do not reply."
+  },
+  "eventNotification": {
+    "subject": "Schedule Update - Vershkov.com",
+    "heading": "Schedule Update",
+    "greeting": "Hello, {name}!",
+    "message": "Your event '{title}' has been scheduled or updated.",
+    "dateLabel": "Date",
+    "timeLabel": "Time",
+    "typeLabel": "Event Type",
+    "meetLinkLabel": "Meeting Link",
+    "button": "View My Schedule",
+    "footer": "If you have any questions, please contact us."
+  },
+  "eventCancellation": {
+    "subject": "Event Cancelled - Vershkov.com",
+    "heading": "Event Cancelled",
+    "greeting": "Hello, {name}!",
+    "message": "Your event '{title}' has been cancelled.",
+    "dateLabel": "Date",
+    "timeLabel": "Time",
+    "typeLabel": "Event Type",
+    "reasonLabel": "Reason",
+    "button": "View My Schedule",
+    "footer": "If you have any questions, please contact us."
   }
 }

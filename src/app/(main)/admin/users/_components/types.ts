@@ -19,6 +19,7 @@ export interface AdminUserData {
   isDisabled: boolean;
   language: string;
   theme: string;
+  timezone: string | null;
   lastSeen: Date | null;
   registrationIp: string | null;
   createdAt: Date;

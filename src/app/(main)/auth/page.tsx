@@ -82,6 +82,14 @@ export default function AuthPage() {
     const errorParam = searchParams.get('error');
     const verified = searchParams.get('verified');
 
+    // Auto-detect and set timezone cookie
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      document.cookie = `NEXT_TIMEZONE=${tz}; path=/; max-age=31536000; SameSite=Lax`;
+    } catch {
+      // Ignore if not supported
+    }
+
     if (verified === 'true') {
       toast.success(t('emailVerifiedSuccess'));
     }
@@ -149,6 +157,12 @@ export default function AuthPage() {
 
     try {
       const locale = getCurrentLocale();
+      let detectedTimezone = 'UTC';
+      try {
+        detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      } catch {
+        // Fallback to UTC
+      }
 
       const res = await fetch('/api/auth/register', {
         method: 'POST',
@@ -156,7 +170,8 @@ export default function AuthPage() {
           name: registerName,
           email: registerEmail,
           password: registerPassword,
-          locale
+          locale,
+          timezone: detectedTimezone
         }),
         headers: { 'Content-Type': 'application/json' }
       });

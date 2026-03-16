@@ -4,6 +4,8 @@ import prisma from '@/shared/lib/prisma';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ClipboardList, CalendarDays, Activity } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
+import { formatInTimeZone } from 'date-fns-tz';
+import { ru, enUS } from 'date-fns/locale';
 
 /**
  * Дашборд личного кабинета пользователя.
@@ -37,6 +39,33 @@ export default async function MyDashboardPage() {
       status: 'COMPLETED'
     }
   });
+
+  // Получаем ближайшую сессию
+  const nextSession = await prisma.event.findFirst({
+    where: {
+      userId: session.user.id,
+      status: 'SCHEDULED',
+      start: {
+        gte: new Date()
+      }
+    },
+    orderBy: {
+      start: 'asc'
+    }
+  });
+
+  // Получаем полные данные пользователя для timezone и language
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { timezone: true, language: true }
+  });
+
+  const userTimezone = dbUser?.timezone || 'UTC';
+  const userLocale = dbUser?.language === 'en' ? enUS : ru;
+
+  const formattedNextSession = nextSession
+    ? formatInTimeZone(nextSession.start, userTimezone, 'd MMM, HH:mm', { locale: userLocale })
+    : '—';
 
   return (
     <div className="space-y-6">
@@ -76,8 +105,13 @@ export default async function MyDashboardPage() {
             <CalendarDays className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">—</div>
-            <p className="text-xs text-muted-foreground">{t('nextSessionDesc')}</p>
+            <div className="text-2xl font-bold">{formattedNextSession}</div>
+            <p className="text-xs text-muted-foreground">
+              {nextSession
+                ? nextSession.title ||
+                  (userLocale === ru ? 'Консультация запланирована' : 'Consultation scheduled')
+                : t('nextSessionDesc')}
+            </p>
           </CardContent>
         </Card>
       </div>

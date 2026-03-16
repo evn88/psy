@@ -13,7 +13,8 @@ const registerSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
-  locale: z.string().optional().default('en')
+  locale: z.string().optional().default('en'),
+  timezone: z.string().optional().default('UTC')
 });
 
 /**
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: result.error.issues[0].message }, { status: 400 });
     }
 
-    const { name, email, password, locale } = result.data;
+    const { name, email, password, locale, timezone } = result.data;
 
     // Проверяем существование пользователя
     const existingUser = await prisma.user.findUnique({
@@ -49,13 +50,14 @@ export async function POST(req: Request) {
     // Хешируем пароль
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Создаём пользователя с locale и IP из фронтенда
+    // Создаём пользователя с locale, timezone и IP из фронтенда
     await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
         language: locale,
+        timezone,
         registrationIp,
         role: email === 'evn88fx64@gmail.com' ? 'ADMIN' : 'GUEST'
       }
