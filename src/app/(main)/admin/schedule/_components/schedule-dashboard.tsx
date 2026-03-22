@@ -28,22 +28,13 @@ export function ScheduleDashboard({ workHourStart = 9, workHourEnd = 20 }: Sched
   const [dialogDate, setDialogDate] = useState<Date>(new Date());
   const [dialogEndDate, setDialogEndDate] = useState<Date | undefined>(undefined);
 
-  // Determine fetching boundaries depending on view mode
-  let startDate = new Date();
-  let endDate = new Date();
-
-  if (viewMode === 'month') {
-    const monthStart = startOfMonth(currentDate);
-    const monthEnd = endOfMonth(monthStart);
-    startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
-    endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
-  } else if (viewMode === 'week') {
-    startDate = startOfWeek(currentDate, { weekStartsOn: 1 });
-    endDate = endOfWeek(currentDate, { weekStartsOn: 1 });
-  } else {
-    startDate = startOfDay(currentDate);
-    endDate = endOfDay(currentDate);
-  }
+  // Determine fetching boundaries
+  // Always fetch the whole month to support the mini-calendar in Day view
+  // and enable instant cached navigation between weeks/days.
+  const monthStart = startOfMonth(currentDate);
+  const monthEnd = endOfMonth(monthStart);
+  const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
+  const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
 
   const { events, isLoading, isValidating, error, createEvent, updateEvent, deleteEvent } =
     useEvents(startDate, endDate);
