@@ -44,7 +44,7 @@ export default async function MyDashboardPage() {
   const nextSession = await prisma.event.findFirst({
     where: {
       userId: session.user.id,
-      status: 'SCHEDULED',
+      status: { in: ['SCHEDULED', 'PENDING_CONFIRMATION'] },
       start: {
         gte: new Date()
       }

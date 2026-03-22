@@ -30,7 +30,7 @@ const getStats = async () => {
   // Users waiting for a session this month
   const waitingUsers = await prisma.event.findMany({
     where: {
-      status: 'SCHEDULED',
+      status: { in: ['SCHEDULED', 'PENDING_CONFIRMATION'] },
       type: 'CONSULTATION',
       start: {
         gte: currentMonthStart,
@@ -45,7 +45,7 @@ const getStats = async () => {
   // Upcoming scheduled slots
   const upcomingSlotsCount = await prisma.event.count({
     where: {
-      status: 'SCHEDULED',
+      status: { in: ['SCHEDULED', 'PENDING_CONFIRMATION'] },
       type: 'CONSULTATION',
       start: { gte: now }
     }
@@ -54,7 +54,7 @@ const getStats = async () => {
   // Hours scheduled for this week
   const eventsThisWeek = await prisma.event.findMany({
     where: {
-      status: 'SCHEDULED',
+      status: { in: ['SCHEDULED', 'PENDING_CONFIRMATION'] },
       type: 'CONSULTATION',
       start: { gte: currentWeekStart, lte: currentWeekEnd }
     }
@@ -66,7 +66,7 @@ const getStats = async () => {
   // Users who booked time (all-time)
   const bookedUsers = await prisma.event.findMany({
     where: {
-      status: 'SCHEDULED',
+      status: { in: ['SCHEDULED', 'PENDING_CONFIRMATION'] },
       type: 'CONSULTATION'
     },
     select: { userId: true },
@@ -78,7 +78,7 @@ const getStats = async () => {
   const freeSlots = await prisma.event.findMany({
     where: {
       type: 'FREE_SLOT',
-      status: 'SCHEDULED',
+      status: { in: ['SCHEDULED', 'PENDING_CONFIRMATION'] },
       start: { gte: now }
     }
   });
