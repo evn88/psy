@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 import prisma from '@/shared/lib/prisma';
 import { auth } from '@/auth';
 import { z } from 'zod';
-import { EventType, EventStatus } from '@prisma/client';
+import { EventStatus, EventType } from '@prisma/client';
 import { sendEventNotificationEmail } from '@/shared/lib/email';
-import { syncEventWithGoogle } from '@/shared/lib/google-sync';
+import { syncEventWithGoogle, fetchGoogleEvents } from '@/shared/lib/google-sync';
 
 const getEventsSchema = z.object({
   start: z.string().datetime().optional(),
@@ -68,7 +68,24 @@ export async function GET(req: Request) {
       orderBy: { start: 'asc' }
     });
 
-    return NextResponse.json(events);
+    const googleEvents = await fetchGoogleEvents(session.user.id);
+    let filteredGoogle = googleEvents;
+    if (start && end) {
+      const startD = new Date(start);
+      const endD = new Date(end);
+      filteredGoogle = googleEvents.filter(e => {
+        return (
+          (e.start >= startD && e.start < endD) ||
+          (e.end > startD && e.end <= endD) ||
+          (e.start <= startD && e.end >= endD)
+        );
+      });
+    }
+
+    const allEvents = [...events, ...filteredGoogle];
+    allEvents.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+
+    return NextResponse.json(allEvents);
   } catch (error) {
     console.error('Failed to fetch admin events:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
@@ -82,7 +99,7 @@ const createEventSchema = z.object({
   status: z.nativeEnum(EventStatus).optional().default('SCHEDULED'),
   title: z.string().optional(),
   meetLink: z.string().url().optional().or(z.literal('')),
-  userId: z.string().optional()
+  userId: z.string().nullable().optional()
 });
 
 /**

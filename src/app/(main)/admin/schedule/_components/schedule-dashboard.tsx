@@ -12,7 +12,12 @@ import { useTranslations } from 'next-intl';
 
 export type ViewMode = 'month' | 'week' | 'day';
 
-export function ScheduleDashboard() {
+interface ScheduleDashboardProps {
+  workHourStart?: number;
+  workHourEnd?: number;
+}
+
+export function ScheduleDashboard({ workHourStart = 9, workHourEnd = 20 }: ScheduleDashboardProps) {
   const t = useTranslations('Schedule');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -123,6 +128,8 @@ export function ScheduleDashboard() {
               isFetching={isValidating}
               viewMode={viewMode}
               setViewMode={setViewMode}
+              workHourStart={workHourStart}
+              workHourEnd={workHourEnd}
             />
           </CardContent>
         </Card>

@@ -71,33 +71,38 @@ export const EventDialog = ({
   const [loading, setLoading] = useState(false);
   const { data: users, isLoading: usersLoading } = useSWR('/api/admin/users', fetcher);
 
-  const defaultStart = selectedDate
-    ? new Date(
-        new Date(selectedDate).setHours(
-          selectedDate.getHours() > 0 ? selectedDate.getHours() : 9,
-          0,
-          0,
-          0
-        )
-      )
-        .toISOString()
-        .slice(0, 16)
-    : new Date().toISOString().slice(0, 16);
+  const toLocalISOString = (d: Date) => {
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
 
-  const defaultEnd = selectedEndDate
-    ? new Date(selectedEndDate).toISOString().slice(0, 16)
-    : selectedDate
-      ? new Date(
+  const defaultStart = selectedDate
+    ? toLocalISOString(
+        new Date(
           new Date(selectedDate).setHours(
-            (selectedDate.getHours() > 0 ? selectedDate.getHours() : 9) + 1,
+            selectedDate.getHours() > 0 ? selectedDate.getHours() : 9,
             0,
             0,
             0
           )
         )
-          .toISOString()
-          .slice(0, 16)
-      : new Date(new Date().getTime() + 60 * 60 * 1000).toISOString().slice(0, 16);
+      )
+    : toLocalISOString(new Date());
+
+  const defaultEnd = selectedEndDate
+    ? toLocalISOString(selectedEndDate)
+    : selectedDate
+      ? toLocalISOString(
+          new Date(
+            new Date(selectedDate).setHours(
+              (selectedDate.getHours() > 0 ? selectedDate.getHours() : 9) + 1,
+              0,
+              0,
+              0
+            )
+          )
+        )
+      : toLocalISOString(new Date(new Date().getTime() + 60 * 60 * 1000));
 
   const form = useForm<z.infer<typeof eventSchema>>({
     resolver: zodResolver(eventSchema),
@@ -105,8 +110,8 @@ export const EventDialog = ({
       title: event?.title || '',
       type: event?.type || 'FREE_SLOT',
       status: event?.status || 'SCHEDULED',
-      start: event ? new Date(event.start).toISOString().slice(0, 16) : defaultStart,
-      end: event ? new Date(event.end).toISOString().slice(0, 16) : defaultEnd,
+      start: event ? toLocalISOString(new Date(event.start)) : defaultStart,
+      end: event ? toLocalISOString(new Date(event.end)) : defaultEnd,
       meetLink: event?.meetLink || '',
       userId: event?.userId || null
     }

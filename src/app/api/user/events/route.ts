@@ -35,7 +35,7 @@ export async function GET(req: Request) {
     const { start, end } = result.data;
 
     const whereClause: any = {
-      OR: [{ type: 'FREE_SLOT' }, { userId: session.user.id }]
+      OR: [{ userId: null }, { type: 'FREE_SLOT' }, { userId: session.user.id }]
     };
 
     if (start && end) {
@@ -71,31 +71,58 @@ export async function GET(req: Request) {
       orderBy: { start: 'asc' }
     });
 
-    // Для свободных слотов возвращаем только базовую информацию без деталей других пользователей
-    const sanitizedEvents = events.map((event: any) => {
-      if (event.type === 'FREE_SLOT') {
+    const admin = await prisma.user.findFirst({
+      where: { role: 'ADMIN', googleCalendarSyncEnabled: true }
+    });
+
+    let googleEvents: any[] = [];
+    if (admin) {
+      const { fetchGoogleEvents } = await import('@/shared/lib/google-sync');
+      googleEvents = await fetchGoogleEvents(admin.id);
+      if (start && end) {
+        const startD = new Date(start);
+        const endD = new Date(end);
+        googleEvents = googleEvents.filter(e => {
+          return (
+            (e.start >= startD && e.start < endD) ||
+            (e.end > startD && e.end <= endD) ||
+            (e.start <= startD && e.end >= endD)
+          );
+        });
+      }
+    }
+
+    const allEvents = [...events, ...googleEvents];
+    allEvents.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+
+    const sanitizedEvents = allEvents
+      .map((event: any) => {
         if (!event.userId) {
-          // Available slot
           return {
             ...event,
             user: null
           };
-        } else if (event.userId !== session.user.id) {
-          // Booked by someone else
-          return {
-            id: event.id,
-            type: event.type,
-            start: event.start,
-            end: event.end,
-            status: event.status,
-            title: 'Занято',
-            user: null,
-            userId: 'hidden'
-          };
         }
-      }
-      return event;
-    });
+
+        if (event.userId !== session.user.id) {
+          if (event.type === 'FREE_SLOT') {
+            return {
+              id: event.id,
+              type: event.type,
+              start: event.start,
+              end: event.end,
+              status: event.status,
+              title: 'Занято',
+              user: null,
+              userId: 'hidden'
+            };
+          }
+          return null;
+        }
+
+        return event;
+      })
+      .filter(Boolean);
 
     return NextResponse.json(sanitizedEvents);
   } catch (error) {

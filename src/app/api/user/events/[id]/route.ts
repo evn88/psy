@@ -61,8 +61,7 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
     let updatedEvent;
 
     if (action === 'book') {
-      // Logic for booking an event
-      if (event.type !== 'FREE_SLOT' || event.userId || event.status !== 'SCHEDULED') {
+      if (event.userId || event.status !== 'SCHEDULED') {
         return NextResponse.json({ message: 'Slot is not available' }, { status: 400 });
       }
 

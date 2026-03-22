@@ -68,6 +68,8 @@ model User {
 
   googleCalendarSyncUrl     String?
   googleCalendarSyncEnabled Boolean @default(false)
+  workHourStart             Int     @default(9)
+  workHourEnd               Int     @default(20)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -4,10 +4,12 @@ import { auth } from '@/auth';
 import { z } from 'zod';
 
 const updateProfileSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  timezone: z.string().optional(),
-  googleCalendarSyncUrl: z.string().nullable().optional(),
-  googleCalendarSyncEnabled: z.boolean().optional()
+  name: z.string().min(2).max(50).optional(),
+  phone: z.string().min(10).max(20).optional().nullable(),
+  googleCalendarSyncUrl: z.string().url().optional().nullable().or(z.literal('')),
+  googleCalendarSyncEnabled: z.boolean().optional(),
+  workHourStart: z.number().min(0).max(23).optional(),
+  workHourEnd: z.number().min(0).max(24).optional()
 });
 
 export async function PUT(req: Request) {
@@ -24,11 +26,22 @@ export async function PUT(req: Request) {
       return NextResponse.json({ message: result.error.issues[0].message }, { status: 400 });
     }
 
-    const { name, timezone, googleCalendarSyncUrl, googleCalendarSyncEnabled } = result.data;
-
     const user = await prisma.user.update({
       where: { email: session.user.email },
-      data: { name, timezone, googleCalendarSyncUrl, googleCalendarSyncEnabled }
+      data: {
+        ...(result.data.name !== undefined && { name: result.data.name }),
+        ...(result.data.phone !== undefined && { phone: result.data.phone }),
+        ...(result.data.googleCalendarSyncUrl !== undefined && {
+          googleCalendarSyncUrl: result.data.googleCalendarSyncUrl || null
+        }),
+        ...(result.data.googleCalendarSyncEnabled !== undefined && {
+          googleCalendarSyncEnabled: result.data.googleCalendarSyncEnabled
+        }),
+        ...(result.data.workHourStart !== undefined && {
+          workHourStart: result.data.workHourStart
+        }),
+        ...(result.data.workHourEnd !== undefined && { workHourEnd: result.data.workHourEnd })
+      }
     });
 
     return NextResponse.json(user);

@@ -1,39 +1,35 @@
 import prisma from '@/shared/lib/prisma';
+import { parseICal } from './ical-parser';
 
-export async function syncEventWithGoogle(eventId: string, action: 'CREATE' | 'UPDATE' | 'DELETE') {
+export async function fetchGoogleEvents(userId: string) {
   try {
-    const event = await prisma.event.findUnique({
-      where: { id: eventId },
-      include: {
-        author: true,
-        user: true
-      }
-    });
-
-    if (!event || !event.author) return;
-
-    if (event.author.googleCalendarSyncEnabled && event.author.googleCalendarSyncUrl) {
-      // Fire and forget webhook call
-      fetch(event.author.googleCalendarSyncUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action,
-          event: {
-            id: event.id,
-            title: event.title,
-            type: event.type,
-            status: event.status,
-            start: event.start.toISOString(),
-            end: event.end.toISOString(),
-            meetLink: event.meetLink || '',
-            clientName: event.user?.name || '',
-            clientEmail: event.user?.email || ''
-          }
-        })
-      }).catch(err => console.error('Error sending Google Sync webhook:', err));
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.googleCalendarSyncEnabled || !user.googleCalendarSyncUrl) {
+      return [];
     }
+
+    // Скачиваем iCal формат по указанному Secret URL
+    const res = await fetch(user.googleCalendarSyncUrl, { cache: 'no-store' });
+    if (!res.ok) return [];
+
+    const text = await res.text();
+    return parseICal(text).map(e => ({
+      ...e,
+      // Делаем заглушки для обязательных полей
+      user: null,
+      authorId: userId,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      cancelReason: null
+    }));
   } catch (error) {
-    console.error('Failed to sync event with Google:', error);
+    console.error('Failed to fetch google events', error);
+    return [];
   }
+}
+
+// Заглушка, если где-то используется старая нерабочая логика POST (можно безопасно убрать, но оставим пустой для совместимости)
+export async function syncEventWithGoogle(eventId: string, action: 'CREATE' | 'UPDATE' | 'DELETE') {
+  // Google Calendar iCal не принимает POST-запросы.
+  // Синхронизация работает только в одну сторону через чтение fetchGoogleEvents.
 }
