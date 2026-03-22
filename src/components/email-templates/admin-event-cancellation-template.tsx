@@ -76,13 +76,16 @@ export const AdminEventCancellationTemplate = ({
 
   const texts = Object.keys(t).length > 0 ? t : defaultT;
 
+  const parsedSubject = (texts.subject || defaultT.subject).replace('{title}', title || eventType);
+  const parsedGreeting = (texts.greeting || defaultT.greeting).replace('{name}', adminName);
+
   return (
     <Html>
       <Head />
-      <Preview>{texts.subject}</Preview>
+      <Preview>{parsedSubject}</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Heading style={h1}>{texts.greeting}</Heading>
+          <Heading style={h1}>{parsedGreeting}</Heading>
 
           <Text style={text}>{texts.message}</Text>
 
