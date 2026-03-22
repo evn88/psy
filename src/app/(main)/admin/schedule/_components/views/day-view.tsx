@@ -121,8 +121,12 @@ export const DayView = ({
                     <div className="font-semibold truncate">{event.title || eventTypeTitle}</div>
                     <div className="text-xs opacity-80 mt-1 truncate">
                       {format(dStart, 'HH:mm')} - {format(dEnd, 'HH:mm')}
-                      {event.user?.name && ` • ${event.user.name}`}
                     </div>
+                    {event.user?.name && (
+                      <div className="text-xs font-medium opacity-90 truncate mt-0.5">
+                        {event.user.name}
+                      </div>
+                    )}
                   </div>
                 );
               })}

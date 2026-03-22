@@ -160,6 +160,11 @@ export const WeekView = ({
                             <span className="text-[9px] opacity-80 leading-tight truncate mt-0.5">
                               {format(dStart, 'HH:mm')} - {format(dEnd, 'HH:mm')}
                             </span>
+                            {event.user?.name && (
+                              <span className="text-[9px] font-medium leading-tight truncate mt-0.5 opacity-90">
+                                {event.user.name}
+                              </span>
+                            )}
                           </div>
                         );
                       })}

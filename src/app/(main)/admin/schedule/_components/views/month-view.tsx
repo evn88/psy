@@ -118,7 +118,7 @@ export const MonthView = ({
                     <div
                       key={event.id}
                       className={`text-[10px] xl:text-xs truncate px-1.5 py-0.5 rounded-md text-left transition-opacity hover:opacity-80 border ${getEventStyle(event.type)}`}
-                      title={event.title || eventTypeTitle}
+                      title={`${event.title || eventTypeTitle}${event.user?.name ? `\nКлиент: ${event.user.name}` : ''}`}
                       onMouseDown={e => {
                         e.stopPropagation();
                         if (onEventClick) onEventClick(event);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CalendarView } from './calendar-view';
 import { useEvents, Event } from './use-events';
@@ -19,9 +19,50 @@ interface ScheduleDashboardProps {
 
 export function ScheduleDashboard({ workHourStart = 9, workHourEnd = 20 }: ScheduleDashboardProps) {
   const t = useTranslations('Schedule');
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<ViewMode>('month');
+  const [currentDate, setCurrentDate] = useState<Date>(() => {
+    if (typeof window !== 'undefined') {
+      const savedDate = localStorage.getItem('schedule_currentDate');
+      if (savedDate) return new Date(savedDate);
+    }
+    return new Date();
+  });
+
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    if (typeof window !== 'undefined') {
+      const savedSelected = localStorage.getItem('schedule_selectedDate');
+      if (savedSelected) return new Date(savedSelected);
+    }
+    return new Date();
+  });
+
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (typeof window !== 'undefined') {
+      const savedViewMode = localStorage.getItem('schedule_viewMode') as ViewMode;
+      if (savedViewMode && ['month', 'week', 'day'].includes(savedViewMode)) {
+        return savedViewMode;
+      }
+    }
+    return 'month';
+  });
+
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    // eslint-disable-next-line
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isMounted) localStorage.setItem('schedule_currentDate', currentDate.toISOString());
+  }, [currentDate, isMounted]);
+
+  useEffect(() => {
+    if (isMounted) localStorage.setItem('schedule_selectedDate', selectedDate.toISOString());
+  }, [selectedDate, isMounted]);
+
+  useEffect(() => {
+    if (isMounted) localStorage.setItem('schedule_viewMode', viewMode);
+  }, [viewMode, isMounted]);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -64,6 +105,8 @@ export function ScheduleDashboard({ workHourStart = 9, workHourEnd = 20 }: Sched
   const handleDeleteEvent = async (id: string) => {
     await deleteEvent(id);
   };
+
+  if (!isMounted) return <div className="min-h-[500px]" />;
 
   return (
     <>
