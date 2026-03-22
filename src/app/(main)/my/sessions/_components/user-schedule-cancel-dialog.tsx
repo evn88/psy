@@ -19,12 +19,14 @@ interface UserScheduleCancelDialogProps {
   eventId: string | null;
   onClose: () => void;
   onConfirm: (id: string, reason: string) => Promise<void>;
+  onRequestReschedule?: (id: string) => void;
 }
 
 export function UserScheduleCancelDialog({
   eventId,
   onClose,
-  onConfirm
+  onConfirm,
+  onRequestReschedule
 }: UserScheduleCancelDialogProps) {
   const t = useTranslations('My');
   const [reason, setReason] = useState('');
@@ -65,10 +67,21 @@ export function UserScheduleCancelDialog({
             className="min-h-[100px]"
           />
         </div>
-        <DialogFooter>
+        <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button variant="outline" onClick={handleClose} disabled={isLoading}>
             {t('keepEventButton')}
           </Button>
+          {onRequestReschedule && (
+            <Button
+              variant="secondary"
+              onClick={() => {
+                if (eventId) onRequestReschedule(eventId);
+              }}
+              disabled={isLoading}
+            >
+              {t('rescheduleButton')}
+            </Button>
+          )}
           <Button variant="destructive" onClick={handleConfirm} disabled={isLoading}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {t('confirmCancelButton')}

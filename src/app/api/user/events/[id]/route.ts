@@ -11,8 +11,9 @@ import {
 import { syncEventWithGoogle } from '@/shared/lib/google-sync';
 
 const updateEventSchema = z.object({
-  action: z.enum(['book', 'cancel']),
-  reason: z.string().optional() // for cancellation
+  action: z.enum(['book', 'cancel', 'reschedule']),
+  reason: z.string().optional(), // for cancellation
+  newEventId: z.string().optional() // for rescheduling
 });
 
 /**
@@ -73,7 +74,7 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
         where: { id: eventId },
         data: {
           userId: userId,
-          status: 'SCHEDULED',
+          status: 'PENDING_CONFIRMATION',
           type: 'CONSULTATION'
         },
         include: {
@@ -163,6 +164,102 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
           start: updatedEvent.start,
           end: updatedEvent.end,
           reason,
+          manageUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/admin/schedule`,
+          locale: updatedEvent.author.language || 'ru'
+        });
+      }
+    } else if (action === 'reschedule') {
+      const { newEventId } = result.data;
+      if (!newEventId) {
+        return NextResponse.json({ message: 'Missing new event ID' }, { status: 400 });
+      }
+
+      if (event.userId !== userId) {
+        return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+      }
+
+      const newEvent = await prisma.event.findUnique({ where: { id: newEventId } });
+      if (!newEvent || newEvent.userId || newEvent.status !== 'SCHEDULED') {
+        return NextResponse.json({ message: 'New slot is not available' }, { status: 400 });
+      }
+
+      await prisma.$transaction([
+        prisma.event.update({
+          where: { id: eventId },
+          data: {
+            status: 'CANCELLED',
+            cancelReason: 'User requested reschedule. Reason: ' + (reason || 'Not specified')
+          }
+        }),
+        prisma.event.update({
+          where: { id: newEventId },
+          data: {
+            userId: userId,
+            status: 'PENDING_CONFIRMATION',
+            type: 'CONSULTATION'
+          }
+        })
+      ]);
+
+      updatedEvent = await prisma.event.findUnique({
+        where: { id: newEventId },
+        include: {
+          user: { select: { id: true, name: true, email: true, language: true, timezone: true } },
+          author: { select: { id: true, name: true, email: true, language: true, timezone: true } }
+        }
+      });
+
+      // Send cancellation for old event and booking for new event
+      if (updatedEvent && updatedEvent.user && updatedEvent.user.email) {
+        await sendEventCancellationEmail({
+          email: updatedEvent.user.email,
+          name: updatedEvent.user.name || 'User',
+          title: event.title || 'Consultation',
+          eventType: event.type,
+          start: event.start,
+          end: event.end,
+          reason: 'Rescheduled',
+          manageUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/my/sessions`,
+          locale: updatedEvent.user.language || 'ru',
+          timezone: updatedEvent.user.timezone || 'UTC'
+        });
+        await sendEventNotificationEmail({
+          email: updatedEvent.user.email,
+          name: updatedEvent.user.name || 'User',
+          title: updatedEvent.title || 'Consultation',
+          eventType: 'CONSULTATION',
+          start: updatedEvent.start,
+          end: updatedEvent.end,
+          meetLink: updatedEvent.meetLink || undefined,
+          manageUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/my/sessions`,
+          locale: updatedEvent.user.language || 'ru',
+          timezone: updatedEvent.user.timezone || 'UTC'
+        });
+      }
+
+      if (updatedEvent && updatedEvent.author && updatedEvent.author.email) {
+        await sendAdminEventCancellationEmail({
+          adminEmail: updatedEvent.author.email,
+          adminName: updatedEvent.author.name || 'Admin',
+          userName: updatedEvent.user?.name || 'User',
+          userEmail: updatedEvent.user?.email || '',
+          title: event.title || 'Consultation',
+          eventType: event.type,
+          start: event.start,
+          end: event.end,
+          reason: 'Rescheduled. New slot requested.',
+          manageUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/admin/schedule`,
+          locale: updatedEvent.author.language || 'ru'
+        });
+        await sendAdminEventBookingEmail({
+          adminEmail: updatedEvent.author.email,
+          adminName: updatedEvent.author.name || 'Admin',
+          userName: updatedEvent.user?.name || 'User',
+          userEmail: updatedEvent.user?.email || '',
+          title: updatedEvent.title || 'Consultation',
+          eventType: 'CONSULTATION',
+          start: updatedEvent.start,
+          end: updatedEvent.end,
           manageUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/admin/schedule`,
           locale: updatedEvent.author.language || 'ru'
         });

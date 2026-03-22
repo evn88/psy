@@ -11,6 +11,7 @@ import { UserScheduleHeader } from './user-schedule-header';
 import { UserScheduleEventCard } from './user-schedule-event-card';
 import { UserScheduleBookDialog } from './user-schedule-book-dialog';
 import { UserScheduleCancelDialog } from './user-schedule-cancel-dialog';
+import { UserScheduleRescheduleDialog } from './user-schedule-reschedule-dialog';
 
 interface UserScheduleDetailsProps {
   selectedDate: Date;
@@ -20,6 +21,7 @@ interface UserScheduleDetailsProps {
   isLoading: boolean;
   onBookEvent: (id: string) => Promise<void>;
   onCancelEvent: (id: string, reason?: string) => Promise<void>;
+  onRescheduleEvent: (oldId: string, newId: string) => Promise<void>;
 }
 
 export function UserScheduleDetails({
@@ -29,12 +31,14 @@ export function UserScheduleDetails({
   onViewModeChange,
   isLoading,
   onBookEvent,
-  onCancelEvent
+  onCancelEvent,
+  onRescheduleEvent
 }: UserScheduleDetailsProps) {
   const t = useTranslations('My');
 
   const [bookingEventId, setBookingEventId] = useState<string | null>(null);
   const [cancelingEventId, setCancelingEventId] = useState<string | null>(null);
+  const [reschedulingEventId, setReschedulingEventId] = useState<string | null>(null);
 
   // Filter events for selected day or week
   const filteredEvents = events
@@ -91,6 +95,17 @@ export function UserScheduleDetails({
         eventId={cancelingEventId}
         onClose={() => setCancelingEventId(null)}
         onConfirm={onCancelEvent}
+        onRequestReschedule={eventId => {
+          setCancelingEventId(null);
+          setReschedulingEventId(eventId);
+        }}
+      />
+
+      <UserScheduleRescheduleDialog
+        eventId={reschedulingEventId}
+        events={events}
+        onClose={() => setReschedulingEventId(null)}
+        onConfirm={onRescheduleEvent}
       />
     </>
   );

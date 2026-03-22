@@ -239,14 +239,22 @@
     "confirmBookingDesc": "Вы уверены, что хотите записаться на это время?",
     "cancel": "Назад",
     "confirmButton": "Подтвердить",
+    "bookingAdminWarning": "Ваш запрос будет отправлен администратору на подтверждение.",
     "cancelEventTitle": "Отмена записи",
     "cancelEventDesc": "Пожалуйста, укажите причину отмены. Администратор получит уведомление.",
     "cancelReasonLabel": "Причина отмены",
     "cancelReasonPlaceholder": "Я вынужден отменить запись, потому что...",
     "keepEventButton": "Не отменять",
     "confirmCancelButton": "Отменить запись",
+    "rescheduleButton": "Запросить перенос",
+    "rescheduleEventTitle": "Перенос записи",
+    "rescheduleEventDesc": "Выберите новое время из доступных слотов. Предыдущая запись будет отменена.",
+    "selectNewTimeLabel": "Доступные слоты:",
+    "noAvailableSlots": "К сожалению, сейчас нет свободных слотов для переноса.",
+    "confirmRescheduleButton": "Подтвердить перенос",
     "errorBookingEvent": "Ошибка при записи. Пожалуйста, попробуйте позже.",
     "errorCancelingEvent": "Ошибка при отмене. Пожалуйста, попробуйте позже.",
+    "errorReschedulingEvent": "Ошибка при переносе записи.",
     "eventTypes": {
       "CONSULTATION": "Консультация",
       "FREE_SLOT": "Свободное время",
@@ -259,7 +267,7 @@
        "SCHEDULED": "Запланировано",
        "CANCELLED": "Отменено",
        "COMPLETED": "Завершено",
-       "PENDING_CONFIRMATION": "Ожидает"
+       "PENDING_CONFIRMATION": "Ожидает подтверждения"
     }
   },
   "Surveys": {

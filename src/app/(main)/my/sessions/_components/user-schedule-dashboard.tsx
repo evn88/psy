@@ -24,10 +24,8 @@ export function UserScheduleDashboard() {
   const fetchEnd = new Date(monthEnd);
   fetchEnd.setDate(fetchEnd.getDate() + 15);
 
-  const { events, isLoading, isValidating, bookEvent, cancelEvent } = useUserEvents(
-    fetchStart.toISOString(),
-    fetchEnd.toISOString()
-  );
+  const { events, isLoading, isValidating, bookEvent, cancelEvent, rescheduleEvent } =
+    useUserEvents(fetchStart.toISOString(), fetchEnd.toISOString());
 
   return (
     <div className="flex flex-col md:flex-row gap-4 md:gap-6 md:h-[calc(100vh-10rem)] md:min-h-[500px]">
@@ -52,6 +50,7 @@ export function UserScheduleDashboard() {
           isLoading={isLoading}
           onBookEvent={bookEvent}
           onCancelEvent={cancelEvent}
+          onRescheduleEvent={rescheduleEvent}
         />
       </div>
     </div>

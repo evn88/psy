@@ -27,8 +27,9 @@ export function UserScheduleEventCard({
   const startDate = new Date(event.start);
   const endDate = new Date(event.end);
 
-  const isFreeSlot = event.type === 'FREE_SLOT';
+  const isFreeSlot = event.type === 'FREE_SLOT' && !event.userId;
   const isScheduled = event.type === 'CONSULTATION' && event.status === 'SCHEDULED';
+  const isPending = event.type === 'CONSULTATION' && event.status === 'PENDING_CONFIRMATION';
   const isCancelled = event.status === 'CANCELLED';
   const isPast = startDate < new Date();
 
@@ -38,8 +39,9 @@ export function UserScheduleEventCard({
         relative p-4 rounded-xl border transition-all
         ${isFreeSlot ? 'bg-blue-50/50 hover:bg-blue-50 border-blue-100 dark:bg-blue-950/20 dark:border-blue-900' : ''}
         ${isScheduled ? 'bg-green-50/50 border-green-100 dark:bg-green-950/20 dark:border-green-900 shadow-sm' : ''}
+        ${isPending ? 'bg-yellow-50/50 border-yellow-200 dark:bg-yellow-950/20 dark:border-yellow-900 shadow-sm' : ''}
         ${isCancelled ? 'opacity-60 bg-muted/50' : ''}
-        ${!isFreeSlot && !isScheduled && !isCancelled ? 'bg-card' : ''}
+        ${!isFreeSlot && !isScheduled && !isPending && !isCancelled ? 'bg-card' : ''}
       `}
     >
       <div className="flex justify-between items-start mb-2">
@@ -49,6 +51,7 @@ export function UserScheduleEventCard({
             className={`
               ${isFreeSlot ? 'text-blue-600 border-blue-200 dark:text-blue-400 dark:border-blue-800' : ''}
               ${isScheduled ? 'bg-green-600 hover:bg-green-700' : ''}
+              ${isPending ? 'bg-yellow-500 hover:bg-yellow-600 text-white' : ''}
             `}
           >
             {t(`eventTypes.${event.type}` as any)}
@@ -66,7 +69,7 @@ export function UserScheduleEventCard({
               {t('bookButton')}
             </Button>
           )}
-          {isScheduled && (
+          {(isScheduled || isPending) && (
             <Button size="sm" variant="destructive" onClick={() => onCancelClick(event.id)}>
               {t('cancelButton')}
             </Button>

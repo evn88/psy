@@ -48,6 +48,9 @@ export function UserScheduleBookDialog({
           <DialogTitle>{t('confirmBookingTitle')}</DialogTitle>
           <DialogDescription>{t('confirmBookingDesc')}</DialogDescription>
         </DialogHeader>
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 p-3 rounded-md text-sm border border-yellow-200 dark:border-yellow-900/50">
+          {t('bookingAdminWarning')}
+        </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={isLoading}>
             {t('cancel')}

@@ -59,6 +59,20 @@ export function useUserEvents(startStr: string, endStr: string) {
     await mutate();
   };
 
+  const rescheduleEvent = async (oldId: string, newId: string, reason?: string) => {
+    const res = await fetch(`/api/user/events/${oldId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'reschedule', newEventId: newId, reason })
+    });
+
+    if (!res.ok) {
+      throw new Error(t('errorReschedulingEvent') || 'Error rescheduling');
+    }
+
+    await mutate();
+  };
+
   return {
     events: data || [],
     isLoading,
@@ -66,6 +80,7 @@ export function useUserEvents(startStr: string, endStr: string) {
     isError: error,
     bookEvent,
     cancelEvent,
+    rescheduleEvent,
     mutate
   };
 }

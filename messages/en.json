@@ -239,14 +239,22 @@
     "confirmBookingDesc": "Are you sure you want to book this time slot?",
     "cancel": "Back",
     "confirmButton": "Confirm",
-    "cancelEventTitle": "Cancel Event",
-    "cancelEventDesc": "Please provide a reason for cancelling this event. An administrator will be notified.",
+    "bookingAdminWarning": "Your request will be sent to the administrator for confirmation.",
+    "cancelEventTitle": "Cancel Appointment",
+    "cancelEventDesc": "Please provide a reason for cancellation. The administrator will be notified.",
     "cancelReasonLabel": "Reason for cancellation",
     "cancelReasonPlaceholder": "I have to cancel because...",
-    "keepEventButton": "Keep Event",
-    "confirmCancelButton": "Cancel Event",
-    "errorBookingEvent": "Error booking event. Please try again later.",
-    "errorCancelingEvent": "Error cancelling event. Please try again later.",
+    "keepEventButton": "Keep Appointment",
+    "confirmCancelButton": "Cancel Appointment",
+    "rescheduleButton": "Request Reschedule",
+    "rescheduleEventTitle": "Reschedule Appointment",
+    "rescheduleEventDesc": "Select a new time from available slots. The previous appointment will be cancelled.",
+    "selectNewTimeLabel": "Available slots:",
+    "noAvailableSlots": "Unfortunately, there are no available slots for rescheduling at this time.",
+    "confirmRescheduleButton": "Confirm Reschedule",
+    "errorBookingEvent": "Booking failed. Please try again later.",
+    "errorCancelingEvent": "Cancellation failed. Please try again later.",
+    "errorReschedulingEvent": "Rescheduling failed. Please try again later.",
     "eventTypes": {
       "CONSULTATION": "Consultation",
       "FREE_SLOT": "Free Slot",
@@ -259,7 +267,7 @@
        "SCHEDULED": "Scheduled",
        "CANCELLED": "Cancelled",
        "COMPLETED": "Completed",
-       "PENDING_CONFIRMATION": "Pending"
+       "PENDING_CONFIRMATION": "Pending Confirmation"
     }
   },
   "Surveys": {
