@@ -65,6 +65,10 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
         return NextResponse.json({ message: 'Slot is not available' }, { status: 400 });
       }
 
+      if (event.start <= new Date()) {
+        return NextResponse.json({ message: 'Cannot book past events' }, { status: 400 });
+      }
+
       updatedEvent = await prisma.event.update({
         where: { id: eventId },
         data: {

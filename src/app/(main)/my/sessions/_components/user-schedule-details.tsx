@@ -160,6 +160,7 @@ export function UserScheduleDetails({
                 const isFreeSlot = event.type === 'FREE_SLOT';
                 const isScheduled = event.type === 'CONSULTATION' && event.status === 'SCHEDULED';
                 const isCancelled = event.status === 'CANCELLED';
+                const isPast = new Date(event.start) < new Date();
 
                 return (
                   <div
@@ -191,7 +192,7 @@ export function UserScheduleDetails({
                       </div>
 
                       <div className="flex gap-2">
-                        {isFreeSlot && (
+                        {isFreeSlot && !isPast && !isCancelled && (
                           <Button
                             size="sm"
                             variant="outline"
