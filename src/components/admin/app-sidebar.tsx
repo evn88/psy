@@ -37,7 +37,8 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarRail
+  SidebarRail,
+  useSidebar
 } from '@/components/ui/sidebar';
 import { useTranslations } from 'next-intl';
 
@@ -58,6 +59,11 @@ export function AppSidebar({ user, unreadSurveysCount = 0, ...props }: AppSideba
   const pathname = usePathname();
   const tItems = useTranslations('Admin.sidebarMenu');
   const tAuth = useTranslations('Auth');
+  const { setOpenMobile, isMobile } = useSidebar();
+
+  const closeMobileSidebar = () => {
+    if (isMobile) setOpenMobile(false);
+  };
 
   const routes = [
     {
@@ -110,7 +116,6 @@ export function AppSidebar({ user, unreadSurveysCount = 0, ...props }: AppSideba
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:!hidden">
                   <span className="truncate font-semibold">Vershkov Admin</span>
-                  <span className="truncate text-xs">v1.0.0</span>
                 </div>
               </Link>
             </SidebarMenuButton>
@@ -121,8 +126,13 @@ export function AppSidebar({ user, unreadSurveysCount = 0, ...props }: AppSideba
         <SidebarMenu>
           {routes.map(item => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild isActive={item.isActive} tooltip={item.title}>
-                <Link href={item.url}>
+              <SidebarMenuButton
+                asChild
+                isActive={item.isActive}
+                tooltip={item.title}
+                className="h-11 md:h-8"
+              >
+                <Link href={item.url} onClick={closeMobileSidebar}>
                   <item.icon />
                   <div
                     className={cn(
@@ -180,7 +190,11 @@ export function AppSidebar({ user, unreadSurveysCount = 0, ...props }: AppSideba
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
                   <DropdownMenuItem asChild>
-                    <Link href="/" className="flex items-center cursor-pointer">
+                    <Link
+                      href="/"
+                      className="flex items-center cursor-pointer"
+                      onClick={closeMobileSidebar}
+                    >
                       <Home className="mr-2 h-4 w-4" />
                       {tItems('backToSite')}
                     </Link>
@@ -188,7 +202,11 @@ export function AppSidebar({ user, unreadSurveysCount = 0, ...props }: AppSideba
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/admin/settings" className="flex items-center cursor-pointer">
+                  <Link
+                    href="/admin/settings"
+                    className="flex items-center cursor-pointer"
+                    onClick={closeMobileSidebar}
+                  >
                     <Settings className="mr-2 h-4 w-4" />
                     {tItems('settings')}
                   </Link>
