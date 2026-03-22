@@ -28,7 +28,7 @@ export default async function AdminProfilePage() {
     }),
     prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { password: true }
+      select: { password: true, timezone: true }
     }),
     (async () => {
       try {
@@ -64,6 +64,7 @@ export default async function AdminProfilePage() {
             hasPassword={hasPassword}
             lastLoginAt={lastLogin?.createdAt ?? null}
             lastLoginIp={lastLogin?.ip ?? null}
+            timezone={dbUser?.timezone ?? 'UTC'}
           />
 
           <div className="grid gap-2">

@@ -17,6 +17,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@/components/ui/alert-dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import { useTranslations } from 'next-intl';
 
 interface ProfileFormProps {
@@ -33,6 +40,8 @@ interface ProfileFormProps {
   lastLoginAt?: Date | null;
   /** IP последнего входа */
   lastLoginIp?: string | null;
+  /** Таймзона пользователя */
+  timezone: string;
 }
 
 /**
@@ -46,15 +55,20 @@ export const ProfileForm = ({
   googleLinkedAt,
   hasPassword,
   lastLoginAt,
-  lastLoginIp
+  lastLoginIp,
+  timezone: initialTimezone
 }: ProfileFormProps) => {
   const t = useTranslations('Profile');
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState(user.name || '');
+  const [timezone, setTimezone] = useState(initialTimezone || 'UTC');
   const [isGoogleLinked, setIsGoogleLinked] = useState(initialIsGoogleLinked);
   const [showAlertOpen, setShowAlertOpen] = useState(false);
   const [alertConfig, setAlertConfig] = useState({ title: '', message: '' });
+
+  // Доступные таймзоны
+  const timezones = Intl.supportedValuesOf('timeZone');
 
   // Состояние формы смены пароля
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -79,8 +93,8 @@ export const ProfileForm = ({
 
     try {
       const res = await fetch('/api/profile/update', {
-        method: 'POST',
-        body: JSON.stringify({ name }),
+        method: 'PUT',
+        body: JSON.stringify({ name, timezone }),
         headers: { 'Content-Type': 'application/json' }
       });
 
@@ -216,7 +230,27 @@ export const ProfileForm = ({
           <Input id="email" value={user.email || ''} disabled className="bg-muted" />
         </div>
 
-        <Button type="submit" disabled={loading || name === user.name}>
+        <div className="grid gap-2">
+          <Label htmlFor="timezone">{t('timezoneLabel')}</Label>
+          <Select value={timezone} onValueChange={setTimezone} disabled={loading}>
+            <SelectTrigger id="timezone">
+              <SelectValue placeholder="Select a timezone" />
+            </SelectTrigger>
+            <SelectContent>
+              {timezones.map(tz => (
+                <SelectItem key={tz} value={tz}>
+                  {tz}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">{t('timezoneDescription')}</p>
+        </div>
+
+        <Button
+          type="submit"
+          disabled={loading || (name === user.name && timezone === initialTimezone)}
+        >
           {loading ? t('saving') : t('save')}
         </Button>
 

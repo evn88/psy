@@ -40,14 +40,15 @@ const formSchema = z.object({
     message: 'Name must be at least 2 characters.'
   }),
   email: z.string().email(),
-  role: z.nativeEnum(Role),
+  role: z.enum(['ADMIN', 'USER', 'GUEST']),
   password: z
     .string()
     .min(6, {
       message: 'Password must be at least 6 characters.'
     })
     .optional()
-    .or(z.literal(''))
+    .or(z.literal('')),
+  timezone: z.string().optional()
 });
 
 interface EditUserDialogProps {
@@ -56,6 +57,7 @@ interface EditUserDialogProps {
     name: string | null;
     email: string;
     role: Role;
+    timezone: string | null;
   };
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -77,9 +79,12 @@ export const EditUserDialog = ({ user, open, onOpenChange }: EditUserDialogProps
       name: user.name || '',
       email: user.email,
       role: user.role,
-      password: ''
+      password: '',
+      timezone: user.timezone || 'UTC'
     }
   });
+
+  const timezones = Intl.supportedValuesOf('timeZone');
 
   /**
    * Отправляет форму редактирования пользователя.
@@ -162,6 +167,30 @@ export const EditUserDialog = ({ user, open, onOpenChange }: EditUserDialogProps
                       <SelectItem value={Role.ADMIN}>{t('roleAdmin')}</SelectItem>
                       <SelectItem value={Role.USER}>{t('roleUser')}</SelectItem>
                       <SelectItem value={Role.GUEST}>{t('roleGuest')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="timezone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('timezoneLabel')}</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select timezone" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {timezones.map(tz => (
+                        <SelectItem key={tz} value={tz}>
+                          {tz}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />

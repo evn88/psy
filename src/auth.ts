@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { authConfig } from './auth.config';
 import { getRPID } from '@/app/api/profile/passkeys/register/config';
 import { sendWelcomeGoogleEmail } from '@/shared/lib/email';
-import { headers } from 'next/headers';
+import { headers, cookies } from 'next/headers';
 
 /** Максимальное количество записей истории входов на пользователя */
 const MAX_LOGIN_HISTORY = 3;
@@ -200,9 +200,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
      */
     async createUser({ user }) {
       if (user.id) {
+        let timezone = 'UTC';
+        try {
+          const cookieStore = await cookies();
+          timezone = cookieStore.get('NEXT_TIMEZONE')?.value || 'UTC';
+        } catch {
+          // Игнорируем ошибки чтения cookies
+        }
+
         await prisma.user.update({
           where: { id: user.id },
-          data: { emailVerified: new Date() }
+          data: { emailVerified: new Date(), timezone }
         });
       }
     },

@@ -26,7 +26,7 @@ export default async function MyProfilePage() {
     }),
     prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { password: true }
+      select: { password: true, timezone: true }
     }),
     // Загружаем последний вход — может не существовать до миграции
     (async () => {
@@ -63,6 +63,7 @@ export default async function MyProfilePage() {
             hasPassword={hasPassword}
             lastLoginAt={lastLogin?.createdAt ?? null}
             lastLoginIp={lastLogin?.ip ?? null}
+            timezone={dbUser?.timezone ?? 'UTC'}
           />
         </CardContent>
       </Card>
