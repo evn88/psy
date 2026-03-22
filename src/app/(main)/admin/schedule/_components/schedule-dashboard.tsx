@@ -26,10 +26,8 @@ export function ScheduleDashboard() {
   const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
   const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
 
-  const { events, isLoading, error, createEvent, updateEvent, deleteEvent } = useEvents(
-    startDate,
-    endDate
-  );
+  const { events, isLoading, isValidating, error, createEvent, updateEvent, deleteEvent } =
+    useEvents(startDate, endDate);
 
   const handleAddEvent = (date?: Date) => {
     setDialogDate(date || selectedDate || new Date());
@@ -61,12 +59,8 @@ export function ScheduleDashboard() {
         {/* Calendar — first on mobile, second on desktop */}
         <div className="order-1 md:order-2 flex-1 flex flex-col min-h-0 min-h-[350px] md:min-h-0">
           <Card className="flex flex-col h-auto md:h-full">
-            <CardHeader className="flex flex-row justify-between items-center pb-2 shrink-0 px-4 sm:px-6">
+            <CardHeader className="px-4 sm:px-6 pb-2 shrink-0">
               <CardTitle className="text-base sm:text-lg">{t('calendar')}</CardTitle>
-              <Button size="sm" variant="outline" onClick={() => handleAddEvent()}>
-                <Plus className="h-4 w-4 sm:mr-1" />
-                <span className="hidden sm:inline">{t('newEvent')}</span>
-              </Button>
             </CardHeader>
             <CardContent className="flex-1 min-h-0 overflow-hidden px-2 sm:px-4 pb-4">
               <CalendarView
@@ -77,6 +71,7 @@ export function ScheduleDashboard() {
                 events={events}
                 onEventClick={handleEditEvent}
                 onAddEvent={handleAddEvent}
+                isFetching={isValidating}
               />
             </CardContent>
           </Card>

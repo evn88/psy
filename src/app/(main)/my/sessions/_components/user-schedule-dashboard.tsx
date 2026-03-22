@@ -24,7 +24,7 @@ export function UserScheduleDashboard() {
   const fetchEnd = new Date(monthEnd);
   fetchEnd.setDate(fetchEnd.getDate() + 15);
 
-  const { events, isLoading, bookEvent, cancelEvent } = useUserEvents(
+  const { events, isLoading, isValidating, bookEvent, cancelEvent } = useUserEvents(
     fetchStart.toISOString(),
     fetchEnd.toISOString()
   );
@@ -39,6 +39,7 @@ export function UserScheduleDashboard() {
           events={events}
           onDateSelect={setSelectedDate}
           onMonthChange={setCurrentDate}
+          isFetching={isValidating}
         />
       </div>
       {/* Details — second on mobile, first on desktop */}

@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Event } from './use-events';
@@ -25,6 +26,7 @@ interface CalendarViewProps {
   events: Event[];
   onEventClick?: (event: Event) => void;
   onAddEvent?: (date: Date) => void;
+  isFetching?: boolean;
 }
 
 const weekDaysFull = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -40,12 +42,46 @@ export const CalendarView = ({
   onAddEvent
 }: CalendarViewProps) => {
   const t = useTranslations('Schedule');
-  const handlePreviousMonth = () => setCurrentDate(subMonths(currentDate, 1));
-  const handleNextMonth = () => setCurrentDate(addMonths(currentDate, 1));
+  const [direction, setDirection] = useState<'next' | 'prev'>('next');
+
+  const handlePreviousMonth = () => {
+    setDirection('prev');
+    setCurrentDate(subMonths(currentDate, 1));
+  };
+  const handleNextMonth = () => {
+    setDirection('next');
+    setCurrentDate(addMonths(currentDate, 1));
+  };
   const handleToday = () => {
+    setDirection(currentDate > new Date() ? 'prev' : 'next');
     setCurrentDate(new Date());
     setSelectedDate(new Date());
   };
+
+  const accumulated = useRef(0);
+  const cooldown = useRef(false);
+  const handleWheel = useCallback(
+    (e: React.WheelEvent) => {
+      e.preventDefault();
+      if (cooldown.current) return;
+      accumulated.current += e.deltaY;
+      if (Math.abs(accumulated.current) < 120) return;
+      const goNext = accumulated.current > 0;
+      accumulated.current = 0;
+      cooldown.current = true;
+      setTimeout(() => {
+        cooldown.current = false;
+      }, 800);
+      if (goNext) {
+        setDirection('next');
+        setCurrentDate(addMonths(currentDate, 1));
+      } else {
+        setDirection('prev');
+        setCurrentDate(subMonths(currentDate, 1));
+      }
+    },
+    [currentDate, setCurrentDate]
+  );
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(monthStart);
@@ -94,7 +130,7 @@ export const CalendarView = ({
   };
 
   return (
-    <div className="space-y-2 sm:space-y-4 h-full flex flex-col">
+    <div className="space-y-2 sm:space-y-4 h-full flex flex-col" onWheel={handleWheel}>
       {/* Header */}
       <div className="flex items-center justify-between gap-2 shrink-0">
         <h3 className="text-base sm:text-lg font-semibold capitalize truncate min-w-0">
@@ -139,7 +175,10 @@ export const CalendarView = ({
       </div>
 
       {/* Calendar grid */}
-      <div className="grid grid-cols-7 gap-1 flex-1 overflow-y-auto">
+      <div
+        key={currentDate.toISOString()}
+        className={`grid grid-cols-7 gap-1 flex-1 overflow-y-auto ${direction === 'next' ? 'animate-calendar-next' : 'animate-calendar-prev'}`}
+      >
         {daysInMonth.map((day, idx) => {
           const isSelected = selectedDate ? isSameDay(day, selectedDate) : false;
           const isCurrentMonth = isSameMonth(day, monthStart);

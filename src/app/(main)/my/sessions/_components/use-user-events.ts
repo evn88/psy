@@ -25,10 +25,10 @@ const fetcher = async (url: string) => {
 export function useUserEvents(startStr: string, endStr: string) {
   const t = useTranslations('My');
 
-  const { data, error, isLoading, mutate } = useSWR<UserEvent[]>(
+  const { data, error, isLoading, isValidating, mutate } = useSWR<UserEvent[]>(
     `/api/user/events?start=${startStr}&end=${endStr}`,
     fetcher,
-    { refreshInterval: 30000 }
+    { refreshInterval: 30000, keepPreviousData: true }
   );
 
   const bookEvent = async (id: string) => {
@@ -62,6 +62,7 @@ export function useUserEvents(startStr: string, endStr: string) {
   return {
     events: data || [],
     isLoading,
+    isValidating,
     isError: error,
     bookEvent,
     cancelEvent,

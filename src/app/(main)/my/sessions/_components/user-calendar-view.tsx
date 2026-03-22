@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback, useRef, useState } from 'react';
 import {
   format,
   addMonths,
@@ -24,6 +25,7 @@ interface UserCalendarViewProps {
   events: UserEvent[];
   onDateSelect: (date: Date) => void;
   onMonthChange: (date: Date) => void;
+  isFetching?: boolean;
 }
 
 export function UserCalendarView({
@@ -31,18 +33,53 @@ export function UserCalendarView({
   selectedDate,
   events,
   onDateSelect,
-  onMonthChange
+  onMonthChange,
+  isFetching = false
 }: UserCalendarViewProps) {
   const t = useTranslations('My');
   const locale = useLocale();
   const dateLocale = locale === 'ru' ? ru : enUS;
 
-  const nextMonth = () => onMonthChange(addMonths(currentDate, 1));
-  const prevMonth = () => onMonthChange(subMonths(currentDate, 1));
+  const [direction, setDirection] = useState<'next' | 'prev'>('next');
+
+  const nextMonth = () => {
+    setDirection('next');
+    onMonthChange(addMonths(currentDate, 1));
+  };
+  const prevMonth = () => {
+    setDirection('prev');
+    onMonthChange(subMonths(currentDate, 1));
+  };
   const goToToday = () => {
+    setDirection(currentDate > new Date() ? 'prev' : 'next');
     onDateSelect(new Date());
     onMonthChange(new Date());
   };
+
+  const accumulated = useRef(0);
+  const cooldown = useRef(false);
+  const handleWheel = useCallback(
+    (e: React.WheelEvent) => {
+      e.preventDefault();
+      if (cooldown.current) return;
+      accumulated.current += e.deltaY;
+      if (Math.abs(accumulated.current) < 120) return;
+      const goNext = accumulated.current > 0;
+      accumulated.current = 0;
+      cooldown.current = true;
+      setTimeout(() => {
+        cooldown.current = false;
+      }, 800);
+      if (goNext) {
+        setDirection('next');
+        onMonthChange(addMonths(currentDate, 1));
+      } else {
+        setDirection('prev');
+        onMonthChange(subMonths(currentDate, 1));
+      }
+    },
+    [currentDate, onMonthChange]
+  );
 
   const renderHeader = () => {
     return (
@@ -211,11 +248,18 @@ export function UserCalendarView({
       );
       days = [];
     }
-    return <div className="flex-1 overflow-y-auto">{rows}</div>;
+    return (
+      <div
+        key={currentDate.toISOString()}
+        className={`flex-1 overflow-y-auto ${direction === 'next' ? 'animate-calendar-next' : 'animate-calendar-prev'}`}
+      >
+        {rows}
+      </div>
+    );
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full" onWheel={handleWheel}>
       {renderHeader()}
       {renderDays()}
       {renderCells()}
