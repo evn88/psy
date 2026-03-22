@@ -285,7 +285,7 @@ export const EventDialog = ({
               name="userId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Клиент</FormLabel>
+                  <FormLabel>{t('client')}</FormLabel>
                   <Select
                     onValueChange={val => field.onChange(val === 'none' ? null : val)}
                     value={field.value || 'none'}
@@ -293,11 +293,11 @@ export const EventDialog = ({
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Никто не выбран" />
+                        <SelectValue placeholder={t('noneSelected')} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="none">Никто не выбран</SelectItem>
+                      <SelectItem value="none">{t('noneSelected')}</SelectItem>
                       {users?.map((u: any) => (
                         <SelectItem key={u.id} value={u.id}>
                           {u.name} ({u.email})

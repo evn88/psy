@@ -73,7 +73,8 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
         where: { id: eventId },
         data: {
           userId: userId,
-          status: 'SCHEDULED'
+          status: 'SCHEDULED',
+          type: 'CONSULTATION'
         },
         include: {
           user: { select: { id: true, name: true, email: true, language: true, timezone: true } },

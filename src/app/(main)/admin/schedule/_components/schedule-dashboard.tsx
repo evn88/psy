@@ -79,7 +79,7 @@ export function ScheduleDashboard({ workHourStart = 9, workHourEnd = 20 }: Sched
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                Месяц
+                {t('month')}
               </button>
               <button
                 onClick={() => setViewMode('week')}
@@ -89,7 +89,7 @@ export function ScheduleDashboard({ workHourStart = 9, workHourEnd = 20 }: Sched
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                Неделя
+                {t('week')}
               </button>
               <button
                 onClick={() => setViewMode('day')}
@@ -99,12 +99,12 @@ export function ScheduleDashboard({ workHourStart = 9, workHourEnd = 20 }: Sched
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                День
+                {t('day')}
               </button>
             </div>
             <Button size="sm" onClick={() => handleAddEvent()}>
               <Plus className="h-4 w-4 mr-1" />
-              <span>Создать событие</span>
+              <span>{t('createEvent')}</span>
             </Button>
           </CardHeader>
           <CardContent className="flex-1 min-h-0 overflow-hidden px-2 sm:px-4 pb-4">

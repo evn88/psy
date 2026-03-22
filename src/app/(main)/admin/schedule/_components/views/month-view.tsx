@@ -133,7 +133,7 @@ export const MonthView = ({
                 })}
                 {dayEvents.length > 4 && (
                   <div className="text-xs text-muted-foreground pl-1">
-                    +{dayEvents.length - 4} ещё
+                    {t('moreEvents', { count: dayEvents.length - 4 })}
                   </div>
                 )}
               </div>

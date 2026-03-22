@@ -11,7 +11,9 @@ import {
   endOfWeek,
   isSameMonth,
   isSameDay,
-  addDays
+  addDays,
+  isBefore,
+  startOfDay
 } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -163,18 +165,30 @@ export function UserCalendarView({
         const isSelected = isSameDay(day, selectedDate);
         const isCurrentMonth = isSameMonth(day, monthStart);
         const isToday = isSameDay(day, new Date());
+        const isPastDay = isBefore(day, startOfDay(new Date()));
+
+        const disabledStyle = isPastDay
+          ? {
+              backgroundImage:
+                'repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(150, 150, 150, 0.06) 8px, rgba(150, 150, 150, 0.06) 16px)'
+            }
+          : {};
 
         days.push(
           <div
             key={day.toString()}
-            onClick={() => onDateSelect(cloneDay)}
+            onClick={() => {
+              if (isPastDay) return;
+              onDateSelect(cloneDay);
+            }}
             className={`
-              min-h-[60px] sm:min-h-[80px] lg:min-h-[100px] p-1 sm:p-2 border-b border-r cursor-pointer transition-colors relative
-              hover:bg-muted/50
+              min-h-[60px] sm:min-h-[80px] lg:min-h-[100px] p-1 sm:p-2 border-b border-r transition-colors relative
+              ${!isPastDay ? 'hover:bg-muted/50 cursor-pointer' : 'cursor-not-allowed opacity-[0.85]'}
               ${!isCurrentMonth ? 'bg-muted/20 text-muted-foreground' : ''}
-              ${isSelected ? 'bg-primary/5 border-primary/20' : ''}
+              ${isSelected && !isPastDay ? 'bg-primary/5 border-primary/20' : ''}
               ${i === 6 ? 'border-r-0' : ''}
             `}
+            style={disabledStyle}
           >
             <div className="flex justify-between items-start">
               <span

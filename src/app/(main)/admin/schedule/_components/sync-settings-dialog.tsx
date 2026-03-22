@@ -72,17 +72,15 @@ export function SyncSettingsDialog({
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Настройки расписания</DialogTitle>
-          <DialogDescription>
-            Настройте рабочие часы и подключение Google Calendar.
-          </DialogDescription>
+          <DialogTitle>{t('settingsTitle')}</DialogTitle>
+          <DialogDescription>{t('settingsDescription')}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-6 py-4">
           <div className="grid gap-4 bg-muted/20 p-4 rounded-lg border">
-            <h4 className="font-semibold text-sm">Рабочие часы</h4>
+            <h4 className="font-semibold text-sm">{t('workHours')}</h4>
             <div className="flex items-center gap-4">
               <div className="grid gap-2 flex-1">
-                <Label htmlFor="workStart">Начало (час)</Label>
+                <Label htmlFor="workStart">{t('startHour')}</Label>
                 <Input
                   id="workStart"
                   type="number"
@@ -94,7 +92,7 @@ export function SyncSettingsDialog({
                 />
               </div>
               <div className="grid gap-2 flex-1">
-                <Label htmlFor="workEnd">Конец (час)</Label>
+                <Label htmlFor="workEnd">{t('endHour')}</Label>
                 <Input
                   id="workEnd"
                   type="number"
@@ -115,12 +113,12 @@ export function SyncSettingsDialog({
               onCheckedChange={checked => setEnabled(checked as boolean)}
             />
             <Label htmlFor="enabled" className="text-base font-medium cursor-pointer">
-              Включить интеграцию с Google Calendar
+              {t('enableGoogleCalendar')}
             </Label>
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="url">Webhook URL / Секретный адрес iCal</Label>
+            <Label htmlFor="url">{t('webhookUrl')}</Label>
             <Input
               id="url"
               value={url}
@@ -133,43 +131,26 @@ export function SyncSettingsDialog({
           <details className="bg-blue-50/50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-100 dark:border-blue-900 group">
             <summary className="flex items-center text-sm font-semibold text-blue-800 dark:text-blue-300 cursor-pointer select-none">
               <Info className="w-4 h-4 mr-2" />
-              Как получить ссылку из Google Calendar
+              {t('howToGetLink')}
               <span className="ml-auto opacity-70 text-xs transition-transform group-open:rotate-180">
                 ▼
               </span>
             </summary>
             <ol className="list-decimal list-inside text-xs space-y-2 text-blue-900/80 dark:text-blue-200/80 mt-3 pt-3 border-t border-blue-100/50">
-              <li>Откройте Google Календарь на компьютере.</li>
-              <li>
-                Слева в разделе &quot;Мои календари&quot; нажмите на три точки (⋮) возле нужного
-                календаря &rarr; <strong>Настройки и общий доступ</strong>.
-              </li>
-              <li>
-                Прокрутите вниз до раздела <strong>Интеграция календаря</strong>.
-              </li>
-              <li>
-                Скопируйте <strong>Секретный адрес в формате iCal</strong> и вставьте его в поле
-                выше (для приема событий).
-              </li>
-              <li>
-                <strong>Настройка приватности (чтобы скрыть детали):</strong> в настройках календаря
-                перейдите в <strong>Разрешения на доступ к мероприятиям</strong>. Поставьте галочку
-                &quot;Сделать общедоступным&quot; и выберите{' '}
-                <strong>
-                  &quot;Смотреть только информацию о свободном и занятом времени (скрыть
-                  подробности)&quot;
-                </strong>
-                .
-              </li>
+              <li>{t('googleStep1')}</li>
+              <li>{t('googleStep2')}</li>
+              <li>{t('googleStep3')}</li>
+              <li>{t('googleStep4')}</li>
+              <li>{t('googleStep5')}</li>
             </ol>
           </details>
         </div>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-            Отмена
+            {t('cancel')}
           </Button>
           <Button type="button" onClick={handleSave} disabled={loading}>
-            {loading ? 'Сохранение...' : 'Сохранить'}
+            {loading ? t('saving') : t('save')}
           </Button>
         </DialogFooter>
       </DialogContent>
