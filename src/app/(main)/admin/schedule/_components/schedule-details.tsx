@@ -34,7 +34,7 @@ export const ScheduleDetails = ({
     const hours = Array.from({ length: 13 }, (_, i) => i + 8);
 
     return (
-      <ScrollArea className="h-[600px] pr-4">
+      <ScrollArea className="max-h-[50vh] md:max-h-none md:h-[calc(100vh-22rem)] pr-4">
         <div className="space-y-4 relative">
           {hours.map(hour => {
             const hourEvents = dayEvents.filter(e => new Date(e.start).getHours() === hour);
@@ -90,7 +90,7 @@ export const ScheduleDetails = ({
     const daysInWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
     return (
-      <ScrollArea className="h-[600px] pr-4">
+      <ScrollArea className="max-h-[50vh] md:max-h-none md:h-[calc(100vh-22rem)] pr-4">
         <div className="space-y-6">
           <h3 className="font-medium text-lg">
             Week of {format(weekStart, 'MMM d')} - {format(weekEnd, 'MMM d, yyyy')}

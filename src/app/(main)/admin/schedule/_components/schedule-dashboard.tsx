@@ -26,7 +26,6 @@ export function ScheduleDashboard() {
   const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
   const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
 
-  // Fetch all events for the currently visible calendar grid
   const { events, isLoading, error, createEvent, updateEvent, deleteEvent } = useEvents(
     startDate,
     endDate
@@ -58,20 +57,23 @@ export function ScheduleDashboard() {
 
   return (
     <>
-      <div className="flex flex-col xl:flex-row gap-6">
-        <div className="w-full xl:w-1/3">
-          <Card className="h-full">
-            <CardHeader className="flex flex-row justify-between items-center pb-2">
-              <CardTitle>{t('details')}</CardTitle>
-              <Button size="sm" onClick={() => handleAddEvent()}>
-                <Plus className="h-4 w-4 mr-1" /> {t('addEvent')}
+      <div className="flex flex-col md:flex-row gap-4 md:gap-6 md:h-[calc(100vh-10rem)] md:min-h-[500px]">
+        {/* Calendar — first on mobile, second on desktop */}
+        <div className="order-1 md:order-2 flex-1 flex flex-col min-h-0 min-h-[350px] md:min-h-0">
+          <Card className="flex flex-col h-auto md:h-full">
+            <CardHeader className="flex flex-row justify-between items-center pb-2 shrink-0 px-4 sm:px-6">
+              <CardTitle className="text-base sm:text-lg">{t('calendar')}</CardTitle>
+              <Button size="sm" variant="outline" onClick={() => handleAddEvent()}>
+                <Plus className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline">{t('newEvent')}</span>
               </Button>
             </CardHeader>
-            <CardContent>
-              <ScheduleDetails
+            <CardContent className="flex-1 min-h-0 overflow-hidden px-2 sm:px-4 pb-4">
+              <CalendarView
+                currentDate={currentDate}
+                setCurrentDate={setCurrentDate}
                 selectedDate={selectedDate}
-                viewMode={viewMode}
-                setViewMode={setViewMode}
+                setSelectedDate={setSelectedDate}
                 events={events}
                 onEventClick={handleEditEvent}
                 onAddEvent={handleAddEvent}
@@ -79,20 +81,22 @@ export function ScheduleDashboard() {
             </CardContent>
           </Card>
         </div>
-        <div className="w-full xl:w-2/3">
-          <Card className="h-full">
-            <CardHeader className="flex flex-row justify-between items-center pb-2">
-              <CardTitle>{t('calendar')}</CardTitle>
-              <Button size="sm" variant="outline" onClick={() => handleAddEvent()}>
-                {t('newEvent')}
+
+        {/* Details — second on mobile, first on desktop */}
+        <div className="order-2 md:order-1 md:w-80 lg:w-96 md:shrink-0 flex flex-col min-h-0">
+          <Card className="flex flex-col h-auto md:h-full">
+            <CardHeader className="flex flex-row justify-between items-center pb-2 shrink-0 px-4 sm:px-6">
+              <CardTitle className="text-base sm:text-lg">{t('details')}</CardTitle>
+              <Button size="sm" onClick={() => handleAddEvent()}>
+                <Plus className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline">{t('addEvent')}</span>
               </Button>
             </CardHeader>
-            <CardContent>
-              <CalendarView
-                currentDate={currentDate}
-                setCurrentDate={setCurrentDate}
+            <CardContent className="flex-1 min-h-0 overflow-hidden px-4 sm:px-6">
+              <ScheduleDetails
                 selectedDate={selectedDate}
-                setSelectedDate={setSelectedDate}
+                viewMode={viewMode}
+                setViewMode={setViewMode}
                 events={events}
                 onEventClick={handleEditEvent}
                 onAddEvent={handleAddEvent}

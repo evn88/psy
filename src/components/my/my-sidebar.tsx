@@ -139,7 +139,7 @@ export const MySidebar = ({ user, unreadSurveysCount = 0, ...props }: MySidebarP
                 asChild
                 isActive={item.isActive}
                 tooltip={item.title}
-                className="h-11 md:h-8"
+                className="h-11 pl-4 md:h-8 md:pl-2"
               >
                 <Link href={item.url} onClick={closeMobileSidebar}>
                   <item.icon />
