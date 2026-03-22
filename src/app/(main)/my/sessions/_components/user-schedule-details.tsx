@@ -100,7 +100,7 @@ export function UserScheduleDetails({
 
   return (
     <>
-      <Card className="flex flex-col h-full border-0 sm:border">
+      <Card className="flex flex-col md:h-full border-0 sm:border">
         <CardHeader className="pb-3 px-4 sm:px-6">
           <div className="flex items-start justify-between">
             <div>
@@ -141,7 +141,7 @@ export function UserScheduleDetails({
           </div>
         </CardHeader>
 
-        <CardContent className="flex-1 overflow-y-auto px-4 sm:px-6 pb-6">
+        <CardContent className="flex-1 overflow-y-auto px-4 sm:px-6 pb-6 max-h-[60vh] md:max-h-none">
           {isLoading ? (
             <div className="flex justify-center items-center h-40">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />

@@ -30,8 +30,19 @@ export function UserScheduleDashboard() {
   );
 
   return (
-    <div className="flex flex-col xl:flex-row gap-6 h-[calc(100vh-[var(--header-height)]-2rem)] min-h-[600px]">
-      <div className="flex-1 xl:max-w-md 2xl:max-w-lg shrink-0 flex flex-col min-h-0">
+    <div className="flex flex-col md:flex-row gap-4 md:gap-6 md:h-[calc(100vh-10rem)] md:min-h-[500px]">
+      {/* Calendar — first on mobile, second on desktop */}
+      <div className="order-1 md:order-2 flex-1 flex flex-col min-h-0 bg-card border rounded-xl overflow-hidden shadow-sm min-h-[350px] md:min-h-0">
+        <UserCalendarView
+          currentDate={currentDate}
+          selectedDate={selectedDate}
+          events={events}
+          onDateSelect={setSelectedDate}
+          onMonthChange={setCurrentDate}
+        />
+      </div>
+      {/* Details — second on mobile, first on desktop */}
+      <div className="order-2 md:order-1 md:w-80 lg:w-96 md:shrink-0 flex flex-col min-h-0">
         <UserScheduleDetails
           selectedDate={selectedDate}
           events={events}
@@ -40,15 +51,6 @@ export function UserScheduleDashboard() {
           isLoading={isLoading}
           onBookEvent={bookEvent}
           onCancelEvent={cancelEvent}
-        />
-      </div>
-      <div className="flex-[2] min-w-[500px] flex flex-col min-h-0 bg-card border rounded-xl overflow-hidden shadow-sm">
-        <UserCalendarView
-          currentDate={currentDate}
-          selectedDate={selectedDate}
-          events={events}
-          onDateSelect={setSelectedDate}
-          onMonthChange={setCurrentDate}
         />
       </div>
     </div>

@@ -46,21 +46,36 @@ export function UserCalendarView({
 
   const renderHeader = () => {
     return (
-      <div className="flex justify-between items-center p-4 border-b">
-        <div className="flex items-center gap-4">
-          <h2 className="text-xl font-semibold capitalize">
+      <div className="flex justify-between items-center p-3 sm:p-4 border-b gap-2">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+          <h2 className="text-base sm:text-xl font-semibold capitalize truncate">
             {format(currentDate, 'LLLL yyyy', { locale: dateLocale })}
           </h2>
-          <div className="flex items-center gap-1">
-            <Button variant="outline" size="icon" onClick={prevMonth} className="h-8 w-8">
+          <div className="flex items-center gap-1 shrink-0">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={prevMonth}
+              className="h-7 w-7 sm:h-8 sm:w-8"
+            >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="icon" onClick={nextMonth} className="h-8 w-8">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={nextMonth}
+              className="h-7 w-7 sm:h-8 sm:w-8"
+            >
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={goToToday}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={goToToday}
+          className="shrink-0 text-xs sm:text-sm h-7 sm:h-8"
+        >
           {t('today')}
         </Button>
       </div>
@@ -75,9 +90,14 @@ export function UserCalendarView({
       days.push(
         <div
           key={i}
-          className="text-center font-medium text-sm text-muted-foreground py-2 border-b capitalize"
+          className="text-center font-medium text-muted-foreground py-2 border-b capitalize"
         >
-          {format(addDays(startDate, i), 'EEEE', { locale: dateLocale })}
+          <span className="sm:hidden text-[10px]">
+            {format(addDays(startDate, i), 'EEEEE', { locale: dateLocale })}
+          </span>
+          <span className="hidden sm:inline text-xs md:text-sm">
+            {format(addDays(startDate, i), 'EEE', { locale: dateLocale })}
+          </span>
         </div>
       );
     }
@@ -112,7 +132,7 @@ export function UserCalendarView({
             key={day.toString()}
             onClick={() => onDateSelect(cloneDay)}
             className={`
-              min-h-[100px] p-2 border-b border-r cursor-pointer transition-colors relative
+              min-h-[60px] sm:min-h-[80px] lg:min-h-[100px] p-1 sm:p-2 border-b border-r cursor-pointer transition-colors relative
               hover:bg-muted/50
               ${!isCurrentMonth ? 'bg-muted/20 text-muted-foreground' : ''}
               ${isSelected ? 'bg-primary/5 border-primary/20' : ''}
@@ -122,7 +142,7 @@ export function UserCalendarView({
             <div className="flex justify-between items-start">
               <span
                 className={`
-                inline-flex items-center justify-center w-7 h-7 rounded-full text-sm
+                inline-flex items-center justify-center w-5 h-5 sm:w-7 sm:h-7 rounded-full text-xs sm:text-sm
                 ${isToday ? 'bg-primary text-primary-foreground font-bold' : ''}
                 ${isSelected && !isToday ? 'bg-muted font-bold' : ''}
               `}
@@ -130,13 +150,30 @@ export function UserCalendarView({
                 {formattedDate}
               </span>
               {dayEvents.length > 0 && (
-                <span className="text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm">
+                <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground bg-muted px-1 sm:px-1.5 py-0.5 rounded-sm">
                   {dayEvents.length}
                 </span>
               )}
             </div>
 
-            <div className="mt-2 space-y-1">
+            {/* Mobile: colored dots */}
+            {dayEvents.length > 0 && (
+              <div className="sm:hidden flex flex-wrap gap-0.5 mt-1">
+                {dayEvents.slice(0, 4).map(event => {
+                  const isScheduled = event.type === 'CONSULTATION' && event.status === 'SCHEDULED';
+                  const isFree = event.type === 'FREE_SLOT';
+                  return (
+                    <span
+                      key={event.id}
+                      className={`w-1.5 h-1.5 rounded-full ${isScheduled ? 'bg-green-500' : isFree ? 'bg-blue-500' : 'bg-gray-400'}`}
+                    />
+                  );
+                })}
+              </div>
+            )}
+
+            {/* sm+: text labels */}
+            <div className="hidden sm:block mt-1 sm:mt-2 space-y-1">
               {dayEvents.slice(0, 3).map(event => {
                 const isScheduled = event.type === 'CONSULTATION' && event.status === 'SCHEDULED';
                 const isFree = event.type === 'FREE_SLOT';
