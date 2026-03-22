@@ -8,6 +8,7 @@ import {
   sendAdminEventBookingEmail,
   sendAdminEventCancellationEmail
 } from '@/shared/lib/email';
+import { syncEventWithGoogle } from '@/shared/lib/google-sync';
 
 const updateEventSchema = z.object({
   action: z.enum(['book', 'cancel']),
@@ -72,7 +73,6 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
       updatedEvent = await prisma.event.update({
         where: { id: eventId },
         data: {
-          type: 'CONSULTATION', // Change from FREE_SLOT to CONSULTATION upon booking
           userId: userId,
           status: 'SCHEDULED'
         },
@@ -168,6 +168,9 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
         });
       }
     }
+
+    // Trigger Google Calendar sync hook
+    syncEventWithGoogle(updatedEvent.id, 'UPDATE');
 
     return NextResponse.json(updatedEvent);
   } catch (error) {

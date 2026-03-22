@@ -4,6 +4,7 @@ import { auth } from '@/auth';
 import { z } from 'zod';
 import { EventType, EventStatus } from '@prisma/client';
 import { sendEventNotificationEmail, sendEventCancellationEmail } from '@/shared/lib/email';
+import { syncEventWithGoogle } from '@/shared/lib/google-sync';
 
 const updateEventSchema = z.object({
   type: z.nativeEnum(EventType).optional(),
@@ -96,6 +97,9 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
       }
     }
 
+    // Trigger Google Calendar sync hook
+    syncEventWithGoogle(updatedEvent.id, 'UPDATE');
+
     return NextResponse.json(updatedEvent);
   } catch (error) {
     console.error('Failed to update event:', error);
@@ -131,6 +135,9 @@ export async function DELETE(req: Request, props: { params: Promise<{ id: string
     if (!event) {
       return NextResponse.json({ message: 'Event not found' }, { status: 404 });
     }
+
+    // Trigger Google Calendar sync before deletion
+    await syncEventWithGoogle(eventId, 'DELETE');
 
     await prisma.event.delete({
       where: { id: eventId }

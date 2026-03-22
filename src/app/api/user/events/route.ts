@@ -71,17 +71,28 @@ export async function GET(req: Request) {
       orderBy: { start: 'asc' }
     });
 
-    // Для свободных слотов возвращаем только базовую информацию без деталей других пользователей (если они как-то туда попали)
+    // Для свободных слотов возвращаем только базовую информацию без деталей других пользователей
     const sanitizedEvents = events.map((event: any) => {
-      if (event.type === 'FREE_SLOT' && event.userId !== session.user.id) {
-        return {
-          id: event.id,
-          type: event.type,
-          start: event.start,
-          end: event.end,
-          status: event.status,
-          title: 'Free Slot'
-        };
+      if (event.type === 'FREE_SLOT') {
+        if (!event.userId) {
+          // Available slot
+          return {
+            ...event,
+            user: null
+          };
+        } else if (event.userId !== session.user.id) {
+          // Booked by someone else
+          return {
+            id: event.id,
+            type: event.type,
+            start: event.start,
+            end: event.end,
+            status: event.status,
+            title: 'Занято',
+            user: null,
+            userId: 'hidden'
+          };
+        }
       }
       return event;
     });

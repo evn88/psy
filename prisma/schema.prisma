@@ -66,6 +66,9 @@ model User {
   lastSeen       DateTime? @default(now())
   registrationIp String?
 
+  googleCalendarSyncUrl     String?
+  googleCalendarSyncEnabled Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

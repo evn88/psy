@@ -53,6 +53,7 @@ interface EventDialogProps {
   onOpenChange: (open: boolean) => void;
   event?: Event | null;
   selectedDate?: Date;
+  selectedEndDate?: Date;
   onSave: (data: any) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
 }
@@ -62,6 +63,7 @@ export const EventDialog = ({
   onOpenChange,
   event,
   selectedDate,
+  selectedEndDate,
   onSave,
   onDelete
 }: EventDialogProps) => {
@@ -70,12 +72,32 @@ export const EventDialog = ({
   const { data: users, isLoading: usersLoading } = useSWR('/api/admin/users', fetcher);
 
   const defaultStart = selectedDate
-    ? new Date(selectedDate.setHours(9, 0, 0, 0)).toISOString().slice(0, 16)
+    ? new Date(
+        new Date(selectedDate).setHours(
+          selectedDate.getHours() > 0 ? selectedDate.getHours() : 9,
+          0,
+          0,
+          0
+        )
+      )
+        .toISOString()
+        .slice(0, 16)
     : new Date().toISOString().slice(0, 16);
 
-  const defaultEnd = selectedDate
-    ? new Date(selectedDate.setHours(10, 0, 0, 0)).toISOString().slice(0, 16)
-    : new Date(new Date().getTime() + 60 * 60 * 1000).toISOString().slice(0, 16);
+  const defaultEnd = selectedEndDate
+    ? new Date(selectedEndDate).toISOString().slice(0, 16)
+    : selectedDate
+      ? new Date(
+          new Date(selectedDate).setHours(
+            (selectedDate.getHours() > 0 ? selectedDate.getHours() : 9) + 1,
+            0,
+            0,
+            0
+          )
+        )
+          .toISOString()
+          .slice(0, 16)
+      : new Date(new Date().getTime() + 60 * 60 * 1000).toISOString().slice(0, 16);
 
   const form = useForm<z.infer<typeof eventSchema>>({
     resolver: zodResolver(eventSchema),

@@ -4,6 +4,7 @@ import { auth } from '@/auth';
 import { z } from 'zod';
 import { EventType, EventStatus } from '@prisma/client';
 import { sendEventNotificationEmail } from '@/shared/lib/email';
+import { syncEventWithGoogle } from '@/shared/lib/google-sync';
 
 const getEventsSchema = z.object({
   start: z.string().datetime().optional(),
@@ -140,6 +141,9 @@ export async function POST(req: Request) {
         timezone: newEvent.user.timezone || 'UTC'
       });
     }
+
+    // Trigger Google Calendar sync hook
+    syncEventWithGoogle(newEvent.id, 'CREATE');
 
     return NextResponse.json(newEvent, { status: 201 });
   } catch (error) {
