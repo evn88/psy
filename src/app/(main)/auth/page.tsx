@@ -121,11 +121,12 @@ export default function AuthPage() {
       });
 
       if (result?.error) {
-        // Проверяем, связана ли ошибка с неподтверждённым email
         if (result.error.includes('EmailNotVerified')) {
           toast.error(t('emailNotVerified'));
         } else if (result.error.includes('AccountDisabled')) {
           toast.error(t('accountDisabled'));
+        } else if (result.error.includes('TooManyAttempts')) {
+          toast.error(t('tooManyAttempts'));
         } else {
           setError(t('invalidCredentials'));
         }

@@ -45,6 +45,7 @@
     "verificationFailed": "Email verification failed. The link may be invalid.",
     "verificationExpired": "Verification link has expired. Please register again.",
     "accountDisabled": "Your account has been disabled. Please contact the administrator.",
+    "tooManyAttempts": "Too many login attempts. Please try again in 1 hour.",
     "userExists": "A user with this email already exists with a different sign-in method. Please sign in with your password or link Google in your profile.",
     "oauthAccountNotLinked": "This Google account is not linked to your profile. Link it in profile settings."
   },

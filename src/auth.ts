@@ -1,4 +1,4 @@
-import NextAuth from 'next-auth';
+import NextAuth, { AuthError } from 'next-auth';
 import Google from 'next-auth/providers/google';
 import Credentials from 'next-auth/providers/credentials';
 import WebAuthn from 'next-auth/providers/webauthn';
@@ -10,6 +10,16 @@ import { authConfig } from './auth.config';
 import { getRPID } from '@/app/api/profile/passkeys/register/config';
 import { sendWelcomeGoogleEmail } from '@/shared/lib/email';
 import { headers } from 'next/headers';
+
+class EmailNotVerifiedError extends AuthError {
+  static type = 'EmailNotVerified';
+}
+class AccountDisabledError extends AuthError {
+  static type = 'AccountDisabled';
+}
+class TooManyAttemptsError extends AuthError {
+  static type = 'TooManyAttempts';
+}
 
 /** Максимальное количество записей истории входов на пользователя */
 const MAX_LOGIN_HISTORY = 3;
@@ -107,7 +117,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           });
 
           if (attempts >= 3) {
-            throw new Error('Too many login attempts. Please try again after 1 hour.');
+            throw new TooManyAttemptsError();
           }
 
           const user = await getUser(email);
@@ -119,12 +129,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
           // Проверяем подтверждение email
           if (!user.emailVerified) {
-            throw new Error('EmailNotVerified');
+            throw new EmailNotVerifiedError();
           }
 
           // Проверяем, не отключена ли учётная запись
           if (user.isDisabled) {
-            throw new Error('AccountDisabled');
+            throw new AccountDisabledError();
           }
 
           const passwordsMatch = await bcrypt.compare(password, user.password);
