@@ -71,6 +71,7 @@ export default async function AdminPage() {
       isDisabled: (user as any).isDisabled ?? false,
       language: user.language,
       theme: user.theme,
+      timezone: (user as any).timezone ?? null,
       lastSeen: user.lastSeen,
       registrationIp: (user as any).registrationIp ?? null,
       createdAt: user.createdAt,

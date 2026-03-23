@@ -173,6 +173,12 @@ export const UserDetailsDialog = ({ user, open, onOpenChange }: UserDetailsDialo
                 {t('detailsTheme')}
               </span>
               <span className="capitalize">{user.theme}</span>
+
+              <span className="text-muted-foreground flex items-center gap-1.5">
+                <Globe className="h-3.5 w-3.5" />
+                {t('timezoneLabel')}
+              </span>
+              <span>{user.timezone || 'UTC'}</span>
             </div>
           </section>
 

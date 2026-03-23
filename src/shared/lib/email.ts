@@ -1,6 +1,10 @@
 import { Resend } from 'resend';
 import { VerificationEmailTemplate } from '@/components/email-templates/verification-email-template';
 import { WelcomeGoogleEmailTemplate } from '@/components/email-templates/welcome-google-email-template';
+import { EventNotificationTemplate } from '@/components/email-templates/event-notification-template';
+import { EventCancellationTemplate } from '@/components/email-templates/event-cancellation-template';
+import { AdminEventBookingTemplate } from '@/components/email-templates/admin-event-booking-template';
+import { AdminEventCancellationTemplate } from '@/components/email-templates/admin-event-cancellation-template';
 import emailEn from '../../../messages/email-en.json';
 import emailRu from '../../../messages/email-ru.json';
 
@@ -134,6 +138,269 @@ export const sendWelcomeGoogleEmail = async ({
 
   if (error) {
     console.error('Ошибка отправки welcome Google email:', error);
+    return null;
+  }
+
+  return data?.id ?? null;
+};
+
+interface AdminEventBookingEmailParams {
+  adminEmail: string;
+  adminName: string;
+  userName: string;
+  userEmail: string;
+  title: string;
+  eventType: string;
+  start: Date | string;
+  end: Date | string;
+  manageUrl: string;
+  locale?: string;
+}
+
+export const sendAdminEventBookingEmail = async ({
+  adminEmail,
+  adminName,
+  userName,
+  userEmail,
+  title,
+  eventType,
+  start,
+  end,
+  manageUrl,
+  locale = 'ru'
+}: AdminEventBookingEmailParams) => {
+  let translations = {};
+  try {
+    const messages = await import(`../../../messages/${locale}.json`);
+    translations = messages.AdminEventBooking || {};
+  } catch (error) {
+    console.error(`Failed to load translations for locale: ${locale}`, error);
+    try {
+      const fbMessages = await import(`../../../messages/ru.json`);
+      translations = fbMessages.AdminEventBooking || {};
+    } catch (e) {}
+  }
+
+  const { data, error } = await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: [adminEmail],
+    subject: `Новая запись: ${title || eventType}`,
+    react: AdminEventBookingTemplate({
+      adminName,
+      userName,
+      userEmail,
+      title,
+      eventType,
+      start,
+      end,
+      manageUrl,
+      t: translations as any
+    })
+  });
+
+  if (error) {
+    console.error('Failed to send admin event booking email:', error);
+    return null;
+  }
+
+  return data?.id ?? null;
+};
+
+interface AdminEventCancellationEmailParams {
+  adminEmail: string;
+  adminName: string;
+  userName: string;
+  userEmail: string;
+  title: string;
+  eventType: string;
+  start: Date | string;
+  end: Date | string;
+  reason?: string;
+  manageUrl: string;
+  locale?: string;
+}
+
+export const sendAdminEventCancellationEmail = async ({
+  adminEmail,
+  adminName,
+  userName,
+  userEmail,
+  title,
+  eventType,
+  start,
+  end,
+  reason,
+  manageUrl,
+  locale = 'ru'
+}: AdminEventCancellationEmailParams) => {
+  let translations = {};
+  try {
+    const messages = await import(`../../../messages/${locale}.json`);
+    translations = messages.AdminEventCancellation || {};
+  } catch (error) {
+    console.error(`Failed to load translations for locale: ${locale}`, error);
+    try {
+      const fbMessages = await import(`../../../messages/ru.json`);
+      translations = fbMessages.AdminEventCancellation || {};
+    } catch (e) {}
+  }
+
+  const { data, error } = await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: [adminEmail],
+    subject: `Отмена записи: ${title || eventType}`,
+    react: AdminEventCancellationTemplate({
+      adminName,
+      userName,
+      userEmail,
+      title,
+      eventType,
+      start,
+      end,
+      reason,
+      manageUrl,
+      t: translations as any
+    })
+  });
+
+  if (error) {
+    console.error('Failed to send admin event cancellation email:', error);
+    return null;
+  }
+
+  return data?.id ?? null;
+};
+
+interface SendEventNotificationEmailParams {
+  email: string;
+  name: string;
+  title: string;
+  eventType: string;
+  start: Date | string;
+  end: Date | string;
+  meetLink?: string;
+  manageUrl: string;
+  locale: string;
+  timezone: string;
+}
+
+/**
+ * Отправляет email-уведомление о создании или обновлении события.
+ * @returns id письма в Resend или null при ошибке
+ */
+export const sendEventNotificationEmail = async ({
+  email,
+  name,
+  title,
+  eventType,
+  start,
+  end,
+  meetLink,
+  manageUrl,
+  locale,
+  timezone
+}: SendEventNotificationEmailParams): Promise<string | null> => {
+  const translations = getEmailTranslations(locale);
+
+  const { data, error } = await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: [email],
+    subject: translations.eventNotification?.subject || 'Schedule Update',
+    react: EventNotificationTemplate({
+      name,
+      title,
+      eventType,
+      start,
+      end,
+      meetLink,
+      manageUrl,
+      timezone,
+      translations: {
+        heading: translations.eventNotification?.heading || '',
+        greeting: interpolate(translations.eventNotification?.greeting || '', { name }),
+        message: interpolate(translations.eventNotification?.message || '', {
+          title: title || eventType
+        }),
+        dateLabel: translations.eventNotification?.dateLabel || '',
+        timeLabel: translations.eventNotification?.timeLabel || '',
+        typeLabel: translations.eventNotification?.typeLabel || '',
+        meetLinkLabel: translations.eventNotification?.meetLinkLabel || '',
+        button: translations.eventNotification?.button || '',
+        footer: translations.eventNotification?.footer || ''
+      }
+    })
+  });
+
+  if (error) {
+    console.error('Ошибка отправки event notification email:', error);
+    return null;
+  }
+
+  return data?.id ?? null;
+};
+
+interface SendEventCancellationEmailParams {
+  email: string;
+  name: string;
+  title: string;
+  eventType: string;
+  start: Date | string;
+  end: Date | string;
+  reason?: string;
+  manageUrl: string;
+  locale: string;
+  timezone: string;
+}
+
+/**
+ * Отправляет email-уведомление об отмене события.
+ * @returns id письма в Resend или null при ошибке
+ */
+export const sendEventCancellationEmail = async ({
+  email,
+  name,
+  title,
+  eventType,
+  start,
+  end,
+  reason,
+  manageUrl,
+  locale,
+  timezone
+}: SendEventCancellationEmailParams): Promise<string | null> => {
+  const translations = getEmailTranslations(locale);
+
+  const { data, error } = await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: [email],
+    subject: translations.eventCancellation?.subject || 'Event Cancelled',
+    react: EventCancellationTemplate({
+      name,
+      title,
+      eventType,
+      start,
+      end,
+      reason,
+      manageUrl,
+      timezone,
+      translations: {
+        heading: translations.eventCancellation?.heading || '',
+        greeting: interpolate(translations.eventCancellation?.greeting || '', { name }),
+        message: interpolate(translations.eventCancellation?.message || '', {
+          title: title || eventType
+        }),
+        dateLabel: translations.eventCancellation?.dateLabel || '',
+        timeLabel: translations.eventCancellation?.timeLabel || '',
+        typeLabel: translations.eventCancellation?.typeLabel || '',
+        reasonLabel: translations.eventCancellation?.reasonLabel || '',
+        button: translations.eventCancellation?.button || '',
+        footer: translations.eventCancellation?.footer || ''
+      }
+    })
+  });
+
+  if (error) {
+    console.error('Ошибка отправки event cancellation email:', error);
     return null;
   }
 
