@@ -33,9 +33,11 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, Settings } from 'lucide-react';
+import { AlertTriangle, Bell, Settings } from 'lucide-react';
 import { MultiEmailSelect } from '@/components/ui/multi-email-select';
 import { EmailUser } from './actions';
+
+const PUSH_BODY_LIMIT = 178;
 
 // --- Схема валидации ---
 const emailSchema = z
@@ -87,9 +89,13 @@ export interface DeliveryStatus {
  */
 export function SendEmailForm({ users }: SendEmailFormProps) {
   const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
+  const [isConfirmPushOpen, setIsConfirmPushOpen] = React.useState(false);
   const [isSending, setIsSending] = React.useState(false);
+  const [isSendingPush, setIsSendingPush] = React.useState(false);
   const [deliveryStatuses, setDeliveryStatuses] = React.useState<DeliveryStatus[] | null>(null);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  const [pushResult, setPushResult] = React.useState<{ sent: number; failed: number } | null>(null);
+  const [pushError, setPushError] = React.useState<string | null>(null);
 
   const form = useForm<EmailFormValues>({
     resolver: zodResolver(emailSchema),
@@ -103,6 +109,8 @@ export function SendEmailForm({ users }: SendEmailFormProps) {
 
   const watchSendToAll = form.watch('sendToAll');
   const watchTo = form.watch('to');
+  const watchMessage = form.watch('message');
+  const isPushDisabled = watchMessage.length > PUSH_BODY_LIMIT || isSending || isSendingPush;
 
   // --- Фоновый опрос (Polling) статусов ---
   React.useEffect(() => {
@@ -165,6 +173,44 @@ export function SendEmailForm({ users }: SendEmailFormProps) {
   const handleTrigerConfirm = form.handleSubmit(() => {
     setIsConfirmOpen(true);
   });
+
+  const handleTriggerPushConfirm = form.handleSubmit(() => {
+    setIsConfirmPushOpen(true);
+  });
+
+  const handleConfirmPush = async () => {
+    setIsConfirmPushOpen(false);
+    setIsSendingPush(true);
+    setPushResult(null);
+    setPushError(null);
+
+    try {
+      const data = form.getValues();
+      const response = await fetch('/api/send/push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: data.to, sendToAll: data.sendToAll, title: data.subject, message: data.message }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          typeof result.error === 'string' ? result.error : 'Ошибка при отправке push'
+        );
+      }
+
+      const results: { success: boolean }[] = result.results ?? [];
+      setPushResult({
+        sent: results.filter(r => r.success).length,
+        failed: results.filter(r => !r.success).length,
+      });
+    } catch (error) {
+      setPushError(error instanceof Error ? error.message : 'Произошла неизвестная ошибка');
+    } finally {
+      setIsSendingPush(false);
+    }
+  };
 
   const handleConfirmSend = async () => {
     setIsConfirmOpen(false);
@@ -357,13 +403,56 @@ export function SendEmailForm({ users }: SendEmailFormProps) {
                         {...field}
                       />
                     </FormControl>
-                    <FormMessage />
+                    <div className="flex items-center justify-between">
+                      <FormMessage />
+                      <span
+                        className={`ml-auto text-xs tabular-nums ${
+                          watchMessage.length > PUSH_BODY_LIMIT
+                            ? 'text-destructive font-medium'
+                            : 'text-muted-foreground'
+                        }`}
+                      >
+                        {watchMessage.length} / {PUSH_BODY_LIMIT} (Push)
+                      </span>
+                    </div>
                   </FormItem>
                 )}
               />
-              <Button type="submit" disabled={isSending}>
-                {isSending ? 'Отправка...' : 'Отправить письмо'}
-              </Button>
+
+              {pushResult && (
+                <div className="rounded-md border bg-muted p-3 text-sm">
+                  <span className="text-green-700 font-medium">Push отправлено: {pushResult.sent}</span>
+                  {pushResult.failed > 0 && (
+                    <span className="ml-3 text-destructive">Ошибок: {pushResult.failed}</span>
+                  )}
+                  {pushResult.sent === 0 && pushResult.failed === 0 && (
+                    <span className="text-muted-foreground"> — нет активных подписок</span>
+                  )}
+                </div>
+              )}
+              {pushError && (
+                <div className="rounded-md bg-red-100 text-red-800 p-3 text-sm">{pushError}</div>
+              )}
+
+              <div className="flex flex-wrap gap-2">
+                <Button type="submit" disabled={isSending || isSendingPush}>
+                  {isSending ? 'Отправка...' : 'Отправить письмо'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isPushDisabled}
+                  onClick={handleTriggerPushConfirm}
+                  title={
+                    watchMessage.length > PUSH_BODY_LIMIT
+                      ? `Сообщение превышает лимит Push (${PUSH_BODY_LIMIT} символов)`
+                      : 'Отправить Push-уведомление'
+                  }
+                >
+                  <Bell className="mr-2 h-4 w-4" />
+                  {isSendingPush ? 'Отправка...' : 'Отправить Push'}
+                </Button>
+              </div>
             </form>
           </Form>
         </CardContent>
@@ -394,6 +483,33 @@ export function SendEmailForm({ users }: SendEmailFormProps) {
               className="bg-blue-600 hover:bg-blue-700"
             >
               Подтвердить отправку
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isConfirmPushOpen} onOpenChange={setIsConfirmPushOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Отправить Push-уведомление?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {watchSendToAll ? (
+                <>
+                  Push-уведомление будет отправлено <strong>всем пользователям</strong> у которых
+                  включены уведомления. Это действие нельзя отменить.
+                </>
+              ) : (
+                <>
+                  Push-уведомление будет отправлено {watchTo.length} пользователям (у которых
+                  включены уведомления). Это действие нельзя отменить.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmPush}>
+              Отправить Push
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

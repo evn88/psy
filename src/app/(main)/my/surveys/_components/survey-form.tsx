@@ -19,6 +19,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { submitSurveyResult } from '../actions';
 import { useTranslations } from 'next-intl';
+import { toast } from 'sonner';
+import { savePendingSurvey } from '@/hooks/useSurveySync';
 
 interface SurveyQuestion {
   id: string;
@@ -99,8 +101,23 @@ export const SurveyForm = ({
     });
   };
 
-  /** Отправляет результат на сервер */
+  /** Отправляет результат на сервер или сохраняет офлайн */
   const handleSubmit = async () => {
+    // Офлайн: сохраняем pending, синхронизируем при восстановлении сети
+    if (!navigator.onLine) {
+      savePendingSurvey(assignmentId, answers);
+      // Регистрируем Background Sync для дополнительной надёжности
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready
+          .then(reg => (reg as ServiceWorkerRegistration & { sync?: { register(tag: string): Promise<void> } }).sync?.register('survey-sync'))
+          .catch(() => {});
+      }
+      toast.info('Нет интернета', {
+        description: 'Ответы сохранены и отправятся автоматически когда появится сеть.',
+      });
+      return;
+    }
+
     setLoading(true);
     const result = await submitSurveyResult(assignmentId, answers);
     setLoading(false);
@@ -111,6 +128,7 @@ export const SurveyForm = ({
       router.refresh();
     } else {
       console.error(result.error);
+      toast.error('Ошибка при отправке', { description: result.error });
     }
   };
 

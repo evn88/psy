@@ -8,6 +8,7 @@ import { BreadcrumbProvider } from '@/components/breadcrumb-context';
 import { getUserUnreadSurveysCount } from './surveys/actions';
 import { Separator } from '@/components/ui/separator';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { SurveySync } from '@/components/pwa/SurveySync';
 
 /**
  * Layout для личного кабинета пользователя.
@@ -38,6 +39,7 @@ export default async function MyLayout({ children }: { children: React.ReactNode
           </header>
           <div className="flex flex-1 flex-col gap-4 p-4 pt-6">{children}</div>
         </BreadcrumbProvider>
+        <SurveySync />
       </SidebarInset>
     </SidebarProvider>
   );
