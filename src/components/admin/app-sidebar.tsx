@@ -12,6 +12,7 @@ import {
   Send,
   Settings,
   User,
+  UserCircle,
   Users
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
@@ -197,6 +198,16 @@ export function AppSidebar({ user, unreadSurveysCount = 0, ...props }: AppSideba
                     >
                       <Home className="mr-2 h-4 w-4" />
                       {tItems('backToSite')}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href="/my"
+                      className="flex items-center cursor-pointer"
+                      onClick={closeMobileSidebar}
+                    >
+                      <UserCircle className="mr-2 h-4 w-4" />
+                      {tItems('goToMy')}
                     </Link>
                   </DropdownMenuItem>
                 </DropdownMenuGroup>

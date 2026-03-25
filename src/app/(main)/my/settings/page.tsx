@@ -3,6 +3,7 @@ import prisma from '@/shared/lib/prisma';
 import { redirect } from 'next/navigation';
 import { SettingsForm } from '@/app/(main)/admin/settings/_components/settings-form';
 import { getTranslations } from 'next-intl/server';
+import { PushNotificationSettings } from '@/components/pwa/PushNotificationSettings';
 
 /**
  * Страница настроек в личном кабинете.
@@ -34,6 +35,7 @@ export default async function MySettingsPage() {
           theme: user.theme || 'system'
         }}
       />
+      <PushNotificationSettings />
     </div>
   );
 }

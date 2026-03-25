@@ -10,6 +10,9 @@ import { HeartbeatProvider } from '@/components/heartbeat-provider';
 import { Toaster } from 'sonner';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
+import { ServiceWorkerRegistration } from '@/components/pwa/ServiceWorkerRegistration';
+import { OfflineIndicator } from '@/components/pwa/OfflineIndicator';
+import { PushPermissionBanner } from '@/components/pwa/PushPermissionBanner';
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
@@ -54,6 +57,9 @@ const RootLayout: FC<RootLayoutType> = async ({ children }) => {
                 <SpeedInsights />
               </HeartbeatProvider>
               <Toaster position="bottom-right" richColors closeButton />
+              <OfflineIndicator />
+              <PushPermissionBanner />
+              <ServiceWorkerRegistration />
             </ThemeProvider>
           </NextIntlClientProvider>
         </body>
