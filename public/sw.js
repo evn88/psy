@@ -18,17 +18,12 @@ const STATIC_CACHE_NAME = `vershkov-static-${CACHE_VERSION}`;
  * Страницы, которые будут доступны офлайн.
  * Добавьте сюда новые пути при необходимости.
  */
-const PRE_CACHED_URLS = [
-  '/',
-  '/my',
-  '/my/sessions',
-  '/my/surveys',
-];
+const PRE_CACHED_URLS = ['/', '/my', '/my/sessions', '/my/surveys'];
 
 const STATIC_ASSETS = [
   '/web-app-manifest-192x192.png',
   '/web-app-manifest-512x512.png',
-  '/favicon.ico',
+  '/favicon.ico'
 ];
 
 // ─── Install ─────────────────────────────────────────────────────────────────
@@ -37,7 +32,7 @@ self.addEventListener('install', event => {
   event.waitUntil(
     Promise.all([
       caches.open(CACHE_NAME).then(cache => cache.addAll(PRE_CACHED_URLS).catch(() => {})),
-      caches.open(STATIC_CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS).catch(() => {})),
+      caches.open(STATIC_CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS).catch(() => {}))
     ]).then(() => self.skipWaiting())
   );
 });
@@ -46,13 +41,14 @@ self.addEventListener('install', event => {
 
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys
-          .filter(k => k !== CACHE_NAME && k !== STATIC_CACHE_NAME)
-          .map(k => caches.delete(k))
+    caches
+      .keys()
+      .then(keys =>
+        Promise.all(
+          keys.filter(k => k !== CACHE_NAME && k !== STATIC_CACHE_NAME).map(k => caches.delete(k))
+        )
       )
-    ).then(() => self.clients.claim())
+      .then(() => self.clients.claim())
   );
 });
 
@@ -131,7 +127,7 @@ async function networkFirst(request) {
 
     return new Response('Нет подключения к интернету', {
       status: 503,
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' }
     });
   }
 }
@@ -157,7 +153,7 @@ self.addEventListener('push', event => {
       icon: '/web-app-manifest-192x192.png',
       badge: '/web-app-manifest-192x192.png',
       tag: 'vershkov-notification',
-      renotify: true,
+      renotify: true
     })
   );
 });

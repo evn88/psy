@@ -18,7 +18,7 @@ export async function POST(request: Request) {
   await prisma.pushSubscription.upsert({
     where: { endpoint },
     update: { p256dh, auth: authKey, userId: session.user.id },
-    create: { endpoint, p256dh, auth: authKey, userId: session.user.id },
+    create: { endpoint, p256dh, auth: authKey, userId: session.user.id }
   });
 
   return NextResponse.json({ success: true });
@@ -38,7 +38,7 @@ export async function DELETE(request: Request) {
   }
 
   await prisma.pushSubscription.deleteMany({
-    where: { endpoint, userId: session.user.id },
+    where: { endpoint, userId: session.user.id }
   });
 
   return NextResponse.json({ success: true });

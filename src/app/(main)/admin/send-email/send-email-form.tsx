@@ -189,7 +189,12 @@ export function SendEmailForm({ users }: SendEmailFormProps) {
       const response = await fetch('/api/send/push', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to: data.to, sendToAll: data.sendToAll, title: data.subject, message: data.message }),
+        body: JSON.stringify({
+          to: data.to,
+          sendToAll: data.sendToAll,
+          title: data.subject,
+          message: data.message
+        })
       });
 
       const result = await response.json();
@@ -203,7 +208,7 @@ export function SendEmailForm({ users }: SendEmailFormProps) {
       const results: { success: boolean }[] = result.results ?? [];
       setPushResult({
         sent: results.filter(r => r.success).length,
-        failed: results.filter(r => !r.success).length,
+        failed: results.filter(r => !r.success).length
       });
     } catch (error) {
       setPushError(error instanceof Error ? error.message : 'Произошла неизвестная ошибка');
@@ -421,7 +426,9 @@ export function SendEmailForm({ users }: SendEmailFormProps) {
 
               {pushResult && (
                 <div className="rounded-md border bg-muted p-3 text-sm">
-                  <span className="text-green-700 font-medium">Push отправлено: {pushResult.sent}</span>
+                  <span className="text-green-700 font-medium">
+                    Push отправлено: {pushResult.sent}
+                  </span>
                   {pushResult.failed > 0 && (
                     <span className="ml-3 text-destructive">Ошибок: {pushResult.failed}</span>
                   )}
@@ -508,9 +515,7 @@ export function SendEmailForm({ users }: SendEmailFormProps) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Отмена</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmPush}>
-              Отправить Push
-            </AlertDialogAction>
+            <AlertDialogAction onClick={handleConfirmPush}>Отправить Push</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

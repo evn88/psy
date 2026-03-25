@@ -16,11 +16,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Сообщение не может быть пустым' }, { status: 400 });
   }
 
-  let subscriptions: { endpoint: string; p256dh: string; auth: string; user: { email: string | null } }[];
+  let subscriptions: {
+    endpoint: string;
+    p256dh: string;
+    auth: string;
+    user: { email: string | null };
+  }[];
 
   if (sendToAll) {
     subscriptions = await prisma.pushSubscription.findMany({
-      select: { endpoint: true, p256dh: true, auth: true, user: { select: { email: true } } },
+      select: { endpoint: true, p256dh: true, auth: true, user: { select: { email: true } } }
     });
   } else {
     if (!Array.isArray(to) || to.length === 0) {
@@ -28,20 +33,20 @@ export async function POST(request: Request) {
     }
     subscriptions = await prisma.pushSubscription.findMany({
       where: { user: { email: { in: to } } },
-      select: { endpoint: true, p256dh: true, auth: true, user: { select: { email: true } } },
+      select: { endpoint: true, p256dh: true, auth: true, user: { select: { email: true } } }
     });
   }
 
   if (subscriptions.length === 0) {
     return NextResponse.json({
       results: [],
-      message: 'Нет активных push-подписок у выбранных пользователей',
+      message: 'Нет активных push-подписок у выбранных пользователей'
     });
   }
 
   const results = await sendPushToMany(subscriptions, {
     title: typeof title === 'string' && title.trim() ? title.trim() : undefined,
-    body: message.trim(),
+    body: message.trim()
   });
 
   // Добавим email к каждому результату

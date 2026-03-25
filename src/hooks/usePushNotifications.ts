@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? '';
 
@@ -73,7 +73,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
 
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
       });
 
       const { endpoint, keys } = sub.toJSON() as {
@@ -84,7 +84,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
       await fetch('/api/push/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ endpoint, p256dh: keys.p256dh, auth: keys.auth }),
+        body: JSON.stringify({ endpoint, p256dh: keys.p256dh, auth: keys.auth })
       });
 
       setIsSubscribed(true);
@@ -102,7 +102,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
         await fetch('/api/push/subscribe', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ endpoint: sub.endpoint }),
+          body: JSON.stringify({ endpoint: sub.endpoint })
         });
         await sub.unsubscribe();
       }

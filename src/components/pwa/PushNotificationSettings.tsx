@@ -22,8 +22,8 @@ export function PushNotificationSettings() {
             Push-уведомления
           </CardTitle>
           <CardDescription>
-            Ваш браузер или устройство не поддерживает push-уведомления.
-            На iOS убедитесь, что сайт добавлен на экран «Домой» и используется Safari 16.4+.
+            Ваш браузер или устройство не поддерживает push-уведомления. На iOS убедитесь, что сайт
+            добавлен на экран «Домой» и используется Safari 16.4+.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -39,16 +39,15 @@ export function PushNotificationSettings() {
             Push-уведомления заблокированы
           </CardTitle>
           <CardDescription>
-            Вы ранее отклонили запрос на уведомления. Чтобы снова включить их, измените
-            разрешение вручную в настройках браузера:
+            Вы ранее отклонили запрос на уведомления. Чтобы снова включить их, измените разрешение
+            вручную в настройках браузера:
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <div className="space-y-1">
             <p className="font-medium text-foreground">Chrome / Edge</p>
             <p>
-              Нажмите на замок (🔒) в адресной строке → Уведомления → Разрешить → обновите
-              страницу.
+              Нажмите на замок (🔒) в адресной строке → Уведомления → Разрешить → обновите страницу.
             </p>
           </div>
           <div className="space-y-1">
@@ -63,7 +62,9 @@ export function PushNotificationSettings() {
             variant="outline"
             size="sm"
             className="mt-2"
-            onClick={() => window.open('https://support.google.com/chrome/answer/3220216', '_blank')}
+            onClick={() =>
+              window.open('https://support.google.com/chrome/answer/3220216', '_blank')
+            }
           >
             <ExternalLink className="mr-2 h-3 w-3" />
             Подробная инструкция

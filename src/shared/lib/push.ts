@@ -41,11 +41,11 @@ export async function sendPushToSubscription(
     await webpush.sendNotification(
       {
         endpoint: sub.endpoint,
-        keys: { p256dh: sub.p256dh, auth: sub.auth },
+        keys: { p256dh: sub.p256dh, auth: sub.auth }
       },
       JSON.stringify({
         title: payload.title ?? '',
-        body: payload.body,
+        body: payload.body
       })
     );
     return { endpoint: sub.endpoint, success: true };
@@ -55,14 +55,14 @@ export async function sendPushToSubscription(
     // 410 Gone — подписка более недействительна, удаляем
     if (statusCode === 410) {
       await prisma.pushSubscription.deleteMany({
-        where: { endpoint: sub.endpoint },
+        where: { endpoint: sub.endpoint }
       });
     }
 
     return {
       endpoint: sub.endpoint,
       success: false,
-      error: err instanceof Error ? err.message : 'Unknown error',
+      error: err instanceof Error ? err.message : 'Unknown error'
     };
   }
 }

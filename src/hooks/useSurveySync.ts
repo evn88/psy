@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
 import { submitSurveyResult } from '@/app/(main)/my/surveys/actions';
 
@@ -60,7 +60,7 @@ export function useSurveySync() {
         // Также удаляем черновик
         localStorage.removeItem(`survey_draft_${assignmentId}`);
         toast.success('Опрос синхронизирован', {
-          description: 'Ваши ответы успешно отправлены.',
+          description: 'Ваши ответы успешно отправлены.'
         });
       }
       // При ошибке — оставляем в localStorage, попробуем снова при следующем подключении
