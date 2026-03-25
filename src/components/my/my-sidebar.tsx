@@ -12,7 +12,8 @@ import {
   FileText,
   ChevronsUpDown,
   Brain,
-  Home
+  Home,
+  ShieldCheck
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -208,6 +209,18 @@ export const MySidebar = ({ user, unreadSurveysCount = 0, ...props }: MySidebarP
                       {t('backToSite')}
                     </Link>
                   </DropdownMenuItem>
+                  {user.role === 'ADMIN' && (
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href="/admin"
+                        className="flex items-center cursor-pointer"
+                        onClick={closeMobileSidebar}
+                      >
+                        <ShieldCheck className="mr-2 h-4 w-4" />
+                        {t('goToAdmin')}
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>

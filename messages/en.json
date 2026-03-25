@@ -15,7 +15,13 @@
     "work4": "Work with eating disorders.",
     "contactTitle": "The site is under development, but you can reach me:",
     "telegramLink": "Telegram Channel",
-    "tags": ["Schema Therapy", "ACT", "RO DBT", "ADHD/ASD", "ED"]
+    "tags": [
+      "Schema Therapy",
+      "ACT",
+      "RO DBT",
+      "ADHD/ASD",
+      "ED"
+    ]
   },
   "Auth": {
     "title": "Welcome Back",
@@ -185,7 +191,8 @@
       "sendEmail": "Send Email",
       "profile": "Profile",
       "settings": "Settings",
-      "backToSite": "Back to Site"
+      "backToSite": "Back to Site",
+      "goToMy": "My Account"
     }
   },
   "My": {
@@ -213,7 +220,8 @@
       "data": "My Data",
       "profile": "Profile",
       "settings": "Settings",
-      "backToSite": "Back to Site"
+      "backToSite": "Back to Site",
+      "goToAdmin": "Admin Panel"
     },
     "breadcrumbs": {
       "home": "My Account",
@@ -265,10 +273,10 @@
       "OTHER": "Other"
     },
     "eventStatuses": {
-       "SCHEDULED": "Scheduled",
-       "CANCELLED": "Cancelled",
-       "COMPLETED": "Completed",
-       "PENDING_CONFIRMATION": "Pending Confirmation"
+      "SCHEDULED": "Scheduled",
+      "CANCELLED": "Cancelled",
+      "COMPLETED": "Completed",
+      "PENDING_CONFIRMATION": "Pending Confirmation"
     }
   },
   "Surveys": {
