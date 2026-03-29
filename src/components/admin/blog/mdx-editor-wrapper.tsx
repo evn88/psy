@@ -29,7 +29,7 @@ import {
   DiffSourceToggleWrapper,
   type MDXEditorMethods
 } from '@mdxeditor/editor';
-import { forwardRef, useState } from 'react';
+import { forwardRef, useState, useEffect } from 'react';
 import { Sun, Moon } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
@@ -47,10 +47,21 @@ export const MdxEditorWrapper = forwardRef<MDXEditorMethods, MdxEditorWrapperPro
     const [localDark, setLocalDark] = useState<boolean | null>(null);
     const dark = localDark ?? resolvedTheme === 'dark';
 
+    // Применяем классы темы MDXEditor к body, чтобы всплывающие окна (Portals)
+    // получали правильные CSS переменные тёмной темы.
+    useEffect(() => {
+      if (dark) {
+        document.body.classList.add('dark-theme', 'darkEditor');
+      } else {
+        document.body.classList.remove('dark-theme', 'darkEditor');
+      }
+      return () => document.body.classList.remove('dark-theme', 'darkEditor');
+    }, [dark]);
+
     return (
       <div
         data-editor-theme={dark ? 'dark' : 'light'}
-        className="mdx-editor-container mdx-editor-mobile-optimized"
+        className={`mdx-editor-container mdx-editor-mobile-optimized ${dark ? 'dark-theme darkEditor' : ''}`}
       >
         <MDXEditor
           ref={ref}
@@ -59,7 +70,7 @@ export const MdxEditorWrapper = forwardRef<MDXEditorMethods, MdxEditorWrapperPro
           readOnly={readOnly}
           placeholder={placeholder}
           contentEditableClassName="mdx-editor-content"
-          className={dark ? 'dark' : ''}
+          className={dark ? 'dark-theme darkEditor' : ''}
           plugins={[
             headingsPlugin(),
             listsPlugin(),
@@ -95,33 +106,32 @@ export const MdxEditorWrapper = forwardRef<MDXEditorMethods, MdxEditorWrapperPro
             diffSourcePlugin({ viewMode: 'rich-text' }),
             toolbarPlugin({
               toolbarContents: () => (
-                <DiffSourceToggleWrapper>
-                  {/* Ряд 1: форматирование текста */}
+                <>
                   <UndoRedo />
-                  <Separator />
-                  <BoldItalicUnderlineToggles />
-                  <CodeToggle />
                   <Separator />
                   <BlockTypeSelect />
                   <Separator />
+                  <BoldItalicUnderlineToggles />
+                  <Separator />
                   <ListsToggle />
-                  {/* Принудительный перенос строки */}
-                  <div className="mdx-toolbar-break" />
-                  {/* Ряд 2: вставка элементов */}
+                  <Separator />
                   <CreateLink />
                   <InsertImage />
+                  <Separator />
                   <InsertTable />
-                  <InsertThematicBreak />
+
                   <div className="mdx-toolbar-spacer" />
-                  <button
-                    type="button"
-                    onClick={() => setLocalDark(!dark)}
-                    className="mdx-editor-theme-toggle"
-                    title={dark ? 'Светлая тема' : 'Тёмная тема'}
-                  >
-                    {dark ? <Sun size={14} /> : <Moon size={14} />}
-                  </button>
-                </DiffSourceToggleWrapper>
+                  <DiffSourceToggleWrapper>
+                    <button
+                      type="button"
+                      onClick={() => setLocalDark(!dark)}
+                      className="mdx-editor-theme-toggle"
+                      title={dark ? 'Светлая тема' : 'Тёмная тема'}
+                    >
+                      {dark ? <Sun size={14} /> : <Moon size={14} />}
+                    </button>
+                  </DiffSourceToggleWrapper>
+                </>
               )
             })
           ]}
