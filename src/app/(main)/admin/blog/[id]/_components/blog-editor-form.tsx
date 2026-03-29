@@ -4,7 +4,17 @@ import dynamic from 'next/dynamic';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Languages, Save, Globe, ChevronDown, Eye, EyeOff, Loader2 } from 'lucide-react';
+import {
+  Languages,
+  Save,
+  Globe,
+  Eye,
+  EyeOff,
+  Loader2,
+  History,
+  RotateCcw,
+  Link
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -82,6 +92,25 @@ export function BlogEditorForm({
   const [showTranslateModal, setShowTranslateModal] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
+  // Версии статьи
+  interface Version {
+    id: string;
+    savedAt: string;
+    translations: Translation[];
+    categoryIds: string[];
+    coverImage: string | null;
+  }
+  const [versions, setVersions] = useState<Version[]>([]);
+  const [restoringVersion, setRestoringVersion] = useState(false);
+
+  // Загружаем версии при монтировании
+  useEffect(() => {
+    fetch(`/api/admin/blog/${postId}/versions`)
+      .then(r => r.json())
+      .then(setVersions)
+      .catch(() => {});
+  }, [postId]);
+
   const activeTranslation = translations.find(t => t.locale === activeLocale) ?? translations[0];
 
   const updateTranslation = (field: keyof Omit<Translation, 'locale'>, value: string) => {
@@ -93,19 +122,35 @@ export function BlogEditorForm({
   // Авто-сохранение каждые 30 секунд
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const save = useCallback(
-    async (showToast = true) => {
+    async (showToast = true, createVersion = false) => {
       setSaving(true);
       try {
+        const filteredTranslations = translations.filter(t => t.title);
         const res = await fetch(`/api/admin/blog/${postId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             coverImage,
             categoryIds,
-            translations: translations.filter(t => t.title)
+            status,
+            translations: filteredTranslations
           })
         });
         if (!res.ok) throw new Error('Ошибка сохранения');
+
+        // Создаём снапшот версии только при ручном сохранении
+        if (createVersion && filteredTranslations.length > 0) {
+          const vRes = await fetch(`/api/admin/blog/${postId}/versions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ translations: filteredTranslations, categoryIds, coverImage })
+          });
+          if (vRes.ok) {
+            const newVersion = await vRes.json();
+            setVersions(prev => [newVersion, ...prev].slice(0, 5));
+          }
+        }
+
         if (showToast) toast.success('Сохранено');
       } catch {
         toast.error('Не удалось сохранить');
@@ -113,7 +158,7 @@ export function BlogEditorForm({
         setSaving(false);
       }
     },
-    [postId, coverImage, categoryIds, translations]
+    [postId, coverImage, categoryIds, status, translations]
   );
 
   useEffect(() => {
@@ -150,6 +195,25 @@ export function BlogEditorForm({
 
   const toggleCategory = (id: string) => {
     setCategoryIds(prev => (prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]));
+  };
+
+  const restoreVersion = async (version: Version) => {
+    if (!confirm('Восстановить эту версию? Текущие несохранённые изменения будут потеряны.'))
+      return;
+    setRestoringVersion(true);
+    try {
+      setTranslations(
+        ALL_LOCALES.map(locale => {
+          const t = (version.translations as Translation[]).find(vt => vt.locale === locale);
+          return t ?? { locale, title: '', description: '', content: '' };
+        })
+      );
+      setCategoryIds(version.categoryIds);
+      if (version.coverImage !== undefined) setCoverImage(version.coverImage);
+      toast.success('Версия восстановлена — не забудьте сохранить');
+    } finally {
+      setRestoringVersion(false);
+    }
   };
 
   const uploadImage = async (file: File): Promise<string> => {
@@ -233,7 +297,7 @@ export function BlogEditorForm({
           {/* Сохранить */}
           <Button
             size="sm"
-            onClick={() => save(true)}
+            onClick={() => save(true, true)}
             disabled={saving}
             variant="default"
             className="h-9 bg-[#03070A] hover:bg-[#03070A]/90 text-white"
@@ -251,28 +315,6 @@ export function BlogEditorForm({
       <div className="flex flex-1 overflow-hidden flex-col lg:flex-row">
         {/* Основная область контента */}
         <div className="flex-1 flex flex-col overflow-y-auto no-scrollbar min-w-0 bg-background custom-scrollbar">
-          {/* Языковые вкладки (ТЕПЕРЬ НАВЕРХУ) */}
-          <div className="flex items-center gap-1 px-4 pt-4 pb-0 border-b bg-background/50 sticky top-0 z-20 backdrop-blur-sm">
-            {translations.map(t => (
-              <button
-                key={t.locale}
-                type="button"
-                onClick={() => setActiveLocale(t.locale)}
-                className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 transition-all -mb-px ${
-                  activeLocale === t.locale
-                    ? 'border-[#900A0B] text-[#900A0B] bg-[#900A0B]/5 rounded-t-lg'
-                    : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                }`}
-              >
-                <Globe className="size-3.5" />
-                {LOCALE_LABELS[t.locale]}
-                {t.title && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0 shadow-[0_0_5px_rgba(34,197,94,0.5)]" />
-                )}
-              </button>
-            ))}
-          </div>
-
           <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full">
             {/* Заголовок */}
             <div className="px-4 pt-6">
@@ -285,13 +327,35 @@ export function BlogEditorForm({
             </div>
 
             {/* Описание */}
-            <div className="px-4 pt-4">
+            <div className="px-4 pt-4 pb-2">
               <Input
                 value={activeTranslation.description}
                 onChange={e => updateTranslation('description', e.target.value)}
                 placeholder="Краткое описание для превью..."
                 className="text-sm sm:text-base text-muted-foreground border-0 border-l-2 border-[#900A0B]/20 bg-muted/30 px-3 py-2 h-auto focus-visible:ring-0 focus-visible:border-[#900A0B] italic transition-all"
               />
+            </div>
+
+            {/* Языковые вкладки — sticky прямо над редактором */}
+            <div className="flex items-center gap-1 px-4 pt-2 pb-0 border-b bg-background/90 sticky top-0 z-20 backdrop-blur-md">
+              {translations.map(t => (
+                <button
+                  key={t.locale}
+                  type="button"
+                  onClick={() => setActiveLocale(t.locale)}
+                  className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 transition-all -mb-px ${
+                    activeLocale === t.locale
+                      ? 'border-[#900A0B] text-[#900A0B] bg-[#900A0B]/5 rounded-t-lg'
+                      : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                  }`}
+                >
+                  <Globe className="size-3.5" />
+                  {LOCALE_LABELS[t.locale]}
+                  {t.title && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0 shadow-[0_0_5px_rgba(34,197,94,0.5)]" />
+                  )}
+                </button>
+              ))}
             </div>
 
             {/* Редактор / Предпросмотр */}
@@ -310,7 +374,7 @@ export function BlogEditorForm({
                   </div>
                 </PreviewSizeSwitcher>
               ) : (
-                <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
+                <div className="bg-card rounded-xl border shadow-sm">
                   <MdxEditorWrapper
                     key={activeLocale}
                     value={activeTranslation.content}
@@ -337,26 +401,35 @@ export function BlogEditorForm({
                 <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
                   Категории
                 </h3>
-                <div className="flex flex-wrap gap-2">
-                  {allCategories.map(cat => {
-                    const name = (cat.name as Record<string, string>)?.ru ?? cat.slug;
-                    const selected = categoryIds.includes(cat.id);
-                    return (
-                      <button
-                        key={cat.id}
-                        type="button"
-                        onClick={() => toggleCategory(cat.id)}
-                        className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
-                          selected
-                            ? 'bg-[#900A0B] text-white border-[#900A0B] shadow-md shadow-[#900A0B]/20'
-                            : 'bg-background text-foreground border-border hover:border-[#900A0B]/40'
-                        }`}
-                      >
-                        {name}
-                      </button>
-                    );
-                  })}
-                </div>
+                {allCategories.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    Нет категорий.{' '}
+                    <Link href="/admin/blog/categories" className="text-[#900A0B] hover:underline">
+                      Создать
+                    </Link>
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {allCategories.map(cat => {
+                      const name = (cat.name as Record<string, string>)?.ru ?? cat.slug;
+                      const selected = categoryIds.includes(cat.id);
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => toggleCategory(cat.id)}
+                          className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
+                            selected
+                              ? 'bg-[#900A0B] text-white border-[#900A0B] shadow-md shadow-[#900A0B]/20'
+                              : 'bg-background text-foreground border-border hover:border-[#900A0B]/40'
+                          }`}
+                        >
+                          {name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -377,26 +450,81 @@ export function BlogEditorForm({
             <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60">
               Категории
             </h3>
-            <div className="flex flex-wrap gap-2">
-              {allCategories.map(cat => {
-                const name = (cat.name as Record<string, string>)?.ru ?? cat.slug;
-                const selected = categoryIds.includes(cat.id);
-                return (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => toggleCategory(cat.id)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                      selected
-                        ? 'bg-[#900A0B] text-white border-[#900A0B]'
-                        : 'bg-background text-foreground border-border hover:border-[#900A0B]'
-                    }`}
+            {allCategories.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                Нет категорий.{' '}
+                <Link href="/admin/blog/categories" className="text-[#900A0B] hover:underline">
+                  Создать
+                </Link>
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {allCategories.map(cat => {
+                  const name = (cat.name as Record<string, string>)?.ru ?? cat.slug;
+                  const selected = categoryIds.includes(cat.id);
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => toggleCategory(cat.id)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                        selected
+                          ? 'bg-[#900A0B] text-white border-[#900A0B]'
+                          : 'bg-background text-foreground border-border hover:border-[#900A0B]'
+                      }`}
+                    >
+                      {name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
+          <Separator className="bg-border/60" />
+
+          <section className="space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 flex items-center gap-2">
+              <History className="size-3.5" />
+              История версий
+            </h3>
+            {versions.length === 0 ? (
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Версий пока нет. Появятся после ручного сохранения (кнопка «Сохранить»).
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                {versions.map((v, i) => (
+                  <div
+                    key={v.id}
+                    className="flex items-center justify-between p-2 rounded-lg bg-background/50 border border-border/40"
                   >
-                    {name}
-                  </button>
-                );
-              })}
-            </div>
+                    <div className="text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground">
+                        {i === 0 ? 'Последняя' : `Версия ${versions.length - i}`}
+                      </span>
+                      <span className="block text-[10px] mt-0.5">
+                        {new Date(v.savedAt).toLocaleString('ru', {
+                          day: '2-digit',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => restoreVersion(v)}
+                      disabled={restoringVersion}
+                      className="p-1 rounded text-muted-foreground/60 hover:text-[#900A0B] hover:bg-[#900A0B]/5 transition-colors"
+                      title="Восстановить эту версию"
+                    >
+                      <RotateCcw className="size-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
 
           <Separator className="bg-border/60" />

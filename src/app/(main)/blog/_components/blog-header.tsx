@@ -25,7 +25,7 @@ export function BlogHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border">
+    <header className="sticky top-0 z-40 bg-background/70 backdrop-blur-xl border-b border-border/60 shadow-sm">
       <div className="max-w-6xl mx-auto px-4 h-12 flex items-center justify-between gap-4">
         {/* Левая часть: назад / название */}
         <div className="flex items-center gap-2 min-w-0">

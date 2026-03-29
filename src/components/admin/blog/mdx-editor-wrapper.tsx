@@ -44,10 +44,7 @@ interface MdxEditorWrapperProps {
 export const MdxEditorWrapper = forwardRef<MDXEditorMethods, MdxEditorWrapperProps>(
   function MdxEditorWrapper({ value, onChange, onImageUpload, placeholder, readOnly }, ref) {
     const { resolvedTheme } = useTheme();
-    // Локальное переопределение темы для редактора
     const [localDark, setLocalDark] = useState<boolean | null>(null);
-
-    // Итоговая тема
     const dark = localDark ?? resolvedTheme === 'dark';
 
     return (
@@ -99,6 +96,7 @@ export const MdxEditorWrapper = forwardRef<MDXEditorMethods, MdxEditorWrapperPro
             toolbarPlugin({
               toolbarContents: () => (
                 <DiffSourceToggleWrapper>
+                  {/* Ряд 1: форматирование текста */}
                   <UndoRedo />
                   <Separator />
                   <BoldItalicUnderlineToggles />
@@ -107,7 +105,9 @@ export const MdxEditorWrapper = forwardRef<MDXEditorMethods, MdxEditorWrapperPro
                   <BlockTypeSelect />
                   <Separator />
                   <ListsToggle />
-                  <Separator />
+                  {/* Принудительный перенос строки */}
+                  <div className="mdx-toolbar-break" />
+                  {/* Ряд 2: вставка элементов */}
                   <CreateLink />
                   <InsertImage />
                   <InsertTable />

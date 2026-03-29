@@ -286,8 +286,22 @@ model BlogPost {
   author       User                  @relation("BlogAuthor", fields: [authorId], references: [id], onDelete: Restrict)
   translations BlogPostTranslation[]
   categories   BlogPostCategory[]
+  versions     BlogPostVersion[]
 
   @@index([status, publishedAt])
+}
+
+/// Версия статьи (снапшот при ручном сохранении, хранится последние 5)
+model BlogPostVersion {
+  id           String   @id @default(cuid())
+  postId       String
+  post         BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  translations Json     // снапшот переводов [{ locale, title, description, content }]
+  categoryIds  String[] // снапшот категорий
+  coverImage   String?
+  savedAt      DateTime @default(now())
+
+  @@index([postId, savedAt])
 }
 
 /// Перевод статьи на конкретный язык

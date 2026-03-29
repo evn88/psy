@@ -7,6 +7,7 @@ import { z } from 'zod';
 const updateSchema = z.object({
   coverImage: z.string().nullable().optional(),
   categoryIds: z.array(z.string()).optional(),
+  status: z.enum(['DRAFT', 'PUBLISHED']).optional(),
   translations: z
     .array(
       z.object({
@@ -64,7 +65,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     );
   }
 
-  const { coverImage, categoryIds, translations } = parsed.data;
+  const { coverImage, categoryIds, status, translations } = parsed.data;
 
   // Пересчитываем время чтения по русской версии
   const ruTranslation = translations?.find((t: { locale: string }) => t.locale === 'ru');
@@ -75,7 +76,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       where: { id },
       data: {
         ...(coverImage !== undefined && { coverImage }),
-        ...(readingTime !== undefined && { readingTime })
+        ...(readingTime !== undefined && { readingTime }),
+        ...(status !== undefined && { status }),
+        // При переводе в черновик сбрасываем publishedAt
+        ...(status === 'DRAFT' && { publishedAt: null })
       }
     });
 
