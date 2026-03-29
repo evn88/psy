@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, Suspense } from 'react';
+import React, { useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { animate, createScope, Scope } from 'animejs';
@@ -50,7 +50,12 @@ const InstagramIcon = () => (
  * Содержит информацию о психологе Анне Вершковой и контактные данные.
  * Использует next-intl для интернационализации текстов.
  */
-const HomePage = () => {
+interface HomePageProps {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+const HomePage = ({ params: _params, searchParams: _searchParams }: HomePageProps) => {
   const t = useTranslations('Home');
   const containerRef = useRef<HTMLDivElement>(null);
   const scope = useRef<Scope>(null!);
@@ -76,130 +81,128 @@ const HomePage = () => {
   const tags = t.raw('tags') as string[];
 
   return (
-    <Suspense>
-      <div className="min-h-screen bg-stone-950 text-stone-300 font-sans selection:bg-rose-500/30">
-        <div
-          ref={containerRef}
-          className="max-w-4xl mx-auto flex flex-col md:flex-row gap-10 items-start justify-center pt-20 pb-12 px-6"
-        >
-          {/* --- Левая колонка: Фото (Полароид стиль) --- */}
-          <div className="w-full md:w-5/12 flex justify-center stagger-fade-in relative z-10">
-            <div className="bg-stone-900 p-3 pb-8 shadow-2xl rounded-sm transform -rotate-1 border border-stone-800 max-w-[320px]">
-              <div className="relative w-full aspect-[3/4] overflow-hidden bg-stone-800 mb-4 rounded-sm">
-                <div className="absolute inset-0 flex items-center justify-center text-stone-600 bg-stone-800">
-                  <span className="text-sm">{t('photoCaption')}</span>
-                </div>
-                <Image
-                  src={AnnaPhoto}
-                  alt={t('photoAlt')}
-                  fill
-                  className="object-cover"
-                  placeholder="blur"
-                />
+    <div className="min-h-screen bg-stone-950 text-stone-300 font-sans selection:bg-rose-500/30">
+      <div
+        ref={containerRef}
+        className="max-w-4xl mx-auto flex flex-col md:flex-row gap-10 items-start justify-center pt-20 pb-12 px-6"
+      >
+        {/* --- Левая колонка: Фото (Полароид стиль) --- */}
+        <div className="w-full md:w-5/12 flex justify-center stagger-fade-in relative z-10">
+          <div className="bg-stone-900 p-3 pb-8 shadow-2xl rounded-sm transform -rotate-1 border border-stone-800 max-w-[320px]">
+            <div className="relative w-full aspect-[3/4] overflow-hidden bg-stone-800 mb-4 rounded-sm">
+              <div className="absolute inset-0 flex items-center justify-center text-stone-600 bg-stone-800">
+                <span className="text-sm">{t('photoCaption')}</span>
               </div>
-              <div className="text-center font-handwriting text-stone-400 font-medium">
-                {t('subtitle')}
-              </div>
-
-              {/* Декоративный «скотч» сверху */}
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-24 h-8 bg-rose-900/30 rotate-1 shadow-sm backdrop-blur-[2px]"></div>
+              <Image
+                src={AnnaPhoto}
+                alt={t('photoAlt')}
+                fill
+                className="object-cover"
+                placeholder="blur"
+              />
             </div>
+            <div className="text-center font-handwriting text-stone-400 font-medium">
+              {t('subtitle')}
+            </div>
+
+            {/* Декоративный «скотч» сверху */}
+            <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-24 h-8 bg-rose-900/30 rotate-1 shadow-sm backdrop-blur-[2px]"></div>
+          </div>
+        </div>
+
+        {/* --- Правая колонка: Контент --- */}
+        <div className="w-full md:w-7/12 space-y-8">
+          <header className="stagger-fade-in">
+            <div className="flex items-center gap-2 mb-3">
+              <Image src={BrainIcon} alt={'Brain logo'} width={40} className={'text-amber-500'} />
+              <span className="text-amber-500 font-bold uppercase text-xl tracking-wider">
+                {t('badge')}
+              </span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-3 text-stone-100 pt-2">
+              {t('name')}
+            </h1>
+            <p className="text-lg md:text-xl text-stone-400 font-light leading-relaxed">
+              {t('tagline')}
+            </p>
+          </header>
+
+          {/* Теги компетенций */}
+          <div className="flex flex-wrap gap-2 stagger-fade-in">
+            {tags.map(tag => (
+              <span
+                key={tag}
+                className="px-3 py-1 bg-stone-900 text-stone-400 rounded-full text-sm font-medium border border-stone-800"
+              >
+                {tag}
+              </span>
+            ))}
           </div>
 
-          {/* --- Правая колонка: Контент --- */}
-          <div className="w-full md:w-7/12 space-y-8">
-            <header className="stagger-fade-in">
-              <div className="flex items-center gap-2 mb-3">
-                <Image src={BrainIcon} alt={'Brain logo'} width={40} className={'text-amber-500'} />
-                <span className="text-amber-500 font-bold uppercase text-xl tracking-wider">
-                  {t('badge')}
-                </span>
-              </div>
-              <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-3 text-stone-100 pt-2">
-                {t('name')}
-              </h1>
-              <p className="text-lg md:text-xl text-stone-400 font-light leading-relaxed">
-                {t('tagline')}
-              </p>
-            </header>
+          <div className="prose prose-lg prose-invert leading-relaxed space-y-5 text-stone-300 stagger-fade-in">
+            <p>{t('intro')}</p>
+            <p className="border-l-4 border-rose-500/50 pl-4 italic bg-stone-900/40 py-3 pr-3 rounded-r-md text-stone-200">
+              {t('quote')}
+            </p>
 
-            {/* Теги компетенций */}
-            <div className="flex flex-wrap gap-2 stagger-fade-in">
-              {tags.map(tag => (
-                <span
-                  key={tag}
-                  className="px-3 py-1 bg-stone-900 text-stone-400 rounded-full text-sm font-medium border border-stone-800"
+            <h3 className="text-xl font-bold pt-2 text-stone-100">{t('workTitle')}</h3>
+            <ul className="list-disc list-inside space-y-2 marker:text-amber-500">
+              <li>{t('work1')}</li>
+              <li>{t('work2')}</li>
+              <li>{t('work3')}</li>
+              <li>{t('work4')}</li>
+            </ul>
+          </div>
+
+          <div className="pt-8 stagger-fade-in">
+            <div className="p-6 rounded-2xl bg-stone-900 border border-stone-800 shadow-xl">
+              <h3 className="text-lg font-semibold mb-5 text-stone-200">{t('contactTitle')}</h3>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <a
+                  href="https://t.me/looking_dopamine"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 px-6 py-3 bg-sky-600 hover:bg-sky-500 text-white rounded-xl font-medium transition-transform transform hover:-translate-y-1 shadow-lg shadow-sky-900/20"
                 >
-                  {tag}
-                </span>
-              ))}
-            </div>
-
-            <div className="prose prose-lg prose-invert leading-relaxed space-y-5 text-stone-300 stagger-fade-in">
-              <p>{t('intro')}</p>
-              <p className="border-l-4 border-rose-500/50 pl-4 italic bg-stone-900/40 py-3 pr-3 rounded-r-md text-stone-200">
-                {t('quote')}
-              </p>
-
-              <h3 className="text-xl font-bold pt-2 text-stone-100">{t('workTitle')}</h3>
-              <ul className="list-disc list-inside space-y-2 marker:text-amber-500">
-                <li>{t('work1')}</li>
-                <li>{t('work2')}</li>
-                <li>{t('work3')}</li>
-                <li>{t('work4')}</li>
-              </ul>
-            </div>
-
-            <div className="pt-8 stagger-fade-in">
-              <div className="p-6 rounded-2xl bg-stone-900 border border-stone-800 shadow-xl">
-                <h3 className="text-lg font-semibold mb-5 text-stone-200">{t('contactTitle')}</h3>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <a
-                    href="https://t.me/looking_dopamine"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-sky-600 hover:bg-sky-500 text-white rounded-xl font-medium transition-transform transform hover:-translate-y-1 shadow-lg shadow-sky-900/20"
+                  <TelegramIcon />
+                  <span>{t('telegramLink')}</span>
+                </a>
+                <a
+                  href="https://www.instagram.com/ania_vverh"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 px-6 py-3 bg-transparent border border-stone-700 hover:border-pink-500 text-stone-300 hover:text-stone-100 rounded-xl font-medium transition-all"
+                >
+                  <InstagramIcon />
+                  <span>{t('instagramLink')}</span>
+                </a>
+                <Link
+                  href="/blog"
+                  className="flex items-center justify-center gap-2 px-6 py-3 bg-transparent border border-stone-700 hover:border-amber-500 text-stone-300 hover:text-stone-100 rounded-xl font-medium transition-all"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="w-5 h-5"
                   >
-                    <TelegramIcon />
-                    <span>{t('telegramLink')}</span>
-                  </a>
-                  <a
-                    href="https://www.instagram.com/ania_vverh"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-transparent border border-stone-700 hover:border-pink-500 text-stone-300 hover:text-stone-100 rounded-xl font-medium transition-all"
-                  >
-                    <InstagramIcon />
-                    <span>Instagram</span>
-                  </a>
-                  <Link
-                    href="/blog"
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-transparent border border-stone-700 hover:border-amber-500 text-stone-300 hover:text-stone-100 rounded-xl font-medium transition-all"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="w-5 h-5"
-                    >
-                      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-                      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-                    </svg>
-                    <span>Блог</span>
-                  </Link>
-                </div>
+                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                  </svg>
+                  <span>{t('blogLink')}</span>
+                </Link>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </Suspense>
+    </div>
   );
 };
 
