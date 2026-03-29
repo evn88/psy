@@ -1,5 +1,7 @@
 import { Suspense } from 'react';
 import { cookies } from 'next/headers';
+import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 import prisma from '@/shared/lib/prisma';
 import { BlogCard } from './_components/blog-card';
 import { CategoryFilter } from './_components/category-filter';
@@ -100,13 +102,14 @@ export default async function BlogPage({ searchParams }: Props) {
   const cookieLocale = cookieStore.get('NEXT_LOCALE')?.value ?? 'ru';
   // ?lang= из URL переопределяет куки-локаль
   const locale = lang ?? cookieLocale;
+  const t = await getTranslations({ locale, namespace: 'Blog' });
 
   return (
     <div className="min-h-screen bg-background">
       {/* Hero */}
       <div className="border-b border-border bg-background">
         <div className="max-w-6xl mx-auto px-4 py-10 sm:py-14">
-          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-2">Статьи</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-2">{t('title')}</h1>
           <p className="text-muted-foreground text-base sm:text-lg">
             Психология, саморазвитие и mental health
           </p>

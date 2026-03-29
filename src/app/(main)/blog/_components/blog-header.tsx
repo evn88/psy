@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { Sun, Moon, ArrowLeft } from 'lucide-react';
+import { Sun, Moon, ArrowLeft, Home } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 
@@ -27,18 +27,26 @@ export function BlogHeader() {
   return (
     <header className="sticky top-0 z-40 bg-background/70 backdrop-blur-xl border-b border-border/60 shadow-sm">
       <div className="max-w-6xl mx-auto px-4 h-12 flex items-center justify-between gap-4">
-        {/* Левая часть: назад / название */}
+        {/* Левая часть: домой / назад / название */}
         <div className="flex items-center gap-2 min-w-0">
+          <Link
+            href="/"
+            className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors mr-1"
+            title="На главную"
+          >
+            <Home className="size-4" />
+          </Link>
+          <div className="w-px h-4 bg-border/60 mx-1" />
           {isArticlePage ? (
             <Link
               href="/blog"
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors ml-1"
             >
               <ArrowLeft className="size-4 flex-shrink-0" />
               <span className="hidden sm:inline">Блог</span>
             </Link>
           ) : (
-            <span className="text-sm font-semibold text-foreground">Блог</span>
+            <span className="text-sm font-semibold text-foreground ml-1">Блог</span>
           )}
         </div>
 
