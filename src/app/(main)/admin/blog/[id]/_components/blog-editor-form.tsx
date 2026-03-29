@@ -93,6 +93,7 @@ export function BlogEditorForm({
   }
   const [versions, setVersions] = useState<Version[]>([]);
   const [restoringVersion, setRestoringVersion] = useState(false);
+  const [selectedDiffVersionId, setSelectedDiffVersionId] = useState<string | null>(null);
 
   // Загружаем версии при монтировании
   useEffect(() => {
@@ -112,6 +113,24 @@ export function BlogEditorForm({
 
   // Авто-сохранение каждые 30 секунд
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Ссылка на редактор для принудительного обновления текста без перемонтажа компонента
+  const editorRef = useRef<any>(null);
+
+  // Обновляем текст в редакторе при смене версии, чтобы не сбивать viewMode
+  useEffect(() => {
+    if (editorRef.current) {
+      const activeTranslation =
+        translations.find(t => t.locale === activeLocale) ?? translations[0];
+      const selectedVersion = versions.find(v => v.id === selectedDiffVersionId);
+      const editorValue = selectedVersion
+        ? selectedVersion.translations.find(t => t.locale === activeLocale)?.content || ''
+        : activeTranslation.content;
+
+      editorRef.current.setMarkdown(editorValue);
+    }
+  }, [selectedDiffVersionId, activeLocale]); // мы специально не добавляем translations, чтобы не сбивать каретку при ручном вводе
+
   const save = useCallback(
     async (showToast = true, createVersion = false) => {
       setSaving(true);
@@ -328,25 +347,28 @@ export function BlogEditorForm({
             </div>
 
             {/* Языковые вкладки — sticky прямо над редактором */}
-            <div className="flex items-center gap-1 px-4 pt-2 pb-0 border-b bg-background/90 sticky top-0 z-20 backdrop-blur-md">
-              {translations.map(t => (
-                <button
-                  key={t.locale}
-                  type="button"
-                  onClick={() => setActiveLocale(t.locale)}
-                  className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 transition-all -mb-px ${
-                    activeLocale === t.locale
-                      ? 'border-[#900A0B] text-[#900A0B] bg-[#900A0B]/5 rounded-t-lg'
-                      : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                  }`}
-                >
-                  <Globe className="size-3.5" />
-                  {LOCALE_LABELS[t.locale]}
-                  {t.title && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0 shadow-[0_0_5px_rgba(34,197,94,0.5)]" />
-                  )}
-                </button>
-              ))}
+            <div className="flex items-center justify-between px-4 pt-2 pb-0 border-b bg-background/90 sticky top-0 z-20 backdrop-blur-md">
+              <div className="flex items-center gap-1">
+                {translations.map(t => (
+                  <button
+                    key={t.locale}
+                    type="button"
+                    onClick={() => setActiveLocale(t.locale)}
+                    className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 transition-all -mb-px ${
+                      activeLocale === t.locale
+                        ? 'border-[#900A0B] text-[#900A0B] bg-[#900A0B]/5 rounded-t-lg'
+                        : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    }`}
+                  >
+                    <Globe className="size-3.5" />
+                    {LOCALE_LABELS[t.locale]}
+                    {t.title && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0 shadow-[0_0_5px_rgba(34,197,94,0.5)]" />
+                    )}
+                  </button>
+                ))}
+              </div>
+              <div id="mdx-editor-view-mode" className="flex items-center h-full pb-1" />
             </div>
 
             {/* Редактор / Предпросмотр */}
@@ -365,14 +387,33 @@ export function BlogEditorForm({
                   </div>
                 </PreviewSizeSwitcher>
               ) : (
-                <div className="bg-card rounded-xl border shadow-sm">
-                  <MdxEditorWrapper
-                    key={activeLocale}
-                    value={activeTranslation.content}
-                    onChange={v => updateTranslation('content', v)}
-                    onImageUpload={uploadImage}
-                    placeholder="Начните писать статью..."
-                  />
+                <div className="bg-card rounded-xl border shadow-sm flex flex-col">
+                  {(() => {
+                    const activeTranslation = translations.find(t => t.locale === activeLocale)!;
+                    const selectedVersion = versions.find(v => v.id === selectedDiffVersionId);
+
+                    const editorValue = selectedVersion
+                      ? selectedVersion.translations.find(t => t.locale === activeLocale)
+                          ?.content || ''
+                      : activeTranslation.content;
+
+                    const diffMarkdown = selectedVersion ? activeTranslation.content : '';
+
+                    return (
+                      <MdxEditorWrapper
+                        key={activeLocale}
+                        ref={editorRef}
+                        value={editorValue}
+                        onChange={v => {
+                          if (!selectedVersion) updateTranslation('content', v);
+                        }}
+                        onImageUpload={uploadImage}
+                        placeholder="Начните писать статью..."
+                        diffMarkdown={diffMarkdown}
+                        readOnly={!!selectedVersion}
+                      />
+                    );
+                  })()}
                 </div>
               )}
             </div>
@@ -491,35 +532,51 @@ export function BlogEditorForm({
               </p>
             ) : (
               <div className="space-y-1.5">
-                {versions.map((v, i) => (
-                  <div
-                    key={v.id}
-                    className="flex items-center justify-between p-2 rounded-lg bg-background/50 border border-border/40"
-                  >
-                    <div className="text-xs text-muted-foreground">
-                      <span className="font-medium text-foreground">
-                        {i === 0 ? 'Последняя' : `Версия ${versions.length - i}`}
-                      </span>
-                      <span className="block text-[10px] mt-0.5">
-                        {new Date(v.savedAt).toLocaleString('ru', {
-                          day: '2-digit',
-                          month: 'short',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => restoreVersion(v)}
-                      disabled={restoringVersion}
-                      className="p-1 rounded text-muted-foreground/60 hover:text-[#900A0B] hover:bg-[#900A0B]/5 transition-colors"
-                      title="Восстановить эту версию"
+                {versions.map((v, i) => {
+                  const isSelected = selectedDiffVersionId === v.id;
+                  return (
+                    <div
+                      key={v.id}
+                      onClick={() => {
+                        // При клике: выбираем версию
+                        setSelectedDiffVersionId(v.id);
+                      }}
+                      className={`flex items-center justify-between p-2 rounded-lg border transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-[#900A0B]/5 border-[#900A0B]/30'
+                          : 'bg-background/50 border-border/40 hover:border-border'
+                      }`}
                     >
-                      <RotateCcw className="size-3.5" />
-                    </button>
-                  </div>
-                ))}
+                      <div className="text-xs text-muted-foreground">
+                        <span
+                          className={`font-medium ${isSelected ? 'text-[#900A0B]' : 'text-foreground'}`}
+                        >
+                          {i === 0 ? 'Последняя' : `Версия ${versions.length - i}`}
+                        </span>
+                        <span className="block text-[10px] mt-0.5">
+                          {new Date(v.savedAt).toLocaleString('ru', {
+                            day: '2-digit',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={e => {
+                          e.stopPropagation();
+                          restoreVersion(v);
+                        }}
+                        disabled={restoringVersion}
+                        className="p-1 rounded text-muted-foreground/60 hover:text-[#900A0B] hover:bg-[#900A0B]/10 transition-colors"
+                        title="Восстановить эту версию"
+                      >
+                        <RotateCcw className="size-3.5" />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </section>

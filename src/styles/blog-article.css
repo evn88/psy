@@ -252,7 +252,7 @@
 
 .mdx-editor-container {
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible; /* Разрешаем sticky относительно родителя страницы */
   border: 1px solid #E2E2E2;
   background-color: #FFFFFF;
   color: #353535;
@@ -290,8 +290,14 @@ html.dark .mdxeditor-popup-container,
   color: #E2E2E2 !important;
 }
 .dark-theme .mdxeditor-popup-container [class*='_dialogContent'],
+.dark-theme .mdxeditor-popup-container [class*='_linkDialogPopoverContent'],
+.dark-theme .mdxeditor-popup-container [class*='_selectContainer'],
 html.dark .mdxeditor-popup-container [class*='_dialogContent'],
-[data-theme='dark'] .mdxeditor-popup-container [class*='_dialogContent'] {
+html.dark .mdxeditor-popup-container [class*='_linkDialogPopoverContent'],
+html.dark .mdxeditor-popup-container [class*='_selectContainer'],
+[data-theme='dark'] .mdxeditor-popup-container [class*='_dialogContent'],
+[data-theme='dark'] .mdxeditor-popup-container [class*='_linkDialogPopoverContent'],
+[data-theme='dark'] .mdxeditor-popup-container [class*='_selectContainer'] {
   background-color: #1a1a1a !important;
   border: 1px solid #2a2a2a !important;
   color: #E2E2E2 !important;
@@ -308,14 +314,40 @@ html.dark .mdxeditor-popup-container button[type="submit"],
 [data-theme='dark'] .mdxeditor-popup-container button[type="submit"] {
   background-color: #900A0B !important;
   color: #fff !important;
+  border: none !important;
+}
+.dark-theme .mdxeditor-popup-container [class*='_selectItem']:hover,
+html.dark .mdxeditor-popup-container [class*='_selectItem']:hover,
+[data-theme='dark'] .mdxeditor-popup-container [class*='_selectItem']:hover {
+  background-color: #2a2a2a !important;
+}
+
+/* Фиксы для Source и Diff режимов (CodeMirror) */
+[data-editor-theme='dark'] .cm-editor,
+[data-editor-theme='dark'] .cm-sourceView,
+[data-editor-theme='dark'] .cm-mergeView,
+[data-editor-theme='dark'] .cm-merge-a,
+[data-editor-theme='dark'] .cm-merge-b {
+  background-color: #1a1a1a !important;
+  color: #E2E2E2 !important;
+}
+[data-editor-theme='dark'] .cm-gutters {
+  background-color: #111 !important;
+  color: #888 !important;
+  border-right: 1px solid #333 !important;
+}
+[data-editor-theme='dark'] .cm-mergeViewEditors {
+  background-color: #1a1a1a !important;
 }
 
 /* Sticky тулбар внутри редактора */
 .mdx-editor-container [class*='_editorWrapper'] > [class*='_toolbar'],
 .mdx-editor-container > [class*='_toolbar'] {
   position: sticky !important;
-  top: 0 !important;
+  top: 48px !important; /* Учитываем высоту блока с языковыми табами */
   z-index: 10 !important;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
 }
 
 /* Тулбар — светлая */

@@ -29,7 +29,7 @@ export default async function AdminBlogEditPage({ params }: Props) {
   if (!post) notFound();
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col">
+    <div className="h-[calc(100vh-6.5rem)] min-h-[500px] flex flex-col">
       <BlogEditorForm
         postId={post.id}
         initialStatus={post.status}

@@ -30,8 +30,10 @@ import {
   type MDXEditorMethods
 } from '@mdxeditor/editor';
 import { forwardRef, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Sun, Moon } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { useCellValues, usePublisher, viewMode$, ViewMode } from '@mdxeditor/editor';
 
 interface MdxEditorWrapperProps {
   value: string;
@@ -39,10 +41,71 @@ interface MdxEditorWrapperProps {
   onImageUpload?: (file: File) => Promise<string>;
   placeholder?: string;
   readOnly?: boolean;
+  diffMarkdown?: string;
 }
 
+// Компонент-портал для переключения режимов (Diff/Source/Rich Text), который рендерится в языковых табах
+const PortalDiffToggle = () => {
+  const [viewMode] = useCellValues(viewMode$);
+  const setViewMode = usePublisher(viewMode$);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const target = document.getElementById('mdx-editor-view-mode');
+    // eslint-disable-next-line
+    if (target) setPortalTarget(target);
+  }, []);
+
+  const toggleButtons = (
+    <div className="flex bg-muted/50 rounded-lg p-0.5 border">
+      <button
+        className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+          viewMode === 'rich-text'
+            ? 'bg-background shadow-sm text-foreground'
+            : 'text-muted-foreground hover:text-foreground'
+        }`}
+        onClick={() => setViewMode('rich-text')}
+        type="button"
+        title="Визуальный редактор"
+      >
+        Editor
+      </button>
+      <button
+        className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+          viewMode === 'diff'
+            ? 'bg-background shadow-sm text-foreground'
+            : 'text-muted-foreground hover:text-foreground'
+        }`}
+        onClick={() => setViewMode('diff')}
+        type="button"
+        title="Сравнение версий"
+      >
+        Diff
+      </button>
+      <button
+        className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+          viewMode === 'source'
+            ? 'bg-background shadow-sm text-foreground'
+            : 'text-muted-foreground hover:text-foreground'
+        }`}
+        onClick={() => setViewMode('source')}
+        type="button"
+        title="Исходный код (Markdown)"
+      >
+        Source
+      </button>
+    </div>
+  );
+
+  if (!portalTarget) return null;
+  return createPortal(toggleButtons, portalTarget);
+};
+
 export const MdxEditorWrapper = forwardRef<MDXEditorMethods, MdxEditorWrapperProps>(
-  function MdxEditorWrapper({ value, onChange, onImageUpload, placeholder, readOnly }, ref) {
+  function MdxEditorWrapper(
+    { value, onChange, onImageUpload, placeholder, readOnly, diffMarkdown },
+    ref
+  ) {
     const { resolvedTheme } = useTheme();
     const [localDark, setLocalDark] = useState<boolean | null>(null);
     const dark = localDark ?? resolvedTheme === 'dark';
@@ -103,10 +166,11 @@ export const MdxEditorWrapper = forwardRef<MDXEditorMethods, MdxEditorWrapperPro
                 text: 'Текст'
               }
             }),
-            diffSourcePlugin({ viewMode: 'rich-text' }),
+            diffSourcePlugin({ diffMarkdown: diffMarkdown || value }),
             toolbarPlugin({
               toolbarContents: () => (
                 <>
+                  <PortalDiffToggle />
                   <UndoRedo />
                   <Separator />
                   <BlockTypeSelect />
@@ -121,16 +185,14 @@ export const MdxEditorWrapper = forwardRef<MDXEditorMethods, MdxEditorWrapperPro
                   <InsertTable />
 
                   <div className="mdx-toolbar-spacer" />
-                  <DiffSourceToggleWrapper>
-                    <button
-                      type="button"
-                      onClick={() => setLocalDark(!dark)}
-                      className="mdx-editor-theme-toggle"
-                      title={dark ? 'Светлая тема' : 'Тёмная тема'}
-                    >
-                      {dark ? <Sun size={14} /> : <Moon size={14} />}
-                    </button>
-                  </DiffSourceToggleWrapper>
+                  <button
+                    type="button"
+                    onClick={() => setLocalDark(!dark)}
+                    className="mdx-editor-theme-toggle"
+                    title={dark ? 'Светлая тема' : 'Тёмная тема'}
+                  >
+                    {dark ? <Sun size={14} /> : <Moon size={14} />}
+                  </button>
                 </>
               )
             })
