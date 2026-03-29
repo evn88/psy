@@ -126,16 +126,32 @@ export function BlogEditorForm({
       const editorValue = selectedVersion
         ? selectedVersion.translations.find(t => t.locale === activeLocale)?.content || ''
         : activeTranslation.content;
-
       editorRef.current.setMarkdown(editorValue);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDiffVersionId, activeLocale]); // мы специально не добавляем translations, чтобы не сбивать каретку при ручном вводе
 
   const save = useCallback(
     async (showToast = true, createVersion = false) => {
+      // Блокируем автосохранения для исторической версии
+      if (!showToast && selectedDiffVersionId) return;
+
       setSaving(true);
       try {
-        const filteredTranslations = translations.filter(t => t.title);
+        let currentTranslations = translations;
+
+        // Если ручное сохранение архива: забираем отредактированный текст из MdxEditor,
+        // фиксируем в state и сбрасываем выбранную версию (она становится актуальной)
+        if (showToast && selectedDiffVersionId && editorRef.current) {
+          const editorText = editorRef.current.getMarkdown();
+          currentTranslations = translations.map(t =>
+            t.locale === activeLocale ? { ...t, content: editorText } : t
+          );
+          setTranslations(currentTranslations);
+          setSelectedDiffVersionId(null);
+        }
+
+        const filteredTranslations = currentTranslations.filter(t => t.title);
         const res = await fetch(`/api/admin/blog/${postId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -168,16 +184,18 @@ export function BlogEditorForm({
         setSaving(false);
       }
     },
-    [postId, coverImage, categoryIds, status, translations]
+    [postId, coverImage, categoryIds, status, translations, selectedDiffVersionId, activeLocale]
   );
 
   useEffect(() => {
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-    autoSaveTimer.current = setTimeout(() => save(false), 30_000);
+    if (!selectedDiffVersionId) {
+      autoSaveTimer.current = setTimeout(() => save(false), 30_000);
+    }
     return () => {
       if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     };
-  }, [save]);
+  }, [save, selectedDiffVersionId]);
 
   const handlePublish = async () => {
     await save(false);
@@ -410,7 +428,7 @@ export function BlogEditorForm({
                         onImageUpload={uploadImage}
                         placeholder="Начните писать статью..."
                         diffMarkdown={diffMarkdown}
-                        readOnly={!!selectedVersion}
+                        readOnly={false}
                       />
                     );
                   })()}
@@ -532,13 +550,32 @@ export function BlogEditorForm({
               </p>
             ) : (
               <div className="space-y-1.5">
+                {/* Всегда показываем пункт "Текущий черновик" */}
+                <div
+                  onClick={() => setSelectedDiffVersionId(null)}
+                  className={`flex items-center justify-between p-2 rounded-lg border transition-all cursor-pointer ${
+                    selectedDiffVersionId === null
+                      ? 'bg-[#900A0B]/5 border-[#900A0B]/30'
+                      : 'bg-background/50 border-border/40 hover:border-border'
+                  }`}
+                >
+                  <div className="text-xs text-muted-foreground">
+                    <span
+                      className={`font-medium ${selectedDiffVersionId === null ? 'text-[#900A0B]' : 'text-foreground'}`}
+                    >
+                      Текущий черновик
+                    </span>
+                    <span className="block text-[10px] mt-0.5">Текущее рабочее состояние</span>
+                  </div>
+                </div>
+
                 {versions.map((v, i) => {
                   const isSelected = selectedDiffVersionId === v.id;
                   return (
                     <div
                       key={v.id}
                       onClick={() => {
-                        // При клике: выбираем версию
+                        // При клике: выбираем версию (если уже выбрана, toggle не делаем, так как для черновика есть отдельная кнопка)
                         setSelectedDiffVersionId(v.id);
                       }}
                       className={`flex items-center justify-between p-2 rounded-lg border transition-all cursor-pointer ${
