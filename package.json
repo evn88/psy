@@ -83,6 +83,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@parcel/watcher": "latest",
     "@types/node": "^20",
     "@types/pg": "^8.11.0",
     "@types/react": "^18",
