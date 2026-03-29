@@ -4,17 +4,8 @@ import dynamic from 'next/dynamic';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import {
-  Languages,
-  Save,
-  Globe,
-  Eye,
-  EyeOff,
-  Loader2,
-  History,
-  RotateCcw,
-  Link
-} from 'lucide-react';
+import { Languages, Save, Globe, Eye, EyeOff, Loader2, History, RotateCcw } from 'lucide-react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -450,6 +441,7 @@ export function BlogEditorForm({
             <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60">
               Категории
             </h3>
+
             {allCategories.length === 0 ? (
               <p className="text-xs text-muted-foreground">
                 Нет категорий.{' '}
@@ -458,26 +450,31 @@ export function BlogEditorForm({
                 </Link>
               </p>
             ) : (
-              <div className="flex flex-wrap gap-2">
-                {allCategories.map(cat => {
-                  const name = (cat.name as Record<string, string>)?.ru ?? cat.slug;
-                  const selected = categoryIds.includes(cat.id);
-                  return (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => toggleCategory(cat.id)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                        selected
-                          ? 'bg-[#900A0B] text-white border-[#900A0B]'
-                          : 'bg-background text-foreground border-border hover:border-[#900A0B]'
-                      }`}
-                    >
-                      {name}
-                    </button>
-                  );
-                })}
-              </div>
+              <>
+                <Link href="/admin/blog/categories" className="text-[#900A0B] hover:underline">
+                  Изменить
+                </Link>
+                <div className="flex flex-wrap gap-2">
+                  {allCategories.map(cat => {
+                    const name = (cat.name as Record<string, string>)?.ru ?? cat.slug;
+                    const selected = categoryIds.includes(cat.id);
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => toggleCategory(cat.id)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                          selected
+                            ? 'bg-[#900A0B] text-white border-[#900A0B]'
+                            : 'bg-background text-foreground border-border hover:border-[#900A0B]'
+                        }`}
+                      >
+                        {name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
             )}
           </section>
 
