@@ -31,7 +31,8 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import { Plus, Trash2, GripVertical, CheckCircle2 } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Plus, Trash2, GripVertical, CheckCircle2, ChevronDown, X, RotateCcw } from 'lucide-react';
 import { updateSurvey } from '../actions';
 import { useTranslations } from 'next-intl';
 
@@ -54,6 +55,9 @@ interface SortableQuestionProps {
   onUpdateOption: (optionIndex: number, value: string) => void;
 }
 
+/**
+ * Сортируемая карточка вопроса — компактный горизонтальный layout.
+ */
 const SortableQuestion = ({
   question,
   index,
@@ -65,7 +69,6 @@ const SortableQuestion = ({
   onRemoveOption,
   onUpdateOption
 }: SortableQuestionProps) => {
-  // Используем index как fallback id для новых вопросов при сортировке, если нет id
   const dndId = question.id || `new-${index}`;
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: dndId
@@ -78,46 +81,57 @@ const SortableQuestion = ({
   };
 
   return (
-    <Card
+    <div
       ref={setNodeRef}
       style={style}
-      className={isDragging ? 'shadow-lg ring-2 ring-primary relative z-50' : ''}
+      className={`p-4 rounded-xl border bg-card transition-shadow ${
+        isDragging ? 'shadow-lg ring-2 ring-primary relative z-50' : 'shadow-sm'
+      }`}
     >
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base flex items-center gap-2">
-            <button
-              type="button"
-              className="cursor-grab active:cursor-grabbing touch-none p-1 rounded hover:bg-muted"
-              {...attributes}
-              {...listeners}
-            >
-              <GripVertical className="h-4 w-4 text-muted-foreground" />
-            </button>
-            {t('questionNumber', { number: index + 1 })}
-          </CardTitle>
-          <Button variant="ghost" size="icon" onClick={onRemove}>
-            <Trash2 className="h-4 w-4 text-destructive" />
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label>{t('questionText')}</Label>
+      {/* Заголовок вопроса */}
+      <div className="flex items-center gap-2 mb-3">
+        <button
+          type="button"
+          className="cursor-grab active:cursor-grabbing touch-none p-1 rounded hover:bg-muted shrink-0"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        </button>
+        <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold shrink-0">
+          {index + 1}
+        </span>
+        <span className="text-sm font-medium text-muted-foreground flex-1">
+          {t('questionNumber', { number: index + 1 })}
+        </span>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+          onClick={onRemove}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Поля: текст и тип — горизонтальная сетка */}
+      <div className="grid gap-3 sm:grid-cols-[1fr,200px]">
+        <div className="space-y-1.5">
+          <Label className="text-xs">{t('questionText')}</Label>
           <Input
             value={question.text}
             onChange={e => onUpdateText(e.target.value)}
             placeholder={t('questionTextPlaceholder')}
+            className="h-9"
           />
         </div>
-
-        <div className="space-y-2">
-          <Label>{t('questionType')}</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs">{t('questionType')}</Label>
           <Select
             value={question.type}
             onValueChange={val => onUpdateType(val as QuestionDraft['type'])}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-9">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -128,32 +142,41 @@ const SortableQuestion = ({
             </SelectContent>
           </Select>
         </div>
+      </div>
 
-        {(question.type === 'SINGLE_CHOICE' || question.type === 'MULTI_CHOICE') && (
-          <div className="space-y-2">
-            <Label>{t('options')}</Label>
+      {/* Варианты ответов — компактный список */}
+      {(question.type === 'SINGLE_CHOICE' || question.type === 'MULTI_CHOICE') && (
+        <div className="mt-3 space-y-2">
+          <Label className="text-xs">{t('options')}</Label>
+          <div className="space-y-1.5">
             {question.options.map((option, oIndex) => (
-              <div key={oIndex} className="flex gap-2">
+              <div key={`opt-${dndId}-${oIndex}`} className="flex gap-1.5">
                 <Input
                   value={option}
                   onChange={e => onUpdateOption(oIndex, e.target.value)}
                   placeholder={t('optionPlaceholder', { number: oIndex + 1 })}
+                  className="h-8 text-sm"
                 />
                 {question.options.length > 1 && (
-                  <Button variant="ghost" size="icon" onClick={() => onRemoveOption(oIndex)}>
-                    <Trash2 className="h-4 w-4" />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+                    onClick={() => onRemoveOption(oIndex)}
+                  >
+                    <X className="h-3.5 w-3.5" />
                   </Button>
                 )}
               </div>
             ))}
-            <Button variant="outline" size="sm" onClick={onAddOption}>
-              <Plus className="mr-1 h-3 w-3" />
-              {t('addOption')}
-            </Button>
           </div>
-        )}
-      </CardContent>
-    </Card>
+          <Button variant="outline" size="sm" onClick={onAddOption} className="h-7 text-xs">
+            <Plus className="mr-1 h-3 w-3" />
+            {t('addOption')}
+          </Button>
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -170,6 +193,10 @@ interface EditSurveyFormProps {
   }[];
 }
 
+/**
+ * Форма редактирования опроса с DnD-сортировкой.
+ * Данные опроса — collapsible секция (по умолчанию свёрнута).
+ */
 export const EditSurveyForm = ({
   surveyId,
   initialTitle,
@@ -181,19 +208,20 @@ export const EditSurveyForm = ({
 
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(initialDescription || '');
-  const [questions, setQuestions] = useState<QuestionDraft[]>(() => {
-    return initialQuestions
+  const [questions, setQuestions] = useState<QuestionDraft[]>(() =>
+    initialQuestions
       .sort((a, b) => a.order - b.order)
       .map(q => ({
         id: q.id,
         text: q.text,
-        type: q.type as any,
+        type: q.type as QuestionDraft['type'],
         options: q.options || ['']
-      }));
-  });
+      }))
+  );
 
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -217,35 +245,34 @@ export const EditSurveyForm = ({
     }
   };
 
+  /** Добавляет новый вопрос */
   const addQuestion = () => {
-    setQuestions(prev => [
-      ...prev,
-      {
-        text: '',
-        type: 'SINGLE_CHOICE',
-        options: ['']
-      }
-    ]);
+    setQuestions(prev => [...prev, { text: '', type: 'SINGLE_CHOICE', options: [''] }]);
   };
 
+  /** Удаляет вопрос по индексу */
   const removeQuestion = (index: number) => {
     setQuestions(prev => prev.filter((_, i) => i !== index));
   };
 
+  /** Обновляет текст вопроса */
   const updateQuestionText = (index: number, text: string) => {
     setQuestions(prev => prev.map((q, i) => (i === index ? { ...q, text } : q)));
   };
 
+  /** Обновляет тип вопроса */
   const updateQuestionType = (index: number, type: QuestionDraft['type']) => {
     setQuestions(prev => prev.map((q, i) => (i === index ? { ...q, type } : q)));
   };
 
+  /** Добавляет вариант ответа к вопросу */
   const addOption = (questionIndex: number) => {
     setQuestions(prev =>
       prev.map((q, i) => (i === questionIndex ? { ...q, options: [...q.options, ''] } : q))
     );
   };
 
+  /** Удаляет вариант ответа */
   const removeOption = (questionIndex: number, optionIndex: number) => {
     setQuestions(prev =>
       prev.map((q, i) =>
@@ -254,19 +281,18 @@ export const EditSurveyForm = ({
     );
   };
 
+  /** Обновляет текст варианта ответа */
   const updateOption = (questionIndex: number, optionIndex: number, value: string) => {
     setQuestions(prev =>
       prev.map((q, i) =>
         i === questionIndex
-          ? {
-              ...q,
-              options: q.options.map((o, oi) => (oi === optionIndex ? value : o))
-            }
+          ? { ...q, options: q.options.map((o, oi) => (oi === optionIndex ? value : o)) }
           : q
       )
     );
   };
 
+  /** Отправляет изменения на сервер */
   const handleSubmit = async () => {
     if (!title.trim() || questions.length === 0) return;
 
@@ -292,11 +318,10 @@ export const EditSurveyForm = ({
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
       router.refresh();
-    } else {
-      console.error(result.error);
     }
   };
 
+  /** Сбрасывает форму к начальным значениям */
   const resetForm = () => {
     setTitle(initialTitle);
     setDescription(initialDescription || '');
@@ -306,48 +331,77 @@ export const EditSurveyForm = ({
         .map(q => ({
           id: q.id,
           text: q.text,
-          type: q.type as any,
+          type: q.type as QuestionDraft['type'],
           options: q.options || ['']
         }))
     );
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('surveyDetails')}</CardTitle>
-          <CardDescription>{t('editSurveyDetailsDesc') || t('surveyDetailsDesc')}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">{t('surveyTitle')}</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={e => setTitle(e.target.value)}
-              placeholder={t('surveyTitlePlaceholder')}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="desc">{t('surveyDescription')}</Label>
-            <Textarea
-              id="desc"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              placeholder={t('surveyDescPlaceholder')}
-            />
-          </div>
-        </CardContent>
-      </Card>
+    <div className="space-y-5 max-w-3xl">
+      {/* Данные опроса — collapsible (свёрнуто по умолчанию) */}
+      <Collapsible open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <Card>
+          <CardHeader className="pb-3">
+            <CollapsibleTrigger className="flex items-center justify-between w-full text-left">
+              <div>
+                <CardTitle className="text-lg">{t('surveyDetails')}</CardTitle>
+                <CardDescription className="mt-1">{t('editSurveyDetailsDesc')}</CardDescription>
+              </div>
+              <ChevronDown
+                className={`h-5 w-5 text-muted-foreground transition-transform shrink-0 ${
+                  detailsOpen ? '' : '-rotate-90'
+                }`}
+              />
+            </CollapsibleTrigger>
+          </CardHeader>
+          <CollapsibleContent>
+            <CardContent className="space-y-4 pt-0">
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-title" className="text-xs font-semibold">
+                  {t('surveyTitle')}
+                </Label>
+                <Input
+                  id="edit-title"
+                  value={title}
+                  onChange={e => setTitle(e.target.value)}
+                  placeholder={t('surveyTitlePlaceholder')}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-desc" className="text-xs font-semibold">
+                  {t('surveyDescription')}
+                </Label>
+                <Textarea
+                  id="edit-desc"
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  placeholder={t('surveyDescPlaceholder')}
+                  className="min-h-[80px] resize-y"
+                />
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
 
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium">{t('questions')}</h3>
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext
-            items={questions.map((q, i) => q.id || `new-${i}`)}
-            strategy={verticalListSortingStrategy}
-          >
+      {/* Заголовок секции «Вопросы» */}
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold text-base">
+          {t('questions')}{' '}
+          {questions.length > 0 && (
+            <span className="text-muted-foreground font-normal">({questions.length})</span>
+          )}
+        </h3>
+      </div>
+
+      {/* Список вопросов с DnD */}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext
+          items={questions.map((q, i) => q.id || `new-${i}`)}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="space-y-3">
             {questions.map((question, qIndex) => (
               <SortableQuestion
                 key={question.id || `new-${qIndex}`}
@@ -362,34 +416,48 @@ export const EditSurveyForm = ({
                 onUpdateOption={(oIndex, val) => updateOption(qIndex, oIndex, val)}
               />
             ))}
-          </SortableContext>
-        </DndContext>
-      </div>
+          </div>
+        </SortableContext>
+      </DndContext>
 
-      <Button variant="outline" onClick={addQuestion} className="w-full">
+      {/* Добавить вопрос */}
+      <Button
+        variant="outline"
+        onClick={addQuestion}
+        className="w-full border-dashed hover:border-primary/50 hover:bg-primary/5"
+      >
         <Plus className="mr-2 h-4 w-4" />
         {t('addQuestion')}
       </Button>
 
-      <div className="flex justify-between items-center pt-4 border-t">
-        <Button variant="ghost" onClick={resetForm} type="button" disabled={loading}>
-          {t('cancelChanges') || 'Отменить изменения'}
-        </Button>
+      {/* Футер */}
+      <div className="flex justify-between items-center pt-2 border-t">
         <Button
-          onClick={handleSubmit}
-          disabled={loading || !title.trim() || questions.length === 0}
-          size="lg"
+          variant="ghost"
+          size="sm"
+          onClick={resetForm}
+          type="button"
+          disabled={loading}
+          className="gap-1.5"
         >
-          {loading ? t('saving') || 'Сохранение...' : t('saveChanges') || 'Сохранить изменения'}
+          <RotateCcw className="h-3.5 w-3.5" />
+          {t('cancelChanges')}
         </Button>
-      </div>
-
-      {saved && (
-        <div className="text-sm text-green-600 dark:text-green-400 flex items-center justify-end gap-2 animate-in fade-in slide-in-from-bottom-2">
-          <CheckCircle2 className="h-4 w-4" />
-          {t('surveyUpdated') || 'Изменения сохранены'}
+        <div className="flex items-center gap-3">
+          {saved && (
+            <span className="text-sm text-green-600 dark:text-green-400 flex items-center gap-1.5 animate-in fade-in slide-in-from-right-2">
+              <CheckCircle2 className="h-4 w-4" />
+              {t('surveyUpdated')}
+            </span>
+          )}
+          <Button
+            onClick={handleSubmit}
+            disabled={loading || !title.trim() || questions.length === 0}
+          >
+            {loading ? t('saving') : t('saveChanges')}
+          </Button>
         </div>
-      )}
+      </div>
     </div>
   );
 };

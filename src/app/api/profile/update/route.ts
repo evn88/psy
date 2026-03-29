@@ -9,7 +9,8 @@ const updateProfileSchema = z.object({
   googleCalendarSyncUrl: z.string().url().optional().nullable().or(z.literal('')),
   googleCalendarSyncEnabled: z.boolean().optional(),
   workHourStart: z.number().min(0).max(23).optional(),
-  workHourEnd: z.number().min(0).max(24).optional()
+  workHourEnd: z.number().min(0).max(24).optional(),
+  blogNotifications: z.boolean().optional()
 });
 
 export async function PUT(req: Request) {
@@ -40,7 +41,10 @@ export async function PUT(req: Request) {
         ...(result.data.workHourStart !== undefined && {
           workHourStart: result.data.workHourStart
         }),
-        ...(result.data.workHourEnd !== undefined && { workHourEnd: result.data.workHourEnd })
+        ...(result.data.workHourEnd !== undefined && { workHourEnd: result.data.workHourEnd }),
+        ...(result.data.blogNotifications !== undefined && {
+          blogNotifications: result.data.blogNotifications
+        })
       }
     });
 

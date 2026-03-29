@@ -129,6 +129,7 @@ export const SettingsForm = ({ initialSettings }: SettingsFormProps) => {
                     <SelectContent>
                       <SelectItem value="ru">{t('langRu')}</SelectItem>
                       <SelectItem value="en">{t('langEn')}</SelectItem>
+                      <SelectItem value="sr">{t('langSr')}</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormDescription>{t('languageDescription')}</FormDescription>

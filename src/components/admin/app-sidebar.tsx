@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import {
+  BookOpen,
   Brain,
   Calendar,
   ChevronsUpDown,
@@ -90,6 +91,12 @@ export function AppSidebar({ user, unreadSurveysCount = 0, ...props }: AppSideba
       url: '/admin/schedule',
       icon: Calendar,
       isActive: pathname.startsWith('/admin/schedule')
+    },
+    {
+      title: tItems('blog'),
+      url: '/admin/blog',
+      icon: BookOpen,
+      isActive: pathname.startsWith('/admin/blog')
     },
     {
       title: tItems('sendEmail'),
