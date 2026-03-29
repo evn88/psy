@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "type-check": "tsc --noEmit",
+    "clean": "rm -rf .next",
     "prepare": "husky"
   },
   "lint-staged": {

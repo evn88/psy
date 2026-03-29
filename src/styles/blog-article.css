@@ -452,3 +452,24 @@
   background-color: #111;
   color: #f87171;
 }
+/* ---- Адаптивность редактора для мобильных ---- */
+.mdx-editor-mobile-optimized [class*='_toolbar'] {
+  overflow-x: auto !important;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+  padding-right: 16px !important;
+}
+
+.mdx-editor-mobile-optimized [class*='_toolbar']::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.mdx-editor-mobile-optimized [class*='_toolbar'] > * {
+  flex-shrink: 0 !important;
+}
+
+@media (max-width: 640px) {
+  .mdx-editor-content {
+    padding: 1rem !important;
+  }
+}

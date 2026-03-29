@@ -25,25 +25,74 @@ export function CoverImageUpload({
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
+  const deleteBlob = async (url: string) => {
+    try {
+      await fetch(`/api/upload/delete?url=${encodeURIComponent(url)}`, { method: 'DELETE' });
+    } catch (error) {
+      console.error('Failed to delete old blob:', error);
+    }
+  };
+
   const uploadFile = async (file: File) => {
     if (!file.type.startsWith('image/')) {
       toast.error('Можно загружать только изображения');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Размер файла не должен превышать 5 МБ');
-      return;
-    }
 
     setUploading(true);
     try {
+      // Сжатие на клиенте через Canvas (Native API)
+      const compressedBlob = await new Promise<Blob>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = e => {
+          const img = new (window as any).Image();
+          img.src = e.target?.result as string;
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            // Для отличного качества на 4K/UltraHD (3840px)
+            const MAX_WIDTH = 3840;
+            const ratio = Math.min(MAX_WIDTH / img.width, 1);
+            canvas.width = img.width * ratio;
+            canvas.height = img.height * ratio;
+
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return reject(new Error('Could not get canvas context'));
+
+            // Включаем высококачественное сглаживание
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob(
+              blob => {
+                if (blob) resolve(blob);
+                else reject(new Error('Canvas conversion failed'));
+              },
+              'image/webp',
+              0.9 // Повышенное качество для четкости на больших экранах
+            );
+          };
+          img.onerror = () => reject(new Error('Image load failed'));
+        };
+        reader.onerror = () => reject(new Error('File read failed'));
+      });
+
       const form = new FormData();
-      form.append('file', file);
+      form.append('file', compressedBlob, 'cover.webp');
+
       const res = await fetch('/api/upload', { method: 'POST', body: form });
       if (!res.ok) throw new Error('Ошибка загрузки');
       const data = await res.json();
+
+      // Удаляем старый файл, если он был
+      if (value) {
+        await deleteBlob(value);
+      }
+
       onChange(data.url);
-    } catch {
+    } catch (error) {
+      console.error('Upload error:', error);
       toast.error('Не удалось загрузить изображение');
     } finally {
       setUploading(false);
@@ -102,8 +151,11 @@ export function CoverImageUpload({
               </button>
               <button
                 type="button"
-                onClick={e => {
+                onClick={async e => {
                   e.stopPropagation();
+                  if (value) {
+                    await deleteBlob(value);
+                  }
                   onChange(null);
                 }}
                 className="bg-white text-red-600 p-1.5 rounded-md hover:bg-red-50 transition-colors"

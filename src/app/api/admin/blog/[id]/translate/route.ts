@@ -57,28 +57,37 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     baseURL: 'https://ai-gateway.vercel.sh/v1'
   });
 
-  const systemPrompt = buildSystemPrompt(targetLocale);
+  const systemPromptMD = buildSystemPrompt(targetLocale);
+  const systemPromptText = `${buildSystemPrompt(targetLocale)}
+Output ONLY plain text. NO Markdown characters (like #, *, _, [, ], ( ), etc.).`;
 
   const [titleResult, descriptionResult, contentResult] = await Promise.all([
     generateText({
       model: gateway('anthropic/claude-haiku-4-5-20251001'),
-      system: systemPrompt,
-      prompt: ruTranslation.title
+      system: systemPromptText,
+      prompt: `Translate this blog title to ${targetLocale}: ${ruTranslation.title}`
     }),
     generateText({
       model: gateway('anthropic/claude-haiku-4-5-20251001'),
-      system: systemPrompt,
-      prompt: ruTranslation.description
+      system: systemPromptText,
+      prompt: `Translate this blog description to ${targetLocale}: ${ruTranslation.description}`
     }),
     generateText({
       model: gateway('anthropic/claude-haiku-4-5-20251001'),
-      system: systemPrompt,
+      system: systemPromptMD,
       prompt: ruTranslation.content
     })
   ]);
 
-  const title = titleResult.text.trim();
-  const description = descriptionResult.text.trim();
+  const cleanText = (text: string) => {
+    return text
+      .replace(/^["']|["']$/g, '') // Remove quotes
+      .replace(/[#*`_~]/g, '') // Remove common MD markers just in case
+      .trim();
+  };
+
+  const title = cleanText(titleResult.text);
+  const description = cleanText(descriptionResult.text);
   const content = contentResult.text.trim();
 
   await prisma.blogPostTranslation.upsert({

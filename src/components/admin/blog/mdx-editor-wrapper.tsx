@@ -51,7 +51,10 @@ export const MdxEditorWrapper = forwardRef<MDXEditorMethods, MdxEditorWrapperPro
     const dark = localDark ?? resolvedTheme === 'dark';
 
     return (
-      <div data-editor-theme={dark ? 'dark' : 'light'} className="mdx-editor-container">
+      <div
+        data-editor-theme={dark ? 'dark' : 'light'}
+        className="mdx-editor-container mdx-editor-mobile-optimized"
+      >
         <MDXEditor
           ref={ref}
           markdown={value}

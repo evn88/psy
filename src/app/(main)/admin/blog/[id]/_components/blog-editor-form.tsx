@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Languages, Save, Globe, ChevronDown, Eye, EyeOff } from 'lucide-react';
+import { Languages, Save, Globe, ChevronDown, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -164,22 +164,13 @@ export function BlogEditorForm({
   const existingLocales = translations.filter(t => t.title).map(t => t.locale);
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Верхняя панель */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b bg-background sticky top-0 z-10 flex-wrap">
-        <div className="flex-1 min-w-0">
-          <Input
-            value={activeTranslation.title}
-            onChange={e => updateTranslation('title', e.target.value)}
-            placeholder="Заголовок статьи..."
-            className="text-lg font-semibold border-0 border-b border-border shadow-none px-0 h-auto rounded-none focus-visible:ring-0 focus-visible:border-[#900A0B] placeholder:text-muted-foreground/60 transition-colors"
-          />
-        </div>
-
-        <div className="flex items-center gap-2 flex-shrink-0">
+    <div className="flex flex-col h-full bg-background">
+      {/* Верхняя панель управления */}
+      <div className="sticky top-0 z-30 flex items-center justify-between gap-2 px-4 py-2 border-b bg-background/95 backdrop-blur-sm sm:py-3">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 pr-4 -mr-4 sm:mr-0 sm:pr-0">
           {/* Статус */}
           <Select value={status} onValueChange={v => setStatus(v as 'DRAFT' | 'PUBLISHED')}>
-            <SelectTrigger className="w-36 h-9">
+            <SelectTrigger className="w-[130px] h-9 text-xs sm:text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -199,171 +190,255 @@ export function BlogEditorForm({
           </Select>
 
           {/* Переключатель предпросмотра */}
-          <Button variant="outline" size="sm" onClick={() => setShowPreview(!showPreview)}>
-            {showPreview ? <EyeOff className="size-4 mr-1.5" /> : <Eye className="size-4 mr-1.5" />}
-            {showPreview ? 'Редактор' : 'Предпросмотр'}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowPreview(!showPreview)}
+            className="h-9 px-2 sm:px-3"
+          >
+            {showPreview ? (
+              <EyeOff className="size-4 sm:mr-1.5" />
+            ) : (
+              <Eye className="size-4 sm:mr-1.5" />
+            )}
+            <span className="hidden sm:inline">{showPreview ? 'Редактор' : 'Предпросмотр'}</span>
           </Button>
 
           {/* Перевод */}
-          <Button variant="outline" size="sm" onClick={() => setShowTranslateModal(true)}>
-            <Languages className="size-4 mr-1.5" />
-            Перевести
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowTranslateModal(true)}
+            className="h-9 px-2 sm:px-3 text-[#900A0B] border-[#900A0B]/20 hover:bg-[#900A0B]/5"
+          >
+            <Languages className="size-4 sm:mr-1.5" />
+            <span className="hidden sm:inline">Перевести</span>
           </Button>
+        </div>
 
+        <div className="flex items-center gap-2 flex-shrink-0">
           {/* Публикация */}
           {status !== 'PUBLISHED' && (
             <Button
               size="sm"
               onClick={handlePublish}
               disabled={publishing || !activeTranslation.title}
-              className="bg-[#900A0B] hover:bg-[#900A0B]/90 text-white"
+              className="h-9 bg-[#900A0B] hover:bg-[#900A0B]/90 text-white shadow-sm"
             >
-              {publishing ? 'Публикую...' : 'Опубликовать'}
+              {publishing ? '...' : <span className="hidden sm:inline">Опубликовать</span>}
+              {!publishing && <Globe className="size-4 sm:ml-1.5" />}
             </Button>
           )}
 
           {/* Сохранить */}
-          <Button size="sm" onClick={() => save(true)} disabled={saving} variant="default">
-            <Save className="size-4 mr-1.5" />
-            {saving ? 'Сохраняю...' : 'Сохранить'}
+          <Button
+            size="sm"
+            onClick={() => save(true)}
+            disabled={saving}
+            variant="default"
+            className="h-9 bg-[#03070A] hover:bg-[#03070A]/90 text-white"
+          >
+            {saving ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Save className="size-4 sm:mr-1.5" />
+            )}
+            <span className="hidden sm:inline">{saving ? 'Сохраняю...' : 'Сохранить'}</span>
           </Button>
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Основная область */}
-        <div className="flex-1 flex flex-col overflow-auto min-w-0">
-          {/* Языковые вкладки */}
-          <div className="flex items-center gap-1 px-4 pt-3 pb-0 border-b">
+      <div className="flex flex-1 overflow-hidden flex-col lg:flex-row">
+        {/* Основная область контента */}
+        <div className="flex-1 flex flex-col overflow-y-auto no-scrollbar min-w-0 bg-background custom-scrollbar">
+          {/* Языковые вкладки (ТЕПЕРЬ НАВЕРХУ) */}
+          <div className="flex items-center gap-1 px-4 pt-4 pb-0 border-b bg-background/50 sticky top-0 z-20 backdrop-blur-sm">
             {translations.map(t => (
               <button
                 key={t.locale}
                 type="button"
                 onClick={() => setActiveLocale(t.locale)}
-                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
+                className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 transition-all -mb-px ${
                   activeLocale === t.locale
-                    ? 'border-[#900A0B] text-[#900A0B]'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                    ? 'border-[#900A0B] text-[#900A0B] bg-[#900A0B]/5 rounded-t-lg'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
                 }`}
               >
                 <Globe className="size-3.5" />
                 {LOCALE_LABELS[t.locale]}
                 {t.title && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0 shadow-[0_0_5px_rgba(34,197,94,0.5)]" />
                 )}
               </button>
             ))}
           </div>
 
-          {/* Описание */}
-          <div className="px-4 pt-3">
-            <Input
-              value={activeTranslation.description}
-              onChange={e => updateTranslation('description', e.target.value)}
-              placeholder="Краткое описание для превью..."
-              className="text-sm text-muted-foreground border-dashed"
-            />
-          </div>
-
-          {/* Редактор / Предпросмотр */}
-          <div className="flex-1 px-4 py-3">
-            {showPreview ? (
-              <PreviewSizeSwitcher className="h-full">
-                <div className="p-6">
-                  {activeTranslation.content ? (
-                    <ArticleContent content={activeTranslation.content} />
-                  ) : (
-                    <p className="text-muted-foreground text-sm">Нет контента для предпросмотра</p>
-                  )}
-                </div>
-              </PreviewSizeSwitcher>
-            ) : (
-              <MdxEditorWrapper
-                key={activeLocale}
-                value={activeTranslation.content}
-                onChange={v => updateTranslation('content', v)}
-                onImageUpload={uploadImage}
-                placeholder="Начните писать статью..."
+          <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full">
+            {/* Заголовок */}
+            <div className="px-4 pt-6">
+              <Input
+                value={activeTranslation.title}
+                onChange={e => updateTranslation('title', e.target.value)}
+                placeholder="Заголовок статьи..."
+                className="text-2xl sm:text-3xl font-bold border-0 border-b-2 border-transparent shadow-none px-0 h-auto rounded-none focus-visible:ring-0 focus-visible:border-[#900A0B]/30 placeholder:text-muted-foreground/30 transition-all py-2"
               />
-            )}
+            </div>
+
+            {/* Описание */}
+            <div className="px-4 pt-4">
+              <Input
+                value={activeTranslation.description}
+                onChange={e => updateTranslation('description', e.target.value)}
+                placeholder="Краткое описание для превью..."
+                className="text-sm sm:text-base text-muted-foreground border-0 border-l-2 border-[#900A0B]/20 bg-muted/30 px-3 py-2 h-auto focus-visible:ring-0 focus-visible:border-[#900A0B] italic transition-all"
+              />
+            </div>
+
+            {/* Редактор / Предпросмотр */}
+            <div className="flex-1 px-2 sm:px-4 py-6">
+              {showPreview ? (
+                <PreviewSizeSwitcher className="min-h-[500px]">
+                  <div className="p-4 sm:p-8 bg-card rounded-xl border shadow-sm">
+                    {activeTranslation.content ? (
+                      <ArticleContent content={activeTranslation.content} />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
+                        <EyeOff className="size-10 opacity-20" />
+                        <p className="text-sm font-medium">Нет контента для предпросмотра</p>
+                      </div>
+                    )}
+                  </div>
+                </PreviewSizeSwitcher>
+              ) : (
+                <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
+                  <MdxEditorWrapper
+                    key={activeLocale}
+                    value={activeTranslation.content}
+                    onChange={v => updateTranslation('content', v)}
+                    onImageUpload={uploadImage}
+                    placeholder="Начните писать статью..."
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Мобильная секция настроек (видны только на < LG) */}
+            <div className="lg:hidden p-4 space-y-8 pb-20 border-t bg-muted/5">
+              <div className="space-y-4">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                  Настройки обложки
+                </h3>
+                <CoverImageUpload value={coverImage} onChange={setCoverImage} />
+              </div>
+
+              <Separator />
+
+              <div className="space-y-4">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                  Категории
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {allCategories.map(cat => {
+                    const name = (cat.name as Record<string, string>)?.ru ?? cat.slug;
+                    const selected = categoryIds.includes(cat.id);
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => toggleCategory(cat.id)}
+                        className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
+                          selected
+                            ? 'bg-[#900A0B] text-white border-[#900A0B] shadow-md shadow-[#900A0B]/20'
+                            : 'bg-background text-foreground border-border hover:border-[#900A0B]/40'
+                        }`}
+                      >
+                        {name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Правая панель */}
-        <aside className="w-72 flex-shrink-0 border-l bg-muted/20 p-4 overflow-y-auto hidden lg:flex flex-col gap-5">
-          {/* Обложка */}
-          <CoverImageUpload value={coverImage} onChange={setCoverImage} />
+        {/* Правая панель (Desktop) */}
+        <aside className="w-80 flex-shrink-0 border-l bg-muted/10 p-6 overflow-y-auto hidden lg:flex flex-col gap-8 custom-scrollbar">
+          <section className="space-y-4">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60">
+              Обложка
+            </h3>
+            <CoverImageUpload value={coverImage} onChange={setCoverImage} />
+          </section>
 
-          <Separator />
+          <Separator className="bg-border/60" />
 
-          {/* Категории */}
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Категории</p>
-            {allCategories.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Категорий пока нет</p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {allCategories.map(cat => {
-                  const name = (cat.name as Record<string, string>)?.ru ?? cat.slug;
-                  const selected = categoryIds.includes(cat.id);
-                  return (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => toggleCategory(cat.id)}
-                      className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-                        selected
-                          ? 'bg-[#900A0B] text-white border-[#900A0B]'
-                          : 'bg-background text-foreground border-border hover:border-[#900A0B]/60'
-                      }`}
+          <section className="space-y-4">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60">
+              Категории
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {allCategories.map(cat => {
+                const name = (cat.name as Record<string, string>)?.ru ?? cat.slug;
+                const selected = categoryIds.includes(cat.id);
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => toggleCategory(cat.id)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                      selected
+                        ? 'bg-[#900A0B] text-white border-[#900A0B]'
+                        : 'bg-background text-foreground border-border hover:border-[#900A0B]'
+                    }`}
+                  >
+                    {name}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          <Separator className="bg-border/60" />
+
+          <section className="space-y-4">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 flex items-center gap-2">
+              <Languages className="size-3.5" />
+              Статус переводов
+            </h3>
+            <div className="space-y-3">
+              {translations.map(t => (
+                <div
+                  key={t.locale}
+                  className="flex items-center justify-between p-2 rounded-lg bg-background/50 border border-border/40"
+                >
+                  <div className="flex items-center gap-2 text-sm">
+                    <span
+                      className={`w-2 h-2 rounded-full ${t.title ? 'bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]' : 'bg-muted-foreground/30'}`}
+                    />
+                    <span>
+                      {t.locale === 'ru' ? 'Русский' : t.locale === 'en' ? 'English' : 'Srpski'}
+                    </span>
+                  </div>
+                  {t.title ? (
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] uppercase font-bold text-green-600 border-green-600/20 bg-green-600/5"
                     >
-                      {name}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          <Separator />
-
-          {/* Переводы */}
-          <div className="space-y-2">
-            <p className="text-sm font-medium flex items-center gap-2">
-              <Languages className="size-4" />
-              Переводы
-            </p>
-            {translations.map(t => (
-              <div key={t.locale} className="flex items-center gap-2">
-                <span
-                  className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                    t.title ? 'bg-green-500' : 'bg-muted-foreground/40'
-                  }`}
-                />
-                <span className="text-sm flex-1">
-                  {t.locale === 'ru' ? 'Русский' : t.locale === 'en' ? 'English' : 'Srpski'}
-                </span>
-                {t.title ? (
-                  <Badge variant="outline" className="text-xs text-green-700 border-green-300">
-                    Готов
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="text-xs text-muted-foreground">
-                    Нет
-                  </Badge>
-                )}
-              </div>
-            ))}
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full mt-1"
-              onClick={() => setShowTranslateModal(true)}
-            >
-              <Languages className="size-4 mr-1.5" />
-              Перевести с ИИ
-            </Button>
-          </div>
+                      Ready
+                    </Badge>
+                  ) : (
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] uppercase font-bold text-muted-foreground/60"
+                    >
+                      None
+                    </Badge>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
         </aside>
       </div>
 
