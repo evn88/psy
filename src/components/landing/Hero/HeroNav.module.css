@@ -39,9 +39,9 @@
   text-decoration: none;
   padding: 0.6em 2em;
   white-space: nowrap;
-  transition: background 0.2s;
   flex-shrink: 0;
   cursor: pointer;
+  z-index: 10;
 }
 
 .nav__btn_wrap {
@@ -49,16 +49,26 @@
   align-items: center;
   justify-content: center;
   position: relative;
+
+  &:hover {
+    .hero__oval {
+      transform: scale(0.8);
+    }
+  }
 }
 
 .hero__oval {
   position: absolute;
-
-  svg path {
-    fill: var(--color-pink);
-  }
+  inset: 0;
+  display: block;
+  background-color: var(--color-pink);
+  -webkit-mask-image: url('/images/adhd/hero-oval.svg');
+  -webkit-mask-size: 100% 100%;
+  mask-image: url('/images/adhd/hero-oval.svg');
+  mask-size: 100% 100%;
+  pointer-events: none;
+  transition: 0.4s;
 }
-
-.nav__btn:hover {
-  color: var(--color-blue);
-}
+/*.nav__btn:hover {*/
+/*  color: var(--color-pink);*/
+/*}*/

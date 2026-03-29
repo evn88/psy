@@ -156,8 +156,8 @@ body {
     --text-h4: clamp(1.8em, 3vw, 4em); /* 18px → 40px */
     --text-t1: clamp(1.6em, 2.2vw, 2.8em); /* 16px → 28px */
     --text-t2: clamp(1.4em, 1.8vw, 2.2em); /* 14px → 22px */
-    --text-body: clamp(1.4em, 1.4vw, 1.8em); /* 14px → 18px */
-    --text-small: clamp(1.1em, 1vw, 1.3em); /* 11px → 13px */
+    --text-body: clamp(1.2em, 1.4vw, 1.8em); /* 14px → 18px */
+    --text-small: clamp(1em, 1vw, 1.3em); /* 11px → 13px */
 
     --lh-heading: 0.9; /* 90% */
     --lh-body: 1.4; /* 140% */

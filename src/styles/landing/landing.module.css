@@ -20,7 +20,7 @@
   margin: 0;
   padding: 0;
   width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* ---- Theme Toggle Button ---- */

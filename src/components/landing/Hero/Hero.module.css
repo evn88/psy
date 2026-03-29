@@ -7,10 +7,15 @@
   position: relative;
   min-height: 100vh;
   background: var(--color-pink);
-  overflow: hidden;
   display: flex;
   flex-direction: column;
   padding-bottom: clamp(6em, 10vw, 14em); /* место под горы */
+
+  p {
+    font-family: var(--font-body);
+    font-size: var(--text-body);
+    line-height: 1.6;
+  }
 }
 
 /* Синие горы (фото) */
@@ -21,27 +26,35 @@
   right: 0;
   height: 42%;
   z-index: 0;
+  background-size: cover;
+  background-position: top center;
+  background-repeat: no-repeat;
 }
 
 /* Крафт-конверт */
 .hero__envelope {
   position: relative;
-  z-index: 1;
+  display: flex;
+  z-index: 2;
   max-width: 116em;
-  width: calc(100% - clamp(2em, 4vw, 8em));
-  margin: clamp(3em, 5vw, 6em) auto 0;
+  width: calc(100% - clamp(2em, 5vw, 8em));
+  margin: clamp(3em, 5vw, 8em) auto 0;
   border-radius: 0.6em;
 }
 
-/* Картинка конверта — фоновый слой */
+/* Конверт — фоновый слой */
 .hero__envelopImg {
-  position: absolute !important;
-  inset: 0;
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover;
+  position: absolute;
+  z-index: 1;
   border-radius: 0.6em;
-  z-index: 0;
+  background-size: contain;
+  background-position: top center;
+  background-repeat: no-repeat;
+  width: 105vw;
+  height: 140%;
+  top: -41%;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 /* Белая карточка поверх конверта */
@@ -51,11 +64,12 @@
   background: var(--color-white);
   border-radius: 0.6em 0.6em 0 0;
   overflow: visible;
+  box-shadow: 6px 7px 6.3px 0 rgba(52, 52, 52, 0.26);
 }
 
 /* Контентная область (отступы, чтобы освободить место под фото) */
 .hero__content {
-  padding: clamp(2em, 3vw, 4em) clamp(8em, 16vw, 22em);
+  padding: 1rem clamp(1rem, 4rem,8vw);
   text-align: center;
 }
 
@@ -65,7 +79,7 @@
   font-size: var(--text-h1);
   line-height: 0.9;
   color: var(--color-dark);
-  margin-bottom: 0.5em;
+  margin-bottom: 0.5rem;
 }
 
 /* Обёртка для «ты устал» + SVG овал */
@@ -75,16 +89,21 @@
   white-space: nowrap;
 }
 
-/* SVG овал — абсолютно поверх текста */
+/* SVG овал — span с mask-image, размер свободно задаётся через width/height */
 .hero__oval {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 115%;
-  height: 160%;
+  width: 130%;
+  height: 125%;
+  display: block;
   pointer-events: none;
-  overflow: visible;
+  background-color: var(--color-blue);
+  -webkit-mask-image: url('/images/adhd/hero-oval.svg');
+  -webkit-mask-size: 100% 100%;
+  mask-image: url('/images/adhd/hero-oval.svg');
+  mask-size: 100% 100%;
 }
 
 /* Подзаголовок */
@@ -109,8 +128,7 @@
 
 /* Розовый хайлайт */
 .hero__highlight {
-  background: var(--color-pink);
-  border-radius: 0.3em;
+  background: var(--color-pink-soft);
   padding: 0.15em 0.5em;
   font-weight: 600;
 }
@@ -125,9 +143,10 @@
 /* Фото кота — абсолютно, слева */
 .hero__cat {
   position: absolute;
-  bottom: 0;
-  left: clamp(-2em, -4vw, -6em);
-  width: clamp(12em, 16vw, 22em);
+  bottom: 6em;
+  left: clamp(1em, -4vw, -5em);
+  width: clamp(10em, 22vw, 40em);
+  transform: rotate(-5.819deg);
   pointer-events: none;
 }
 
@@ -136,6 +155,7 @@
   position: absolute;
   bottom: 0;
   right: clamp(-2em, -4vw, -6em);
-  width: clamp(10em, 14vw, 18em);
+  width: clamp(10em, 20vw, 30em);
+  transform: rotate(4.067deg);
   pointer-events: none;
 }

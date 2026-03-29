@@ -2,37 +2,32 @@ import Image from 'next/image';
 import HeroNav from './HeroNav';
 import styles from './Hero.module.css';
 
-import catImg from '@/assets/images/adhd/cat-rug.png';
+import catImg from '@/assets/images/adhd/cat-roll.png';
 import dogImg from '@/assets/images/adhd/scared_dog.png';
 import envelopImg from '@/assets/images/adhd/envelop.png';
 import blueBgImg from '@/assets/images/adhd/blue-paper-bg.png';
+
 
 /** Hero — первый экран лендинга */
 const Hero = () => {
   return (
     <section className={styles.hero}>
       {/* Синие горы снизу (фото) */}
-      <div className={styles.hero__mountains} aria-hidden="true">
-        <Image
-          src={blueBgImg}
-          alt=""
-          fill
-          sizes="100vw"
-          style={{ objectFit: 'cover', objectPosition: 'top' }}
-          priority
-        />
-      </div>
+      <div
+        className={styles.hero__mountains}
+        style={{ backgroundImage: `url(${blueBgImg.src})` }}
+        aria-hidden="true"
+      />
+
+      {/* Конверт — фон всей секции, не обрезается overflow:hidden */}
+      <div
+        className={styles.hero__envelopImg}
+        style={{ backgroundImage: `url(${envelopImg.src})` }}
+        aria-hidden="true"
+      />
 
       {/* Крафт-конверт */}
       <div className={styles.hero__envelope}>
-        <Image
-          src={envelopImg}
-          alt=""
-          aria-hidden="true"
-          className={styles.hero__envelopImg}
-          sizes="(max-width: 768px) 100vw, 1160px"
-          style={{ width: '100%', height: 'auto' }}
-        />
 
         {/* Белая карточка */}
         <div className={styles.hero__card}>
@@ -42,15 +37,7 @@ const Hero = () => {
             {/* Заголовок с SVG-овалом */}
             <h1 className={styles.hero__title}>
               <span className={styles.hero__titleCircled}>
-                <Image
-                  src="/images/adhd/hero-oval.svg"
-                  alt=""
-                  aria-hidden="true"
-                  width={352}
-                  height={112}
-                  className={styles.hero__oval}
-                  unoptimized
-                />
+                <span className={styles.hero__oval} aria-hidden="true" />
                 ты устал
               </span>{' '}
               от бесконечной борьбы с прокрастинацией, тревогой и выгоранием?
@@ -58,13 +45,13 @@ const Hero = () => {
 
             {/* Подзаголовок */}
             <p className={styles.hero__sub}>
-              Снова обещаешь себе «собраться» — и снова чувствуешь вину и стыд, когда не получается.
+              Снова обещаешь себе «собраться» — и снова
+              чувствуешь вину и стыд, <br/>когда не получается.
             </p>
 
             {/* Хайлайт */}
+            <p><span className={styles.hero__highlight}>А внутри всё время вопрос:</span></p>
             <p className={styles.hero__question}>
-              <span className={styles.hero__highlight}>А внутри всё время вопрос:</span>
-              <br />
               «Почему я не могу, как другие? Что со мной не так?»
             </p>
 
@@ -89,7 +76,7 @@ const Hero = () => {
             <Image
               src={dogImg}
               alt="Удивлённая собака"
-              sizes="(max-width: 768px) 100px, 200px"
+              sizes="(max-width: 768px) 100px, 242px"
               style={{ width: '100%', height: 'auto' }}
             />
           </div>

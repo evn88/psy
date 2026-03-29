@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import styles from './HeroNav.module.css';
 
 /** Навигация Hero-секции лендинга */
@@ -8,7 +7,8 @@ const HeroNav = () => {
     { href: '#services', label: 'как я могу помочь?' },
     { href: '#problems', label: 'Работа с нейроотличиями' },
     { href: '#faq', label: 'Частые вопросы' },
-    { href: '#footer', label: 'контакты' }
+    { href: '#footer', label: 'контакты' },
+    { href: '/blog', label: 'Статьи и тесты' }
   ];
 
   return (
@@ -23,18 +23,10 @@ const HeroNav = () => {
         ))}
       </ul>
       <div className={styles.nav__btn_wrap}>
+        <span className={styles.hero__oval} aria-hidden="true" />
         <a href="#footer" className={styles.nav__btn}>
           Записаться
         </a>
-        <Image
-          src="/images/adhd/hero-oval.svg"
-          alt=""
-          aria-hidden="true"
-          width={161}
-          height={53}
-          className={styles.hero__oval}
-          unoptimized
-        />
       </div>
     </nav>
   );
