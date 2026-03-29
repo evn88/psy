@@ -6,7 +6,7 @@ import { defineRouting } from 'next-intl/routing';
  * Поддерживаемые языки: English (по умолчанию) и Русский.
  */
 export const routing = defineRouting({
-  locales: ['en', 'ru'],
+  locales: ['en', 'ru', 'sr'],
   defaultLocale: 'en',
   localeDetection: false
 });

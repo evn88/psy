@@ -3,6 +3,8 @@ import prisma from '@/shared/lib/prisma';
 import { redirect } from 'next/navigation';
 import { SettingsForm } from '@/app/(main)/admin/settings/_components/settings-form';
 import { getTranslations } from 'next-intl/server';
+import { PushNotificationSettings } from '@/components/pwa/PushNotificationSettings';
+import { BlogNotificationsToggle } from '@/components/blog/blog-notifications-toggle';
 
 /**
  * Страница настроек в личном кабинете.
@@ -18,7 +20,7 @@ export default async function MySettingsPage() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { language: true, theme: true }
+    select: { language: true, theme: true, blogNotifications: true }
   });
 
   if (!user) {
@@ -34,6 +36,10 @@ export default async function MySettingsPage() {
           theme: user.theme || 'system'
         }}
       />
+      <PushNotificationSettings />
+      <div className="rounded-lg border p-4">
+        <BlogNotificationsToggle initialValue={user.blogNotifications ?? false} />
+      </div>
     </div>
   );
 }

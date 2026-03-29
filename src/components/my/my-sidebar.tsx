@@ -12,7 +12,8 @@ import {
   FileText,
   ChevronsUpDown,
   Brain,
-  Home
+  Home,
+  ShieldCheck
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -60,6 +61,11 @@ export const MySidebar = ({ user, unreadSurveysCount = 0, ...props }: MySidebarP
   const pathname = usePathname();
   const t = useTranslations('My.sidebarMenu');
   const tAuth = useTranslations('Auth');
+  const { setOpenMobile, isMobile } = useSidebar();
+
+  const closeMobileSidebar = () => {
+    if (isMobile) setOpenMobile(false);
+  };
 
   const isGuest = user.role === 'GUEST';
 
@@ -120,7 +126,6 @@ export const MySidebar = ({ user, unreadSurveysCount = 0, ...props }: MySidebarP
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:!hidden">
                   <span className="truncate font-semibold">{t('title')}</span>
-                  <span className="truncate text-xs">v1.0.0</span>
                 </div>
               </Link>
             </SidebarMenuButton>
@@ -131,8 +136,13 @@ export const MySidebar = ({ user, unreadSurveysCount = 0, ...props }: MySidebarP
         <SidebarMenu>
           {routes.map(item => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild isActive={item.isActive} tooltip={item.title}>
-                <Link href={item.url}>
+              <SidebarMenuButton
+                asChild
+                isActive={item.isActive}
+                tooltip={item.title}
+                className="h-11 pl-4 md:h-8 md:pl-2"
+              >
+                <Link href={item.url} onClick={closeMobileSidebar}>
                   <item.icon />
                   <div
                     className={cn(
@@ -190,15 +200,35 @@ export const MySidebar = ({ user, unreadSurveysCount = 0, ...props }: MySidebarP
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
                   <DropdownMenuItem asChild>
-                    <Link href="/" className="flex items-center cursor-pointer">
+                    <Link
+                      href="/"
+                      className="flex items-center cursor-pointer"
+                      onClick={closeMobileSidebar}
+                    >
                       <Home className="mr-2 h-4 w-4" />
                       {t('backToSite')}
                     </Link>
                   </DropdownMenuItem>
+                  {user.role === 'ADMIN' && (
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href="/admin"
+                        className="flex items-center cursor-pointer"
+                        onClick={closeMobileSidebar}
+                      >
+                        <ShieldCheck className="mr-2 h-4 w-4" />
+                        {t('goToAdmin')}
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/my/settings" className="flex items-center cursor-pointer">
+                  <Link
+                    href="/my/settings"
+                    className="flex items-center cursor-pointer"
+                    onClick={closeMobileSidebar}
+                  >
                     <Settings className="mr-2 h-4 w-4" />
                     {t('settings')}
                   </Link>

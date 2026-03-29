@@ -5,13 +5,13 @@ import { Role } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
-
 const updateUserSchema = z.object({
   id: z.string(),
   name: z.string().optional(),
   email: z.string().email().optional(),
   role: z.nativeEnum(Role).optional(),
-  password: z.string().optional()
+  password: z.string().optional(),
+  timezone: z.string().optional()
 });
 
 export type UpdateUserSchema = z.infer<typeof updateUserSchema>;
@@ -34,10 +34,12 @@ export async function updateUser(data: UpdateUserSchema) {
       email?: string;
       role?: Role;
       password?: string;
+      timezone?: string;
     } = {
       name: data.name,
       email: data.email,
-      role: data.role
+      role: data.role,
+      timezone: data.timezone
     };
 
     if (data.password) {

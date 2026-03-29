@@ -93,6 +93,21 @@ body {
   font-family: 'Inter', sans-serif;
 }
 
+@keyframes calendar-loading {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
+@keyframes calendar-slide-up {
+  from { transform: translateY(18px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+@keyframes calendar-slide-down {
+  from { transform: translateY(-18px); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
@@ -101,6 +116,18 @@ body {
   .font-handwriting {
     font-family: 'Caveat', cursive;
   }
+
+    .animate-calendar-next {
+        animation: calendar-slide-up 0.25s ease-out;
+    }
+
+    .animate-calendar-prev {
+        animation: calendar-slide-down 0.25s ease-out;
+    }
+
+    .animate-calendar-loading {
+        animation: calendar-loading 1.4s ease-in-out infinite;
+    }
 }
 
 @layer base {

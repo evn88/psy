@@ -13,6 +13,24 @@ enum Role {
   GUEST
 }
 
+/// Статус бронирования события
+enum EventStatus {
+  SCHEDULED
+  CANCELLED
+  COMPLETED
+  PENDING_CONFIRMATION
+}
+
+/// Тип события в календаре
+enum EventType {
+  CONSULTATION
+  FREE_SLOT
+  DAY_OFF
+  VACATION
+  SICK_LEAVE
+  OTHER
+}
+
 /// Тип вопроса в опросе
 enum QuestionType {
   SINGLE_CHOICE
@@ -36,6 +54,7 @@ model User {
   password      String?
   role          Role            @default(GUEST)
   isDisabled    Boolean         @default(false)
+  timezone      String?         @default("UTC")
   accounts      Account[]
   sessions      Session[]
   // Опционально для поддержки WebAuthn
@@ -47,6 +66,11 @@ model User {
   lastSeen       DateTime? @default(now())
   registrationIp String?
 
+  googleCalendarSyncUrl     String?
+  googleCalendarSyncEnabled Boolean @default(false)
+  workHourStart             Int     @default(9)
+  workHourEnd               Int     @default(20)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -54,6 +78,29 @@ model User {
   createdSurveys    Survey[]           @relation("SurveyCreator")
   surveyAssignments SurveyAssignment[]
   surveyComments    SurveyComment[]
+
+  // Связи с расписанием
+  createdEvents Event[] @relation("EventCreator")
+  clientEvents  Event[] @relation("EventClient")
+
+  // Push-подписки (PWA)
+  pushSubscriptions PushSubscription[]
+
+  // Блог
+  blogNotifications Boolean   @default(false)
+  blogPosts         BlogPost[] @relation("BlogAuthor")
+}
+
+/// Подписка на Web Push уведомления (PWA)
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Account {
@@ -209,4 +256,121 @@ model UserLoginHistory {
   ip        String?
   provider  String   // "credentials", "google", "webauthn"
   createdAt DateTime @default(now())
+}
+
+// ============================================================
+// Система расписания и записи (Календарь)
+// ============================================================
+
+// ============================================================
+// Блог
+// ============================================================
+
+enum BlogPostStatus {
+  DRAFT
+  PUBLISHED
+}
+
+/// Статья блога
+model BlogPost {
+  id          String         @id @default(cuid())
+  slug        String         @unique
+  status      BlogPostStatus @default(DRAFT)
+  coverImage  String?
+  readingTime Int            @default(0)
+  publishedAt DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  authorId     String
+  author       User                  @relation("BlogAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  translations BlogPostTranslation[]
+  categories   BlogPostCategory[]
+  versions     BlogPostVersion[]
+
+  @@index([status, publishedAt])
+}
+
+/// Версия статьи (снапшот при ручном сохранении, хранится последние 5)
+model BlogPostVersion {
+  id           String   @id @default(cuid())
+  postId       String
+  post         BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  translations Json     // снапшот переводов [{ locale, title, description, content }]
+  categoryIds  String[] // снапшот категорий
+  coverImage   String?
+  savedAt      DateTime @default(now())
+
+  @@index([postId, savedAt])
+}
+
+/// Перевод статьи на конкретный язык
+model BlogPostTranslation {
+  id          String   @id @default(cuid())
+  postId      String
+  locale      String
+  title       String
+  description String
+  content     String   @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  post BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, locale])
+  @@index([postId])
+}
+
+/// Категория статей блога
+model BlogCategory {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      Json // { ru: "...", en: "...", sr: "..." }
+  createdAt DateTime @default(now())
+
+  posts BlogPostCategory[]
+}
+
+/// Связь статьи с категорией
+model BlogPostCategory {
+  postId     String
+  categoryId String
+
+  post     BlogPost     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  category BlogCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([postId, categoryId])
+}
+
+/// Подписка на уведомления о новых статьях блога (для незарегистрированных)
+model BlogSubscription {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  token     String   @default(cuid())
+  createdAt DateTime @default(now())
+}
+
+model Event {
+  id             String      @id @default(cuid())
+  title          String?
+  type           EventType
+  status         EventStatus @default(SCHEDULED)
+  start          DateTime
+  end            DateTime
+  meetLink       String?
+  cancelReason   String?
+  isGoogleSynced Boolean     @default(false)
+  googleEventId  String?
+
+  authorId String
+  author   User   @relation("EventCreator", fields: [authorId], references: [id], onDelete: Cascade)
+
+  // Юзер, забронировавший слот
+  userId String?
+  user   User?   @relation("EventClient", fields: [userId], references: [id], onDelete: Cascade)
+
+  groupId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

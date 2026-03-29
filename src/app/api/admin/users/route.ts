@@ -64,3 +64,27 @@ export async function POST(req: Request) {
     );
   }
 }
+
+export async function GET(req: Request) {
+  try {
+    const session = await auth();
+    // @ts-ignore
+    if (!session || session.user.role !== 'ADMIN') {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true
+      },
+      orderBy: { name: 'asc' }
+    });
+
+    return NextResponse.json(users);
+  } catch (error) {
+    console.error('Failed to fetch users:', error);
+    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+  }
+}
