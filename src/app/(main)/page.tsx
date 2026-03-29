@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, Suspense } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { animate, createScope, Scope } from 'animejs';
 import AnnaPhoto from '@/assets/images/Anna.jpeg';
 import BrainIcon from '@/assets/images/logo_orange.svg';
@@ -171,6 +172,27 @@ const HomePage = () => {
                     <InstagramIcon />
                     <span>Instagram</span>
                   </a>
+                  <Link
+                    href="/blog"
+                    className="flex items-center justify-center gap-2 px-6 py-3 bg-transparent border border-stone-700 hover:border-amber-500 text-stone-300 hover:text-stone-100 rounded-xl font-medium transition-all"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="w-5 h-5"
+                    >
+                      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                    </svg>
+                    <span>Блог</span>
+                  </Link>
                 </div>
               </div>
             </div>

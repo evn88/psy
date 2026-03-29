@@ -5,6 +5,10 @@ import { EventNotificationTemplate } from '@/components/email-templates/event-no
 import { EventCancellationTemplate } from '@/components/email-templates/event-cancellation-template';
 import { AdminEventBookingTemplate } from '@/components/email-templates/admin-event-booking-template';
 import { AdminEventCancellationTemplate } from '@/components/email-templates/admin-event-cancellation-template';
+import { BlogNotificationEmail } from '@/components/email-templates/blog-notification-template';
+import { render } from '@react-email/render';
+import type { BlogPost, BlogPostTranslation } from '@prisma/client';
+import { formatBlogDate } from '@/shared/lib/blog-utils';
 import emailEn from '../../../messages/email-en.json';
 import emailRu from '../../../messages/email-ru.json';
 
@@ -405,4 +409,64 @@ export const sendEventCancellationEmail = async ({
   }
 
   return data?.id ?? null;
+};
+
+interface BlogSubscriberInfo {
+  email: string;
+  name?: string;
+  locale: string;
+  unsubscribeToken?: string;
+}
+
+/**
+ * Отправляет email-уведомления подписчикам блога при публикации новой статьи.
+ */
+export const sendBlogNotificationEmail = async (
+  post: BlogPost,
+  translation: BlogPostTranslation,
+  subscribers: BlogSubscriberInfo[]
+): Promise<void> => {
+  if (subscribers.length === 0) return;
+
+  const baseUrl = getBaseUrl();
+  const articleUrl = `${baseUrl}/blog/${post.slug}`;
+
+  const results = await Promise.allSettled(
+    subscribers.map(async subscriber => {
+      const locale = ['ru', 'en', 'sr'].includes(subscriber.locale) ? subscriber.locale : 'ru';
+      const publishedAt = post.publishedAt ? formatBlogDate(post.publishedAt, locale) : '';
+
+      const unsubscribeUrl = subscriber.unsubscribeToken
+        ? `${baseUrl}/api/blog/unsubscribe?token=${subscriber.unsubscribeToken}`
+        : undefined;
+
+      const html = await render(
+        BlogNotificationEmail({
+          recipientName: subscriber.name,
+          title: translation.title,
+          description: translation.description,
+          coverImage: post.coverImage ?? undefined,
+          readingTime: post.readingTime,
+          publishedAt,
+          articleUrl,
+          unsubscribeUrl,
+          locale
+        })
+      );
+
+      return resend.emails.send({
+        from: FROM_ADDRESS,
+        to: subscriber.email,
+        subject: translation.title,
+        html
+      });
+    })
+  );
+
+  const failed = results.filter(r => r.status === 'rejected');
+  if (failed.length > 0) {
+    console.error(
+      `Ошибка отправки blog notification: ${failed.length} из ${subscribers.length} не отправлены`
+    );
+  }
 };

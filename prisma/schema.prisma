@@ -85,6 +85,10 @@ model User {
 
   // Push-подписки (PWA)
   pushSubscriptions PushSubscription[]
+
+  // Блог
+  blogNotifications Boolean   @default(false)
+  blogPosts         BlogPost[] @relation("BlogAuthor")
 }
 
 /// Подписка на Web Push уведомления (PWA)
@@ -257,6 +261,80 @@ model UserLoginHistory {
 // ============================================================
 // Система расписания и записи (Календарь)
 // ============================================================
+
+// ============================================================
+// Блог
+// ============================================================
+
+enum BlogPostStatus {
+  DRAFT
+  PUBLISHED
+}
+
+/// Статья блога
+model BlogPost {
+  id          String         @id @default(cuid())
+  slug        String         @unique
+  status      BlogPostStatus @default(DRAFT)
+  coverImage  String?
+  readingTime Int            @default(0)
+  publishedAt DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  authorId     String
+  author       User                  @relation("BlogAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  translations BlogPostTranslation[]
+  categories   BlogPostCategory[]
+
+  @@index([status, publishedAt])
+}
+
+/// Перевод статьи на конкретный язык
+model BlogPostTranslation {
+  id          String   @id @default(cuid())
+  postId      String
+  locale      String
+  title       String
+  description String
+  content     String   @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  post BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, locale])
+  @@index([postId])
+}
+
+/// Категория статей блога
+model BlogCategory {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      Json // { ru: "...", en: "...", sr: "..." }
+  createdAt DateTime @default(now())
+
+  posts BlogPostCategory[]
+}
+
+/// Связь статьи с категорией
+model BlogPostCategory {
+  postId     String
+  categoryId String
+
+  post     BlogPost     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  category BlogCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([postId, categoryId])
+}
+
+/// Подписка на уведомления о новых статьях блога (для незарегистрированных)
+model BlogSubscription {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  token     String   @default(cuid())
+  createdAt DateTime @default(now())
+}
 
 model Event {
   id             String      @id @default(cuid())
