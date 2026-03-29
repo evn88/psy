@@ -8,7 +8,7 @@ import { SubscribeForm } from './_components/subscribe-form';
 export const dynamic = 'force-dynamic';
 
 interface Props {
-  searchParams: Promise<{ category?: string }>;
+  searchParams: Promise<{ category?: string; lang?: string }>;
 }
 
 async function BlogContent({
@@ -95,32 +95,37 @@ async function BlogContent({
 }
 
 export default async function BlogPage({ searchParams }: Props) {
-  const { category } = await searchParams;
+  const { category, lang } = await searchParams;
   const cookieStore = await cookies();
-  const locale = cookieStore.get('NEXT_LOCALE')?.value ?? 'ru';
+  const cookieLocale = cookieStore.get('NEXT_LOCALE')?.value ?? 'ru';
+  // ?lang= из URL переопределяет куки-локаль
+  const locale = lang ?? cookieLocale;
 
   return (
-    <div className="min-h-screen bg-muted/40">
+    <div className="min-h-screen bg-background">
       {/* Hero */}
-      <div className="bg-[#03070A] text-white pt-20 pb-16 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-4xl font-bold mb-4">Блог</h1>
-          <p className="text-white/60 text-lg">Статьи о психологии, саморазвитии и mental health</p>
+      <div className="border-b border-border bg-background">
+        <div className="max-w-6xl mx-auto px-4 py-10 sm:py-14">
+          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-2">Статьи</h1>
+          <p className="text-muted-foreground text-base sm:text-lg">
+            Психология, саморазвитие и mental health
+          </p>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-10 space-y-8">
+      <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
         <Suspense fallback={<div className="h-10 animate-pulse bg-muted rounded-full w-48" />}>
           <BlogContent categorySlug={category ?? null} locale={locale} />
         </Suspense>
 
-        {/* Блок подписки */}
-        <div className="bg-card rounded-2xl border border-border p-8 text-center max-w-xl mx-auto">
-          <h2 className="text-xl font-bold text-foreground mb-2">Подпишитесь на новые статьи</h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            Получайте уведомления о публикациях прямо на email
-          </p>
-          <SubscribeForm />
+        {/* Подписка — минималистичный footer-блок */}
+        <div className="pt-8 border-t border-border">
+          <div className="max-w-sm">
+            <p className="text-sm text-muted-foreground mb-3">
+              Подпишитесь, чтобы получать новые статьи на email
+            </p>
+            <SubscribeForm />
+          </div>
         </div>
       </div>
     </div>

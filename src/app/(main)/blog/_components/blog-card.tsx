@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Clock, Calendar } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatBlogDate } from '@/shared/lib/blog-utils';
 
@@ -30,7 +30,7 @@ export function BlogCard({
   return (
     <Link
       href={`/blog/${slug}`}
-      className="group flex flex-col bg-card rounded-2xl border border-border overflow-hidden hover:shadow-md transition-shadow"
+      className="group flex flex-col bg-card rounded-2xl border border-border overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-200"
     >
       {/* Обложка */}
       <div className="relative aspect-[16/9] bg-muted overflow-hidden">
@@ -90,12 +90,7 @@ export function BlogCard({
         {/* Мета */}
         <div className="flex items-center justify-between text-xs text-muted-foreground mt-auto pt-2 border-t border-border">
           <div className="flex items-center gap-3">
-            {publishedAt && (
-              <span className="flex items-center gap-1">
-                <Calendar className="size-3" />
-                {formatBlogDate(publishedAt, locale)}
-              </span>
-            )}
+            {publishedAt && <span>{formatBlogDate(publishedAt, locale)}</span>}
             <span className="flex items-center gap-1">
               <Clock className="size-3" />
               {readingTime} мин

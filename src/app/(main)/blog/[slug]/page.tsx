@@ -2,12 +2,11 @@ import { notFound } from 'next/navigation';
 import { cookies } from 'next/headers';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft, Clock, Calendar } from 'lucide-react';
+import { Clock, Calendar } from 'lucide-react';
 import prisma from '@/shared/lib/prisma';
 import { Badge } from '@/components/ui/badge';
 import { formatBlogDate, getBlogLocale } from '@/shared/lib/blog-utils';
 import { ArticleContent } from './_components/article-content';
-import { ArticleLocaleSwitcher } from './_components/article-locale-switcher';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -66,16 +65,7 @@ export default async function BlogArticlePage({ params, searchParams }: Props) {
         </div>
       )}
 
-      <div className={`max-w-3xl mx-auto px-4 pb-10 ${post.coverImage ? 'pt-10' : 'pt-20'}`}>
-        {/* Назад */}
-        <Link
-          href="/blog"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-[#900A0B] transition-colors mb-6"
-        >
-          <ArrowLeft className="size-4" />
-          Все статьи
-        </Link>
-
+      <div className={`max-w-3xl mx-auto px-4 pb-12 ${post.coverImage ? 'pt-8' : 'pt-8'}`}>
         {/* Категории */}
         {categories.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-4">
@@ -112,16 +102,10 @@ export default async function BlogArticlePage({ params, searchParams }: Props) {
             <Clock className="size-3.5" />
             {post.readingTime} мин чтения
           </span>
-          {/* Переключатель языков (кликабельный) */}
-          <ArticleLocaleSwitcher
-            slug={slug}
-            availableLocales={availableLocales}
-            currentLocale={locale}
-          />
         </div>
 
         {/* Контент статьи */}
-        <ArticleContent content={translation.content} showThemeToggle />
+        <ArticleContent content={translation.content} />
       </div>
     </div>
   );
