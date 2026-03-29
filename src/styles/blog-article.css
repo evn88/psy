@@ -285,7 +285,9 @@
   padding: 4px 8px !important;
   display: flex !important;
   align-items: center !important;
-  flex-wrap: nowrap !important;
+  flex-wrap: wrap !important;
+  gap: 2px !important;
+  row-gap: 4px !important;
 }
 .mdx-editor-container [class*='_toolbar'] button {
   color: #353535 !important;
@@ -383,7 +385,9 @@
   color: #E2E2E2 !important;
   display: flex !important;
   align-items: center !important;
-  flex-wrap: nowrap !important;
+  flex-wrap: wrap !important;
+  gap: 2px !important;
+  row-gap: 4px !important;
   padding: 4px 8px !important;
 }
 [data-editor-theme='dark'] [class*='_toolbar'] button {
