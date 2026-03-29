@@ -12,10 +12,6 @@ const nextConfig = {
       new URL('https://www.amcharts.com/wp-content/themes/amcharts4/css/img/*'),
       new URL('https://*.public.blob.vercel-storage.com/**'),
     ]
-  },
-  eslint: {
-    // Это разрешит сборку даже при ошибках линтера
-    ignoreDuringBuilds: true
   }
 };
 

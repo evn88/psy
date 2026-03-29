@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatBlogDate } from '@/shared/lib/blog-utils';
 import { CreateArticleButton } from './_components/create-article-button';
 import { DeleteArticleButton } from './_components/delete-article-button';
+import { GoToCategoriesButton } from './_components/go-to-categories-button';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,7 +34,10 @@ export default async function AdminBlogPage() {
           <h1 className="text-2xl font-bold text-foreground">Управление блогом</h1>
           <p className="text-sm text-muted-foreground mt-1">{posts.length} статей</p>
         </div>
-        <CreateArticleButton authorId={session.user.id!} />
+        <div className="flex items-center gap-2">
+          <GoToCategoriesButton />
+          <CreateArticleButton authorId={session.user.id!} />
+        </div>
       </div>
 
       {posts.length === 0 ? (
@@ -117,12 +121,6 @@ export default async function AdminBlogPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <Button size="sm" variant="ghost" asChild>
-                    <Link href={`/admin/blog/${post.id}`}>
-                      <Pencil className="size-4" />
-                      <span className="sr-only md:not-sr-only md:ml-1.5">Редактировать</span>
-                    </Link>
-                  </Button>
                   <DeleteArticleButton postId={post.id} title={title} />
                 </div>
               </div>

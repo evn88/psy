@@ -41,9 +41,9 @@ const RootLayout: FC<RootLayoutType> = async ({ children }) => {
 
   return (
     <html lang={locale} suppressHydrationWarning>
-      <Providers>
-        <body className={inter.className}>
-          <NextIntlClientProvider locale={locale} messages={messages}>
+      <body className={inter.className}>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <Providers>
             <ThemeProvider
               attribute="class"
               defaultTheme="system"
@@ -61,9 +61,9 @@ const RootLayout: FC<RootLayoutType> = async ({ children }) => {
               <PushPermissionBanner />
               <ServiceWorkerRegistration />
             </ThemeProvider>
-          </NextIntlClientProvider>
-        </body>
-      </Providers>
+          </Providers>
+        </NextIntlClientProvider>
+      </body>
     </html>
   );
 };
