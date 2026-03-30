@@ -143,20 +143,21 @@ body {
     --color-grey: #eceaea; /* светло-серый фон */
 
     /* ---- ШРИФТЫ ---- */
-    --font-heading: var(--font-sunless-day, 'Sunless Day', cursive);
+    --font-heading: var(--font-dela, 'Dela Gothic', cursive);
+    --font-accent: var(--font-sunless-day, 'Sunless Day', cursive);
     --font-body: var(--font-inter, 'Inter', sans-serif);
 
     /* ---- ТИПОГРАФИКА (fluid, без брейкпойнтов) ----
      Базовый font-size задан на .landing = 10px,
      поэтому em здесь: 1em = 10px.
      clamp(min, preferred-vw, max)                 */
-    --text-h1: clamp(3em, 6.5vw, 9em); /* 30px → 90px */
+    --text-h1: clamp(2em, 4.5vw, 4.8em); /* 30px → 90px */
     --text-h2: clamp(2.4em, 5.5vw, 7.6em); /* 24px → 76px */
     --text-h3: clamp(2em, 4vw, 5.6em); /* 20px → 56px */
     --text-h4: clamp(1.8em, 3vw, 4em); /* 18px → 40px */
     --text-t1: clamp(1.6em, 2.2vw, 2.8em); /* 16px → 28px */
     --text-t2: clamp(1.4em, 1.8vw, 2.2em); /* 14px → 22px */
-    --text-body: clamp(1.2em, 1.4vw, 1.8em); /* 14px → 18px */
+    --text-body: clamp(0.875rem, 1.5vw, 1.5rem);
     --text-small: clamp(1em, 1vw, 1.3em); /* 11px → 13px */
 
     --lh-heading: 0.9; /* 90% */

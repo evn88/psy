@@ -4,8 +4,9 @@
   justify-content: space-between;
   gap: 1em;
   padding: 2em 3em;
-  flex-wrap: wrap;
 }
+
+/* ── Десктоп: список ссылок ────────────────────────────────── */
 
 .nav__list {
   display: flex;
@@ -14,12 +15,11 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  flex-wrap: wrap;
 }
 
 .nav__link {
   font-family: var(--font-heading), serif;
-  font-size: clamp(2.2em, 2.2vw, 2.4em);
+  font-size: clamp(0.8rem, 1.5vw, 1.6em);
   color: var(--color-dark);
   text-decoration: none;
   white-space: nowrap;
@@ -30,10 +30,22 @@
   color: var(--color-blue);
 }
 
-/* Кнопка «Записаться» — овальный outline */
+/* ── Кнопка «Записаться» ───────────────────────────────────── */
+
+.nav__btn_wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.nav__btn_wrap:hover .hero__oval {
+  transform: scale(0.8);
+}
+
 .nav__btn {
   display: inline-flex;
-  font-family: var(--font-heading), serif;
+  font-family: var(--font-accent), serif;
   font-size: clamp(2.2em, 2.2vw, 2.4em);
   color: var(--color-dark);
   text-decoration: none;
@@ -42,19 +54,6 @@
   flex-shrink: 0;
   cursor: pointer;
   z-index: 10;
-}
-
-.nav__btn_wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-
-  &:hover {
-    .hero__oval {
-      transform: scale(0.8);
-    }
-  }
 }
 
 .hero__oval {
@@ -69,6 +68,93 @@
   pointer-events: none;
   transition: 0.4s;
 }
-/*.nav__btn:hover {*/
-/*  color: var(--color-pink);*/
-/*}*/
+
+/* ── Бургер-кнопка ─────────────────────────────────────────── */
+
+.burger {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  line-height: 0;
+}
+
+/* ── Мобильное меню (оверлей) ──────────────────────────────── */
+
+.nav__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background-color: var(--color-bg, #fff);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.nav__close {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--color-dark);
+  line-height: 1;
+  padding: 0.25rem 0.5rem;
+}
+
+.nav__mobile_list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+.nav__mobile_link {
+  font-family: var(--font-heading), serif;
+  font-size: clamp(1.4rem, 5vw, 2rem);
+  color: var(--color-dark);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.nav__mobile_link:hover {
+  color: var(--color-blue);
+}
+
+
+/* ── Адаптив ───────────────────────────────────────────────── */
+
+@media (max-width: 1140px) {
+  .nav {
+    padding: 0;
+    justify-content: flex-end;
+  }
+  .nav > .nav__list,
+  .nav > .nav__btn_wrap {
+    display: none;
+  }
+
+  .burger {
+    display: flex;
+    padding: 20px;
+  }
+
+  .nav__btn {
+    font-size: 3rem;
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 500px) {
+  .nav__btn {
+    font-size: 2rem;
+  }
+}

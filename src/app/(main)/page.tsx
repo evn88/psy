@@ -7,7 +7,7 @@ import { HowItWorks } from '@/components/landing/HowItWorks/HowItWorks';
 import { Testimonials } from '@/components/landing/Testimonials/Testimonials';
 import { FAQ } from '@/components/landing/FAQ/FAQ';
 import { Footer } from '@/components/landing/Footer/Footer';
-import { ThemeToggle } from '@/components/landing/ThemeToggle';
+// import { ThemeToggle } from '@/components/landing/ThemeToggle';
 
 /**
  * Лендинг — главная страница.
@@ -16,7 +16,7 @@ import { ThemeToggle } from '@/components/landing/ThemeToggle';
 const HomePage = () => {
   return (
     <div className={styles.landingWrapper}>
-      <ThemeToggle />
+      {/*<ThemeToggle />*/}
       <Hero />
       <About />
       <Problems />

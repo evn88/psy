@@ -4,7 +4,7 @@ import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { FC, ReactNode } from 'react';
 import { Providers } from '@/shared/Providers';
-import { Inter } from 'next/font/google';
+import { Inter, Dela_Gothic_One } from 'next/font/google';
 import localFont from 'next/font/local';
 import { ThemeProvider } from '@/components/theme-provider';
 import { HeartbeatProvider } from '@/components/heartbeat-provider';
@@ -19,6 +19,12 @@ const inter = Inter({
   subsets: ['latin', 'cyrillic'],
   variable: '--font-inter',
   display: 'swap'
+});
+
+const delaGothicOne = Dela_Gothic_One({
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-dela',
+  weight: '400'
 });
 
 const sunlessDay = localFont({
@@ -50,7 +56,7 @@ const RootLayout: FC<RootLayoutType> = async ({ children }) => {
     <html
       lang={locale}
       suppressHydrationWarning
-      className={`${inter.variable} ${sunlessDay.variable}`}
+      className={`${inter.variable} ${sunlessDay.variable} ${delaGothicOne.variable}`}
     >
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
