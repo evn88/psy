@@ -1,4 +1,4 @@
-import HeroNavBurger from './HeroNavBurger';
+// import HeroNavBurger from './HeroNavBurger';
 import styles from './HeroNav.module.css';
 
 const NAV_LINKS = [
@@ -34,7 +34,7 @@ const HeroNav = () => {
       </div>
 
       {/* Бургер-кнопка — минимальный клиентский «лист» */}
-      <HeroNavBurger links={NAV_LINKS} />
+      {/*<HeroNavBurger links={NAV_LINKS} />*/}
     </nav>
   );
 };
