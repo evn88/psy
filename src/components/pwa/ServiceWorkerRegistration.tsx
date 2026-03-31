@@ -14,7 +14,6 @@ export function ServiceWorkerRegistration() {
         navigator.serviceWorker.getRegistrations().then(registrations => {
           for (const registration of registrations) {
             registration.unregister();
-            console.log('[SW] Service Worker удален в режиме разработки');
           }
         });
       } else {

@@ -5,7 +5,6 @@ import { sendPushToMany } from '@/shared/lib/push';
 
 export async function POST(request: Request) {
   const session = await auth();
-  // @ts-ignore
   if (!session?.user || session.user.role !== 'ADMIN') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }

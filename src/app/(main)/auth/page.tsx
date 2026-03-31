@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { signIn } from 'next-auth/react';
+import { useEffect, useState } from 'react';
+import { getSession, signIn, useSession } from 'next-auth/react';
 import { signIn as webAuthnSignIn } from 'next-auth/webauthn';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,8 +11,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useTranslations } from 'next-intl';
-import { useSearchParams } from 'next/navigation';
-import { useEffect } from 'react';
 import { toast } from 'sonner';
 
 /**
@@ -69,10 +67,23 @@ const applyUserLanguage = async (locale: 'en' | 'ru'): Promise<void> => {
   }
 };
 
+const getPostAuthPath = (role: 'ADMIN' | 'USER' | 'GUEST' | undefined): string => {
+  if (role === 'ADMIN') {
+    return '/admin';
+  }
+
+  if (role === 'GUEST') {
+    return '/my/profile';
+  }
+
+  return '/my';
+};
+
 export default function AuthPage() {
   const t = useTranslations('Auth');
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { data: session, status } = useSession();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
@@ -106,6 +117,15 @@ export default function AuthPage() {
       toast.error(t('accountDisabled'));
     }
   }, [searchParams, t]);
+
+  useEffect(() => {
+    if (status !== 'authenticated' || !session?.user) {
+      return;
+    }
+
+    router.replace(getPostAuthPath(session.user.role));
+    router.refresh();
+  }, [router, session, status]);
 
   // Login Form States
   const [loginEmail, setLoginEmail] = useState('');
@@ -141,8 +161,11 @@ export default function AuthPage() {
       } else {
         const detectedLocale = detectBrowserLanguage();
         await applyUserLanguage(detectedLocale);
-        router.push('/admin');
-        router.refresh();
+        const currentSession = await getSession();
+        if (currentSession?.user) {
+          router.replace(getPostAuthPath(currentSession.user.role));
+          router.refresh();
+        }
       }
     } catch {
       setError(t('unexpectedError'));
@@ -195,7 +218,7 @@ export default function AuthPage() {
   const handleGoogleSignIn = () => {
     const detectedLocale = detectBrowserLanguage();
     document.cookie = `NEXT_LOCALE=${detectedLocale}; path=/; max-age=31536000; SameSite=Lax`;
-    signIn('google', { callbackUrl: '/admin' });
+    signIn('google', { callbackUrl: '/auth' });
   };
 
   const handleWebAuthnSignIn = async () => {
@@ -208,8 +231,11 @@ export default function AuthPage() {
       } else {
         const detectedLocale = detectBrowserLanguage();
         await applyUserLanguage(detectedLocale);
-        router.push('/admin');
-        router.refresh();
+        const currentSession = await getSession();
+        if (currentSession?.user) {
+          router.replace(getPostAuthPath(currentSession.user.role));
+          router.refresh();
+        }
       }
     } catch {
       setError(t('passkeyError'));

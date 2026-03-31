@@ -2,24 +2,24 @@
 
 import { useCallback, useRef, useState } from 'react';
 import {
-  format,
-  addMonths,
-  subMonths,
-  startOfMonth,
-  endOfMonth,
-  startOfWeek,
-  endOfWeek,
-  isSameMonth,
-  isSameDay,
   addDays,
+  addMonths,
+  endOfMonth,
+  endOfWeek,
+  format,
   isBefore,
-  startOfDay
+  isSameDay,
+  isSameMonth,
+  startOfDay,
+  startOfMonth,
+  startOfWeek,
+  subMonths
 } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserEvent } from './use-user-events';
-import { useTranslations, useLocale } from 'next-intl';
-import { ru, enUS } from 'date-fns/locale';
+import { useLocale, useTranslations } from 'next-intl';
+import { enUS, ru } from 'date-fns/locale';
 
 interface UserCalendarViewProps {
   currentDate: Date;
@@ -238,10 +238,10 @@ export function UserCalendarView({
                       ${isFree ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : ''}
                       ${!isScheduled && !isFree ? 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300' : ''}
                     `}
-                    title={event.title || t(`eventTypes.${event.type}` as any)}
+                    title={event.title || t(`eventTypes.${event.type}` as never)}
                   >
                     {format(new Date(event.start), 'HH:mm')} -{' '}
-                    {event.title || t(`eventTypes.${event.type}` as any)}
+                    {event.title || t(`eventTypes.${event.type}` as never)}
                   </div>
                 );
               })}

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/shared/lib/prisma';
 import { calculateReadingTime } from '@/shared/lib/blog-utils';
+import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 
 const updateSchema = z.object({
@@ -71,7 +72,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const ruTranslation = translations?.find((t: { locale: string }) => t.locale === 'ru');
   const readingTime = ruTranslation ? calculateReadingTime(ruTranslation.content) : undefined;
 
-  await prisma.$transaction(async (tx: any) => {
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     await tx.blogPost.update({
       where: { id },
       data: {

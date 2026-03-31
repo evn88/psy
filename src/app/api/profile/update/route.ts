@@ -27,6 +27,28 @@ export async function PUT(req: Request) {
       return NextResponse.json({ message: result.error.issues[0].message }, { status: 400 });
     }
 
+    const currentUser = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: {
+        workHourStart: true,
+        workHourEnd: true
+      }
+    });
+
+    if (!currentUser) {
+      return NextResponse.json({ message: 'User not found' }, { status: 404 });
+    }
+
+    const nextWorkHourStart = result.data.workHourStart ?? currentUser.workHourStart;
+    const nextWorkHourEnd = result.data.workHourEnd ?? currentUser.workHourEnd;
+
+    if (nextWorkHourStart >= nextWorkHourEnd) {
+      return NextResponse.json(
+        { message: 'Work hours must have a positive range' },
+        { status: 400 }
+      );
+    }
+
     const user = await prisma.user.update({
       where: { email: session.user.email },
       data: {

@@ -10,7 +10,6 @@ export type EmailUser = {
 export async function getUsersForEmail(): Promise<EmailUser[]> {
   try {
     const session = await auth();
-    // @ts-ignore
     if (!session || session.user.role !== 'ADMIN') {
       throw new Error('Unauthorized');
     }

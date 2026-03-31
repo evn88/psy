@@ -31,7 +31,7 @@ export default async function MyProfilePage() {
     // Загружаем последний вход — может не существовать до миграции
     (async () => {
       try {
-        return await (prisma as any).userLoginHistory.findFirst({
+        return await prisma.userLoginHistory.findFirst({
           where: { userId: session.user.id },
           orderBy: { createdAt: 'desc' }
         });

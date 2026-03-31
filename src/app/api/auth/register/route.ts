@@ -59,7 +59,7 @@ export async function POST(req: Request) {
         language: locale,
         timezone,
         registrationIp,
-        role: email === 'evn88fx64@gmail.com' ? 'ADMIN' : 'GUEST'
+        role: process.env.ADMIN_EMAIL && email === process.env.ADMIN_EMAIL ? 'ADMIN' : 'GUEST'
       }
     });
 

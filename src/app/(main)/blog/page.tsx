@@ -37,6 +37,28 @@ interface Props {
   searchParams: Promise<{ category?: string; lang?: string }>;
 }
 
+interface BlogTranslation {
+  locale: string;
+  title: string;
+  description: string;
+}
+
+interface BlogCategoryRecord {
+  slug: string;
+  name: Record<string, string>;
+}
+
+interface BlogPostRecord {
+  id: string;
+  slug: string;
+  coverImage: string | null;
+  readingTime: number;
+  publishedAt: Date | null;
+  author: { name: string | null } | null;
+  translations: BlogTranslation[];
+  categories: { category: BlogCategoryRecord }[];
+}
+
 async function BlogContent({
   categorySlug,
   locale
@@ -44,16 +66,14 @@ async function BlogContent({
   categorySlug: string | null;
   locale: string;
 }) {
-  const [posts, categories] = await Promise.all([
+  const [posts, categories] = (await Promise.all([
     getCachedPosts(categorySlug),
     getCachedCategories()
-  ]);
+  ])) as [BlogPostRecord[], BlogCategoryRecord[]];
 
   const localeOrder = [locale, 'ru', 'en', 'sr'];
 
-  const getTranslation = (
-    translations: { locale: string; title: string; description: string }[]
-  ) => {
+  const getTranslation = (translations: BlogTranslation[]) => {
     for (const loc of localeOrder) {
       const t = translations.find(t => t.locale === loc && t.title);
       if (t) return t;
@@ -67,9 +87,9 @@ async function BlogContent({
       {categories.length > 0 && (
         <Suspense>
           <CategoryFilter
-            categories={categories.map((c: { slug: string; name: unknown }) => ({
-              slug: c.slug,
-              name: c.name as Record<string, string>
+            categories={categories.map(category => ({
+              slug: category.slug,
+              name: category.name
             }))}
             activeSlug={categorySlug}
             locale={locale}
@@ -82,11 +102,11 @@ async function BlogContent({
         <p className="text-muted-foreground text-center py-16">Статей пока нет</p>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {posts.map((post: any) => {
+          {posts.map(post => {
             const t = getTranslation(post.translations);
-            const cats = post.categories.map((c: any) => ({
-              slug: c.category.slug,
-              name: c.category.name as Record<string, string>
+            const cats = post.categories.map(categoryRelation => ({
+              slug: categoryRelation.category.slug,
+              name: categoryRelation.category.name
             }));
             return (
               <BlogCard

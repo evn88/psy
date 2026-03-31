@@ -15,11 +15,14 @@ interface BreadcrumbContextValue {
   dynamicSegments: Record<string, string>;
   /** Устанавливает отображаемое название для конкретного сегмента URL */
   setSegmentName: (segment: string, name: string) => void;
+  /** Удаляет отображаемое название сегмента */
+  clearSegmentName: (segment: string) => void;
 }
 
 const BreadcrumbContext = createContext<BreadcrumbContextValue>({
   dynamicSegments: {},
-  setSegmentName: () => {}
+  setSegmentName: () => {},
+  clearSegmentName: () => {}
 });
 
 /**
@@ -36,9 +39,21 @@ export const BreadcrumbProvider = ({ children }: { children: ReactNode }) => {
     });
   }, []);
 
+  const clearSegmentName = useCallback((segment: string) => {
+    setDynamicSegments(prev => {
+      if (!(segment in prev)) {
+        return prev;
+      }
+
+      const nextSegments = { ...prev };
+      delete nextSegments[segment];
+      return nextSegments;
+    });
+  }, []);
+
   const value = useMemo(
-    () => ({ dynamicSegments, setSegmentName }),
-    [dynamicSegments, setSegmentName]
+    () => ({ dynamicSegments, setSegmentName, clearSegmentName }),
+    [clearSegmentName, dynamicSegments, setSegmentName]
   );
 
   return <BreadcrumbContext.Provider value={value}>{children}</BreadcrumbContext.Provider>;
@@ -54,9 +69,14 @@ export const useBreadcrumbContext = () => useContext(BreadcrumbContext);
  * Вызывается из страниц с динамическими маршрутами.
  */
 export const useBreadcrumbSegment = (segment: string, name: string) => {
-  const { setSegmentName } = useBreadcrumbContext();
+  const { setSegmentName, clearSegmentName } = useBreadcrumbContext();
 
   useEffect(() => {
+    if (!segment || !name) {
+      return;
+    }
+
     setSegmentName(segment, name);
-  }, [segment, name, setSegmentName]);
+    return () => clearSegmentName(segment);
+  }, [clearSegmentName, name, segment, setSegmentName]);
 };

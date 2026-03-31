@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { verifyRegistrationResponse } from '@simplewebauthn/server';
 import prisma from '@/shared/lib/prisma';
 import { cookies } from 'next/headers';
-import { getRPID, getExpectedOrigin } from '../config';
+import { getExpectedOrigin, getRPID } from '../config';
 
 /**
  * POST handler для проверки и сохранения Passkey
@@ -44,9 +44,12 @@ export async function POST(req: Request) {
         expectedOrigin: origin,
         expectedRPID: currentRpID
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Verification failed:', error);
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Verification failed' },
+        { status: 400 }
+      );
     }
 
     const { verified, registrationInfo } = verification;

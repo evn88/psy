@@ -4,8 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { EventType, EventStatus } from '@prisma/client';
-import { Event } from './use-events';
+import type { Event, EventMutationInput } from './use-events';
 import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 
@@ -34,19 +33,44 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 
-const eventSchema = z.object({
-  title: z.string().optional(),
-  type: z.enum(['CONSULTATION', 'FREE_SLOT', 'DAY_OFF', 'VACATION', 'SICK_LEAVE', 'OTHER']),
-  status: z.enum(['SCHEDULED', 'CANCELLED', 'COMPLETED', 'PENDING_CONFIRMATION']),
-  start: z.string().min(1, 'Required'),
-  end: z.string().min(1, 'Required'),
-  meetLink: z.string().url('Must be a valid URL').optional().or(z.literal('')),
-  userId: z.string().optional().nullable()
-});
+const eventTypeOptions = [
+  'CONSULTATION',
+  'FREE_SLOT',
+  'DAY_OFF',
+  'VACATION',
+  'SICK_LEAVE',
+  'OTHER'
+] as const;
+const eventStatusOptions = ['SCHEDULED', 'CANCELLED', 'COMPLETED', 'PENDING_CONFIRMATION'] as const;
+
+const eventSchema = z
+  .object({
+    title: z.string().optional(),
+    type: z.enum(eventTypeOptions),
+    status: z.enum(eventStatusOptions),
+    start: z.string().min(1, 'Required'),
+    end: z.string().min(1, 'Required'),
+    meetLink: z.string().url('Must be a valid URL').optional().or(z.literal('')),
+    userId: z.string().optional().nullable()
+  })
+  .superRefine((data, ctx) => {
+    if (new Date(data.start).getTime() >= new Date(data.end).getTime()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['end'],
+        message: 'Время окончания должно быть позже времени начала'
+      });
+    }
+  });
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
+
+type UserOption = {
+  id: string;
+  name: string | null;
+  email: string;
+};
 
 interface EventDialogProps {
   open: boolean;
@@ -54,7 +78,7 @@ interface EventDialogProps {
   event?: Event | null;
   selectedDate?: Date;
   selectedEndDate?: Date;
-  onSave: (data: any) => Promise<void>;
+  onSave: (data: EventMutationInput) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
 }
 
@@ -69,7 +93,10 @@ export const EventDialog = ({
 }: EventDialogProps) => {
   const t = useTranslations('Schedule');
   const [loading, setLoading] = useState(false);
-  const { data: users, isLoading: usersLoading } = useSWR('/api/admin/users', fetcher);
+  const { data: users, isLoading: usersLoading } = useSWR<UserOption[]>(
+    '/api/admin/users',
+    fetcher
+  );
 
   const toLocalISOString = (d: Date) => {
     const pad = (n: number) => n.toString().padStart(2, '0');
@@ -120,11 +147,13 @@ export const EventDialog = ({
   const onSubmit = async (values: z.infer<typeof eventSchema>) => {
     setLoading(true);
     try {
-      // Must convert local ISO string to proper UTC ISO string for backend
-      const payload = {
+      const payload: EventMutationInput = {
         ...values,
         start: new Date(values.start).toISOString(),
-        end: new Date(values.end).toISOString()
+        end: new Date(values.end).toISOString(),
+        title: values.title ?? '',
+        meetLink: values.meetLink || undefined,
+        userId: values.userId ?? null
       };
       await onSave(payload);
       onOpenChange(false);
@@ -175,16 +204,9 @@ export const EventDialog = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {[
-                          'CONSULTATION',
-                          'FREE_SLOT',
-                          'DAY_OFF',
-                          'VACATION',
-                          'SICK_LEAVE',
-                          'OTHER'
-                        ].map(type => (
+                        {eventTypeOptions.map(type => (
                           <SelectItem key={type} value={type}>
-                            {t(`types.${type}` as any)}
+                            {t(`types.${type}` as never)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -207,13 +229,11 @@ export const EventDialog = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {['SCHEDULED', 'CANCELLED', 'COMPLETED', 'PENDING_CONFIRMATION'].map(
-                          status => (
-                            <SelectItem key={status} value={status}>
-                              {t(`statuses.${status}` as any)}
-                            </SelectItem>
-                          )
-                        )}
+                        {eventStatusOptions.map(status => (
+                          <SelectItem key={status} value={status}>
+                            {t(`statuses.${status}` as never)}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -298,7 +318,7 @@ export const EventDialog = ({
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="none">{t('noneSelected')}</SelectItem>
-                      {users?.map((u: any) => (
+                      {users?.map(u => (
                         <SelectItem key={u.id} value={u.id}>
                           {u.name} ({u.email})
                         </SelectItem>

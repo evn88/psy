@@ -1,9 +1,9 @@
 'use client';
 
 import { format } from 'date-fns';
-import { useTranslations, useLocale } from 'next-intl';
-import { ru, enUS } from 'date-fns/locale';
-import { Clock, Video, MessageSquare } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
+import { enUS, ru } from 'date-fns/locale';
+import { Clock, MessageSquare, Video } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -54,11 +54,11 @@ export function UserScheduleEventCard({
               ${isPending ? 'bg-yellow-500 hover:bg-yellow-600 text-white' : ''}
             `}
           >
-            {t(`eventTypes.${event.type}` as any)}
+            {t(`eventTypes.${event.type}` as never)}
           </Badge>
           {isCancelled && (
             <Badge variant="destructive" className="text-[10px] px-1.5 h-5">
-              {t(`eventStatuses.${event.status}` as any)}
+              {t(`eventStatuses.${event.status}` as never)}
             </Badge>
           )}
         </div>
@@ -78,7 +78,7 @@ export function UserScheduleEventCard({
       </div>
 
       <h4 className="font-semibold text-base mb-1">
-        {event.title || t(`eventTypes.${event.type}` as any)}
+        {event.title || t(`eventTypes.${event.type}` as never)}
       </h4>
 
       <div className="space-y-2 mt-3">

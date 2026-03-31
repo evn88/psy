@@ -156,11 +156,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     ...authConfig.callbacks,
 
     async signIn({ user, account }) {
-      // Проверяем isDisabled для всех провайдеров
       if (user.email) {
         const dbUser = await prisma.user.findUnique({
           where: { email: user.email },
-          select: { isDisabled: true, id: true }
+          select: {
+            isDisabled: true,
+            id: true,
+            role: true,
+            accounts: { select: { provider: true } }
+          }
         });
 
         if (dbUser?.isDisabled) {
@@ -173,35 +177,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             await recordLoginHistory(dbUser.id, account.provider);
           }
         }
-      }
 
-      if (account?.provider === 'google') {
-        const existingUser = await prisma.user.findUnique({
-          where: { email: user.email as string },
-          include: { accounts: true }
-        });
-
-        if (existingUser) {
-          const isLinkedInDB = existingUser.accounts.some(
+        if (account?.provider === 'google' && dbUser) {
+          const isLinkedInDB = (dbUser.accounts as Array<{ provider: string }>).some(
             (acc: { provider: string }) => acc.provider === 'google'
           );
-          // Если аккаунт НЕ привязан и это НЕ admin-пользователь
-          if (!isLinkedInDB && user.email !== process.env.ADMIN_EMAIL) {
+
+          // Разрешаем вход только для уже привязанного Google-аккаунта или для явного ADMIN-пользователя
+          if (!isLinkedInDB && dbUser.role !== 'ADMIN') {
             return '/auth?error=UserExists';
           }
         }
       }
 
-      const adminEmail = process.env.ADMIN_EMAIL;
-      if (adminEmail && user.email === adminEmail) {
-        if (user.role !== 'ADMIN') {
-          await prisma.user.update({
-            where: { email: user.email },
-            data: { role: 'ADMIN' }
-          });
-          user.role = 'ADMIN';
-        }
-      }
       return true;
     }
   },

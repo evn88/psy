@@ -7,7 +7,12 @@ import { MyBreadcrumbs } from '@/components/my/my-breadcrumbs';
 import { BreadcrumbProvider } from '@/components/breadcrumb-context';
 import { getUserUnreadSurveysCount } from './surveys/actions';
 import { Separator } from '@/components/ui/separator';
-import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import {
+  SIDEBAR_COOKIE_NAME,
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger
+} from '@/components/ui/sidebar';
 import { SurveySync } from '@/components/pwa/SurveySync';
 
 /**
@@ -17,7 +22,9 @@ import { SurveySync } from '@/components/pwa/SurveySync';
 export default async function MyLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   const cookieStore = await cookies();
-  const defaultOpen = cookieStore.get('sidebar:state')?.value === 'true';
+  const defaultOpen =
+    cookieStore.get(SIDEBAR_COOKIE_NAME)?.value === 'true' ||
+    cookieStore.get('sidebar:state')?.value === 'true';
 
   if (!session?.user) {
     redirect('/auth');

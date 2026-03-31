@@ -1,20 +1,37 @@
 import useSWR from 'swr';
-import { Event as PrismaEvent } from '@prisma/client';
+import { Event as PrismaEvent, EventStatus, EventType } from '@prisma/client';
 
 export type Event = PrismaEvent & {
   user?: { id: string; name: string; email: string } | null;
 };
 
+export type EventMutationInput = {
+  type: EventType;
+  start: string;
+  end: string;
+  status: EventStatus;
+  title: string;
+  meetLink?: string;
+  userId: string | null;
+};
+
+type EventApiItem = Omit<Event, 'start' | 'end' | 'createdAt' | 'updatedAt'> & {
+  start: string;
+  end: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 const fetcher = async (url: string): Promise<Event[]> => {
   const res = await fetch(url);
   if (!res.ok) throw new Error('Failed to fetch events');
-  const data = await res.json();
-  return data.map((e: any) => ({
-    ...e,
-    start: new Date(e.start),
-    end: new Date(e.end),
-    createdAt: new Date(e.createdAt),
-    updatedAt: new Date(e.updatedAt)
+  const data = (await res.json()) as EventApiItem[];
+  return data.map(event => ({
+    ...event,
+    start: new Date(event.start),
+    end: new Date(event.end),
+    createdAt: new Date(event.createdAt),
+    updatedAt: new Date(event.updatedAt)
   }));
 };
 
@@ -28,7 +45,7 @@ export const useEvents = (start?: Date, end?: Date) => {
     refreshInterval: 30000
   });
 
-  const createEvent = async (eventData: any) => {
+  const createEvent = async (eventData: EventMutationInput) => {
     const res = await fetch('/api/admin/events', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -39,7 +56,7 @@ export const useEvents = (start?: Date, end?: Date) => {
     return res.json();
   };
 
-  const updateEvent = async (id: string, eventData: any) => {
+  const updateEvent = async (id: string, eventData: EventMutationInput) => {
     const res = await fetch(`/api/admin/events/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },

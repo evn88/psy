@@ -6,6 +6,14 @@ import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
+type SurveyAssignmentWithResult = {
+  result: { id: string } | null;
+};
+
+type SurveyQuestionRow = {
+  id: string;
+};
+
 const questionSchema = z.object({
   id: z.string().optional(),
   text: z.string().min(1),
@@ -196,9 +204,10 @@ export const markAsReadByAdmin = async (surveyId: string) => {
       return { error: 'Опрос не найден' };
     }
 
-    const resultIds = survey.assignments
-      .map((a: any) => a.result?.id)
-      .filter((id: any): id is string => Boolean(id));
+    const { assignments } = survey as { assignments: SurveyAssignmentWithResult[] };
+    const resultIds = assignments
+      .map(assignment => assignment.result?.id)
+      .filter((id): id is string => Boolean(id));
 
     if (resultIds.length > 0) {
       await prisma.surveyComment.updateMany({
@@ -323,39 +332,48 @@ export const updateSurvey = async (data: z.infer<typeof updateSurveySchema>) => 
         data: { title, description }
       });
 
-      const existingQuestions = await tx.surveyQuestion.findMany({
+      const existingQuestions = (await tx.surveyQuestion.findMany({
         where: { surveyId: id, isDeleted: false }
-      });
+      })) as SurveyQuestionRow[];
 
-      const inputQuestionIds = questions.filter((q: any) => q.id).map((q: any) => q.id as string);
+      const inputQuestionIds = questions
+        .filter((question): question is z.infer<typeof questionSchema> & { id: string } =>
+          Boolean(question.id)
+        )
+        .map(question => question.id);
 
-      const toDelete = existingQuestions.filter((q: any) => !inputQuestionIds.includes(q.id));
+      const toDelete = existingQuestions.filter(
+        question => !inputQuestionIds.includes(question.id)
+      );
       if (toDelete.length > 0) {
         await tx.surveyQuestion.updateMany({
-          where: { id: { in: toDelete.map((q: any) => q.id) } },
+          where: { id: { in: toDelete.map(question => question.id) } },
           data: { isDeleted: true }
         });
       }
 
-      for (const q of questions) {
-        if (q.id && existingQuestions.some((eq: any) => eq.id === q.id)) {
+      for (const question of questions) {
+        if (
+          question.id &&
+          existingQuestions.some(existingQuestion => existingQuestion.id === question.id)
+        ) {
           await tx.surveyQuestion.update({
-            where: { id: q.id },
+            where: { id: question.id },
             data: {
-              text: q.text,
-              type: q.type,
-              options: q.options ? q.options : Prisma.DbNull,
-              order: q.order
+              text: question.text,
+              type: question.type,
+              options: question.options ? question.options : Prisma.DbNull,
+              order: question.order
             }
           });
         } else {
           await tx.surveyQuestion.create({
             data: {
               surveyId: id,
-              text: q.text,
-              type: q.type,
-              options: q.options ? q.options : Prisma.DbNull,
-              order: q.order
+              text: question.text,
+              type: question.type,
+              options: question.options ? question.options : Prisma.DbNull,
+              order: question.order
             }
           });
         }

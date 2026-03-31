@@ -3,8 +3,13 @@ import { NextResponse } from 'next/server';
 import { generateRegistrationOptions } from '@simplewebauthn/server';
 import prisma from '@/shared/lib/prisma';
 import { cookies } from 'next/headers';
+import { Prisma } from '@prisma/client';
 
-import { rpName, rpID } from '../config';
+import { rpID, rpName } from '../config';
+
+type UserWithAuthenticators = Prisma.UserGetPayload<{
+  include: { Authenticator: true };
+}>;
 
 /**
  * GET handler для получения опций регистрации Passkey
@@ -16,18 +21,18 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
+    const user = (await prisma.user.findUnique({
       where: { email: session.user.email },
       include: { Authenticator: true }
-    });
+    })) as UserWithAuthenticators | null;
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Получаем все существующие учетные данные пользователя
-    const userAuthenticators = user.Authenticator.map((auth: any) => ({
-      id: Buffer.from(auth.credentialID, 'base64'), // В БД хранится base64 строка, как требует Auth.js
+    const userAuthenticators = user.Authenticator.map(authenticator => ({
+      id: Buffer.from(authenticator.credentialID, 'base64'), // В БД хранится base64 строка, как требует Auth.js
       type: 'public-key' as const
     }));
 

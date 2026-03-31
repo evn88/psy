@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useEffect, useState } from 'react';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { CalendarView } from './calendar-view';
-import { useEvents, Event } from './use-events';
+import { type Event, type EventMutationInput, useEvents } from './use-events';
 import { EventDialog } from './event-dialog';
-import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfDay, endOfDay } from 'date-fns';
+import { endOfMonth, endOfWeek, startOfMonth, startOfWeek } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -77,8 +77,10 @@ export function ScheduleDashboard({ workHourStart = 9, workHourEnd = 20 }: Sched
   const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
   const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
 
-  const { events, isLoading, isValidating, error, createEvent, updateEvent, deleteEvent } =
-    useEvents(startDate, endDate);
+  const { events, isValidating, createEvent, updateEvent, deleteEvent } = useEvents(
+    startDate,
+    endDate
+  );
 
   const handleAddEvent = (date?: Date, endDate?: Date) => {
     setDialogDate(date || selectedDate || new Date());
@@ -94,7 +96,7 @@ export function ScheduleDashboard({ workHourStart = 9, workHourEnd = 20 }: Sched
     setIsDialogOpen(true);
   };
 
-  const handleSaveEvent = async (data: any) => {
+  const handleSaveEvent = async (data: EventMutationInput) => {
     if (selectedEvent) {
       await updateEvent(selectedEvent.id, data);
     } else {

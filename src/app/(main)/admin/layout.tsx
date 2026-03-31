@@ -7,7 +7,12 @@ import { AdminBreadcrumbs } from '@/components/admin/admin-breadcrumbs';
 import { BreadcrumbProvider } from '@/components/breadcrumb-context';
 import { getAdminUnreadSurveysCount } from './surveys/actions';
 import { Separator } from '@/components/ui/separator';
-import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import {
+  SIDEBAR_COOKIE_NAME,
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger
+} from '@/components/ui/sidebar';
 
 /**
  * Layout для админ-панели.
@@ -16,13 +21,14 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/s
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   const cookieStore = await cookies();
-  const defaultOpen = cookieStore.get('sidebar:state')?.value === 'true';
+  const defaultOpen =
+    cookieStore.get(SIDEBAR_COOKIE_NAME)?.value === 'true' ||
+    cookieStore.get('sidebar:state')?.value === 'true';
 
   if (!session?.user) {
     redirect('/auth');
   }
 
-  // @ts-ignore
   if (session.user.role !== 'ADMIN') {
     redirect('/my');
   }

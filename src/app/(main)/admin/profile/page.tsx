@@ -32,7 +32,7 @@ export default async function AdminProfilePage() {
     }),
     (async () => {
       try {
-        return await (prisma as any).userLoginHistory.findFirst({
+        return await prisma.userLoginHistory.findFirst({
           where: { userId: session.user.id },
           orderBy: { createdAt: 'desc' }
         });

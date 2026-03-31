@@ -2,8 +2,7 @@ import Link from 'next/link';
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import prisma from '@/shared/lib/prisma';
-import { Plus, Pencil, Trash2, Clock, Tag } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Clock, Tag } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatBlogDate } from '@/shared/lib/blog-utils';
 import { CreateArticleButton } from './_components/create-article-button';
@@ -12,20 +11,41 @@ import { GoToCategoriesButton } from './_components/go-to-categories-button';
 
 export const dynamic = 'force-dynamic';
 
+interface AdminBlogTranslation {
+  locale: string;
+  title: string;
+}
+
+interface AdminBlogCategoryRecord {
+  id: string;
+  name: Record<string, string>;
+}
+
+interface AdminBlogPostRecord {
+  id: string;
+  status: 'DRAFT' | 'PUBLISHED';
+  readingTime: number;
+  publishedAt: Date | null;
+  createdAt: Date;
+  translations: AdminBlogTranslation[];
+  categories: { category: AdminBlogCategoryRecord }[];
+  author: { name: string | null } | null;
+}
+
 export default async function AdminBlogPage() {
   const session = await auth();
   if (!session?.user || (session.user as { role?: string }).role !== 'ADMIN') {
     redirect('/admin');
   }
 
-  const posts = await prisma.blogPost.findMany({
+  const posts = (await prisma.blogPost.findMany({
     orderBy: { createdAt: 'desc' },
     include: {
       translations: { select: { locale: true, title: true } },
       categories: { include: { category: { select: { id: true, name: true } } } },
       author: { select: { name: true } }
     }
-  });
+  })) as AdminBlogPostRecord[];
 
   return (
     <div className="p-6 max-w-full">
@@ -47,16 +67,13 @@ export default async function AdminBlogPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {posts.map((post: any) => {
+          {posts.map(post => {
             const ruTranslation = post.translations.find(
-              (t: { locale: string }) => t.locale === 'ru'
+              translation => translation.locale === 'ru'
             );
             const title = ruTranslation?.title || 'Без заголовка';
             const postCategories = post.categories.map(
-              (c: { category: { id: string; name: unknown } }) => {
-                const name = c.category.name as Record<string, string>;
-                return name.ru ?? c.category.id;
-              }
+              categoryRelation => categoryRelation.category.name.ru ?? categoryRelation.category.id
             );
 
             return (
