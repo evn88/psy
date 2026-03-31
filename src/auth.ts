@@ -6,10 +6,11 @@ import { PrismaAdapter } from '@auth/prisma-adapter';
 import prisma from '@/shared/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
+import type { Adapter } from 'next-auth/adapters';
 import { authConfig } from './auth.config';
 import { getRPID } from '@/app/api/profile/passkeys/register/config';
 import { sendWelcomeGoogleEmail } from '@/shared/lib/email';
-import { headers, cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 
 class EmailNotVerifiedError extends AuthError {
   static type = 'EmailNotVerified';
@@ -85,7 +86,7 @@ async function recordLoginHistory(userId: string, provider: string): Promise<voi
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
-  adapter: PrismaAdapter(prisma) as any,
+  adapter: PrismaAdapter(prisma) as Adapter,
   session: { strategy: 'jwt' },
   providers: [
     Google({
@@ -181,22 +182,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         });
 
         if (existingUser) {
-          const isLinkedInDB = existingUser.accounts.some((acc: any) => acc.provider === 'google');
-          // Если аккаунт НЕ привязан и это НЕ специальный пользователь
-          if (!isLinkedInDB && user.email !== 'evn88fx64@gmail.com') {
+          const isLinkedInDB = existingUser.accounts.some(
+            (acc: { provider: string }) => acc.provider === 'google'
+          );
+          // Если аккаунт НЕ привязан и это НЕ admin-пользователь
+          if (!isLinkedInDB && user.email !== process.env.ADMIN_EMAIL) {
             return '/auth?error=UserExists';
           }
         }
       }
 
-      if (user.email === 'evn88fx64@gmail.com') {
-        // @ts-ignore
+      const adminEmail = process.env.ADMIN_EMAIL;
+      if (adminEmail && user.email === adminEmail) {
         if (user.role !== 'ADMIN') {
           await prisma.user.update({
             where: { email: user.email },
             data: { role: 'ADMIN' }
           });
-          // @ts-ignore
           user.role = 'ADMIN';
         }
       }

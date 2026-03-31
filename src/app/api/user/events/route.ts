@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import prisma from '@/shared/lib/prisma';
 import { auth } from '@/auth';
 import { z } from 'zod';
+import type { Prisma } from '@prisma/client';
+import type { ParsedEvent } from '@/shared/lib/ical-parser';
 
 const getEventsSchema = z.object({
   start: z.string().datetime().optional(),
@@ -34,7 +36,7 @@ export async function GET(req: Request) {
 
     const { start, end } = result.data;
 
-    const whereClause: any = {
+    const whereClause: Prisma.EventWhereInput = {
       OR: [{ userId: null }, { type: 'FREE_SLOT' }, { userId: session.user.id }]
     };
 
@@ -75,7 +77,7 @@ export async function GET(req: Request) {
       where: { role: 'ADMIN', googleCalendarSyncEnabled: true }
     });
 
-    let googleEvents: any[] = [];
+    let googleEvents: ParsedEvent[] = [];
     if (admin) {
       const { fetchGoogleEvents } = await import('@/shared/lib/google-sync');
       googleEvents = await fetchGoogleEvents(admin.id);
@@ -96,7 +98,7 @@ export async function GET(req: Request) {
     allEvents.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
 
     const sanitizedEvents = allEvents
-      .map((event: any) => {
+      .map(event => {
         if (!event.userId) {
           return {
             ...event,

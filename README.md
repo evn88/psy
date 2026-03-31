@@ -1,11 +1,12 @@
 [![Deploy Status](https://img.shields.io/badge/deploy-live-brightgreen?style=flat-square&logo=vercel)](https://vershkov.com)
-[![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)](https://nextjs.org)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
 [![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm_Noncommercial_1.0.0-blue.svg)](LICENSE)
 
 # 🧠 Vershkov.com
 
-> **Professional psychology platform** — a modern web application for psychologist Anna Vershkova, built with Next.js 15, featuring client management, survey system, and secure multi-provider authentication.
+> **Professional psychology platform** — a modern web application for psychologist Anna Vershkova, built with Next.js
+> 16, featuring client management, survey system, and secure multi-provider authentication.
 
 🔗 **Live:** [vershkov.com](https://vershkov.com)
 
@@ -14,6 +15,7 @@
 ## ✨ Features
 
 ### 🔐 Authentication & Security
+
 - **Multi-provider auth** — Email/Password, Google OAuth, and WebAuthn (Passkeys) via NextAuth v5
 - **Email verification** — New users must confirm their email before accessing the platform
 - **Welcome notifications** — Automated welcome emails for Google sign-up (not on repeat login)
@@ -21,12 +23,14 @@
 - **Role-based access** — `ADMIN`, `USER`, and `GUEST` roles with granular route protection
 
 ### 📋 Survey System
+
 - Admin-created surveys with multiple question types (single choice, multi choice, free text, scale)
 - User assignment and completion tracking
 - Results viewer with comment discussions between admin and users
 - Draft auto-save for survey responses
 
 ### 📧 Email System
+
 - **Resend** integration for transactional emails
 - Batch sending from admin panel (up to 100 per batch)
 - Real-time delivery status tracking with polling
@@ -34,12 +38,14 @@
 - Beautiful React Email templates (verification, welcome, admin messages)
 
 ### 🌍 Internationalization
+
 - Full **English** and **Russian** support via `next-intl`
 - Cookie-based locale detection (no URL prefixes)
 - User language preference saved to profile
 - Extensible — add new languages by creating a translation file
 
 ### 🎨 UI & Design
+
 - Dark/Light/System theme support via `next-themes`
 - Responsive layout with mobile-first design
 - Component library built on **Radix UI** primitives
@@ -47,6 +53,7 @@
 - Inter font with Latin & Cyrillic subsets
 
 ### 👤 User Dashboard
+
 - Personal dashboard with stats
 - Survey management (pending/completed)
 - Profile management (name, Google account linking)
@@ -54,6 +61,7 @@
 - Appearance & language settings
 
 ### 🛠 Admin Panel
+
 - User management (CRUD, role assignment)
 - Survey builder & assignment
 - Email broadcast tool
@@ -63,20 +71,20 @@
 
 ## 🏗 Tech Stack
 
-| Layer | Technology |
-|---|---|
-| **Framework** | Next.js 15 (App Router, Turbopack) |
-| **Language** | TypeScript (strict mode) |
-| **Database** | PostgreSQL + Prisma ORM |
-| **Auth** | NextAuth v5 (Google, Credentials, WebAuthn) |
-| **Email** | Resend + React Email |
-| **i18n** | next-intl |
-| **UI** | Radix UI, Tailwind CSS, Lucide Icons |
-| **State** | React Hook Form, Sonner |
-| **Charts** | amCharts 5 |
-| **DnD** | @dnd-kit |
-| **Deploy** | Vercel (standalone output) |
-| **Analytics** | Vercel Analytics + Speed Insights |
+| Layer         | Technology                                  |
+|---------------|---------------------------------------------|
+| **Framework** | Next.js 16 (App Router, Turbopack)          |
+| **Language**  | TypeScript (strict mode)                    |
+| **Database**  | PostgreSQL + Prisma ORM                     |
+| **Auth**      | NextAuth v5 (Google, Credentials, WebAuthn) |
+| **Email**     | Resend + React Email                        |
+| **i18n**      | next-intl                                   |
+| **UI**        | Radix UI, Tailwind CSS, Lucide Icons        |
+| **State**     | React Hook Form, Sonner                     |
+| **Charts**    | amCharts 5                                  |
+| **DnD**       | @dnd-kit                                    |
+| **Deploy**    | Vercel (standalone output)                  |
+| **Analytics** | Vercel Analytics + Speed Insights           |
 
 ---
 
@@ -114,15 +122,15 @@ npm run dev
 
 ### Environment Variables
 
-| Variable | Description |
-|---|---|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `AUTH_SECRET` | NextAuth secret key |
-| `GOOGLE_CLIENT_ID` | Google OAuth client ID |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
-| `RESEND_API_KEY` | Resend API key for emails |
-| `NEXT_PUBLIC_APP_URL` | Base URL of the application |
-| `PROD_DOMAIN` | Production domain with protocol (e.g., https://example.com) - required for production emails |
+| Variable               | Description                                                                                  |
+|------------------------|----------------------------------------------------------------------------------------------|
+| `DATABASE_URL`         | PostgreSQL connection string                                                                 |
+| `AUTH_SECRET`          | NextAuth secret key                                                                          |
+| `GOOGLE_CLIENT_ID`     | Google OAuth client ID                                                                       |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret                                                                   |
+| `RESEND_API_KEY`       | Resend API key for emails                                                                    |
+| `NEXT_PUBLIC_APP_URL`  | Base URL of the application                                                                  |
+| `PROD_DOMAIN`          | Production domain with protocol (e.g., https://example.com) - required for production emails |
 
 ---
 
@@ -159,13 +167,13 @@ messages/
 
 ## 📜 Scripts
 
-| Command | Description |
-|---|---|
-| `npm run dev` | Start dev server with Turbopack |
-| `npm run build` | Production build (Prisma generate + Next.js) |
-| `npm start` | Start production server |
-| `npm run lint` | Run ESLint |
-| `npm run type-check` | TypeScript type checking |
+| Command              | Description                                  |
+|----------------------|----------------------------------------------|
+| `npm run dev`        | Start dev server with Turbopack              |
+| `npm run build`      | Production build (Prisma generate + Next.js) |
+| `npm start`          | Start production server                      |
+| `npm run lint`       | Run ESLint                                   |
+| `npm run type-check` | TypeScript type checking                     |
 
 ---
 
@@ -175,12 +183,12 @@ messages/
 
 ### Какие страницы доступны офлайн
 
-| Страница | Путь |
-|---|---|
-| Главная | `/` |
-| Личный кабинет | `/my` |
+| Страница          | Путь           |
+|-------------------|----------------|
+| Главная           | `/`            |
+| Личный кабинет    | `/my`          |
 | Расписание сессий | `/my/sessions` |
-| Опросы | `/my/surveys` |
+| Опросы            | `/my/surveys`  |
 
 ### Как добавить новую страницу в офлайн-кеш
 
@@ -207,12 +215,12 @@ const PRE_CACHED_URLS = [
 
 ### Стратегии кеширования
 
-| Тип запроса | Стратегия |
-|---|---|
-| `/api/**` | Network Only — никогда не кешировать |
+| Тип запроса        | Стратегия                                 |
+|--------------------|-------------------------------------------|
+| `/api/**`          | Network Only — никогда не кешировать      |
 | `/_next/static/**` | Cache First — иммутабельные JS/CSS бандлы |
-| PNG/SVG/ICO | Cache First — статические иконки |
-| HTML-страницы | Network First → fallback кеш |
+| PNG/SVG/ICO        | Cache First — статические иконки          |
+| HTML-страницы      | Network First → fallback кеш              |
 
 ---
 
@@ -241,12 +249,12 @@ const PRE_CACHED_URLS = [
 
 ### Поддержка платформ
 
-| Платформа | Статус |
-|---|---|
-| Android Chrome/Firefox | ✅ Полная |
-| iOS Safari 16.4+ (PWA на экране) | ✅ Работает |
-| iOS Safari (браузер) | ❌ Apple не поддерживает |
-| Desktop Chrome/Firefox/Edge | ✅ Полная |
+| Платформа                        | Статус                  |
+|----------------------------------|-------------------------|
+| Android Chrome/Firefox           | ✅ Полная                |
+| iOS Safari 16.4+ (PWA на экране) | ✅ Работает              |
+| iOS Safari (браузер)             | ❌ Apple не поддерживает |
+| Desktop Chrome/Firefox/Edge      | ✅ Полная                |
 
 ### Отправка из админки
 
@@ -257,4 +265,5 @@ const PRE_CACHED_URLS = [
 
 ## 📄 License
 
-This project is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE). Commercial use is strictly prohibited.
+This project is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE). Commercial use is strictly
+prohibited.

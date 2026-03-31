@@ -1,6 +1,14 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState
+} from 'react';
 
 interface BreadcrumbContextValue {
   /** Динамические сегменты пути → отображаемые названия */
@@ -28,11 +36,12 @@ export const BreadcrumbProvider = ({ children }: { children: ReactNode }) => {
     });
   }, []);
 
-  return (
-    <BreadcrumbContext.Provider value={{ dynamicSegments, setSegmentName }}>
-      {children}
-    </BreadcrumbContext.Provider>
+  const value = useMemo(
+    () => ({ dynamicSegments, setSegmentName }),
+    [dynamicSegments, setSegmentName]
   );
+
+  return <BreadcrumbContext.Provider value={value}>{children}</BreadcrumbContext.Provider>;
 };
 
 /**
@@ -46,8 +55,8 @@ export const useBreadcrumbContext = () => useContext(BreadcrumbContext);
  */
 export const useBreadcrumbSegment = (segment: string, name: string) => {
   const { setSegmentName } = useBreadcrumbContext();
-  // Используем эффект чтобы вызвать только на клиенте
-  if (typeof window !== 'undefined') {
+
+  useEffect(() => {
     setSegmentName(segment, name);
-  }
+  }, [segment, name, setSegmentName]);
 };

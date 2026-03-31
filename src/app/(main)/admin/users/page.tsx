@@ -20,29 +20,25 @@ export default async function AdminPage() {
     }
   });
 
-  // Загружаем loginHistory отдельно — модель может ещё не существовать до миграции
-  let loginHistoryMap = new Map<
+  // Загружаем loginHistory отдельно для группировки по userId
+  const loginHistoryMap = new Map<
     string,
     { id: string; ip: string | null; provider: string; createdAt: Date }[]
   >();
-  try {
-    const allHistory = await (prisma as any).userLoginHistory.findMany({
-      orderBy: { createdAt: 'desc' }
-    });
-    for (const entry of allHistory) {
-      const existing = loginHistoryMap.get(entry.userId) ?? [];
-      if (existing.length < 3) {
-        existing.push({
-          id: entry.id,
-          ip: entry.ip,
-          provider: entry.provider,
-          createdAt: entry.createdAt
-        });
-        loginHistoryMap.set(entry.userId, existing);
-      }
+  const allHistory = await prisma.userLoginHistory.findMany({
+    orderBy: { createdAt: 'desc' }
+  });
+  for (const entry of allHistory) {
+    const existing = loginHistoryMap.get(entry.userId) ?? [];
+    if (existing.length < 3) {
+      existing.push({
+        id: entry.id,
+        ip: entry.ip,
+        provider: entry.provider,
+        createdAt: entry.createdAt
+      });
+      loginHistoryMap.set(entry.userId, existing);
     }
-  } catch {
-    // Модель ещё не создана — loginHistory будет пустым
   }
 
   // eslint-disable-next-line react-hooks/purity -- Server Component: вычисляется однократно на сервере
@@ -68,12 +64,12 @@ export default async function AdminPage() {
       emailVerified: user.emailVerified,
       image: user.image,
       role: user.role,
-      isDisabled: (user as any).isDisabled ?? false,
+      isDisabled: user.isDisabled,
       language: user.language,
       theme: user.theme,
-      timezone: (user as any).timezone ?? null,
+      timezone: user.timezone ?? null,
       lastSeen: user.lastSeen,
-      registrationIp: (user as any).registrationIp ?? null,
+      registrationIp: user.registrationIp ?? null,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
       isOnline,

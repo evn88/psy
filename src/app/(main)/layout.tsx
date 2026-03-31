@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import '../globals.css';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
-import { FC, ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { Providers } from '@/shared/Providers';
-import { Inter, Dela_Gothic_One } from 'next/font/google';
+import { Dela_Gothic_One, Inter } from 'next/font/google';
 import localFont from 'next/font/local';
 import { ThemeProvider } from '@/components/theme-provider';
 import { HeartbeatProvider } from '@/components/heartbeat-provider';
@@ -43,12 +43,8 @@ export const metadata: Metadata = {
   }
 };
 
-type RootLayoutType = Readonly<{
-  children: ReactNode;
-}>;
-
 // Uncomment the navigation bar when the site is ready.
-const RootLayout: FC<RootLayoutType> = async ({ children }) => {
+const RootLayout = async ({ children }: Readonly<{ children: ReactNode }>) => {
   const locale = await getLocale();
   const messages = await getMessages();
 

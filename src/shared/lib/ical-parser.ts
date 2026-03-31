@@ -16,8 +16,15 @@ export function parseICal(icalData: string): ParsedEvent[] {
   const events: ParsedEvent[] = [];
   const lines = icalData.split(/\r?\n/);
 
+  interface PartialICalEvent {
+    summary?: string;
+    dtstart?: string;
+    dtend?: string;
+    uid?: string;
+  }
+
   let inEvent = false;
-  let currentEvent: any = {};
+  let currentEvent: PartialICalEvent = {};
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];

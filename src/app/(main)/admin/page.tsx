@@ -1,8 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import prisma from '@/shared/lib/prisma';
-import { Users, Activity, CalendarCheck, CalendarClock, Clock, Ban, UserCheck } from 'lucide-react';
+import { Activity, Ban, CalendarCheck, CalendarClock, Clock, UserCheck, Users } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
-import { startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns';
+import { endOfMonth, endOfWeek, startOfMonth, startOfWeek } from 'date-fns';
 
 /**
  * Получает статистику пользователей и расписания для дашборда.
@@ -40,7 +40,9 @@ const getStats = async () => {
     select: { userId: true },
     distinct: ['userId']
   });
-  const waitingUsersCount = waitingUsers.filter((e: any) => e.userId !== null).length;
+  const waitingUsersCount = waitingUsers.filter(
+    (e: { userId: string | null }) => e.userId !== null
+  ).length;
 
   // Upcoming scheduled slots
   const upcomingSlotsCount = await prisma.event.count({
@@ -59,9 +61,12 @@ const getStats = async () => {
       start: { gte: currentWeekStart, lte: currentWeekEnd }
     }
   });
-  const scheduledHoursThisWeek = eventsThisWeek.reduce((acc: number, ev: any) => {
-    return acc + (ev.end.getTime() - ev.start.getTime()) / (1000 * 60 * 60);
-  }, 0);
+  const scheduledHoursThisWeek = eventsThisWeek.reduce(
+    (acc: number, ev: (typeof eventsThisWeek)[number]) => {
+      return acc + (ev.end.getTime() - ev.start.getTime()) / (1000 * 60 * 60);
+    },
+    0
+  );
 
   // Users who booked time (all-time)
   const bookedUsers = await prisma.event.findMany({
@@ -72,7 +77,9 @@ const getStats = async () => {
     select: { userId: true },
     distinct: ['userId']
   });
-  const bookedUsersCount = bookedUsers.filter((e: any) => e.userId !== null).length;
+  const bookedUsersCount = bookedUsers.filter(
+    (e: { userId: string | null }) => e.userId !== null
+  ).length;
 
   // Free hours for booking
   const freeSlots = await prisma.event.findMany({
@@ -82,7 +89,7 @@ const getStats = async () => {
       start: { gte: now }
     }
   });
-  const freeHours = freeSlots.reduce((acc: number, ev: any) => {
+  const freeHours = freeSlots.reduce((acc: number, ev: (typeof freeSlots)[number]) => {
     return acc + (ev.end.getTime() - ev.start.getTime()) / (1000 * 60 * 60);
   }, 0);
 

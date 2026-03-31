@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 import prisma from '@/shared/lib/prisma';
 import { auth } from '@/auth';
 import { z } from 'zod';
-import { EventStatus, EventType } from '@prisma/client';
+import { EventStatus, EventType, Prisma } from '@prisma/client';
 import { sendEventNotificationEmail } from '@/shared/lib/email';
-import { syncEventWithGoogle, fetchGoogleEvents } from '@/shared/lib/google-sync';
+import { fetchGoogleEvents, syncEventWithGoogle } from '@/shared/lib/google-sync';
 
 const getEventsSchema = z.object({
   start: z.string().datetime().optional(),
@@ -18,7 +18,6 @@ const getEventsSchema = z.object({
 export async function GET(req: Request) {
   try {
     const session = await auth();
-    // @ts-ignore - session.user.role is not strictly typed in default NextAuth session
     if (!session || session.user?.role !== 'ADMIN') {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
@@ -38,7 +37,7 @@ export async function GET(req: Request) {
 
     const { start, end } = result.data;
 
-    const whereClause: any = {};
+    const whereClause: Prisma.EventWhereInput = {};
     if (start && end) {
       whereClause.OR = [
         {
@@ -68,7 +67,7 @@ export async function GET(req: Request) {
       orderBy: { start: 'asc' }
     });
 
-    const googleEvents = await fetchGoogleEvents(session.user.id);
+    const googleEvents = await fetchGoogleEvents(session.user.id!);
     let filteredGoogle = googleEvents;
     if (start && end) {
       const startD = new Date(start);
@@ -109,7 +108,6 @@ const createEventSchema = z.object({
 export async function POST(req: Request) {
   try {
     const session = await auth();
-    // @ts-ignore
     if (!session || session.user?.role !== 'ADMIN') {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
