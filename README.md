@@ -3,6 +3,8 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
 [![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm_Noncommercial_1.0.0-blue.svg)](LICENSE)
 
+**Documentation languages:** [English](./README.md) | [Русский](./README.ru.md)
+
 # 🧠 Vershkov.com
 
 > **Professional psychology platform** — a modern web application for psychologist Anna Vershkova, built with Next.js
@@ -122,15 +124,51 @@ npm run dev
 
 ### Environment Variables
 
-| Variable               | Description                                                                                  |
-|------------------------|----------------------------------------------------------------------------------------------|
-| `DATABASE_URL`         | PostgreSQL connection string                                                                 |
-| `AUTH_SECRET`          | NextAuth secret key                                                                          |
-| `GOOGLE_CLIENT_ID`     | Google OAuth client ID                                                                       |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret                                                                   |
-| `RESEND_API_KEY`       | Resend API key for emails                                                                    |
-| `NEXT_PUBLIC_APP_URL`  | Base URL of the application                                                                  |
-| `PROD_DOMAIN`          | Production domain with protocol (e.g., https://example.com) - required for production emails |
+#### Authentication & Database
+
+| Variable              | Description                                                                   |
+|-----------------------|-------------------------------------------------------------------------------|
+| `AUTH_SECRET`         | NextAuth secret key for session signing (generate: `openssl rand -base64 32`) |
+| `AUTH_GOOGLE_ID`      | Google OAuth client ID (formerly `GOOGLE_CLIENT_ID`)                          |
+| `AUTH_GOOGLE_SECRET`  | Google OAuth client secret (formerly `GOOGLE_CLIENT_SECRET`)                  |
+| `DATABASE_URL`        | PostgreSQL connection string (full URL with credentials)                      |
+| `POSTGRES_URL`        | Alternative Postgres connection string (used by Vercel Postgres)              |
+| `PRISMA_DATABASE_URL` | Explicit Prisma database URL (overrides `DATABASE_URL` if set)                |
+| `ADMIN_EMAIL`         | Email address to grant admin access on first login (e.g., your@email.com)     |
+
+#### Email & Notifications
+
+| Variable                       | Description                                                                            |
+|--------------------------------|----------------------------------------------------------------------------------------|
+| `RESEND_API_KEY`               | Resend API key for transactional emails                                                |
+| `VAPID_PRIVATE_KEY`            | VAPID private key for push notifications (keep secret)                                 |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | VAPID public key for push notifications (safe to expose)                               |
+| `VAPID_SUBJECT`                | VAPID subject URI (e.g., `mailto:your@email.com`) for push notification identification |
+
+#### AI & Storage
+
+| Variable                | Description                                                               |
+|-------------------------|---------------------------------------------------------------------------|
+| `AI_GATEWAY_API_KEY`    | Vercel AI Gateway API key (optional if using OIDC)                        |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob storage token for file uploads                                |
+| `VERCEL_OIDC_TOKEN`     | Auto-provisioned OIDC token for Vercel services (set by Vercel on deploy) |
+
+#### Application URLs
+
+| Variable              | Description                                                                                    |
+|-----------------------|------------------------------------------------------------------------------------------------|
+| `NEXT_PUBLIC_APP_URL` | Public base URL of the application (e.g., `http://localhost:3000`)                             |
+| `PROD_DOMAIN`         | Production domain with protocol (e.g., `https://example.com`) - required for production emails |
+
+### Admin Setup
+
+1. **Register** — Sign up with your email or Google OAuth
+2. **Set ADMIN_EMAIL** — Add your email to `.env.local`:
+   ```bash
+   ADMIN_EMAIL=your@email.com
+   ```
+3. **Login Again** — Sign in again and your account will automatically be elevated to `ADMIN` role
+4. **Access Admin Panel** — Navigate to `/admin` (accessible only to ADMIN users)
 
 ---
 
@@ -177,89 +215,89 @@ messages/
 
 ---
 
-## 📱 PWA: офлайн-режим
+## 📱 PWA: Offline Mode
 
-Приложение работает офлайн благодаря Service Worker (`public/sw.js`).
+The application works offline thanks to the Service Worker (`public/sw.js`).
 
-### Какие страницы доступны офлайн
+### Offline-Available Pages
 
-| Страница          | Путь           |
+| Page              | Path           |
 |-------------------|----------------|
-| Главная           | `/`            |
-| Личный кабинет    | `/my`          |
-| Расписание сессий | `/my/sessions` |
-| Опросы            | `/my/surveys`  |
+| Home              | `/`            |
+| User Dashboard    | `/my`          |
+| Sessions Schedule | `/my/sessions` |
+| Surveys           | `/my/surveys`  |
 
-### Как добавить новую страницу в офлайн-кеш
+### Adding a New Page to Offline Cache
 
-1. Откройте `public/sw.js`
-2. Найдите массив `PRE_CACHED_URLS`
-3. Добавьте нужный путь:
+1. Open `public/sw.js`
+2. Find the `PRE_CACHED_URLS` array
+3. Add the required path:
 
 ```js
 const PRE_CACHED_URLS = [
-  '/',
-  '/my',
-  '/my/sessions',
-  '/my/surveys',
-  '/my/ваша-страница',  // ← добавить сюда
+    '/',
+    '/my',
+    '/my/sessions',
+    '/my/surveys',
+    '/my/your-page',  // ← add here
 ];
 ```
 
-4. Задеплойте. После обновления SW новые страницы появятся в кеше автоматически.
+4. Deploy. After updating the Service Worker, new pages will appear in the cache automatically.
 
-> Чтобы сбросить старый кеш у всех пользователей (например после крупного обновления) — измените константу:
+> To clear the old cache for all users (for example after a major update) — change the constant:
 > ```js
-> const CACHE_VERSION = 'v2'; // было v1
+> const CACHE_VERSION = 'v2'; // was v1
 > ```
 
-### Стратегии кеширования
+### Caching Strategies
 
-| Тип запроса        | Стратегия                                 |
-|--------------------|-------------------------------------------|
-| `/api/**`          | Network Only — никогда не кешировать      |
-| `/_next/static/**` | Cache First — иммутабельные JS/CSS бандлы |
-| PNG/SVG/ICO        | Cache First — статические иконки          |
-| HTML-страницы      | Network First → fallback кеш              |
+| Request Type       | Strategy                               |
+|--------------------|----------------------------------------|
+| `/api/**`          | Network Only — never cache             |
+| `/_next/static/**` | Cache First — immutable JS/CSS bundles |
+| PNG/SVG/ICO        | Cache First — static icons             |
+| HTML pages         | Network First → fallback to cache      |
 
 ---
 
-## 🔔 Push-уведомления
+## 🔔 Push Notifications
 
-### Первоначальная настройка (один раз)
+### Initial Setup (one-time)
 
-1. Сгенерировать VAPID-ключи:
+1. Generate VAPID keys:
    ```bash
    npx web-push generate-vapid-keys
    ```
 
-2. Добавить в `.env.local` и на сервере:
+2. Add to `.env.local` and on the server:
    ```env
-   NEXT_PUBLIC_VAPID_PUBLIC_KEY=<публичный ключ>
-   VAPID_PRIVATE_KEY=<приватный ключ>
+   NEXT_PUBLIC_VAPID_PUBLIC_KEY=<public_key>
+   VAPID_PRIVATE_KEY=<private_key>
    VAPID_SUBJECT=mailto:admin@vershkov.com
    ```
 
-### Как работает
+### How It Works
 
-- При первом визите пользователю показывается баннер с запросом разрешения
-- Подписка хранится в таблице `PushSubscription` в БД
-- Управление: `/my/settings` → «Push-уведомления»
-- Если пользователь заблокировал — показываются инструкции по разблокировке
+- On the first visit, users are shown a banner requesting permission
+- Subscriptions are stored in the `PushSubscription` table in the database
+- Management: `/my/settings` → "Push Notifications"
+- If blocked by user — instructions for unblocking are displayed
 
-### Поддержка платформ
+### Platform Support
 
-| Платформа                        | Статус                  |
-|----------------------------------|-------------------------|
-| Android Chrome/Firefox           | ✅ Полная                |
-| iOS Safari 16.4+ (PWA на экране) | ✅ Работает              |
-| iOS Safari (браузер)             | ❌ Apple не поддерживает |
-| Desktop Chrome/Firefox/Edge      | ✅ Полная                |
+| Platform                         | Status                   |
+|----------------------------------|--------------------------|
+| Android Chrome/Firefox           | ✅ Full                   |
+| iOS Safari 16.4+ (PWA installed) | ✅ Works                  |
+| iOS Safari (browser)             | ❌ Apple does not support |
+| Desktop Chrome/Firefox/Edge      | ✅ Full                   |
 
-### Отправка из админки
+### Sending from Admin Panel
 
-1. `/admin/send-email` → выбрать получателей → написать сообщение (до 178 символов)
-2. Кнопка **«Отправить Push»** → подтвердить
+1. `/admin/send-email` → select recipients → write message (up to 178 characters)
+2. Click **"Send Push"** → confirm
 
 ---
 
