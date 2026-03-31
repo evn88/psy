@@ -1,9 +1,5 @@
-'use client';
-
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { useTheme } from 'next-themes';
-import { cn } from '@/lib/utils';
 import '@/styles/blog-article.css';
 
 interface ArticleContentProps {
@@ -11,11 +7,8 @@ interface ArticleContentProps {
 }
 
 export function ArticleContent({ content }: ArticleContentProps) {
-  const { resolvedTheme } = useTheme();
-  const dark = resolvedTheme === 'dark';
-
   return (
-    <div className={cn('blog-article', dark && 'dark')}>
+    <div className="blog-article">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{

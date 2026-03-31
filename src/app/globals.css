@@ -12,7 +12,7 @@
 *,
 *::before,
 *::after {
-  box-sizing: border-box;
+    box-sizing: border-box;
 }
 
 /* Remove default margin */
@@ -26,37 +26,37 @@ figure,
 blockquote,
 dl,
 dd {
-  margin: 0;
+    margin: 0;
 }
 
 /* Remove list styles on ul, ol elements with a list role, which suggests default styling will be removed */
 ul[role='list'],
 ol[role='list'] {
-  list-style: none;
+    list-style: none;
 }
 
 /* Set core root defaults */
 html:focus-within {
-  scroll-behavior: smooth;
+    scroll-behavior: smooth;
 }
 
 /* Set core body defaults */
 body {
-  min-height: 100vh;
-  text-rendering: optimizeSpeed;
-  line-height: 1.5;
+    min-height: 100vh;
+    text-rendering: optimizeSpeed;
+    line-height: 1.5;
 }
 
 /* A elements that don't have a class get default styles */
 a:not([class]) {
-  text-decoration-skip-ink: auto;
+    text-decoration-skip-ink: auto;
 }
 
 /* Make images easier to work with */
 img,
 picture {
-  max-width: 100%;
-  display: block;
+    max-width: 100%;
+    display: block;
 }
 
 /* Inherit fonts for inputs and buttons */
@@ -64,58 +64,74 @@ input,
 button,
 textarea,
 select {
-  font: inherit;
+    font: inherit;
 }
 
 /* Remove all animations, transitions and smooth scroll for people that prefer not to see them */
 @media (prefers-reduced-motion: reduce) {
-  html:focus-within {
-    scroll-behavior: auto;
-  }
+    html:focus-within {
+        scroll-behavior: auto;
+    }
 
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }
 
 :root {
-  /* Warm dark theme enforced globally */
-  /* bg-stone-950: #0c0a09 */
-  /* text-stone-200: #e7e5e4 */
+    /* Warm dark theme enforced globally */
+    /* bg-stone-950: #0c0a09 */
+    /* text-stone-200: #e7e5e4 */
 }
 
 body {
-  font-family: 'Inter', sans-serif;
+    font-family: 'Inter', sans-serif;
 }
 
 @keyframes calendar-loading {
-  0%   { transform: translateX(-100%); }
-  100% { transform: translateX(400%); }
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(400%);
+    }
 }
 
 @keyframes calendar-slide-up {
-  from { transform: translateY(18px); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
+    from {
+        transform: translateY(18px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 @keyframes calendar-slide-down {
-  from { transform: translateY(-18px); opacity: 0; }
-  to   { transform: translateY(0);     opacity: 1; }
+    from {
+        transform: translateY(-18px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+    .text-balance {
+        text-wrap: balance;
+    }
 
-  .font-handwriting {
-    font-family: 'Caveat', cursive;
-  }
+    .font-handwriting {
+        font-family: 'Caveat', cursive;
+    }
 
     .animate-calendar-next {
         animation: calendar-slide-up 0.25s ease-out;
@@ -131,148 +147,150 @@ body {
 }
 
 @layer base {
-  :root {
-    /* ---- ЦВЕТА ---- */
-    --color-pink: #f1abc3; /* основной розовый */
-    --color-pink-light: #fab1c9; /* розовый светлее */
-    --color-pink-soft: rgba(255, 199, 218, 0.3); /* розовый 30% */
-    --color-blue: #4278a6; /* синий основной */
-    --color-blue-soft: rgba(190, 224, 254, 0.3); /* синий 30% */
-    --color-dark: #343434; /* основной текст */
-    --color-white: #ffffff;
-    --color-grey: #eceaea; /* светло-серый фон */
+    :root {
+        /* ---- ЦВЕТА ---- */
+        --color-pink: #f1abc3; /* основной розовый */
+        --color-pink-light: #fab1c9; /* розовый светлее */
+        --color-pink-soft: rgba(255, 199, 218, 0.3); /* розовый 30% */
+        --color-blue: #4278a6; /* синий основной */
+        --color-blue-soft: rgba(190, 224, 254, 0.3); /* синий 30% */
+        --color-dark: #343434; /* основной текст */
+        --color-white: #ffffff;
+        --color-grey: #eceaea; /* светло-серый фон */
 
-    /* ---- ШРИФТЫ ---- */
-    --font-heading: var(--font-dela, 'Dela Gothic', cursive);
-    --font-accent: var(--font-sunless-day, 'Sunless Day', cursive);
-    --font-body: var(--font-inter, 'Inter', sans-serif);
+        /* ---- ШРИФТЫ ---- */
+        --font-heading: var(--font-dela, 'Dela Gothic', cursive);
+        --font-accent: var(--font-sunless-day, 'Sunless Day', cursive);
+        --font-body: var(--font-inter, 'Inter', sans-serif);
 
-    /* ---- ТИПОГРАФИКА (fluid, без брейкпойнтов) ----
-     Базовый font-size задан на .landing = 10px,
-     поэтому em здесь: 1em = 10px.
-     clamp(min, preferred-vw, max)                 */
-    --text-h1: clamp(2em, 4.5vw, 4.8em); /* 30px → 90px */
-    --text-h2: clamp(2.4em, 5.5vw, 7.6em); /* 24px → 76px */
-    --text-h3: clamp(2em, 4vw, 5.6em); /* 20px → 56px */
-    --text-h4: clamp(1.8em, 3vw, 4em); /* 18px → 40px */
-    --text-t1: clamp(1.6em, 2.2vw, 2.8em); /* 16px → 28px */
-    --text-t2: clamp(1.4em, 1.8vw, 2.2em); /* 14px → 22px */
-    --text-body: clamp(0.875rem, 1.5vw, 1.5rem);
-    --text-small: clamp(1em, 1vw, 1.3em); /* 11px → 13px */
+        /* ---- ТИПОГРАФИКА (fluid, без брейкпойнтов) ----
+         Базовый font-size задан на .landing = 10px,
+         поэтому em здесь: 1em = 10px.
+         clamp(min, preferred-vw, max)                 */
+        --text-h1: clamp(2em, 4.5vw, 4.8em); /* 30px → 90px */
+        --text-h2: clamp(2.4em, 5.5vw, 7.6em); /* 24px → 76px */
+        --text-h3: clamp(2em, 4vw, 5.6em); /* 20px → 56px */
+        --text-h4: clamp(1.8em, 3vw, 4em); /* 18px → 40px */
+        --text-t1: clamp(1.6em, 2.2vw, 2.8em); /* 16px → 28px */
+        --text-t2: clamp(1.4em, 1.8vw, 2.2em); /* 14px → 22px */
+        --text-body: clamp(0.875rem, 1.5vw, 1.5rem);
+        --text-small: clamp(1em, 1vw, 1.3em); /* 11px → 13px */
 
-    --lh-heading: 0.9; /* 90% */
-    --lh-body: 1.4; /* 140% */
+        --lh-heading: 0.9; /* 90% */
+        --lh-body: 1.4; /* 140% */
 
-    /* ---- ОТСТУПЫ (fluid) ---- */
-    --space-xs: clamp(0.8em, 1vw, 1.2em);
-    --space-s: clamp(1.2em, 2vw, 2em);
-    --space-m: clamp(2em, 4vw, 4em);
-    --space-l: clamp(3em, 6vw, 8em);
-    --space-xl: clamp(5em, 10vw, 12em);
+        /* ---- ОТСТУПЫ (fluid) ---- */
+        --space-xs: clamp(0.8em, 1vw, 1.2em);
+        --space-s: clamp(1.2em, 2vw, 2em);
+        --space-m: clamp(2em, 4vw, 4em);
+        --space-l: clamp(3em, 6vw, 8em);
+        --space-xl: clamp(5em, 10vw, 12em);
 
-    /* ---- КОНТЕЙНЕР ---- */
-    --container-max: 144rem; /* 1440px */
-    --container-pad: clamp(2em, 5vw, 10em);
+        /* ---- КОНТЕЙНЕР ---- */
+        --container-max: 144rem; /* 1440px */
+        --container-pad: clamp(2em, 5vw, 10em);
 
-    /* ---- РАДИУС ---- */
-    --radius-pill: 100px;
-    --radius-m: 1.2em;
+        /* ---- РАДИУС ---- */
+        --radius-pill: 100px;
+        --radius-m: 1.2em;
 
-    /* Landing Native Theme Tokens */
-    --landing-bg: var(--color-white);
-    --landing-text: var(--color-dark);
-    --landing-surface: rgba(0, 0, 0, 0.03); /* slight dark tint for surface */
-    --landing-border: rgba(0, 0, 0, 0.08);
+        /* Landing Native Theme Tokens */
+        --landing-bg: var(--color-white);
+        --landing-text: var(--color-dark);
+        --landing-surface: rgba(0, 0, 0, 0.03); /* slight dark tint for surface */
+        --landing-border: rgba(0, 0, 0, 0.08);
 
-    /* Shadcn Variables (Light Theme - Mapped to Brand Palette) */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 20%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 20%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 20%;
-    --primary: 208 44% 45%; /* Blue */
-    --primary-foreground: 0 0% 100%;
-    --secondary: 339 74% 81%; /* Pink */
-    --secondary-foreground: 0 0% 20%;
-    --muted: 0 5% 92%; /* Grey */
-    --muted-foreground: 0 0% 40%;
-    --accent: 339 88% 83%; /* Pink Light */
-    --accent-foreground: 0 0% 20%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 5% 85%;
-    --input: 0 5% 85%;
-    --ring: 208 44% 45%; /* Blue */
-    --chart-1: 208 44% 45%;
-    --chart-2: 339 74% 81%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+        /* ---- Shadcn Variables (Светлая тема) ---- */
+        /* Основной цвет — брендовый розовый (#f1abc3) */
+        --background: 0 0% 100%;
+        --foreground: 0 0% 15%;
+        --card: 0 0% 100%;
+        --card-foreground: 0 0% 15%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 0 0% 15%;
+        --primary: 339 74% 81%; /* Розовый #f1abc3 */
+        --primary-foreground: 0 0% 15%; /* Тёмный текст на розовом */
+        --secondary: 339 74% 81%; /* Тот же розовый для бейджей */
+        --secondary-foreground: 0 0% 15%;
+        --muted: 0 0% 96%;
+        --muted-foreground: 0 0% 45%;
+        --accent: 339 80% 94%; /* Очень светлый розовый для ховеров */
+        --accent-foreground: 339 50% 30%;
+        --destructive: 0 84% 60%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 0 0% 88%;
+        --input: 0 0% 88%;
+        --ring: 339 60% 70%; /* Средний розовый для фокус-колец */
+        --chart-1: 339 74% 81%;
+        --chart-2: 208 44% 45%;
+        --chart-3: 197 37% 24%;
+        --chart-4: 43 74% 66%;
+        --chart-5: 27 87% 67%;
 
-    --radius: 0.5rem;
+        --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 0 0% 20%;
-    --sidebar-primary: 208 44% 45%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 339 74% 81%;
-    --sidebar-accent-foreground: 0 0% 20%;
-    --sidebar-border: 0 5% 85%;
-    --sidebar-ring: 208 44% 45%;
-  }
+        --sidebar-background: 0 0% 98%;
+        --sidebar-foreground: 0 0% 15%;
+        --sidebar-primary: 339 74% 81%;
+        --sidebar-primary-foreground: 0 0% 15%;
+        --sidebar-accent: 339 80% 94%;
+        --sidebar-accent-foreground: 339 50% 30%;
+        --sidebar-border: 0 0% 88%;
+        --sidebar-ring: 339 60% 70%;
+    }
 
-  .dark {
-    /* Landing Native Theme Tokens (Dark) */
-    --landing-bg: #121212;
-    --landing-text: #f5f5f5;
-    --landing-surface: rgba(255, 255, 255, 0.08); /* slight light tint */
-    --landing-border: rgba(255, 255, 255, 0.12);
+    .dark {
+        /* Landing Native Theme Tokens (Dark) */
+        --landing-bg: #121212;
+        --landing-text: #f5f5f5;
+        --landing-surface: rgba(255, 255, 255, 0.08); /* slight light tint */
+        --landing-border: rgba(255, 255, 255, 0.12);
 
-    /* Shadcn Variables (Dark Theme - Mapped to Brand Palette) */
-    --background: 0 0% 10%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 12%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 12%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 208 44% 45%; /* Blue */
-    --primary-foreground: 0 0% 100%;
-    --secondary: 339 74% 81%; /* Pink */
-    --secondary-foreground: 0 0% 20%;
-    --muted: 0 0% 20%;
-    --muted-foreground: 0 0% 65%;
-    --accent: 0 0% 20%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 208 44% 45%; /* Blue */
+        /* ---- Shadcn Variables (Тёмная тема) ---- */
+        /* Фон — тёмный сине-серый, розовый остаётся акцентом */
+        --background: 220 15% 7%; /* #0b0d12 */
+        --foreground: 0 0% 93%; /* #ededed */
+        --card: 220 13% 11%; /* #161a22 */
+        --card-foreground: 0 0% 93%;
+        --popover: 220 13% 11%;
+        --popover-foreground: 0 0% 93%;
+        --primary: 339 68% 74%; /* Розовый для тёмного фона: #d98fb4 */
+        --primary-foreground: 0 0% 8%; /* Тёмный текст на розовом */
+        --secondary: 339 55% 65%; /* Более насыщенный розовый для бейджей */
+        --secondary-foreground: 0 0% 8%;
+        --muted: 220 10% 16%; /* #222630 */
+        --muted-foreground: 0 0% 60%;
+        --accent: 220 10% 18%; /* #252a36 */
+        --accent-foreground: 0 0% 93%;
+        --destructive: 0 55% 40%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 220 10% 20%; /* #282e3d */
+        --input: 220 10% 20%;
+        --ring: 339 60% 68%; /* Розовое фокус-кольцо */
 
-    --chart-1: 208 44% 45%;
-    --chart-2: 339 74% 81%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+        --chart-1: 339 68% 74%;
+        --chart-2: 208 55% 60%;
+        --chart-3: 30 80% 55%;
+        --chart-4: 280 65% 60%;
+        --chart-5: 340 75% 55%;
 
-    --sidebar-background: 0 0% 12%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 208 44% 45%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 20%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 0 0% 20%;
-    --sidebar-ring: 208 44% 45%;
-  }
+        --sidebar-background: 220 13% 11%;
+        --sidebar-foreground: 0 0% 93%;
+        --sidebar-primary: 339 68% 74%;
+        --sidebar-primary-foreground: 0 0% 8%;
+        --sidebar-accent: 220 10% 16%;
+        --sidebar-accent-foreground: 0 0% 93%;
+        --sidebar-border: 220 10% 20%;
+        --sidebar-ring: 339 60% 68%;
+    }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
+    * {
+        @apply border-border;
+    }
 
-  body {
-    @apply bg-background text-foreground;
-  }
+    body {
+        @apply bg-background text-foreground;
+    }
 }

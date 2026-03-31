@@ -45,13 +45,15 @@ export function getBlogLocale(locale: string, availableLocales: string[]): BlogL
 
 /**
  * Форматирует дату статьи для отображения.
+ * Принимает Date или строку — unstable_cache сериализует даты в ISO-строки через JSON.
  */
-export function formatBlogDate(date: Date, locale: string): string {
+export function formatBlogDate(date: Date | string, locale: string): string {
+  const d = date instanceof Date ? date : new Date(date);
   return new Intl.DateTimeFormat(locale === 'sr' ? 'sr-RS' : locale, {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
-  }).format(date);
+  }).format(d);
 }
 
 /**

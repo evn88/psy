@@ -1,8 +1,9 @@
 'use client';
 
+import { useSyncExternalStore } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { Sun, Moon, ArrowLeft, Home } from 'lucide-react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { ArrowLeft, Home, Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 
@@ -11,6 +12,13 @@ const LOCALE_LABELS: Record<string, string> = { ru: 'RU', en: 'EN', sr: 'SR' };
 
 export function BlogHeader() {
   const { resolvedTheme, setTheme } = useTheme();
+  // useSyncExternalStore: на сервере возвращает false, на клиенте — true.
+  // Избегаем useEffect + setState, которые нарушают react-hooks/set-state-in-effect.
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -71,14 +79,20 @@ export function BlogHeader() {
             ))}
           </div>
 
-          {/* Переключатель темы */}
+          {/* Переключатель темы — рендерим нейтральную иконку до гидратации */}
           <button
             type="button"
             onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
             className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            title={resolvedTheme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
+            title={
+              mounted ? (resolvedTheme === 'dark' ? 'Светлая тема' : 'Тёмная тема') : 'Сменить тему'
+            }
           >
-            {resolvedTheme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
+            {mounted && resolvedTheme === 'dark' ? (
+              <Sun className="size-4" />
+            ) : (
+              <Moon className="size-4" />
+            )}
           </button>
         </div>
       </div>

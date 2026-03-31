@@ -1,11 +1,35 @@
 import { Suspense } from 'react';
+import { unstable_cache } from 'next/cache';
 import { cookies } from 'next/headers';
-import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import prisma from '@/shared/lib/prisma';
 import { BlogCard } from './_components/blog-card';
 import { CategoryFilter } from './_components/category-filter';
 import { SubscribeForm } from './_components/subscribe-form';
+
+const getCachedPosts = unstable_cache(
+  async (categorySlug: string | null) =>
+    prisma.blogPost.findMany({
+      where: {
+        status: 'PUBLISHED',
+        ...(categorySlug ? { categories: { some: { category: { slug: categorySlug } } } } : {})
+      },
+      orderBy: { publishedAt: 'desc' },
+      include: {
+        translations: { select: { locale: true, title: true, description: true } },
+        categories: { include: { category: { select: { slug: true, name: true } } } },
+        author: { select: { name: true } }
+      }
+    }),
+  ['blog-posts'],
+  { revalidate: 60, tags: ['blog-posts'] }
+);
+
+const getCachedCategories = unstable_cache(
+  async () => prisma.blogCategory.findMany({ orderBy: { createdAt: 'asc' } }),
+  ['blog-categories'],
+  { revalidate: 60, tags: ['blog-categories'] }
+);
 
 export const dynamic = 'force-dynamic';
 
@@ -21,19 +45,8 @@ async function BlogContent({
   locale: string;
 }) {
   const [posts, categories] = await Promise.all([
-    prisma.blogPost.findMany({
-      where: {
-        status: 'PUBLISHED',
-        ...(categorySlug ? { categories: { some: { category: { slug: categorySlug } } } } : {})
-      },
-      orderBy: { publishedAt: 'desc' },
-      include: {
-        translations: { select: { locale: true, title: true, description: true } },
-        categories: { include: { category: { select: { slug: true, name: true } } } },
-        author: { select: { name: true } }
-      }
-    }),
-    prisma.blogCategory.findMany({ orderBy: { createdAt: 'asc' } })
+    getCachedPosts(categorySlug),
+    getCachedCategories()
   ]);
 
   const localeOrder = [locale, 'ru', 'en', 'sr'];

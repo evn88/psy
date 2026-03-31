@@ -36,8 +36,8 @@ export function CategoryFilter({ categories, activeSlug, locale }: CategoryFilte
         className={cn(
           'px-4 py-1.5 rounded-full text-sm font-medium border transition-colors',
           !activeSlug
-            ? 'bg-[#900A0B] text-white border-[#900A0B]'
-            : 'bg-background text-foreground border-border hover:border-[#900A0B]/50'
+            ? 'bg-primary text-primary-foreground border-primary'
+            : 'bg-background text-foreground border-border hover:border-primary/50'
         )}
       >
         Все
@@ -50,8 +50,8 @@ export function CategoryFilter({ categories, activeSlug, locale }: CategoryFilte
           className={cn(
             'px-4 py-1.5 rounded-full text-sm font-medium border transition-colors',
             activeSlug === cat.slug
-              ? 'bg-[#900A0B] text-white border-[#900A0B]'
-              : 'bg-background text-foreground border-border hover:border-[#900A0B]/50'
+              ? 'bg-primary text-primary-foreground border-primary'
+              : 'bg-background text-foreground border-border hover:border-primary/50'
           )}
         >
           {cat.name[locale] ?? cat.name.ru ?? cat.slug}

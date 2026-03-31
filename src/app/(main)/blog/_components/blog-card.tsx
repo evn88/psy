@@ -66,11 +66,7 @@ export function BlogCard({
         {categories.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {categories.map(cat => (
-              <Badge
-                key={cat.slug}
-                variant="secondary"
-                className="text-xs hover:bg-[#900A0B]/10 hover:text-[#900A0B]"
-              >
+              <Badge key={cat.slug} variant="secondary" className="text-xs">
                 {cat.name[locale] ?? cat.name.ru ?? cat.slug}
               </Badge>
             ))}
@@ -78,14 +74,16 @@ export function BlogCard({
         )}
 
         {/* Заголовок */}
-        <h2 className="font-bold text-foreground text-lg leading-snug group-hover:text-[#900A0B] transition-colors line-clamp-2">
+        <h2 className="font-bold text-foreground text-lg leading-snug group-hover:text-primary transition-colors line-clamp-2">
           {title}
         </h2>
 
-        {/* Описание */}
-        {description && (
-          <p className="text-sm text-muted-foreground line-clamp-3 flex-1">{description}</p>
-        )}
+        {/* Описание — flex-1 на обёртке, line-clamp на параграфе, иначе конфликт в flexbox */}
+        <div className="flex-1 min-h-0 overflow-hidden">
+          {description && (
+            <p className="text-sm text-muted-foreground line-clamp-3">{description}</p>
+          )}
+        </div>
 
         {/* Мета */}
         <div className="flex items-center justify-between text-xs text-muted-foreground mt-auto pt-2 border-t border-border">

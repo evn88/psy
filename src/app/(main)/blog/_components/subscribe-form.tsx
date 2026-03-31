@@ -51,13 +51,9 @@ export function SubscribeForm() {
         onChange={e => setEmail(e.target.value)}
         placeholder="Ваш email"
         required
-        className="focus-visible:ring-[#900A0B]"
+        className="focus-visible:ring-ring"
       />
-      <Button
-        type="submit"
-        disabled={loading}
-        className="bg-[#900A0B] hover:bg-[#900A0B]/90 text-white whitespace-nowrap"
-      >
+      <Button type="submit" disabled={loading} className="whitespace-nowrap">
         {loading ? 'Подписываю...' : 'Подписаться'}
       </Button>
     </form>
