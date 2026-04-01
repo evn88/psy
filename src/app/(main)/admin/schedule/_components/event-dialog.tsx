@@ -33,6 +33,12 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import {
+  DEFAULT_SESSION_REMINDER_MINUTES,
+  MAX_SESSION_REMINDER_MINUTES,
+  MIN_SESSION_REMINDER_MINUTES,
+  SESSION_REMINDER_PRESET_MINUTES
+} from '@/shared/lib/session-reminders';
 
 const eventTypeOptions = [
   'CONSULTATION',
@@ -52,7 +58,12 @@ const eventSchema = z
     start: z.string().min(1, 'Required'),
     end: z.string().min(1, 'Required'),
     meetLink: z.string().url('Must be a valid URL').optional().or(z.literal('')),
-    userId: z.string().optional().nullable()
+    userId: z.string().optional().nullable(),
+    reminderMinutesBeforeStart: z
+      .number()
+      .int()
+      .min(MIN_SESSION_REMINDER_MINUTES)
+      .max(MAX_SESSION_REMINDER_MINUTES)
   })
   .superRefine((data, ctx) => {
     if (new Date(data.start).getTime() >= new Date(data.end).getTime()) {
@@ -140,7 +151,9 @@ export const EventDialog = ({
       start: event ? toLocalISOString(new Date(event.start)) : defaultStart,
       end: event ? toLocalISOString(new Date(event.end)) : defaultEnd,
       meetLink: event?.meetLink || '',
-      userId: event?.userId || null
+      userId: event?.userId || null,
+      reminderMinutesBeforeStart:
+        event?.reminderMinutesBeforeStart ?? DEFAULT_SESSION_REMINDER_MINUTES
     }
   });
 
@@ -153,7 +166,8 @@ export const EventDialog = ({
         end: new Date(values.end).toISOString(),
         title: values.title ?? '',
         meetLink: values.meetLink || undefined,
-        userId: values.userId ?? null
+        userId: values.userId ?? null,
+        reminderMinutesBeforeStart: values.reminderMinutesBeforeStart
       };
       await onSave(payload);
       onOpenChange(false);
@@ -295,6 +309,36 @@ export const EventDialog = ({
                   <FormControl>
                     <Input placeholder="https://meet.google.com/..." {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="reminderMinutesBeforeStart"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('sessionReminderLabel')}</FormLabel>
+                  <Select
+                    onValueChange={value => field.onChange(Number(value))}
+                    value={String(field.value)}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('sessionReminderLabel')} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {SESSION_REMINDER_PRESET_MINUTES.map(minutes => (
+                        <SelectItem key={minutes} value={String(minutes)}>
+                          {minutes === 0
+                            ? t('sessionReminderAtStart')
+                            : t('sessionReminderBeforeMinutes', { minutes })}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

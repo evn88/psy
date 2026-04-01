@@ -19,7 +19,7 @@ interface UserScheduleDetailsProps {
   viewMode: 'day' | 'week';
   onViewModeChange: (mode: 'day' | 'week') => void;
   isLoading: boolean;
-  onBookEvent: (id: string) => Promise<void>;
+  onBookEvent: (id: string, reminderMinutesBeforeStart: number) => Promise<void>;
   onCancelEvent: (id: string, reason?: string) => Promise<void>;
   onRescheduleEvent: (oldId: string, newId: string) => Promise<void>;
 }

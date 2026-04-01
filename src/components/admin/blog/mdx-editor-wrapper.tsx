@@ -2,38 +2,37 @@
 
 import '@mdxeditor/editor/style.css';
 import {
-  MDXEditor,
-  headingsPlugin,
-  listsPlugin,
-  quotePlugin,
-  thematicBreakPlugin,
-  markdownShortcutPlugin,
-  linkPlugin,
-  linkDialogPlugin,
-  imagePlugin,
-  tablePlugin,
+  BlockTypeSelect,
+  BoldItalicUnderlineToggles,
   codeBlockPlugin,
   codeMirrorPlugin,
+  CreateLink,
   diffSourcePlugin,
-  toolbarPlugin,
-  UndoRedo,
-  BoldItalicUnderlineToggles,
-  BlockTypeSelect,
+  headingsPlugin,
+  imagePlugin,
   InsertImage,
   InsertTable,
-  InsertThematicBreak,
+  linkDialogPlugin,
+  linkPlugin,
+  listsPlugin,
   ListsToggle,
-  CreateLink,
+  markdownShortcutPlugin,
+  MDXEditor,
+  type MDXEditorMethods,
+  quotePlugin,
   Separator,
-  CodeToggle,
-  DiffSourceToggleWrapper,
-  type MDXEditorMethods
+  tablePlugin,
+  thematicBreakPlugin,
+  toolbarPlugin,
+  UndoRedo,
+  useCellValues,
+  usePublisher,
+  viewMode$
 } from '@mdxeditor/editor';
-import { forwardRef, useState, useEffect } from 'react';
+import { forwardRef, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Sun, Moon } from 'lucide-react';
-import { useTheme } from 'next-themes';
-import { useCellValues, usePublisher, viewMode$, ViewMode } from '@mdxeditor/editor';
+import { Moon, Sun } from 'lucide-react';
+import { useTheme } from '@/components/theme-provider';
 
 interface MdxEditorWrapperProps {
   value: string;

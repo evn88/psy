@@ -138,12 +138,16 @@ npm run dev
 
 #### Email & Notifications
 
-| Variable                       | Description                                                                            |
-|--------------------------------|----------------------------------------------------------------------------------------|
-| `RESEND_API_KEY`               | Resend API key for transactional emails                                                |
-| `VAPID_PRIVATE_KEY`            | VAPID private key for push notifications (keep secret)                                 |
-| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | VAPID public key for push notifications (safe to expose)                               |
-| `VAPID_SUBJECT`                | VAPID subject URI (e.g., `mailto:your@email.com`) for push notification identification |
+| Variable                                | Description                                                                            |
+|-----------------------------------------|----------------------------------------------------------------------------------------|
+| `RESEND_API_KEY`                        | Resend API key for transactional emails                                                |
+| `VAPID_PRIVATE_KEY`                     | VAPID private key for push notifications (keep secret)                                 |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY`          | VAPID public key for push notifications (safe to expose)                               |
+| `VAPID_SUBJECT`                         | VAPID subject URI (e.g., `mailto:your@email.com`) for push notification identification |
+| `CRON_SECRET`                           | Secret token for securing daily Vercel Cron endpoint `/api/cron/session-reminders`     |
+| `WORKFLOW_MONTHLY_STEP_LIMIT`           | Optional monthly workflow steps budget for admin alerts (default: `50000`)             |
+| `WORKFLOW_ALERT_THRESHOLD_PERCENT`      | Optional warning threshold in percent (default: `80`)                                  |
+| `WORKFLOW_ESTIMATED_STEPS_PER_REMINDER` | Optional estimated steps per one reminder workflow run (default: `3`)                  |
 
 #### AI & Storage
 

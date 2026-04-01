@@ -40,5 +40,20 @@
     "reasonLabel": "Причина",
     "button": "Посмотреть расписание",
     "footer": "Если у вас есть вопросы, пожалуйста, свяжитесь с нами."
+  },
+  "sessionReminder": {
+    "subjectInMinutes": "Сессия начнется через {minutes} мин - Vershkov.com",
+    "subjectNow": "Сессия начинается сейчас - Vershkov.com",
+    "headingInMinutes": "Напоминание о сессии",
+    "headingNow": "Сессия начинается сейчас",
+    "greeting": "Здравствуйте, {name}!",
+    "messageInMinutes": "Сессия \"{title}\" начнется через {minutes} минут.",
+    "messageNow": "Сессия \"{title}\" начинается прямо сейчас.",
+    "dateLabel": "Дата",
+    "timeLabel": "Время",
+    "typeLabel": "Тип события",
+    "meetLinkLabel": "Ссылка на встречу",
+    "button": "Открыть расписание",
+    "footer": "Это автоматическое напоминание. Пожалуйста, не отвечайте на это письмо."
   }
 }

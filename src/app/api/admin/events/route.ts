@@ -6,6 +6,12 @@ import { EventStatus, EventType, Prisma } from '@prisma/client';
 import { sendEventNotificationEmail } from '@/shared/lib/email';
 import { fetchGoogleEvents, syncEventWithGoogle } from '@/shared/lib/google-sync';
 import { doesDateRangeOverlap, isValidDateRange } from '@/shared/lib/event-utils';
+import { startSessionReminderWorkflow } from '@/shared/lib/session-reminder-workflow';
+import {
+  DEFAULT_SESSION_REMINDER_MINUTES,
+  MAX_SESSION_REMINDER_MINUTES,
+  MIN_SESSION_REMINDER_MINUTES
+} from '@/shared/lib/session-reminders';
 
 const getEventsSchema = z.object({
   start: z.string().datetime().optional(),
@@ -110,7 +116,14 @@ const createEventSchema = z.object({
   status: z.nativeEnum(EventStatus).optional().default('SCHEDULED'),
   title: z.string().optional(),
   meetLink: z.string().url().optional().or(z.literal('')),
-  userId: z.string().nullable().optional()
+  userId: z.string().nullable().optional(),
+  reminderMinutesBeforeStart: z.coerce
+    .number()
+    .int()
+    .min(MIN_SESSION_REMINDER_MINUTES)
+    .max(MAX_SESSION_REMINDER_MINUTES)
+    .optional()
+    .default(DEFAULT_SESSION_REMINDER_MINUTES)
 });
 
 /**
@@ -134,7 +147,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const { type, start, end, status, title, meetLink, userId } = result.data;
+    const { type, start, end, status, title, meetLink, userId, reminderMinutesBeforeStart } =
+      result.data;
     const startDate = new Date(start);
     const endDate = new Date(end);
 
@@ -181,6 +195,7 @@ export async function POST(req: Request) {
         title,
         meetLink: meetLink || null,
         userId: userId || null,
+        reminderMinutesBeforeStart,
         authorId: session.user.id!
       },
       include: {
@@ -202,6 +217,13 @@ export async function POST(req: Request) {
         timezone: newEvent.user.timezone || 'UTC'
       });
     }
+
+    await startSessionReminderWorkflow({
+      id: newEvent.id,
+      userId: newEvent.userId,
+      status: newEvent.status,
+      reminderWorkflowVersion: newEvent.reminderWorkflowVersion
+    });
 
     // Trigger Google Calendar sync hook
     syncEventWithGoogle(newEvent.id, 'CREATE');

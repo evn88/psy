@@ -1,6 +1,17 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import prisma from '@/shared/lib/prisma';
-import { Activity, Ban, CalendarCheck, CalendarClock, Clock, UserCheck, Users } from 'lucide-react';
+import { getWorkflowBudgetSnapshot } from '@/shared/lib/workflow-budget';
+import {
+  Activity,
+  Ban,
+  BellRing,
+  CalendarCheck,
+  CalendarClock,
+  Clock,
+  Gauge,
+  UserCheck,
+  Users
+} from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 import { endOfMonth, endOfWeek, startOfMonth, startOfWeek } from 'date-fns';
 
@@ -100,6 +111,8 @@ const getStats = async () => {
     }
   });
 
+  const workflowBudgetSnapshot = await getWorkflowBudgetSnapshot();
+
   return {
     userCount,
     activeSessionsCount,
@@ -108,13 +121,15 @@ const getStats = async () => {
     scheduledHoursThisWeek,
     bookedUsersCount,
     freeHours,
-    cancelledEventsCount
+    cancelledEventsCount,
+    workflowBudgetSnapshot
   };
 };
 
 export default async function AdminDashboardPage() {
   const stats = await getStats();
   const t = await getTranslations('Admin');
+  const numberFormatter = new Intl.NumberFormat();
 
   return (
     <div className="space-y-4">
@@ -210,6 +225,52 @@ export default async function AdminDashboardPage() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.activeSessionsCount}</div>
             <p className="text-xs text-muted-foreground">{t('activeSessions')}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 mt-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              {t('workflowRemainingStepsTitle')}
+            </CardTitle>
+            <Gauge className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {numberFormatter.format(stats.workflowBudgetSnapshot.remainingSteps)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {t('workflowRemainingStepsDesc', {
+                period: stats.workflowBudgetSnapshot.periodKey,
+                used: numberFormatter.format(stats.workflowBudgetSnapshot.estimatedSteps),
+                limit: numberFormatter.format(stats.workflowBudgetSnapshot.monthlyStepLimit)
+              })}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              {t('workflowSentNotificationsTitle')}
+            </CardTitle>
+            <BellRing className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {numberFormatter.format(stats.workflowBudgetSnapshot.totalSentNotifications)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {t('workflowSentNotificationsDesc', {
+                email: numberFormatter.format(stats.workflowBudgetSnapshot.reminderEmailCount),
+                push: numberFormatter.format(stats.workflowBudgetSnapshot.reminderPushCount),
+                alerts: numberFormatter.format(
+                  stats.workflowBudgetSnapshot.adminAlertEmailSentCount
+                )
+              })}
+            </p>
           </CardContent>
         </Card>
       </div>

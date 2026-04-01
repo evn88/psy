@@ -1,5 +1,5 @@
 import useSWR from 'swr';
-import { EventType, EventStatus } from '@prisma/client';
+import { EventStatus, EventType } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 
 export interface UserEvent {
@@ -12,6 +12,8 @@ export interface UserEvent {
   description: string | null;
   meetLink: string | null;
   userId: string | null;
+  reminderMinutesBeforeStart: number;
+  bookingReminderMinutesBeforeStart: number | null;
 }
 
 const fetcher = async (url: string) => {
@@ -31,11 +33,11 @@ export function useUserEvents(startStr: string, endStr: string) {
     { refreshInterval: 30000, keepPreviousData: true }
   );
 
-  const bookEvent = async (id: string) => {
+  const bookEvent = async (id: string, reminderMinutesBeforeStart: number) => {
     const res = await fetch(`/api/user/events/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'book' })
+      body: JSON.stringify({ action: 'book', reminderMinutesBeforeStart })
     });
 
     if (!res.ok) {

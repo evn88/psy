@@ -46,15 +46,15 @@ enum AssignmentStatus {
 }
 
 model User {
-  id            String          @id @default(cuid())
+  id            String             @id @default(cuid())
   name          String?
-  email         String          @unique
+  email         String             @unique
   emailVerified DateTime?
   image         String?
   password      String?
-  role          Role            @default(GUEST)
-  isDisabled    Boolean         @default(false)
-  timezone      String?         @default("UTC")
+  role          Role               @default(GUEST)
+  isDisabled    Boolean            @default(false)
+  timezone      String?            @default("UTC")
   accounts      Account[]
   sessions      Session[]
   // Опционально для поддержки WebAuthn
@@ -87,7 +87,7 @@ model User {
   pushSubscriptions PushSubscription[]
 
   // Блог
-  blogNotifications Boolean   @default(false)
+  blogNotifications Boolean    @default(false)
   blogPosts         BlogPost[] @relation("BlogAuthor")
 }
 
@@ -254,7 +254,7 @@ model UserLoginHistory {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   ip        String?
-  provider  String   // "credentials", "google", "webauthn"
+  provider  String // "credentials", "google", "webauthn"
   createdAt DateTime @default(now())
 }
 
@@ -269,6 +269,10 @@ model UserLoginHistory {
 enum BlogPostStatus {
   DRAFT
   PUBLISHED
+}
+
+enum SystemAlertType {
+  WORKFLOW_STEPS_THRESHOLD
 }
 
 /// Статья блога
@@ -296,7 +300,7 @@ model BlogPostVersion {
   id           String   @id @default(cuid())
   postId       String
   post         BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  translations Json     // снапшот переводов [{ locale, title, description, content }]
+  translations Json // снапшот переводов [{ locale, title, description, content }]
   categoryIds  String[] // снапшот категорий
   coverImage   String?
   savedAt      DateTime @default(now())
@@ -351,16 +355,21 @@ model BlogSubscription {
 }
 
 model Event {
-  id             String      @id @default(cuid())
-  title          String?
-  type           EventType
-  status         EventStatus @default(SCHEDULED)
-  start          DateTime
-  end            DateTime
-  meetLink       String?
-  cancelReason   String?
-  isGoogleSynced Boolean     @default(false)
-  googleEventId  String?
+  id                                String      @id @default(cuid())
+  title                             String?
+  type                              EventType
+  status                            EventStatus @default(SCHEDULED)
+  start                             DateTime
+  end                               DateTime
+  meetLink                          String?
+  cancelReason                      String?
+  isGoogleSynced                    Boolean     @default(false)
+  googleEventId                     String?
+  reminderMinutesBeforeStart        Int         @default(30)
+  bookingReminderMinutesBeforeStart Int?
+  reminderEmailSentAt               DateTime?
+  reminderPushSentAt                DateTime?
+  reminderWorkflowVersion           Int         @default(1)
 
   authorId String
   author   User   @relation("EventCreator", fields: [authorId], references: [id], onDelete: Cascade)
@@ -373,4 +382,18 @@ model Event {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([userId, status, start])
+  @@index([start, reminderEmailSentAt, reminderPushSentAt])
+}
+
+model SystemAlert {
+  id        String          @id @default(cuid())
+  type      SystemAlertType
+  periodKey String
+  payload   Json?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@unique([type, periodKey])
 }

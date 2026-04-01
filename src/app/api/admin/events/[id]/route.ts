@@ -6,6 +6,11 @@ import { EventStatus, EventType, Prisma } from '@prisma/client';
 import { sendEventCancellationEmail, sendEventNotificationEmail } from '@/shared/lib/email';
 import { syncEventWithGoogle } from '@/shared/lib/google-sync';
 import { doesDateRangeOverlap, isValidDateRange } from '@/shared/lib/event-utils';
+import { startSessionReminderWorkflow } from '@/shared/lib/session-reminder-workflow';
+import {
+  MAX_SESSION_REMINDER_MINUTES,
+  MIN_SESSION_REMINDER_MINUTES
+} from '@/shared/lib/session-reminders';
 
 const updateEventSchema = z.object({
   type: z.nativeEnum(EventType).optional(),
@@ -14,7 +19,13 @@ const updateEventSchema = z.object({
   status: z.nativeEnum(EventStatus).optional(),
   title: z.string().optional().nullable(),
   meetLink: z.string().url().optional().or(z.literal('')).nullable(),
-  userId: z.string().optional().nullable()
+  userId: z.string().optional().nullable(),
+  reminderMinutesBeforeStart: z.coerce
+    .number()
+    .int()
+    .min(MIN_SESSION_REMINDER_MINUTES)
+    .max(MAX_SESSION_REMINDER_MINUTES)
+    .optional()
 });
 
 type EventConflict = {
@@ -62,6 +73,17 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
     const nextStart = start ? new Date(start) : event.start;
     const nextEnd = end ? new Date(end) : event.end;
     const nextStatus = status ?? event.status;
+    const hasUserField = Object.prototype.hasOwnProperty.call(result.data, 'userId');
+    const isStartChanged = Boolean(start) && nextStart.getTime() !== event.start.getTime();
+    const isEndChanged = Boolean(end) && nextEnd.getTime() !== event.end.getTime();
+    const isStatusChanged = typeof status === 'string' && status !== event.status;
+    const isReminderMinutesChanged =
+      typeof result.data.reminderMinutesBeforeStart === 'number' &&
+      result.data.reminderMinutesBeforeStart !== event.reminderMinutesBeforeStart;
+    const isUserChanged = hasUserField && result.data.userId !== event.userId;
+    const shouldResetReminderSentAt =
+      isStartChanged || isEndChanged || isReminderMinutesChanged || isUserChanged;
+    const shouldBumpReminderWorkflowVersion = shouldResetReminderSentAt || isStatusChanged;
 
     if (!isValidDateRange({ start: nextStart, end: nextEnd })) {
       return NextResponse.json({ message: 'Invalid date range' }, { status: 400 });
@@ -94,12 +116,24 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
       }
     }
 
-    const updateData: Prisma.EventUpdateInput = { ...restData, status: nextStatus };
+    const updateData: Prisma.EventUncheckedUpdateInput = { ...restData, status: nextStatus };
     if (start) {
       updateData.start = nextStart;
     }
     if (end) {
       updateData.end = nextEnd;
+    }
+    if (shouldResetReminderSentAt) {
+      updateData.reminderEmailSentAt = null;
+      updateData.reminderPushSentAt = null;
+    }
+    if (shouldBumpReminderWorkflowVersion) {
+      updateData.reminderWorkflowVersion = {
+        increment: 1
+      };
+    }
+    if (hasUserField) {
+      updateData.bookingReminderMinutesBeforeStart = null;
     }
 
     const updatedEvent = await prisma.event.update({
@@ -138,6 +172,13 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
         });
       }
     }
+
+    await startSessionReminderWorkflow({
+      id: updatedEvent.id,
+      userId: updatedEvent.userId,
+      status: updatedEvent.status,
+      reminderWorkflowVersion: updatedEvent.reminderWorkflowVersion
+    });
 
     // Trigger Google Calendar sync hook
     syncEventWithGoogle(updatedEvent.id, 'UPDATE');

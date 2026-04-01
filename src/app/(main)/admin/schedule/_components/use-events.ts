@@ -13,6 +13,7 @@ export type EventMutationInput = {
   title: string;
   meetLink?: string;
   userId: string | null;
+  reminderMinutesBeforeStart: number;
 };
 
 type EventApiItem = Omit<Event, 'start' | 'end' | 'createdAt' | 'updatedAt'> & {

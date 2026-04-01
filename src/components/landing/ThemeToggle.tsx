@@ -1,6 +1,6 @@
 'use client';
 
-import { useTheme } from 'next-themes';
+import { useTheme } from '@/components/theme-provider';
 import { Moon, Sun } from 'lucide-react';
 import { useSyncExternalStore } from 'react';
 import styles from '@/styles/landing/landing.module.css';

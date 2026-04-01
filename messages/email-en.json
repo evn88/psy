@@ -40,5 +40,20 @@
     "reasonLabel": "Reason",
     "button": "View My Schedule",
     "footer": "If you have any questions, please contact us."
+  },
+  "sessionReminder": {
+    "subjectInMinutes": "Session starts in {minutes} min - Vershkov.com",
+    "subjectNow": "Session starts now - Vershkov.com",
+    "headingInMinutes": "Session Reminder",
+    "headingNow": "Your session starts now",
+    "greeting": "Hello, {name}!",
+    "messageInMinutes": "Your session \"{title}\" starts in {minutes} minutes.",
+    "messageNow": "Your session \"{title}\" starts right now.",
+    "dateLabel": "Date",
+    "timeLabel": "Time",
+    "typeLabel": "Event Type",
+    "meetLinkLabel": "Meeting Link",
+    "button": "Open My Schedule",
+    "footer": "This is an automated reminder. Please do not reply."
   }
 }

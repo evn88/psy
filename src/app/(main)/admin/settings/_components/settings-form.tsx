@@ -28,11 +28,11 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { updateSettings } from '../actions';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { useTheme } from '@/components/theme-provider';
 
 const formSchema = z.object({
   language: z.string(),

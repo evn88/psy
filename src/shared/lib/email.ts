@@ -5,6 +5,7 @@ import { EventNotificationTemplate } from '@/components/email-templates/event-no
 import { EventCancellationTemplate } from '@/components/email-templates/event-cancellation-template';
 import { AdminEventBookingTemplate } from '@/components/email-templates/admin-event-booking-template';
 import { AdminEventCancellationTemplate } from '@/components/email-templates/admin-event-cancellation-template';
+import { AdminMessageTemplate } from '@/components/email-templates/admin-message-template';
 import { BlogNotificationEmail } from '@/components/email-templates/blog-notification-template';
 import { render } from '@react-email/render';
 import type { BlogPost, BlogPostTranslation } from '@prisma/client';
@@ -275,6 +276,57 @@ export const sendAdminEventCancellationEmail = async ({
   return data?.id ?? null;
 };
 
+interface SendWorkflowStepsThresholdAlertEmailParams {
+  email: string;
+  name: string;
+  periodKey: string;
+  estimatedSteps: number;
+  monthlyLimit: number;
+  usagePercent: number;
+  thresholdPercent: number;
+  remindersCount: number;
+}
+
+/**
+ * Отправляет администратору оповещение о приближении к месячному лимиту Workflow.
+ * @returns id письма в Resend или null при ошибке
+ */
+export const sendWorkflowStepsThresholdAlertEmail = async ({
+  email,
+  name,
+  periodKey,
+  estimatedSteps,
+  monthlyLimit,
+  usagePercent,
+  thresholdPercent,
+  remindersCount
+}: SendWorkflowStepsThresholdAlertEmailParams): Promise<string | null> => {
+  const subject = `[Workflow Alert] Порог ${thresholdPercent}% за ${periodKey}`;
+  const message = [
+    `Здравствуйте, ${name}!`,
+    '',
+    `За период ${periodKey} оценочный расход Workflow Steps достиг ${usagePercent.toFixed(1)}%.`,
+    `Оценка: ${estimatedSteps} / ${monthlyLimit} steps.`,
+    `Оценка основана на количестве отправленных напоминаний: ${remindersCount}.`,
+    '',
+    'Рекомендуется проверить usage в Vercel и при необходимости снизить частоту/объём напоминаний.'
+  ].join('\n');
+
+  const { data, error } = await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: [email],
+    subject,
+    react: AdminMessageTemplate({ subject, message })
+  });
+
+  if (error) {
+    console.error('Ошибка отправки workflow threshold alert email:', error);
+    return null;
+  }
+
+  return data?.id ?? null;
+};
+
 interface SendEventNotificationEmailParams {
   email: string;
   name: string;
@@ -337,6 +389,100 @@ export const sendEventNotificationEmail = async ({
 
   if (error) {
     console.error('Ошибка отправки event notification email:', error);
+    return null;
+  }
+
+  return data?.id ?? null;
+};
+
+interface SendSessionReminderEmailParams {
+  email: string;
+  name: string;
+  title: string;
+  eventType: string;
+  start: Date | string;
+  end: Date | string;
+  meetLink?: string;
+  manageUrl: string;
+  locale: string;
+  timezone: string;
+  reminderMinutes: number;
+}
+
+/**
+ * Отправляет email-напоминание о скором начале сессии.
+ * @returns id письма в Resend или null при ошибке
+ */
+export const sendSessionReminderEmail = async ({
+  email,
+  name,
+  title,
+  eventType,
+  start,
+  end,
+  meetLink,
+  manageUrl,
+  locale,
+  timezone,
+  reminderMinutes
+}: SendSessionReminderEmailParams): Promise<string | null> => {
+  const translations = getEmailTranslations(locale);
+  const sessionReminder = translations.sessionReminder;
+  const isStartsNow = reminderMinutes === 0;
+  const subjectTemplate = isStartsNow
+    ? sessionReminder?.subjectNow || 'Session starts now - Vershkov.com'
+    : sessionReminder?.subjectInMinutes || 'Session starts in {minutes} min - Vershkov.com';
+
+  const { data, error } = await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: [email],
+    subject: interpolate(subjectTemplate, {
+      minutes: String(reminderMinutes)
+    }),
+    react: EventNotificationTemplate({
+      name,
+      title,
+      eventType,
+      start,
+      end,
+      meetLink,
+      manageUrl,
+      timezone,
+      translations: {
+        heading:
+          (isStartsNow ? sessionReminder?.headingNow : sessionReminder?.headingInMinutes) ||
+          'Session Reminder',
+        greeting: interpolate(sessionReminder?.greeting || 'Hello, {name}!', { name }),
+        message: interpolate(
+          (isStartsNow ? sessionReminder?.messageNow : sessionReminder?.messageInMinutes) ||
+            'Your session "{title}" starts in {minutes} minutes.',
+          {
+            title: title || eventType,
+            minutes: String(reminderMinutes)
+          }
+        ),
+        dateLabel:
+          sessionReminder?.dateLabel || translations.eventNotification?.dateLabel || 'Date',
+        timeLabel:
+          sessionReminder?.timeLabel || translations.eventNotification?.timeLabel || 'Time',
+        typeLabel:
+          sessionReminder?.typeLabel || translations.eventNotification?.typeLabel || 'Event Type',
+        meetLinkLabel:
+          sessionReminder?.meetLinkLabel ||
+          translations.eventNotification?.meetLinkLabel ||
+          'Meeting Link',
+        button:
+          sessionReminder?.button || translations.eventNotification?.button || 'View My Schedule',
+        footer:
+          sessionReminder?.footer ||
+          translations.eventNotification?.footer ||
+          'This is an automated reminder. Please do not reply.'
+      }
+    })
+  });
+
+  if (error) {
+    console.error('Ошибка отправки session reminder email:', error);
     return null;
   }
 
