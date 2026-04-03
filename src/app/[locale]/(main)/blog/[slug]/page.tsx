@@ -11,7 +11,6 @@ import prisma from '@/shared/lib/prisma';
 import { createCanonicalAlternates, getLocalizedUrl, resolveMetadataImage } from '@/shared/lib/seo';
 import { extractDescription, formatBlogDate, getBlogLocale } from '@/shared/lib/blog-utils';
 import { ArticleContent } from './_components/article-content';
-import { ArticleLocaleSwitcher } from './_components/article-locale-switcher';
 
 interface BlogArticlePageProps {
   params: Promise<{ locale: string; slug: string }>;
@@ -204,11 +203,6 @@ const BlogArticlePage = async ({ params }: BlogArticlePageProps) => {
             <Clock className="size-3.5" />
             {t('readingTime', { n: post.readingTime })}
           </span>
-          <ArticleLocaleSwitcher
-            slug={slug}
-            availableLocales={availableLocales}
-            currentLocale={currentLocale}
-          />
         </div>
 
         <ArticleContent content={translation.content} />
