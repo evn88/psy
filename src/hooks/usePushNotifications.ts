@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? '';
 
@@ -41,29 +41,43 @@ function isBrowserSupported() {
   );
 }
 
+const subscribeNoop = () => {
+  return () => {};
+};
+
 export function usePushNotifications(): UsePushNotificationsReturn {
-  const [isSupported] = useState(() => isBrowserSupported());
-  const [permission, setPermission] = useState<NotificationPermission>(() =>
-    isBrowserSupported() ? Notification.permission : 'default'
+  const isSupported = useSyncExternalStore(subscribeNoop, isBrowserSupported, () => false);
+  const permission = useSyncExternalStore<NotificationPermission>(
+    subscribeNoop,
+    () => (isBrowserSupported() ? Notification.permission : 'default'),
+    () => 'default'
   );
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [permissionRefreshKey, setPermissionRefreshKey] = useState(0);
 
   useEffect(() => {
-    if (!isSupported) return;
-    navigator.serviceWorker.ready
+    if (!isSupported) {
+      return;
+    }
+
+    void navigator.serviceWorker.ready
       .then(reg => reg.pushManager.getSubscription())
       .then(sub => setIsSubscribed(!!sub))
       .catch(() => setIsSubscribed(false));
-  }, [isSupported]);
+  }, [isSupported, permissionRefreshKey]);
 
   const subscribe = useCallback(async () => {
-    if (!isSupported) return;
+    if (!isSupported) {
+      return;
+    }
 
     try {
       const perm = await Notification.requestPermission();
-      setPermission(perm);
+      setPermissionRefreshKey(value => value + 1);
 
-      if (perm !== 'granted') return;
+      if (perm !== 'granted') {
+        return;
+      }
 
       const reg = await navigator.serviceWorker.ready;
 

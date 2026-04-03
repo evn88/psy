@@ -31,9 +31,9 @@ import { z } from 'zod';
 import { useEffect, useState } from 'react';
 import { updateSettings } from '../actions';
 import { useLocale, useTranslations } from 'next-intl';
-import { useTheme } from '@/components/theme-provider';
+import { type Theme, useTheme } from '@/components/theme-provider';
 import { type AppLocale, defaultLocale, isLocale } from '@/i18n/config';
-import { usePathname, useRouter } from '@/i18n/navigation';
+import { getPathname, usePathname, useRouter } from '@/i18n/navigation';
 
 const formSchema = z.object({
   language: z.string(),
@@ -50,6 +50,19 @@ const normalizeLocale = (locale: string): AppLocale => {
 };
 
 /**
+ * Нормализует строковое значение темы к поддерживаемому union-типу.
+ * @param theme - произвольное значение темы.
+ * @returns Поддерживаемая тема интерфейса.
+ */
+const normalizeTheme = (theme: string): Theme => {
+  if (theme === 'light' || theme === 'dark' || theme === 'system') {
+    return theme;
+  }
+
+  return 'system';
+};
+
+/**
  * Устанавливает cookie NEXT_LOCALE для немедленной смены языка.
  * Вынесена вне компонента для соблюдения правил React Compiler.
  * @param locale - код языка ('en' | 'ru')
@@ -58,6 +71,25 @@ const setLocaleCookie = (locale: string): void => {
   if (typeof document !== 'undefined') {
     document.cookie = `NEXT_LOCALE=${locale}; path=/; max-age=31536000; SameSite=Lax`;
   }
+};
+
+/**
+ * Выполняет полную навигацию документа при смене locale.
+ * Это позволяет получить серверно-обновлённые locale-aware metadata и layout.
+ * @param pathname - текущий pathname без locale-префикса.
+ * @param locale - целевая locale.
+ */
+const navigateToLocaleDocument = (pathname: string, locale: AppLocale): void => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const targetPathname = getPathname({
+    href: pathname,
+    locale
+  });
+
+  window.location.assign(targetPathname);
 };
 
 interface SettingsFormProps {
@@ -88,7 +120,7 @@ export const SettingsForm = ({ initialSettings }: SettingsFormProps) => {
   // Синхронизация темы из БД при монтировании
   useEffect(() => {
     if (initialSettings.theme) {
-      setTheme(initialSettings.theme);
+      setTheme(normalizeTheme(initialSettings.theme));
     }
   }, [initialSettings.theme, setTheme]);
 
@@ -102,7 +134,7 @@ export const SettingsForm = ({ initialSettings }: SettingsFormProps) => {
     const nextLocale = normalizeLocale(values.language);
 
     // Немедленно применяем тему
-    setTheme(values.theme);
+    setTheme(normalizeTheme(values.theme));
 
     // Немедленно применяем locale через cookie (до router.refresh)
     setLocaleCookie(nextLocale);
@@ -112,7 +144,7 @@ export const SettingsForm = ({ initialSettings }: SettingsFormProps) => {
 
     if (result.success) {
       if (nextLocale !== normalizeLocale(locale)) {
-        router.replace(pathname, { locale: nextLocale });
+        navigateToLocaleDocument(pathname, nextLocale);
         return;
       }
 

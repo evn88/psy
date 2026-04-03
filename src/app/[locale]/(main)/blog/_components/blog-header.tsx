@@ -4,12 +4,32 @@ import { useSyncExternalStore } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, Home, Moon, Sun } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Link, usePathname, useRouter } from '@/i18n/navigation';
+import { getPathname, Link, usePathname } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/components/theme-provider';
+import { type AppLocale, isLocale } from '@/i18n/config';
 
 const LOCALES = ['ru', 'en', 'sr'] as const;
 const LOCALE_LABELS: Record<string, string> = { ru: 'RU', en: 'EN', sr: 'SR' };
+
+/**
+ * Выполняет полную навигацию документа при смене locale.
+ * Это позволяет серверу пересобрать страницу с корректными metadata и locale-cookie.
+ * @param href - относительный путь без locale-префикса.
+ * @param locale - целевая locale.
+ */
+const navigateToLocaleDocument = (href: string, locale: AppLocale): void => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const targetPathname = getPathname({
+    href,
+    locale
+  });
+
+  window.location.assign(targetPathname);
+};
 
 export function BlogHeader() {
   const { resolvedTheme, setTheme } = useTheme();
@@ -22,17 +42,20 @@ export function BlogHeader() {
     () => true,
     () => false
   );
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const isArticlePage = pathname !== '/blog';
 
   const handleLangSwitch = (locale: string) => {
+    if (!isLocale(locale)) {
+      return;
+    }
+
     const params = new URLSearchParams(searchParams.toString());
     const query = params.toString();
     const href = query ? `${pathname}?${query}` : pathname;
 
-    router.push(href, { locale });
+    navigateToLocaleDocument(href, locale);
   };
 
   return (

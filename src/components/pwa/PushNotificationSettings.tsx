@@ -1,17 +1,43 @@
 'use client';
 
+import { useSyncExternalStore } from 'react';
 import { Bell, BellOff, BellRing, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
+const subscribeNoop = () => {
+  return () => {};
+};
+
 /**
  * Блок управления push-уведомлениями в настройках пользователя.
  * Показывает текущий статус и позволяет включить/отключить подписку.
  */
 export function PushNotificationSettings() {
+  const mounted = useSyncExternalStore(
+    subscribeNoop,
+    () => true,
+    () => false
+  );
   const { isSupported, permission, isSubscribed, subscribe, unsubscribe } = usePushNotifications();
+
+  if (!mounted) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Bell className="h-4 w-4" />
+            Push-уведомления
+          </CardTitle>
+          <CardDescription>
+            Проверяем поддержку уведомлений и актуальный статус разрешений браузера.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
 
   if (!isSupported) {
     return (
@@ -58,16 +84,15 @@ export function PushNotificationSettings() {
             <p className="font-medium text-foreground">Firefox</p>
             <p>Нажмите на значок замка рядом с адресом → Разрешения → Уведомления → Разрешить.</p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="mt-2"
-            onClick={() =>
-              window.open('https://support.google.com/chrome/answer/3220216', '_blank')
-            }
-          >
-            <ExternalLink className="mr-2 h-3 w-3" />
-            Подробная инструкция
+          <Button asChild variant="outline" size="sm" className="mt-2">
+            <a
+              href="https://support.google.com/chrome/answer/3220216"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <ExternalLink className="mr-2 h-3 w-3" />
+              Подробная инструкция
+            </a>
           </Button>
         </CardContent>
       </Card>
