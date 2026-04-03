@@ -1,12 +1,13 @@
 import { defineRouting } from 'next-intl/routing';
+import { defaultLocale, locales } from './config';
 
 /**
  * Конфигурация маршрутизации для next-intl.
- * Используется стратегия без префиксов в URL (cookie-based).
- * Поддерживаемые языки: English (по умолчанию) и Русский.
+ * Используется стратегия с явным locale-префиксом в URL.
  */
 export const routing = defineRouting({
-  locales: ['en', 'ru', 'sr'],
-  defaultLocale: 'en',
-  localeDetection: false
+  locales,
+  defaultLocale,
+  localePrefix: 'always',
+  localeDetection: true
 });

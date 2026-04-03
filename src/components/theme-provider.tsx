@@ -5,6 +5,7 @@ import { ThemeProvider as NextThemesProvider, useTheme } from 'next-themes';
 
 /**
  * Обёртка над next-themes ThemeProvider.
+ * @param children
  * @param props - пропсы next-themes провайдера.
  * @returns Провайдер темы.
  */

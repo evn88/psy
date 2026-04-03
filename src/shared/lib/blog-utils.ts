@@ -1,5 +1,6 @@
 import slugify from 'slugify';
 import type { BlogLocale } from '@/shared/types/blog';
+import { BLOG_DEFAULT_LOCALE, BLOG_LOCALES } from '@/shared/types/blog';
 
 /**
  * Вычисляет примерное время чтения в минутах.
@@ -40,7 +41,16 @@ export function getBlogLocale(locale: string, availableLocales: string[]): BlogL
   if (availableLocales.includes(locale)) {
     return locale as BlogLocale;
   }
-  return 'ru';
+
+  if (availableLocales.includes(BLOG_DEFAULT_LOCALE)) {
+    return BLOG_DEFAULT_LOCALE;
+  }
+
+  const firstAvailableLocale = BLOG_LOCALES.find(blogLocale =>
+    availableLocales.includes(blogLocale)
+  );
+
+  return firstAvailableLocale ?? BLOG_DEFAULT_LOCALE;
 }
 
 /**
