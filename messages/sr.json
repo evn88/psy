@@ -15,13 +15,7 @@
     "work4": "Rad sa poremećajima u ishrani.",
     "contactTitle": "Sajt je u razvoju, ali možete me kontaktirati:",
     "telegramLink": "Telegram Kanal",
-    "tags": [
-      "Šema terapija",
-      "ACT",
-      "RO DBT",
-      "ADHD/ASD",
-      "Poremećaji ishrane"
-    ]
+    "tags": ["Šema terapija", "ACT", "RO DBT", "ADHD/ASD", "Poremećaji ishrane"]
   },
   "Auth": {
     "title": "Dobrodošli",
@@ -464,7 +458,7 @@
     "by": "autor",
     "readingTime": "{n} min čitanja",
     "noArticles": "Još nema članaka",
-    "backToBlog": "← Nazad na blog",
+    "backToBlog": "Nazad na blog",
     "shareArticle": "Podeli",
     "notFound": "Članak nije pronađen",
     "blogNotifications": "Primajte obaveštenja o novim blog člancima",

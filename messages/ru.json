@@ -17,13 +17,7 @@
     "telegramLink": "Telegram Канал",
     "instagramLink": "Instagram",
     "blogLink": "Блог",
-    "tags": [
-      "Схема-терапия",
-      "ACT",
-      "RO DBT",
-      "СДВГ/РАС",
-      "РПП"
-    ]
+    "tags": ["Схема-терапия", "ACT", "RO DBT", "СДВГ/РАС", "РПП"]
   },
   "Auth": {
     "title": "Добро пожаловать",
@@ -492,7 +486,7 @@
     "by": "Автор",
     "readingTime": "{n} мин чтения",
     "noArticles": "Статей пока нет",
-    "backToBlog": "← К блогу",
+    "backToBlog": "К блогу",
     "shareArticle": "Поделиться",
     "notFound": "Статья не найдена",
     "blogNotifications": "Получать уведомления о новых статьях в блоге",

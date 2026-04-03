@@ -17,13 +17,7 @@
     "telegramLink": "Telegram Channel",
     "instagramLink": "Instagram",
     "blogLink": "Blog",
-    "tags": [
-      "Schema Therapy",
-      "ACT",
-      "RO DBT",
-      "ADHD/ASD",
-      "ED"
-    ]
+    "tags": ["Schema Therapy", "ACT", "RO DBT", "ADHD/ASD", "ED"]
   },
   "Auth": {
     "title": "Welcome Back",
@@ -492,7 +486,7 @@
     "by": "by",
     "readingTime": "{n} min read",
     "noArticles": "No articles yet",
-    "backToBlog": "← Back to Blog",
+    "backToBlog": "Back to Blog",
     "shareArticle": "Share",
     "notFound": "Article not found",
     "blogNotifications": "Receive notifications about new blog articles",
