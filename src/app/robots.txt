@@ -1,0 +1,16 @@
+User-agent: *
+Allow: /
+
+# Directories
+Disallow: /_next/
+Disallow: /static/
+Disallow: /api/
+Disallow: /admin/
+Disallow: /my/
+
+# Files
+Disallow: /404
+Disallow: /500
+
+# Host and Sitemaps
+Sitemap: https://vershkov.com/sitemap.xml
