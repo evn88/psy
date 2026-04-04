@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/shared/lib/prisma';
-import { generateSlug, calculateReadingTime } from '@/shared/lib/blog-utils';
+import { calculateReadingTime, generateSlug } from '@/shared/lib/blog-utils';
 import { z } from 'zod';
 
 const createSchema = z.object({
@@ -9,7 +9,8 @@ const createSchema = z.object({
   description: z.string().default(''),
   content: z.string().default(''),
   coverImage: z.string().nullable().optional(),
-  categoryIds: z.array(z.string()).optional()
+  categoryIds: z.array(z.string()).optional(),
+  authorId: z.string().min(1).optional()
 });
 
 export async function GET(req: Request) {
@@ -55,7 +56,18 @@ export async function POST(req: Request) {
     );
   }
 
-  const { title, description, content, coverImage, categoryIds } = parsed.data;
+  const { title, description, content, coverImage, categoryIds, authorId } = parsed.data;
+  const resolvedAuthorId = authorId ?? session.user.id!;
+
+  const author = await prisma.user.findUnique({
+    where: { id: resolvedAuthorId },
+    select: { id: true }
+  });
+
+  if (!author) {
+    return NextResponse.json({ error: 'Автор не найден' }, { status: 400 });
+  }
+
   const readingTime = calculateReadingTime(content);
   let slug = generateSlug(title);
 
@@ -70,7 +82,7 @@ export async function POST(req: Request) {
       slug,
       coverImage: coverImage ?? null,
       readingTime,
-      authorId: session.user.id!,
+      authorId: resolvedAuthorId,
       translations: {
         create: {
           locale: 'ru',

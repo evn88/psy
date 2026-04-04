@@ -56,14 +56,14 @@ export default async function AdminBlogPage() {
         </div>
         <div className="flex items-center gap-2">
           <GoToCategoriesButton />
-          <CreateArticleButton authorId={session.user.id!} />
+          <CreateArticleButton />
         </div>
       </div>
 
       {posts.length === 0 ? (
         <div className="text-center py-20 text-muted-foreground">
           <p className="text-lg mb-4">Статей пока нет</p>
-          <CreateArticleButton authorId={session.user.id!} />
+          <CreateArticleButton />
         </div>
       ) : (
         <div className="space-y-3">

@@ -50,25 +50,55 @@ interface Translation {
   content: string;
 }
 
+interface AuthorOption {
+  id: string;
+  name: string | null;
+  email: string | null;
+}
+
 interface BlogEditorFormProps {
   postId: string;
   initialStatus: 'DRAFT' | 'PUBLISHED';
   initialCoverImage: string | null;
   initialTranslations: Translation[];
   initialCategoryIds: string[];
+  initialAuthorId: string;
   allCategories: (BlogCategory & { name: Record<string, string> })[];
+  allAuthors: AuthorOption[];
 }
 
 const LOCALE_LABELS: Record<string, string> = { ru: 'RU', en: 'EN', sr: 'SR' };
 const ALL_LOCALES = ['ru', 'en', 'sr'];
 
+/**
+ * Возвращает подпись автора для селектора.
+ *
+ * @param author Автор статьи.
+ * @returns Строку для отображения в выпадающем списке.
+ */
+const getAuthorOptionLabel = (author: AuthorOption) => {
+  if (author.name && author.email) {
+    return `${author.name} (${author.email})`;
+  }
+
+  return author.name ?? author.email ?? 'Без имени';
+};
+
+/**
+ * Отображает форму редактирования статьи блога в админке.
+ *
+ * @param props Начальные данные статьи, категории и список авторов.
+ * @returns Интерфейс редактора статьи.
+ */
 export function BlogEditorForm({
   postId,
   initialStatus,
   initialCoverImage,
   initialTranslations,
   initialCategoryIds,
-  allCategories
+  initialAuthorId,
+  allCategories,
+  allAuthors
 }: BlogEditorFormProps) {
   const router = useRouter();
   const [translations, setTranslations] = useState<Translation[]>(
@@ -81,6 +111,7 @@ export function BlogEditorForm({
   const [status, setStatus] = useState<'DRAFT' | 'PUBLISHED'>(initialStatus);
   const [coverImage, setCoverImage] = useState<string | null>(initialCoverImage);
   const [categoryIds, setCategoryIds] = useState<string[]>(initialCategoryIds);
+  const [authorId, setAuthorId] = useState(initialAuthorId);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [showTranslateModal, setShowTranslateModal] = useState(false);
@@ -161,6 +192,7 @@ export function BlogEditorForm({
           body: JSON.stringify({
             coverImage,
             categoryIds,
+            authorId,
             status,
             translations: filteredTranslations
           })
@@ -187,7 +219,16 @@ export function BlogEditorForm({
         setSaving(false);
       }
     },
-    [postId, coverImage, categoryIds, status, translations, selectedDiffVersionId, activeLocale]
+    [
+      postId,
+      coverImage,
+      categoryIds,
+      authorId,
+      status,
+      translations,
+      selectedDiffVersionId,
+      activeLocale
+    ]
   );
 
   useEffect(() => {
@@ -483,6 +524,28 @@ export function BlogEditorForm({
                     })}
                   </div>
                 )}
+
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Автор
+                  </p>
+                  {allAuthors.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">Нет доступных авторов.</p>
+                  ) : (
+                    <Select value={authorId} onValueChange={setAuthorId}>
+                      <SelectTrigger className="w-full bg-background">
+                        <SelectValue placeholder="Выберите автора" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {allAuthors.map(author => (
+                          <SelectItem key={author.id} value={author.id}>
+                            {getAuthorOptionLabel(author)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -538,6 +601,28 @@ export function BlogEditorForm({
                 </div>
               </>
             )}
+
+            <div className="space-y-2 pt-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/70">
+                Автор
+              </p>
+              {allAuthors.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Нет доступных авторов.</p>
+              ) : (
+                <Select value={authorId} onValueChange={setAuthorId}>
+                  <SelectTrigger className="w-full bg-background">
+                    <SelectValue placeholder="Выберите автора" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allAuthors.map(author => (
+                      <SelectItem key={author.id} value={author.id}>
+                        {getAuthorOptionLabel(author)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
           </section>
 
           <Separator className="bg-border/60" />

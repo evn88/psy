@@ -6,11 +6,12 @@ import { toast } from 'sonner';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-interface CreateArticleButtonProps {
-  authorId: string;
-}
-
-export function CreateArticleButton({ authorId }: CreateArticleButtonProps) {
+/**
+ * Создаёт новый черновик статьи и переводит пользователя в редактор.
+ *
+ * @returns Кнопку создания статьи.
+ */
+export function CreateArticleButton() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -20,7 +21,7 @@ export function CreateArticleButton({ authorId }: CreateArticleButtonProps) {
       const res = await fetch('/api/admin/blog', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ authorId, title: 'Новая статья' })
+        body: JSON.stringify({ title: 'Новая статья' })
       });
       if (!res.ok) throw new Error('Ошибка создания');
       const data = await res.json();
