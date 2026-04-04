@@ -5,6 +5,7 @@ import { getTranslations } from 'next-intl/server';
 import { PushNotificationSettings } from '@/components/pwa/PushNotificationSettings';
 import { BlogNotificationsToggle } from '@/components/blog/blog-notifications-toggle';
 import { SettingsForm } from '@/app/[locale]/(main)/admin/settings/_components/settings-form';
+import { defaultLocale } from '@/i18n/config';
 
 /**
  * Страница настроек в личном кабинете.
@@ -32,7 +33,7 @@ export default async function MySettingsPage() {
       <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">{t('title')}</h2>
       <SettingsForm
         initialSettings={{
-          language: user.language || 'en',
+          language: user.language || defaultLocale,
           theme: user.theme || 'system'
         }}
       />

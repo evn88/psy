@@ -11,6 +11,7 @@ import { Footer } from '@/components/landing/Footer/Footer';
 import { defaultLocale, isLocale } from '@/i18n/config';
 import {
   createCanonicalAlternates,
+  createOpenGraphMetadata,
   getLocalizedUrl,
   getSeoCopy,
   resolveMetadataImage
@@ -37,7 +38,9 @@ export const generateMetadata = async ({ params }: HomePageProps): Promise<Metad
     title: copy.homeTitle,
     description: copy.homeDescription,
     alternates: createCanonicalAlternates(currentLocale, '/'),
-    openGraph: {
+    openGraph: createOpenGraphMetadata({
+      type: 'website',
+      locale: currentLocale,
       title: copy.homeTitle,
       description: copy.homeDescription,
       url: getLocalizedUrl(currentLocale, '/'),
@@ -47,7 +50,7 @@ export const generateMetadata = async ({ params }: HomePageProps): Promise<Metad
           alt: copy.homeTitle
         }
       ]
-    },
+    }),
     twitter: {
       title: copy.homeTitle,
       description: copy.homeDescription,

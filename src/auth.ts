@@ -11,6 +11,7 @@ import { authConfig } from './auth.config';
 import { getRPID } from '@/app/api/profile/passkeys/register/config';
 import { sendWelcomeGoogleEmail } from '@/shared/lib/email';
 import { cookies, headers } from 'next/headers';
+import { defaultLocale, isLocale } from '@/i18n/config';
 
 class EmailNotVerifiedError extends AuthError {
   static type = 'EmailNotVerified';
@@ -201,16 +202,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async createUser({ user }) {
       if (user.id) {
         let timezone = 'UTC';
+        let language = defaultLocale;
         try {
           const cookieStore = await cookies();
           timezone = cookieStore.get('NEXT_TIMEZONE')?.value || 'UTC';
+          const cookieLocale = cookieStore.get('NEXT_LOCALE')?.value;
+          language = cookieLocale && isLocale(cookieLocale) ? cookieLocale : defaultLocale;
         } catch {
           // Игнорируем ошибки чтения cookies
         }
 
         await prisma.user.update({
           where: { id: user.id },
-          data: { emailVerified: new Date(), timezone }
+          data: { emailVerified: new Date(), timezone, language }
         });
       }
     },
@@ -231,7 +235,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             select: { language: true }
           });
 
-          const locale = dbUser?.language ?? 'en';
+          const locale = dbUser?.language ?? 'ru';
 
           await sendWelcomeGoogleEmail({
             email: user.email as string,

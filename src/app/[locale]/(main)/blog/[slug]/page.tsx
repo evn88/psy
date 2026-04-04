@@ -8,7 +8,12 @@ import { Link, redirect } from '@/i18n/navigation';
 import { type AppLocale, defaultLocale, isLocale } from '@/i18n/config';
 import { Badge } from '@/components/ui/badge';
 import prisma from '@/shared/lib/prisma';
-import { createCanonicalAlternates, getLocalizedUrl, resolveMetadataImage } from '@/shared/lib/seo';
+import {
+  createCanonicalAlternates,
+  createOpenGraphMetadata,
+  getLocalizedUrl,
+  resolveMetadataImage
+} from '@/shared/lib/seo';
 import { extractDescription, formatBlogDate, getBlogLocale } from '@/shared/lib/blog-utils';
 import { ArticleContent } from './_components/article-content';
 
@@ -91,8 +96,9 @@ export const generateMetadata = async ({ params }: BlogArticlePageProps): Promis
     title: translation.title,
     description,
     alternates: createCanonicalAlternates(resolvedLocale, pathname, availableLocales),
-    openGraph: {
+    openGraph: createOpenGraphMetadata({
       type: 'article',
+      locale: resolvedLocale,
       title: translation.title,
       description,
       url: getLocalizedUrl(resolvedLocale, pathname),
@@ -105,7 +111,7 @@ export const generateMetadata = async ({ params }: BlogArticlePageProps): Promis
           alt: translation.title
         }
       ]
-    },
+    }),
     twitter: {
       title: translation.title,
       description,

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getSession, signIn, useSession } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 import { signIn as webAuthnSignIn } from 'next-auth/webauthn';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -50,22 +50,53 @@ const getCurrentLocale = (): AppLocale => {
 };
 
 /**
- * Сохраняет язык пользователя в БД и устанавливает cookie NEXT_LOCALE.
- * Вызывается после успешной авторизации или регистрации.
- * @param locale - определённый или выбранный locale
+ * Устанавливает cookie NEXT_LOCALE для последующей серверной навигации.
+ * @param locale - locale, которую нужно сохранить в cookie.
  */
-const applyUserLanguage = async (locale: AppLocale): Promise<void> => {
+const setLocaleCookie = (locale: AppLocale): void => {
   document.cookie = `NEXT_LOCALE=${locale}; path=/; max-age=31536000; SameSite=Lax`;
+};
 
-  try {
-    await fetch('/api/settings/language', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ language: locale })
-    });
-  } catch {
-    // Не критично — cookie уже установлено
+/**
+ * Возвращает locale, которую нужно использовать после авторизации.
+ * Приоритет: язык пользователя из профиля, затем текущая locale страницы,
+ * затем cookie/язык браузера.
+ * @param userLanguage - язык из профиля пользователя.
+ * @param pageLocale - locale текущей страницы.
+ * @returns Поддерживаемая locale для post-auth перехода.
+ */
+const resolvePostAuthLocale = (
+  userLanguage: AppLocale | string | undefined,
+  pageLocale: AppLocale | string
+): AppLocale => {
+  if (typeof userLanguage === 'string' && isLocale(userLanguage)) {
+    return userLanguage;
   }
+
+  if (typeof pageLocale === 'string' && isLocale(pageLocale)) {
+    return pageLocale;
+  }
+
+  return getCurrentLocale();
+};
+
+/**
+ * Выполняет переход в нужный раздел после авторизации с учетом locale.
+ * @param role - роль пользователя.
+ * @param locale - locale, с которой нужно построить URL.
+ * @param router - next-intl router.
+ */
+const navigateToPostAuthPage = (
+  role: 'ADMIN' | 'USER' | 'GUEST' | undefined,
+  locale: AppLocale,
+  router: ReturnType<typeof useRouter>
+): void => {
+  const targetPath = getPathname({
+    href: getPostAuthPath(role),
+    locale
+  });
+
+  router.replace(targetPath);
 };
 
 const getPostAuthPath = (role: 'ADMIN' | 'USER' | 'GUEST' | undefined): string => {
@@ -125,9 +156,11 @@ export default function AuthPage() {
       return;
     }
 
-    router.replace(getPostAuthPath(session.user.role));
+    const targetLocale = resolvePostAuthLocale(session.user.language, locale);
+    setLocaleCookie(targetLocale);
+    navigateToPostAuthPage(session.user.role, targetLocale, router);
     router.refresh();
-  }, [router, session, status]);
+  }, [locale, router, session, status]);
 
   // Login Form States
   const [loginEmail, setLoginEmail] = useState('');
@@ -159,14 +192,6 @@ export default function AuthPage() {
           toast.error(t('tooManyAttempts'));
         } else {
           setError(t('invalidCredentials'));
-        }
-      } else {
-        const detectedLocale = detectBrowserLanguage();
-        await applyUserLanguage(detectedLocale);
-        const currentSession = await getSession();
-        if (currentSession?.user) {
-          router.replace(getPostAuthPath(currentSession.user.role));
-          router.refresh();
         }
       }
     } catch {
@@ -218,8 +243,7 @@ export default function AuthPage() {
   };
 
   const handleGoogleSignIn = () => {
-    const detectedLocale = detectBrowserLanguage();
-    document.cookie = `NEXT_LOCALE=${detectedLocale}; path=/; max-age=31536000; SameSite=Lax`;
+    setLocaleCookie(resolvePostAuthLocale(undefined, locale));
     signIn('google', {
       callbackUrl: getPathname({
         href: '/auth',
@@ -235,14 +259,6 @@ export default function AuthPage() {
       const result = await webAuthnSignIn('webauthn', { redirect: false });
       if (result?.error) {
         setError(t('passkeyFailed'));
-      } else {
-        const detectedLocale = detectBrowserLanguage();
-        await applyUserLanguage(detectedLocale);
-        const currentSession = await getSession();
-        if (currentSession?.user) {
-          router.replace(getPostAuthPath(currentSession.user.role));
-          router.refresh();
-        }
       }
     } catch {
       setError(t('passkeyError'));

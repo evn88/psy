@@ -1,8 +1,9 @@
 import { auth } from '@/auth';
 import prisma from '@/shared/lib/prisma';
 import { redirect } from 'next/navigation';
-import { SettingsForm } from './_components/settings-form';
 import { getTranslations } from 'next-intl/server';
+import { defaultLocale } from '@/i18n/config';
+import { SettingsForm } from './_components/settings-form';
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -26,7 +27,7 @@ export default async function SettingsPage() {
       <h2 className="text-3xl font-bold tracking-tight">{t('title')}</h2>
       <SettingsForm
         initialSettings={{
-          language: user.language || 'en',
+          language: user.language || defaultLocale,
           theme: user.theme || 'system'
         }}
       />

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { defaultLocale, type AppLocale, locales } from '@/i18n/config';
+import { type AppLocale, defaultLocale, locales } from '@/i18n/config';
 
 export const SITE_URL = 'https://vershkov.com';
 export const SITE_ORIGIN = new URL(SITE_URL);
@@ -15,6 +15,8 @@ interface SeoLocaleCopy {
   blogTitle: string;
   blogDescription: string;
 }
+
+type OpenGraphMetadata = NonNullable<Metadata['openGraph']>;
 
 const SEO_COPY: Record<AppLocale, SeoLocaleCopy> = {
   en: {
@@ -145,6 +147,19 @@ export const resolveMetadataImage = (imagePath?: string | null): string => {
 };
 
 /**
+ * Дополняет Open Graph metadata общими полями сайта.
+ * Позволяет не терять `og:site_name` при переопределении `openGraph` на уровне страницы.
+ * @param metadata - локальные Open Graph поля конкретной страницы.
+ * @returns Полный Open Graph объект с общими значениями сайта.
+ */
+export const createOpenGraphMetadata = (metadata: OpenGraphMetadata): OpenGraphMetadata => {
+  return {
+    siteName: SITE_NAME,
+    ...metadata
+  };
+};
+
+/**
  * Создает базовые metadata для публичной части сайта.
  * @param locale - активная локаль.
  * @returns Базовые metadata уровня layout.
@@ -166,17 +181,16 @@ export const createBaseMetadata = (locale: AppLocale): Metadata => {
       email: false,
       telephone: false
     },
-    openGraph: {
+    openGraph: createOpenGraphMetadata({
       type: 'website',
       locale,
-      siteName: SITE_NAME,
       images: [
         {
           url: image,
           alt: SITE_NAME
         }
       ]
-    },
+    }),
     twitter: {
       card: 'summary_large_image',
       images: [image]

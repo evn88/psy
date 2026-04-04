@@ -1,11 +1,11 @@
 /**
  * Поддерживаемые локали приложения.
  */
-export const locales = ['en', 'ru', 'sr'] as const;
+export const locales = ['ru', 'en', 'sr'] as const;
 
 export type AppLocale = (typeof locales)[number];
 
-export const defaultLocale: AppLocale = 'en';
+export const defaultLocale: AppLocale = 'ru';
 
 /**
  * Проверяет, что значение является поддерживаемой локалью приложения.

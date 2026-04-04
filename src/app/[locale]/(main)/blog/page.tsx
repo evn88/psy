@@ -4,7 +4,12 @@ import { unstable_cache } from 'next/cache';
 import { getTranslations } from 'next-intl/server';
 import { type AppLocale, defaultLocale, isLocale } from '@/i18n/config';
 import prisma from '@/shared/lib/prisma';
-import { createCanonicalAlternates, getLocalizedUrl, getSeoCopy } from '@/shared/lib/seo';
+import {
+  createCanonicalAlternates,
+  createOpenGraphMetadata,
+  getLocalizedUrl,
+  getSeoCopy
+} from '@/shared/lib/seo';
 import { BlogCard } from './_components/blog-card';
 import { CategoryFilter } from './_components/category-filter';
 import { SubscribeForm } from './_components/subscribe-form';
@@ -92,11 +97,13 @@ export const generateMetadata = async ({
     title: copy.blogTitle,
     description: copy.blogDescription,
     alternates: createCanonicalAlternates(currentLocale, '/blog'),
-    openGraph: {
+    openGraph: createOpenGraphMetadata({
+      type: 'website',
+      locale: currentLocale,
       title: copy.blogTitle,
       description: copy.blogDescription,
       url: getLocalizedUrl(currentLocale, '/blog')
-    },
+    }),
     twitter: {
       title: copy.blogTitle,
       description: copy.blogDescription
