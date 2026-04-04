@@ -2,15 +2,14 @@ import { notFound } from 'next/navigation';
 import { auth } from '@/auth';
 import prisma from '@/shared/lib/prisma';
 import { BlogEditorForm } from './_components/blog-editor-form';
+import type {
+  BlogAuthorOption,
+  BlogEditorCategory,
+  EditorTranslation
+} from './_components/blog-editor-form.types';
 
 interface Props {
   params: Promise<{ id: string }>;
-}
-
-interface BlogAuthorOption {
-  id: string;
-  name: string | null;
-  email: string | null;
 }
 
 export default async function AdminBlogEditPage({ params }: Props) {
@@ -48,13 +47,15 @@ export default async function AdminBlogEditPage({ params }: Props) {
         postId={post.id}
         initialStatus={post.status}
         initialCoverImage={post.coverImage}
-        initialTranslations={post.translations}
+        initialTranslations={post.translations as EditorTranslation[]}
         initialCategoryIds={post.categories.map((c: { categoryId: string }) => c.categoryId)}
         initialAuthorId={post.authorId}
-        allCategories={categories.map((c: { id: string; name: unknown }) => ({
-          ...c,
-          name: c.name as Record<string, string>
-        }))}
+        allCategories={
+          categories.map((c: { id: string; name: unknown }) => ({
+            ...c,
+            name: c.name as Record<string, string>
+          })) as BlogEditorCategory[]
+        }
         allAuthors={authors as BlogAuthorOption[]}
       />
     </div>

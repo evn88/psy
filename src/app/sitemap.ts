@@ -3,6 +3,8 @@ import { type AppLocale, defaultLocale, isLocale } from '@/i18n/config';
 import prisma from '@/shared/lib/prisma';
 import { getLanguageAlternates, getLocalizedUrl } from '@/shared/lib/seo';
 
+export const revalidate = 3600;
+
 const STATIC_PUBLIC_ROUTES = [
   { pathname: '/', changeFrequency: 'weekly' as const, priority: 1 },
   { pathname: '/blog', changeFrequency: 'weekly' as const, priority: 0.8 }
@@ -19,6 +21,35 @@ interface SitemapPostRecord {
   updatedAt: Date;
   translations: SitemapTranslationRecord[];
 }
+
+/**
+ * Загружает опубликованные статьи для sitemap.
+ * При временной недоступности базы возвращает пустой список,
+ * чтобы сборка и регенерация sitemap не падали.
+ *
+ * @returns Опубликованные статьи блога для карты сайта.
+ */
+const getPublishedBlogPosts = async (): Promise<SitemapPostRecord[]> => {
+  try {
+    return await prisma.blogPost.findMany({
+      where: { status: 'PUBLISHED' },
+      select: {
+        slug: true,
+        publishedAt: true,
+        updatedAt: true,
+        translations: {
+          select: {
+            locale: true,
+            title: true
+          }
+        }
+      },
+      orderBy: { publishedAt: 'desc' }
+    });
+  } catch {
+    return [];
+  }
+};
 
 /**
  * Выбирает каноническую локаль для sitemap entry.
@@ -39,21 +70,7 @@ const getCanonicalLocale = (availableLocales: readonly AppLocale[]): AppLocale =
  * @returns Список записей sitemap с hreflang-альтернативами.
  */
 const sitemap = async (): Promise<MetadataRoute.Sitemap> => {
-  const blogPosts = await prisma.blogPost.findMany({
-    where: { status: 'PUBLISHED' },
-    select: {
-      slug: true,
-      publishedAt: true,
-      updatedAt: true,
-      translations: {
-        select: {
-          locale: true,
-          title: true
-        }
-      }
-    },
-    orderBy: { publishedAt: 'desc' }
-  });
+  const blogPosts = await getPublishedBlogPosts();
 
   const staticEntries: MetadataRoute.Sitemap = STATIC_PUBLIC_ROUTES.map(route => ({
     url: getLocalizedUrl(defaultLocale, route.pathname),
