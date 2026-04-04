@@ -3,6 +3,7 @@ import Google from 'next-auth/providers/google';
 import Credentials from 'next-auth/providers/credentials';
 import WebAuthn from 'next-auth/providers/webauthn';
 import { PrismaAdapter } from '@auth/prisma-adapter';
+import { Role } from '@prisma/client';
 import prisma from '@/shared/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
@@ -25,6 +26,14 @@ class TooManyAttemptsError extends AuthError {
 
 /** Максимальное количество записей истории входов на пользователя */
 const MAX_LOGIN_HISTORY = 3;
+
+/**
+ * Проверяет, что значение является поддерживаемой ролью пользователя.
+ * @param value - произвольное значение роли.
+ * @returns true, если значение входит в enum Role.
+ */
+const isRole = (value: unknown): value is Role =>
+  typeof value === 'string' && Object.values(Role).includes(value as Role);
 
 async function getUser(email: string) {
   try {
@@ -156,6 +165,60 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     ...authConfig.callbacks,
 
+    async jwt({ token, user, trigger, session }) {
+      if (user && user.role) {
+        token.role = user.role;
+      }
+
+      if (
+        user &&
+        'language' in user &&
+        typeof user.language === 'string' &&
+        isLocale(user.language)
+      ) {
+        token.language = user.language;
+      }
+
+      if ((typeof token.language !== 'string' || !isLocale(token.language)) && token.sub) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.sub },
+          select: { language: true, role: true }
+        });
+
+        if (dbUser?.role && isRole(dbUser.role)) {
+          token.role = dbUser.role;
+        }
+
+        token.language =
+          dbUser?.language && isLocale(dbUser.language) ? dbUser.language : defaultLocale;
+      }
+
+      // Handle session update
+      if (trigger === 'update' && session?.name) {
+        token.name = session.name;
+      }
+      return token;
+    },
+
+    session({ session, token }) {
+      const resolvedRole: Role = isRole(token.role) ? token.role : Role.GUEST;
+      const resolvedLanguage =
+        typeof token.language === 'string' && isLocale(token.language)
+          ? token.language
+          : defaultLocale;
+
+      if (token.sub && session.user) {
+        session.user.id = token.sub;
+      }
+      if (session.user) {
+        session.user.role = resolvedRole;
+      }
+      if (session.user) {
+        session.user.language = resolvedLanguage;
+      }
+      return session;
+    },
+
     async signIn({ user, account }) {
       if (user.email) {
         const dbUser = await prisma.user.findUnique({
@@ -235,7 +298,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             select: { language: true }
           });
 
-          const locale = dbUser?.language ?? 'ru';
+          const locale = dbUser?.language ?? defaultLocale;
 
           await sendWelcomeGoogleEmail({
             email: user.email as string,
