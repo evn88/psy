@@ -64,6 +64,7 @@ export default async function MyProfilePage() {
             lastLoginAt={lastLogin?.createdAt ?? null}
             lastLoginIp={lastLogin?.ip ?? null}
             timezone={dbUser?.timezone ?? 'UTC'}
+            userEmail={session.user.email ?? ''}
           />
         </CardContent>
       </Card>

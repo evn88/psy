@@ -7,6 +7,9 @@ import { AdminEventBookingTemplate } from '@/components/email-templates/admin-ev
 import { AdminEventCancellationTemplate } from '@/components/email-templates/admin-event-cancellation-template';
 import { AdminMessageTemplate } from '@/components/email-templates/admin-message-template';
 import { BlogNotificationEmail } from '@/components/email-templates/blog-notification-template';
+import { AccountDeletionRequestTemplate } from '@/components/email-templates/account-deletion-request-template';
+import { AccountDeletedUserTemplate } from '@/components/email-templates/account-deleted-user-template';
+import { AccountDeletedAdminTemplate } from '@/components/email-templates/account-deleted-admin-template';
 import { render } from '@react-email/render';
 import type { BlogPost, BlogPostTranslation } from '@prisma/client';
 import { formatBlogDate } from '@/shared/lib/blog-utils';
@@ -615,4 +618,112 @@ export const sendBlogNotificationEmail = async (
       `Ошибка отправки blog notification: ${failed.length} из ${subscribers.length} не отправлены`
     );
   }
+};
+
+interface SendAccountDeletionRequestEmailParams {
+  to: string;
+  name: string;
+  token: string;
+  language: string;
+}
+
+/**
+ * Отправляет письмо с подтверждением удаления аккаунта.
+ * Содержит ссылку, по которой пользователь подтверждает удаление.
+ */
+export const sendAccountDeletionRequestEmail = async ({
+  to,
+  name,
+  token,
+  language
+}: SendAccountDeletionRequestEmailParams): Promise<void> => {
+  const t = getEmailTranslations(language);
+  const baseUrl = getBaseUrl();
+  const deletionUrl = `${baseUrl}/api/profile/delete?token=${token}&email=${encodeURIComponent(to)}`;
+
+  const html = await render(
+    AccountDeletionRequestTemplate({
+      name,
+      deletionUrl,
+      translations: t.accountDeletionRequest
+    })
+  );
+
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to,
+    subject: t.accountDeletionRequest.subject,
+    html
+  });
+};
+
+interface SendAccountDeletedUserEmailParams {
+  to: string;
+  name: string;
+  language: string;
+}
+
+/**
+ * Отправляет письмо пользователю после успешного удаления его аккаунта.
+ */
+export const sendAccountDeletedUserEmail = async ({
+  to,
+  name,
+  language
+}: SendAccountDeletedUserEmailParams): Promise<void> => {
+  const t = getEmailTranslations(language);
+
+  const html = await render(
+    AccountDeletedUserTemplate({
+      name,
+      translations: t.accountDeleted
+    })
+  );
+
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to,
+    subject: t.accountDeleted.subject,
+    html
+  });
+};
+
+interface SendAccountDeletedAdminEmailParams {
+  to: string;
+  name: string;
+  email: string;
+}
+
+/**
+ * Отправляет уведомление администратору об удалении пользовательского аккаунта.
+ */
+export const sendAccountDeletedAdminEmail = async ({
+  to,
+  name,
+  email
+}: SendAccountDeletedAdminEmailParams): Promise<void> => {
+  const t = getEmailTranslations('ru');
+  const deletedAt = new Date().toLocaleString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  const html = await render(
+    AccountDeletedAdminTemplate({
+      name,
+      email,
+      deletedAt,
+      translations: t.adminAccountDeleted
+    })
+  );
+
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to,
+    subject: t.adminAccountDeleted.subject,
+    html
+  });
 };

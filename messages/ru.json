@@ -100,7 +100,17 @@
     "errorTitle": "Ошибка",
     "successTitle": "Успешно",
     "goBack": "Назад",
-    "goToHome": "На главную"
+    "goToHome": "На главную",
+    "deleteAccountTitle": "Удаление аккаунта",
+    "deleteAccountDescription": "Аккаунт и все данные будут удалены навсегда. Это действие нельзя отменить.",
+    "deleteAccountButton": "Удалить аккаунт",
+    "deleteAccountConfirmTitle": "Вы уверены?",
+    "deleteAccountConfirmDescription": "На ваш email будет отправлена ссылка для подтверждения удаления. Ссылка действительна 24 часа.",
+    "deleteAccountConfirmButton": "Да, отправить ссылку",
+    "deleteAccountEmailSent": "Ссылка для удаления отправлена на ваш email. Пожалуйста, перейдите по ней в течение 24 часов.",
+    "deleteAccountFailed": "Не удалось отправить ссылку для удаления. Попробуйте позже.",
+    "deleteAccountAdminError": "Аккаунт администратора нельзя удалить самостоятельно. Обратитесь к другому администратору.",
+    "deleteAccountHasBlogPosts": "Перед удалением аккаунта необходимо удалить или передать все публикации блога."
   },
   "Admin": {
     "dashboardTitle": "Дашборд",

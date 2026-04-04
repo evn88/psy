@@ -2,8 +2,6 @@ import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import prisma from '@/shared/lib/prisma';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { ProfileForm } from '@/components/my/profile-form';
 import { getTranslations } from 'next-intl/server';
 
@@ -65,12 +63,9 @@ export default async function AdminProfilePage() {
             lastLoginAt={lastLogin?.createdAt ?? null}
             lastLoginIp={lastLogin?.ip ?? null}
             timezone={dbUser?.timezone ?? 'UTC'}
+            role={session.user.role}
+            userEmail={session.user.email ?? ''}
           />
-
-          <div className="grid gap-2">
-            <Label>{t('roleLabel')}</Label>
-            <Input defaultValue={session.user.role ?? 'ADMIN'} disabled className="bg-muted" />
-          </div>
         </CardContent>
       </Card>
     </div>

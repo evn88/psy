@@ -98,7 +98,17 @@
     "errorTitle": "Greška",
     "successTitle": "Uspešno",
     "goBack": "Nazad",
-    "goToHome": "Na početnu"
+    "goToHome": "Na početnu",
+    "deleteAccountTitle": "Brisanje naloga",
+    "deleteAccountDescription": "Nalog i svi podaci biće trajno obrisani. Ova radnja se ne može poništiti.",
+    "deleteAccountButton": "Obriši nalog",
+    "deleteAccountConfirmTitle": "Da li ste sigurni?",
+    "deleteAccountConfirmDescription": "Link za potvrdu brisanja biće poslat na vaš email. Link važi 24 sata.",
+    "deleteAccountConfirmButton": "Da, pošalji link",
+    "deleteAccountEmailSent": "Link za brisanje je poslat na vaš email. Molimo kliknite na njega u roku od 24 sata.",
+    "deleteAccountFailed": "Nije uspelo slanje linka za brisanje. Pokušajte ponovo.",
+    "deleteAccountAdminError": "Nalog administratora ne može biti obrisan samostalno. Kontaktirajte drugog administratora.",
+    "deleteAccountHasBlogPosts": "Pre brisanja naloga potrebno je obrisati ili preneti sve objave na blogu."
   },
   "Admin": {
     "dashboardTitle": "Kontrolna tabla",

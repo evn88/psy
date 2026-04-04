@@ -100,7 +100,17 @@
     "newPassword": "New Password",
     "passwordChangeSuccess": "Password changed successfully!",
     "passwordCurrentIncorrect": "Current password is incorrect.",
-    "passwordChangeFailed": "Failed to change password."
+    "passwordChangeFailed": "Failed to change password.",
+    "deleteAccountTitle": "Delete Account",
+    "deleteAccountDescription": "Your account and all data will be permanently deleted. This action cannot be undone.",
+    "deleteAccountButton": "Delete Account",
+    "deleteAccountConfirmTitle": "Are you sure?",
+    "deleteAccountConfirmDescription": "A confirmation link will be sent to your email. The link is valid for 24 hours.",
+    "deleteAccountConfirmButton": "Yes, send confirmation link",
+    "deleteAccountEmailSent": "A deletion link has been sent to your email. Please follow it within 24 hours.",
+    "deleteAccountFailed": "Failed to send the deletion link. Please try again later.",
+    "deleteAccountAdminError": "Admin account cannot be self-deleted. Contact another administrator.",
+    "deleteAccountHasBlogPosts": "Please delete or transfer all blog posts before deleting your account."
   },
   "Admin": {
     "dashboardTitle": "Dashboard",

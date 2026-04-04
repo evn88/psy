@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import styles from '@/styles/landing/landing.module.css';
-import { Hero } from '@/components/landing/Hero/Hero';
 import { About } from '@/components/landing/About/About';
 import { Problems } from '@/components/landing/Problems/Problems';
 import { Services } from '@/components/landing/Services/Services';
@@ -16,6 +15,7 @@ import {
   getSeoCopy,
   resolveMetadataImage
 } from '@/shared/lib/seo';
+import { Hero } from '@/components/landing/Hero/Hero';
 
 // import { ThemeToggle } from '@/components/landing/ThemeToggle';
 

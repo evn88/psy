@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { startRegistration } from '@simplewebauthn/browser';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -42,11 +44,16 @@ interface ProfileFormProps {
   lastLoginIp?: string | null;
   /** Таймзона пользователя */
   timezone: string;
+  /** Роль пользователя — отображается только для ADMIN */
+  role?: string | null;
+  /** Email пользователя для отображения куда придёт письмо */
+  userEmail: string;
 }
 
 /**
- * Форма управления профилем пользователя.
- * Позволяет обновлять имя, управлять Google привязкой, менять пароль.
+ * Единая форма управления профилем пользователя.
+ * Используется как в личном кабинете, так и в админ-панели.
+ * Позволяет обновлять имя, управлять passkeys, Google-привязкой, паролем, удалить аккаунт.
  */
 export const ProfileForm = ({
   user,
@@ -56,7 +63,9 @@ export const ProfileForm = ({
   hasPassword,
   lastLoginAt,
   lastLoginIp,
-  timezone: initialTimezone
+  timezone: initialTimezone,
+  role,
+  userEmail
 }: ProfileFormProps) => {
   const t = useTranslations('Profile');
   const router = useRouter();
@@ -75,6 +84,15 @@ export const ProfileForm = ({
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [passwordLoading, setPasswordLoading] = useState(false);
+
+  // Состояние управления passkeys
+  const [hasPasskeys, setHasPasskeys] = useState(initialHasPasskeys);
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
+  const [showDeletePasskeysConfirm, setShowDeletePasskeysConfirm] = useState(false);
+
+  // Состояние удаления аккаунта
+  const [deleteAccountLoading, setDeleteAccountLoading] = useState(false);
+  const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
 
   /**
    * Показывает информационный диалог.
@@ -177,6 +195,85 @@ export const ProfileForm = ({
   };
 
   /**
+   * Создаёт новый passkey через WebAuthn.
+   */
+  const handleCreatePasskey = async () => {
+    setPasskeyLoading(true);
+    try {
+      const optRes = await fetch('/api/profile/passkeys/register/options');
+      if (!optRes.ok) {
+        showAlert(t('errorTitle'), t('passkeyCreateFailed'));
+        return;
+      }
+      const options = await optRes.json();
+      const attestation = await startRegistration(options);
+      const verRes = await fetch('/api/profile/passkeys/register/verify', {
+        method: 'POST',
+        body: JSON.stringify(attestation),
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (verRes.ok) {
+        setHasPasskeys(true);
+        showAlert(t('successTitle'), t('passkeySuccess'));
+      } else {
+        showAlert(t('errorTitle'), t('passkeyVerifyFailed'));
+      }
+    } catch {
+      showAlert(t('errorTitle'), t('passkeyCreateFailed'));
+    } finally {
+      setPasskeyLoading(false);
+    }
+  };
+
+  /**
+   * Удаляет все passkeys пользователя.
+   */
+  const handleDeletePasskeys = async () => {
+    setPasskeyLoading(true);
+    try {
+      const res = await fetch('/api/profile/passkeys', { method: 'DELETE' });
+      if (res.ok) {
+        setHasPasskeys(false);
+        showAlert(t('successTitle'), t('clearSuccess'));
+      } else {
+        showAlert(t('errorTitle'), t('clearFailed'));
+      }
+    } catch {
+      showAlert(t('errorTitle'), t('clearError'));
+    } finally {
+      setPasskeyLoading(false);
+      setShowDeletePasskeysConfirm(false);
+    }
+  };
+
+  /**
+   * Отправляет запрос на удаление аккаунта — пользователь получит письмо со ссылкой.
+   */
+  const handleRequestAccountDeletion = async () => {
+    setDeleteAccountLoading(true);
+    try {
+      const res = await fetch('/api/profile/delete-request', { method: 'POST' });
+      if (res.ok) {
+        showAlert(t('successTitle'), t('deleteAccountEmailSent'));
+      } else {
+        const data = await res.json();
+        if (data.error === 'admin_cannot_self_delete') {
+          showAlert(t('errorTitle'), t('deleteAccountAdminError'));
+        } else if (data.error === 'has_blog_posts') {
+          showAlert(t('errorTitle'), t('deleteAccountHasBlogPosts'));
+        } else {
+          showAlert(t('errorTitle'), t('deleteAccountFailed'));
+        }
+      }
+    } catch {
+      showAlert(t('errorTitle'), t('deleteAccountFailed'));
+    } finally {
+      setDeleteAccountLoading(false);
+      setShowDeleteAccountConfirm(false);
+    }
+  };
+
+  /**
    * Форматирует дату Google привязки.
    */
   const formatGoogleLinkedDate = (date: Date | null | undefined): string => {
@@ -253,6 +350,17 @@ export const ProfileForm = ({
         >
           {loading ? t('saving') : t('save')}
         </Button>
+
+        {/* Роль — только для ADMIN */}
+        {role === 'ADMIN' && (
+          <>
+            <Separator />
+            <div className="flex items-center gap-2">
+              <Label>{t('roleLabel')}</Label>
+              <Badge variant="secondary">ADMIN</Badge>
+            </div>
+          </>
+        )}
 
         {/* Последний вход */}
         {lastLoginAt && (
@@ -400,8 +508,60 @@ export const ProfileForm = ({
             </div>
           )}
         </div>
+
+        {/* Passkeys */}
+        <Separator />
+        <div>
+          <Label>{t('passkeysTitle')}</Label>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border border-border p-4 bg-card mt-2">
+            <div className="space-y-0.5">
+              <div className="font-medium">{t('passkeysTitle')}</div>
+              <div className="text-sm text-muted-foreground">{t('passkeysDescription')}</div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              {hasPasskeys && (
+                <Button
+                  variant="destructive"
+                  type="button"
+                  onClick={() => setShowDeletePasskeysConfirm(true)}
+                  disabled={passkeyLoading}
+                  className="w-full sm:w-auto"
+                >
+                  {t('clearPasskeys')}
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                type="button"
+                onClick={handleCreatePasskey}
+                disabled={passkeyLoading}
+                className="w-full sm:w-auto"
+              >
+                {t('createPasskey')}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Опасная зона — удаление аккаунта */}
+        <Separator />
+        <div className="rounded-lg border border-destructive/50 p-4 space-y-3">
+          <div>
+            <Label className="text-destructive">{t('deleteAccountTitle')}</Label>
+            <p className="text-sm text-muted-foreground mt-1">{t('deleteAccountDescription')}</p>
+          </div>
+          <Button
+            variant="destructive"
+            type="button"
+            onClick={() => setShowDeleteAccountConfirm(true)}
+            disabled={deleteAccountLoading}
+          >
+            {t('deleteAccountButton')}
+          </Button>
+        </div>
       </form>
 
+      {/* Диалог информации */}
       <AlertDialog open={showAlertOpen} onOpenChange={setShowAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -410,6 +570,52 @@ export const ProfileForm = ({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogAction onClick={() => setShowAlertOpen(false)}>{t('ok')}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Диалог подтверждения удаления passkeys */}
+      <AlertDialog open={showDeletePasskeysConfirm} onOpenChange={setShowDeletePasskeysConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('clearPasskeysConfirmTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('clearPasskeysConfirmDescription')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowDeletePasskeysConfirm(false)}>
+              {t('cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeletePasskeys}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t('deletePasskeys')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Диалог подтверждения удаления аккаунта */}
+      <AlertDialog open={showDeleteAccountConfirm} onOpenChange={setShowDeleteAccountConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('deleteAccountConfirmTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('deleteAccountConfirmDescription')}{' '}
+              <span className="font-medium">{userEmail}</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowDeleteAccountConfirm(false)}>
+              {t('cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRequestAccountDeletion}
+              disabled={deleteAccountLoading}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t('deleteAccountConfirmButton')}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
