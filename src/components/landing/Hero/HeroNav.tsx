@@ -1,4 +1,4 @@
-// import HeroNavBurger from './HeroNavBurger';
+import HeroNavBurger from './HeroNavBurger';
 import styles from './HeroNav.module.css';
 
 const NAV_LINKS = [
@@ -7,7 +7,8 @@ const NAV_LINKS = [
   // { href: '#problems', label: 'Работа с нейроотличиями' },
   { href: '#faq', label: 'Частые вопросы' },
   { href: '#footer', label: 'контакты' },
-  { href: '/blog', label: 'Статьи и тесты' }
+  { href: '/blog', label: 'Статьи и тесты' },
+  { href: '/my', label: 'Войти в ЛК' }
 ];
 
 /** Навигация Hero-секции лендинга */
@@ -34,7 +35,7 @@ const HeroNav = () => {
       </div>
 
       {/* Бургер-кнопка — минимальный клиентский «лист» */}
-      {/*<HeroNavBurger links={NAV_LINKS} />*/}
+      <HeroNavBurger links={NAV_LINKS} />
     </nav>
   );
 };

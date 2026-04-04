@@ -7,6 +7,7 @@ import dogImg from '@/assets/images/adhd/scared_dog.png';
 import envelopImg from '@/assets/images/adhd/envelop.png';
 import blueBgImg from '@/assets/images/adhd/blue-paper-bg.png';
 import blueBgEdge from '@/assets/images/adhd/blue-bg-edge.png';
+import Link from 'next/link';
 
 /** Hero — первый экран лендинга */
 const Hero = () => {
