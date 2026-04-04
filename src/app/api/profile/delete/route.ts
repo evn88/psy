@@ -75,7 +75,8 @@ export async function GET(req: NextRequest) {
   }
 
   // Очищаем JWT-куки для немедленного выхода из системы
-  const response = NextResponse.redirect(`${baseUrl}/?deleted=true`);
+  const deletedPageLocale = user.language ?? 'ru';
+  const response = NextResponse.redirect(`${baseUrl}/${deletedPageLocale}/account-deleted`);
   const cookieOptions = { expires: new Date(0), path: '/' };
   response.cookies.set('next-auth.session-token', '', cookieOptions);
   response.cookies.set('__Secure-next-auth.session-token', '', cookieOptions);

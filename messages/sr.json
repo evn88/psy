@@ -110,6 +110,13 @@
     "deleteAccountAdminError": "Nalog administratora ne može biti obrisan samostalno. Kontaktirajte drugog administratora.",
     "deleteAccountHasBlogPosts": "Pre brisanja naloga potrebno je obrisati ili preneti sve objave na blogu."
   },
+  "AccountDeleted": {
+    "title": "Nalog obrisan",
+    "subtitle": "Žao nam je što odlazite",
+    "message": "Vaš nalog i svi povezani podaci su uspešno obrisani. Hvala vam što ste bili s nama.",
+    "regretMessage": "Ako se ikada predomislite — biće nam drago da vas ponovo vidimo.",
+    "registerButton": "Registrujte se ponovo"
+  },
   "Admin": {
     "dashboardTitle": "Kontrolna tabla",
     "totalUsers": "Ukupno korisnika",

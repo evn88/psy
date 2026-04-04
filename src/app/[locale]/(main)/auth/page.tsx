@@ -91,12 +91,7 @@ const navigateToPostAuthPage = (
   locale: AppLocale,
   router: ReturnType<typeof useRouter>
 ): void => {
-  const targetPath = getPathname({
-    href: getPostAuthPath(role),
-    locale
-  });
-
-  router.replace(targetPath);
+  router.replace(getPostAuthPath(role), { locale });
 };
 
 const getPostAuthPath = (role: 'ADMIN' | 'USER' | 'GUEST' | undefined): string => {
@@ -159,7 +154,6 @@ export default function AuthPage() {
     const targetLocale = resolvePostAuthLocale(session.user.language, locale);
     setLocaleCookie(targetLocale);
     navigateToPostAuthPage(session.user.role, targetLocale, router);
-    router.refresh();
   }, [locale, router, session, status]);
 
   // Login Form States

@@ -112,6 +112,13 @@
     "deleteAccountAdminError": "Admin account cannot be self-deleted. Contact another administrator.",
     "deleteAccountHasBlogPosts": "Please delete or transfer all blog posts before deleting your account."
   },
+  "AccountDeleted": {
+    "title": "Account Deleted",
+    "subtitle": "We're sorry to see you go",
+    "message": "Your account and all associated data have been successfully deleted. Thank you for being with us.",
+    "regretMessage": "If you ever change your mind — we'd love to have you back.",
+    "registerButton": "Register again"
+  },
   "Admin": {
     "dashboardTitle": "Dashboard",
     "totalUsers": "Total Users",
