@@ -2,29 +2,37 @@
 
 import * as React from 'react';
 import {
+  ThemeProvider as NextThemesProvider,
+  type ThemeProviderProps as NextThemesProviderProps,
+  useTheme as useNextTheme
+} from 'next-themes';
+import {
   DEFAULT_THEME,
   normalizeTheme,
   type ResolvedTheme,
-  resolveTheme,
   type Theme,
-  THEME_ATTRIBUTES,
   THEME_COOKIE_NAME,
   THEME_STORAGE_KEY
 } from '@/shared/lib/theme';
 
 export type { ResolvedTheme, Theme } from '@/shared/lib/theme';
 
-interface ThemeProviderProps {
-  attribute?: string;
-  children: React.ReactNode;
-  defaultTheme?: Theme;
-  disableTransitionOnChange?: boolean;
-  enableColorScheme?: boolean;
-  enableSystem?: boolean;
-  forcedTheme?: Theme;
-  storageKey?: string;
-  value?: Record<string, string>;
-}
+interface ThemeProviderProps
+  extends Pick<
+    NextThemesProviderProps,
+    | 'attribute'
+    | 'children'
+    | 'defaultTheme'
+    | 'disableTransitionOnChange'
+    | 'enableColorScheme'
+    | 'enableSystem'
+    | 'forcedTheme'
+    | 'nonce'
+    | 'scriptProps'
+    | 'storageKey'
+    | 'themes'
+    | 'value'
+  > {}
 
 interface ThemeContextValue {
   forcedTheme?: Theme;
@@ -34,91 +42,22 @@ interface ThemeContextValue {
   theme: Theme;
 }
 
-const MEDIA_QUERY = '(prefers-color-scheme: dark)';
-
-const ThemeContext = React.createContext<ThemeContextValue | null>(null);
-
 /**
- * Возвращает системную тему пользователя.
- * На сервере безопасно падает в `light`, чтобы не ломать SSR.
- * @returns Текущая системная тема.
+ * Нормализует итоговую светлую/тёмную тему.
+ * Для первой гидратации безопасно возвращает `light`, как и раньше в проекте.
+ * @param theme - произвольное значение resolved/system theme.
+ * @returns Нормализованная итоговая тема.
  */
-const getSystemTheme = (): ResolvedTheme => {
-  if (typeof window === 'undefined') {
-    return 'light';
-  }
-
-  return window.matchMedia(MEDIA_QUERY).matches ? 'dark' : 'light';
+const normalizeResolvedTheme = (
+  theme: string | undefined,
+  fallback: ResolvedTheme = 'light'
+): ResolvedTheme => {
+  return theme === 'dark' ? 'dark' : theme === 'light' ? 'light' : fallback;
 };
 
 /**
- * Временно отключает CSS transitions, чтобы смена темы не мигала.
- * @returns Функция отката временного style-тега.
- */
-const disableTransitions = (): (() => void) => {
-  const style = document.createElement('style');
-  style.appendChild(
-    document.createTextNode(
-      '*,*::before,*::after{-webkit-transition:none!important;transition:none!important}'
-    )
-  );
-
-  document.head.appendChild(style);
-
-  return () => {
-    window.getComputedStyle(document.body);
-    window.setTimeout(() => {
-      document.head.removeChild(style);
-    }, 1);
-  };
-};
-
-/**
- * Применяет текущую тему к `document.documentElement`.
- * @param attribute - HTML-атрибут, в который записывается тема.
- * @param resolvedTheme - итоговая визуальная тема.
- * @param enableColorScheme - нужно ли синхронизировать CSS `color-scheme`.
- * @param value - маппинг theme -> DOM value.
- * @param disableTransitionOnChange - временно отключать transitions во время смены темы.
- */
-const applyTheme = ({
-  attribute,
-  resolvedTheme,
-  enableColorScheme,
-  value,
-  disableTransitionOnChange
-}: {
-  attribute: string;
-  disableTransitionOnChange: boolean;
-  enableColorScheme: boolean;
-  resolvedTheme: ResolvedTheme;
-  value?: Record<string, string>;
-}): void => {
-  if (typeof document === 'undefined') {
-    return;
-  }
-
-  const root = document.documentElement;
-  const nextValue = value?.[resolvedTheme] ?? resolvedTheme;
-  const rollbackTransitions = disableTransitionOnChange ? disableTransitions() : null;
-
-  if (attribute === 'class') {
-    root.classList.remove(...THEME_ATTRIBUTES);
-    root.classList.add(nextValue);
-  } else {
-    root.setAttribute(attribute, nextValue);
-  }
-
-  if (enableColorScheme) {
-    root.style.colorScheme = resolvedTheme;
-  }
-
-  rollbackTransitions?.();
-};
-
-/**
- * Сохраняет выбранную тему в cookie для SSR и viewport metadata.
- * @param theme - тема пользователя.
+ * Сохраняет выбранную тему в cookie, чтобы SSR мог сразу отдать корректные metadata.
+ * @param theme - пользовательская тема.
  */
 const persistThemeCookie = (theme: Theme): void => {
   if (typeof document === 'undefined') {
@@ -129,10 +68,28 @@ const persistThemeCookie = (theme: Theme): void => {
 };
 
 /**
- * Локальный ThemeProvider без inline script.
- * Он синхронизирует тему с cookie и storage, чтобы SSR и viewport работали предсказуемо.
+ * Синхронизирует значение темы из next-themes обратно в cookie для SSR.
+ * @returns `null`, так как компонент не рендерит UI.
+ */
+const ThemeCookieSync = () => {
+  const { theme } = useNextTheme();
+
+  React.useEffect(() => {
+    if (!theme) {
+      return;
+    }
+
+    persistThemeCookie(normalizeTheme(theme, DEFAULT_THEME));
+  }, [theme]);
+
+  return null;
+};
+
+/**
+ * Обёртка над next-themes для единой точки интеграции темы в проекте.
+ * next-themes вставляет ранний script и выставляет класс темы до первого paint.
  * @param props - настройки темы и дочернее дерево.
- * @returns Контекст темы для клиентских компонентов.
+ * @returns Провайдер темы приложения.
  */
 export const ThemeProvider = ({
   attribute = 'data-theme',
@@ -141,99 +98,39 @@ export const ThemeProvider = ({
   disableTransitionOnChange = false,
   enableColorScheme = true,
   enableSystem = true,
-  forcedTheme,
   storageKey = THEME_STORAGE_KEY,
-  value
+  ...props
 }: ThemeProviderProps) => {
-  const [theme, setThemeState] = React.useState<Theme>(defaultTheme);
-  const [systemTheme, setSystemTheme] = React.useState<ResolvedTheme>('light');
-
-  React.useEffect(() => {
-    const persistedTheme =
-      typeof window === 'undefined' ? null : window.localStorage.getItem(storageKey);
-    const nextSystemTheme = getSystemTheme();
-    const nextTheme = normalizeTheme(persistedTheme, defaultTheme);
-
-    setSystemTheme(nextSystemTheme);
-    setThemeState(nextTheme);
-
-    if (persistedTheme !== nextTheme) {
-      window.localStorage.setItem(storageKey, nextTheme);
-    }
-
-    persistThemeCookie(nextTheme);
-  }, [defaultTheme, storageKey]);
-
-  React.useEffect(() => {
-    if (typeof window === 'undefined') {
-      return undefined;
-    }
-
-    const mediaQuery = window.matchMedia(MEDIA_QUERY);
-
-    const handleChange = (event: MediaQueryListEvent) => {
-      setSystemTheme(event.matches ? 'dark' : 'light');
-    };
-
-    mediaQuery.addEventListener('change', handleChange);
-
-    return () => {
-      mediaQuery.removeEventListener('change', handleChange);
-    };
-  }, []);
-
-  const setTheme = React.useCallback(
-    (nextTheme: Theme) => {
-      const normalizedTheme = normalizeTheme(nextTheme, defaultTheme);
-
-      setThemeState(normalizedTheme);
-
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(storageKey, normalizedTheme);
-      }
-
-      persistThemeCookie(normalizedTheme);
-    },
-    [defaultTheme, storageKey]
+  return (
+    <NextThemesProvider
+      attribute={attribute}
+      defaultTheme={defaultTheme}
+      disableTransitionOnChange={disableTransitionOnChange}
+      enableColorScheme={enableColorScheme}
+      enableSystem={enableSystem}
+      storageKey={storageKey}
+      {...props}
+    >
+      <ThemeCookieSync />
+      {children}
+    </NextThemesProvider>
   );
-
-  const effectiveTheme = forcedTheme ?? theme;
-  const resolvedTheme = resolveTheme(effectiveTheme, systemTheme, enableSystem);
-
-  React.useEffect(() => {
-    applyTheme({
-      attribute,
-      resolvedTheme,
-      enableColorScheme,
-      value,
-      disableTransitionOnChange
-    });
-  }, [attribute, disableTransitionOnChange, enableColorScheme, resolvedTheme, value]);
-
-  const contextValue = React.useMemo<ThemeContextValue>(
-    () => ({
-      forcedTheme,
-      resolvedTheme,
-      setTheme,
-      systemTheme,
-      theme
-    }),
-    [forcedTheme, resolvedTheme, setTheme, systemTheme, theme]
-  );
-
-  return <ThemeContext.Provider value={contextValue}>{children}</ThemeContext.Provider>;
 };
 
 /**
- * Хук доступа к теме приложения.
- * @returns API темы для клиентских компонентов.
+ * Типобезопасный доступ к теме приложения через локальную обёртку.
+ * @returns Нормализованное API темы для клиентских компонентов.
  */
 export const useTheme = (): ThemeContextValue => {
-  const context = React.useContext(ThemeContext);
+  const { forcedTheme, resolvedTheme, setTheme, systemTheme, theme } = useNextTheme();
 
-  if (!context) {
-    throw new Error('useTheme must be used within ThemeProvider');
-  }
-
-  return context;
+  return {
+    forcedTheme: forcedTheme ? normalizeTheme(forcedTheme, DEFAULT_THEME) : undefined,
+    resolvedTheme: normalizeResolvedTheme(resolvedTheme),
+    setTheme: (nextTheme: Theme) => {
+      setTheme(nextTheme);
+    },
+    systemTheme: normalizeResolvedTheme(systemTheme),
+    theme: normalizeTheme(theme, DEFAULT_THEME)
+  };
 };

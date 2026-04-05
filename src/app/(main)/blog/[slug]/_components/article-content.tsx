@@ -2,7 +2,7 @@
 
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { useTheme } from 'next-themes';
+import { useTheme } from '@/components/theme-provider';
 import { cn } from '@/lib/utils';
 import '@/styles/blog-article.css';
 
