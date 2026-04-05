@@ -6,15 +6,13 @@ import {
   Heading,
   Hr,
   Html,
-  Link,
   Preview,
   Section,
   Text
 } from '@react-email/components';
 import * as React from 'react';
-import { format } from 'date-fns';
 
-interface AdminEventCancellationTranslationData {
+export interface AdminEventCancellationTranslationData {
   subject: string;
   greeting: string;
   message: string;
@@ -34,33 +32,29 @@ interface AdminEventCancellationTemplateProps {
   userName: string;
   userEmail: string;
   title: string;
-  eventType: string;
-  start: Date | string;
-  end: Date | string;
+  dateText: string;
+  timeText: string;
   reason?: string;
   manageUrl: string;
   t: AdminEventCancellationTranslationData;
 }
 
+/**
+ * Рендерит письмо администратору об отмене записи пользователя.
+ */
 export const AdminEventCancellationTemplate = ({
   adminName,
   userName,
   userEmail,
   title,
-  eventType,
-  start,
-  end,
+  dateText,
+  timeText,
   reason,
   manageUrl,
   t
 }: AdminEventCancellationTemplateProps) => {
-  const startDate = new Date(start);
-  const endDate = new Date(end);
-  const dateStr = format(startDate, 'dd.MM.yyyy');
-  const timeStr = `${format(startDate, 'HH:mm')} - ${format(endDate, 'HH:mm')}`;
-
   const defaultT: AdminEventCancellationTranslationData = {
-    subject: `Отмена записи: ${title}`,
+    subject: 'Отмена записи: {title}',
     greeting: `Здравствуйте, ${adminName}!`,
     message: `Пользователь отменил свою запись.`,
     details: {
@@ -76,7 +70,7 @@ export const AdminEventCancellationTemplate = ({
 
   const texts = Object.keys(t).length > 0 ? t : defaultT;
 
-  const parsedSubject = (texts.subject || defaultT.subject).replace('{title}', title || eventType);
+  const parsedSubject = (texts.subject || defaultT.subject).replace('{title}', title);
   const parsedGreeting = (texts.greeting || defaultT.greeting).replace('{name}', adminName);
 
   return (
@@ -94,13 +88,13 @@ export const AdminEventCancellationTemplate = ({
               <strong>{texts.details.user}</strong> {userName} ({userEmail})
             </Text>
             <Text style={detailText}>
-              <strong>{texts.details.event}</strong> {title || eventType}
+              <strong>{texts.details.event}</strong> {title}
             </Text>
             <Text style={detailText}>
-              <strong>{texts.details.date}</strong> {dateStr}
+              <strong>{texts.details.date}</strong> {dateText}
             </Text>
             <Text style={detailText}>
-              <strong>{texts.details.time}</strong> {timeStr}
+              <strong>{texts.details.time}</strong> {timeText}
             </Text>
 
             {reason && (

@@ -6,15 +6,13 @@ import {
   Heading,
   Hr,
   Html,
-  Link,
   Preview,
   Section,
   Text
 } from '@react-email/components';
 import * as React from 'react';
-import { format } from 'date-fns';
 
-interface AdminEventBookingTranslationData {
+export interface AdminEventBookingTranslationData {
   subject: string;
   greeting: string;
   message: string;
@@ -33,31 +31,27 @@ interface AdminEventBookingTemplateProps {
   userName: string;
   userEmail: string;
   title: string;
-  eventType: string;
-  start: Date | string;
-  end: Date | string;
+  dateText: string;
+  timeText: string;
   manageUrl: string;
   t: AdminEventBookingTranslationData;
 }
 
+/**
+ * Рендерит письмо администратору о новой записи пользователя.
+ */
 export const AdminEventBookingTemplate = ({
   adminName,
   userName,
   userEmail,
   title,
-  eventType,
-  start,
-  end,
+  dateText,
+  timeText,
   manageUrl,
   t
 }: AdminEventBookingTemplateProps) => {
-  const startDate = new Date(start);
-  const endDate = new Date(end);
-  const dateStr = format(startDate, 'dd.MM.yyyy');
-  const timeStr = `${format(startDate, 'HH:mm')} - ${format(endDate, 'HH:mm')}`;
-
   const defaultT: AdminEventBookingTranslationData = {
-    subject: `Новая запись: ${title}`,
+    subject: 'Новая запись: {title}',
     greeting: `Здравствуйте, ${adminName}!`,
     message: `Пользователь записался на свободный слот в вашем расписании.`,
     details: {
@@ -72,7 +66,7 @@ export const AdminEventBookingTemplate = ({
 
   const texts = Object.keys(t).length > 0 ? t : defaultT;
 
-  const parsedSubject = (texts.subject || defaultT.subject).replace('{title}', title || eventType);
+  const parsedSubject = (texts.subject || defaultT.subject).replace('{title}', title);
   const parsedGreeting = (texts.greeting || defaultT.greeting).replace('{name}', adminName);
 
   return (
@@ -90,13 +84,13 @@ export const AdminEventBookingTemplate = ({
               <strong>{texts.details.user}</strong> {userName} ({userEmail})
             </Text>
             <Text style={detailText}>
-              <strong>{texts.details.event}</strong> {title || eventType}
+              <strong>{texts.details.event}</strong> {title}
             </Text>
             <Text style={detailText}>
-              <strong>{texts.details.date}</strong> {dateStr}
+              <strong>{texts.details.date}</strong> {dateText}
             </Text>
             <Text style={detailText}>
-              <strong>{texts.details.time}</strong> {timeStr}
+              <strong>{texts.details.time}</strong> {timeText}
             </Text>
           </Section>
 

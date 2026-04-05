@@ -70,12 +70,13 @@ const getManageSessionsUrl = (): string => {
 };
 
 /**
- * Возвращает человекочитаемый заголовок события для уведомлений.
+ * Возвращает пользовательский заголовок события для уведомлений.
+ * Если заголовок не задан, локализованный fallback будет вычислен в email-слое.
  * @param event - событие календаря.
- * @returns Заголовок события либо дефолтное значение.
+ * @returns Пользовательский заголовок события либо пустую строку.
  */
 const getReminderEventTitle = (event: Pick<ReminderEventRecord, 'title' | 'type'>): string => {
-  return event.title?.trim() || event.type;
+  return event.title?.trim() || '';
 };
 
 /**

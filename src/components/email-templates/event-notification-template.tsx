@@ -12,7 +12,6 @@ import {
   Text
 } from '@react-email/components';
 import * as React from 'react';
-import { format } from 'date-fns';
 
 interface EventNotificationTranslations {
   heading: string;
@@ -29,37 +28,27 @@ interface EventNotificationTranslations {
 interface EventNotificationTemplateProps {
   name: string;
   title: string;
-  eventType: string;
-  start: string | Date;
-  end: string | Date;
+  eventTypeLabel: string;
+  dateText: string;
+  timeText: string;
   meetLink?: string;
   manageUrl: string;
   translations: EventNotificationTranslations;
-  timezone: string;
 }
 
 /**
- * Email template for new or updated events.
+ * Рендерит письмо о создании или обновлении события.
  */
 export const EventNotificationTemplate = ({
   name,
   title,
-  eventType,
-  start,
-  end,
+  eventTypeLabel,
+  dateText,
+  timeText,
   meetLink,
   manageUrl,
-  translations,
-  timezone
+  translations
 }: EventNotificationTemplateProps) => {
-  const startDate = new Date(start);
-  const endDate = new Date(end);
-
-  // Time formatting based on string values to be simple
-  // In a real scenario, you'd use date-fns-tz to format in the specific timezone
-  const dateStr = format(startDate, 'MMMM d, yyyy');
-  const timeStr = `${format(startDate, 'HH:mm')} - ${format(endDate, 'HH:mm')} (${timezone})`;
-
   return (
     <Html>
       <Head />
@@ -71,18 +60,18 @@ export const EventNotificationTemplate = ({
           </Section>
 
           <Heading style={h1}>{translations.heading}</Heading>
-          <Text style={text}>{translations.greeting.replace('{name}', name)}</Text>
-          <Text style={text}>{translations.message.replace('{title}', title || eventType)}</Text>
+          <Text style={text}>{translations.greeting}</Text>
+          <Text style={text}>{translations.message}</Text>
 
           <Section style={detailsSection}>
             <Text style={detailRow}>
-              <strong>{translations.typeLabel}:</strong> {eventType}
+              <strong>{translations.typeLabel}:</strong> {eventTypeLabel}
             </Text>
             <Text style={detailRow}>
-              <strong>{translations.dateLabel}:</strong> {dateStr}
+              <strong>{translations.dateLabel}:</strong> {dateText}
             </Text>
             <Text style={detailRow}>
-              <strong>{translations.timeLabel}:</strong> {timeStr}
+              <strong>{translations.timeLabel}:</strong> {timeText}
             </Text>
             {meetLink && (
               <Text style={detailRow}>

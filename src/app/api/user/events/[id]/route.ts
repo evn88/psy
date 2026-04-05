@@ -119,7 +119,7 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
         await sendEventNotificationEmail({
           email: updatedEvent.user.email,
           name: updatedEvent.user.name || 'User',
-          title: updatedEvent.title || 'Consultation',
+          title: updatedEvent.title || '',
           eventType: 'CONSULTATION',
           start: updatedEvent.start,
           end: updatedEvent.end,
@@ -137,12 +137,13 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
           adminName: updatedEvent.author.name || 'Admin',
           userName: updatedEvent.user?.name || 'User',
           userEmail: updatedEvent.user?.email || '',
-          title: updatedEvent.title || 'Consultation',
+          title: updatedEvent.title || '',
           eventType: 'CONSULTATION',
           start: updatedEvent.start,
           end: updatedEvent.end,
           manageUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/admin/schedule`,
-          locale: updatedEvent.author.language || 'ru'
+          locale: updatedEvent.author.language || 'ru',
+          timezone: updatedEvent.author.timezone || 'UTC'
         });
       }
 
@@ -183,7 +184,7 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
         await sendEventCancellationEmail({
           email: updatedEvent.user.email,
           name: updatedEvent.user.name || 'User',
-          title: updatedEvent.title || 'Consultation',
+          title: updatedEvent.title || '',
           eventType: updatedEvent.type,
           start: updatedEvent.start,
           end: updatedEvent.end,
@@ -201,13 +202,14 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
           adminName: updatedEvent.author.name || 'Admin',
           userName: updatedEvent.user?.name || 'User',
           userEmail: updatedEvent.user?.email || '',
-          title: updatedEvent.title || 'Consultation',
+          title: updatedEvent.title || '',
           eventType: updatedEvent.type,
           start: updatedEvent.start,
           end: updatedEvent.end,
           reason,
           manageUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/admin/schedule`,
-          locale: updatedEvent.author.language || 'ru'
+          locale: updatedEvent.author.language || 'ru',
+          timezone: updatedEvent.author.timezone || 'UTC'
         });
       }
     } else if (action === 'reschedule') {
@@ -265,7 +267,7 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
         await sendEventCancellationEmail({
           email: updatedEvent.user.email,
           name: updatedEvent.user.name || 'User',
-          title: event.title || 'Consultation',
+          title: event.title || '',
           eventType: event.type,
           start: event.start,
           end: event.end,
@@ -277,7 +279,7 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
         await sendEventNotificationEmail({
           email: updatedEvent.user.email,
           name: updatedEvent.user.name || 'User',
-          title: updatedEvent.title || 'Consultation',
+          title: updatedEvent.title || '',
           eventType: 'CONSULTATION',
           start: updatedEvent.start,
           end: updatedEvent.end,
@@ -294,25 +296,27 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
           adminName: updatedEvent.author.name || 'Admin',
           userName: updatedEvent.user?.name || 'User',
           userEmail: updatedEvent.user?.email || '',
-          title: event.title || 'Consultation',
+          title: event.title || '',
           eventType: event.type,
           start: event.start,
           end: event.end,
           reason: 'Rescheduled. New slot requested.',
           manageUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/admin/schedule`,
-          locale: updatedEvent.author.language || 'ru'
+          locale: updatedEvent.author.language || 'ru',
+          timezone: updatedEvent.author.timezone || 'UTC'
         });
         await sendAdminEventBookingEmail({
           adminEmail: updatedEvent.author.email,
           adminName: updatedEvent.author.name || 'Admin',
           userName: updatedEvent.user?.name || 'User',
           userEmail: updatedEvent.user?.email || '',
-          title: updatedEvent.title || 'Consultation',
+          title: updatedEvent.title || '',
           eventType: 'CONSULTATION',
           start: updatedEvent.start,
           end: updatedEvent.end,
           manageUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/admin/schedule`,
-          locale: updatedEvent.author.language || 'ru'
+          locale: updatedEvent.author.language || 'ru',
+          timezone: updatedEvent.author.timezone || 'UTC'
         });
       }
 

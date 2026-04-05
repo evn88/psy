@@ -1,0 +1,84 @@
+{
+  "verification": {
+    "subject": "Potvrdite svoj email — Vershkov.com",
+    "heading": "Potvrda emaila",
+    "greeting": "Pozdrav, {name}!",
+    "message": "Hvala vam na registraciji na vershkov.com. Molimo potvrdite svoj email klikom na dugme ispod.",
+    "button": "Potvrdi email",
+    "linkHint": "Ili kopirajte ovaj link u pregledač:",
+    "expiry": "Link važi 24 sata.",
+    "footer": "Ako niste kreirali nalog, slobodno ignorišite ovu poruku."
+  },
+  "welcomeGoogle": {
+    "subject": "Dobro došli na Vershkov.com",
+    "heading": "Dobro došli!",
+    "greeting": "Pozdrav, {name}!",
+    "message": "Vaš nalog je uspešno kreiran pomoću Google prijave. Sada su vam dostupne sve funkcije platforme.",
+    "button": "Idi u nalog",
+    "footer": "Ovo je automatska poruka. Molimo ne odgovarajte na nju."
+  },
+  "eventNotification": {
+    "subject": "Ažuriranje rasporeda - Vershkov.com",
+    "heading": "Ažuriranje rasporeda",
+    "greeting": "Pozdrav, {name}!",
+    "message": "Vaš događaj „{title}“ je zakazan ili izmenjen.",
+    "dateLabel": "Datum",
+    "timeLabel": "Vreme",
+    "typeLabel": "Tip događaja",
+    "meetLinkLabel": "Link za sastanak",
+    "button": "Pogledaj raspored",
+    "footer": "Ako imate pitanja, slobodno nas kontaktirajte."
+  },
+  "eventCancellation": {
+    "subject": "Događaj je otkazan - Vershkov.com",
+    "heading": "Događaj je otkazan",
+    "greeting": "Pozdrav, {name}!",
+    "message": "Vaš događaj „{title}“ je otkazan.",
+    "dateLabel": "Datum",
+    "timeLabel": "Vreme",
+    "typeLabel": "Tip događaja",
+    "reasonLabel": "Razlog",
+    "button": "Pogledaj raspored",
+    "footer": "Ako imate pitanja, slobodno nas kontaktirajte."
+  },
+  "sessionReminder": {
+    "subjectInMinutes": "Sesija počinje za {minutes} min - Vershkov.com",
+    "subjectNow": "Sesija počinje sada - Vershkov.com",
+    "headingInMinutes": "Podsetnik za sesiju",
+    "headingNow": "Vaša sesija počinje sada",
+    "greeting": "Pozdrav, {name}!",
+    "messageInMinutes": "Sesija „{title}“ počinje za {minutes} minuta.",
+    "messageNow": "Sesija „{title}“ počinje upravo sada.",
+    "dateLabel": "Datum",
+    "timeLabel": "Vreme",
+    "typeLabel": "Tip događaja",
+    "meetLinkLabel": "Link za sastanak",
+    "button": "Otvori raspored",
+    "footer": "Ovo je automatski podsetnik. Molimo ne odgovarajte na ovu poruku."
+  },
+  "accountDeletionRequest": {
+    "subject": "Potvrdite brisanje naloga — Vershkov.com",
+    "heading": "Zahtev za brisanje naloga",
+    "greeting": "Pozdrav, {name}!",
+    "message": "Primili smo zahtev za brisanje vašeg naloga na Vershkov.com. Ako želite da nastavite, kliknite na dugme ispod.",
+    "warning": "Pažnja: ovu radnju nije moguće poništiti. Svi vaši podaci (istorija, rezervacije, rezultati anketa) biće trajno obrisani.",
+    "button": "Potvrdi brisanje naloga",
+    "linkHint": "Ili kopirajte ovaj link u pregledač:",
+    "expiry": "Link važi 24 sata.",
+    "footer": "Ako niste tražili brisanje naloga, slobodno ignorišite ovu poruku."
+  },
+  "accountDeleted": {
+    "subject": "Vaš nalog je obrisan — Vershkov.com",
+    "heading": "Nalog je obrisan",
+    "greeting": "Pozdrav, {name}!",
+    "message": "Vaš Vershkov.com nalog i svi povezani podaci su uspešno obrisani. Hvala vam što ste koristili naš servis.",
+    "footer": "Ako imate pitanja, kontaktirajte nas."
+  },
+  "adminAccountDeleted": {
+    "subject": "Korisnik je obrisao nalog — Vershkov.com",
+    "heading": "Korisnički nalog je obrisan",
+    "message": "Korisnik {name} ({email}) je obrisao svoj nalog.",
+    "dateLabel": "Datum brisanja",
+    "footer": "Ovo je automatsko sistemsko obaveštenje."
+  }
+}
