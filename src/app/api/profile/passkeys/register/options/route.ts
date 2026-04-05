@@ -46,8 +46,7 @@ export async function GET() {
       excludeCredentials: userAuthenticators,
       authenticatorSelection: {
         residentKey: 'preferred',
-        userVerification: 'preferred',
-        authenticatorAttachment: 'platform' // Платформенный аутентификатор (TouchID, FaceID, etc)
+        userVerification: 'preferred'
       }
     });
 

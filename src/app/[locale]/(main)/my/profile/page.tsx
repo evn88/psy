@@ -13,35 +13,54 @@ export default async function MyProfilePage() {
   const session = await auth();
   const t = await getTranslations('Profile');
 
-  if (!session?.user?.id) {
+  if (!session?.user?.email) {
     redirect('/auth');
   }
 
-  const [authenticatorCount, googleAccount, dbUser, lastLogin] = await Promise.all([
-    prisma.authenticator.count({
-      where: { userId: session.user.id }
-    }),
-    prisma.account.findFirst({
-      where: { userId: session.user.id, provider: 'google' }
-    }),
-    prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { password: true, timezone: true }
-    }),
-    // Загружаем последний вход — может не существовать до миграции
-    (async () => {
-      try {
-        return await prisma.userLoginHistory.findFirst({
-          where: { userId: session.user.id },
-          orderBy: { createdAt: 'desc' }
-        });
-      } catch {
-        return null;
+  const dbUser = await prisma.user.findUnique({
+    where: { email: session.user.email },
+    select: {
+      id: true,
+      password: true,
+      timezone: true,
+      Authenticator: {
+        select: {
+          credentialID: true,
+          credentialDeviceType: true,
+          credentialBackedUp: true,
+          transports: true
+        }
       }
-    })()
+    }
+  });
+
+  if (!dbUser) {
+    redirect('/auth');
+  }
+
+  const [googleAccount, lastLogin] = await Promise.all([
+    prisma.account.findFirst({
+      where: { userId: dbUser.id, provider: 'google' }
+    }),
+    prisma.user
+      .findUnique({
+        where: { id: dbUser.id },
+        select: { id: true }
+      })
+      .then(() =>
+        (async () => {
+          try {
+            return await prisma.userLoginHistory.findFirst({
+              where: { userId: dbUser.id },
+              orderBy: { createdAt: 'desc' }
+            });
+          } catch {
+            return null;
+          }
+        })()
+      )
   ]);
 
-  const hasPasskeys = authenticatorCount > 0;
   const isGoogleLinked = !!googleAccount;
   const googleLinkedAt = googleAccount?.createdAt;
   const hasPassword = !!dbUser?.password;
@@ -57,7 +76,7 @@ export default async function MyProfilePage() {
         <CardContent className="space-y-4">
           <ProfileForm
             user={session.user}
-            hasPasskeys={hasPasskeys}
+            passkeys={dbUser.Authenticator}
             isGoogleLinked={isGoogleLinked}
             googleLinkedAt={googleLinkedAt}
             hasPassword={hasPassword}
