@@ -3,10 +3,7 @@ import { start } from 'workflow/api';
 
 import { runSessionReminderWorkflow } from '@/workflows/session-reminder-workflow';
 
-const SCHEDULABLE_REMINDER_STATUSES = new Set<EventStatus>([
-  EventStatus.SCHEDULED,
-  EventStatus.PENDING_CONFIRMATION
-]);
+const SCHEDULABLE_REMINDER_STATUSES = new Set<EventStatus>([EventStatus.SCHEDULED]);
 
 export type SessionReminderWorkflowTargetEvent = {
   id: string;

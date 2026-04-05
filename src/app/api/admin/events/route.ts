@@ -214,7 +214,8 @@ export async function POST(req: Request) {
         meetLink: newEvent.meetLink || undefined,
         manageUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/my/sessions`,
         locale: newEvent.user.language || 'ru',
-        timezone: newEvent.user.timezone || 'UTC'
+        timezone: newEvent.user.timezone || 'UTC',
+        variant: newEvent.status === 'PENDING_CONFIRMATION' ? 'bookingPending' : 'default'
       });
     }
 

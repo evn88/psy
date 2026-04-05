@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { CalendarView } from './calendar-view';
 import { type Event, type EventMutationInput, useEvents } from './use-events';
 import { EventDialog } from './event-dialog';
+import { PendingRequestsPanel } from './pending-requests-panel';
 import { endOfMonth, endOfWeek, startOfMonth, startOfWeek } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -77,10 +78,17 @@ export function ScheduleDashboard({ workHourStart = 9, workHourEnd = 20 }: Sched
   const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
   const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
 
-  const { events, isValidating, createEvent, updateEvent, deleteEvent } = useEvents(
-    startDate,
-    endDate
-  );
+  const {
+    events,
+    pendingRequests,
+    isValidating,
+    isPendingRequestsLoading,
+    createEvent,
+    updateEvent,
+    deleteEvent,
+    approvePendingEvent,
+    rejectPendingEvent
+  } = useEvents(startDate, endDate);
 
   const handleAddEvent = (date?: Date, endDate?: Date) => {
     setDialogDate(date || selectedDate || new Date());
@@ -108,12 +116,22 @@ export function ScheduleDashboard({ workHourStart = 9, workHourEnd = 20 }: Sched
     await deleteEvent(id);
   };
 
+  /**
+   * Фокусирует календарь на событии из боковой панели и открывает редактирование.
+   * @param event - событие, выбранное в панели pending-запросов.
+   */
+  const handleRequestClick = (event: Event) => {
+    setCurrentDate(new Date(event.start));
+    setSelectedDate(new Date(event.start));
+    handleEditEvent(event);
+  };
+
   if (!isMounted) return <div className="min-h-[500px]" />;
 
   return (
     <>
-      <div className="flex flex-col gap-4 h-[calc(100vh-10rem)] min-h-[500px]">
-        <Card className="flex flex-col h-full border-0 shadow-none sm:border sm:shadow-sm">
+      <div className="flex flex-col gap-4 lg:grid lg:min-h-[640px] lg:grid-cols-[minmax(0,1fr)_20rem] lg:h-[calc(100vh-10rem)]">
+        <Card className="flex min-h-[460px] flex-col border-0 shadow-none sm:border sm:shadow-sm lg:min-h-0 lg:h-full">
           <CardHeader className="px-4 sm:px-6 pb-2 shrink-0 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center space-x-2 bg-muted p-1 rounded-md">
               <button
@@ -169,6 +187,14 @@ export function ScheduleDashboard({ workHourStart = 9, workHourEnd = 20 }: Sched
             />
           </CardContent>
         </Card>
+
+        <PendingRequestsPanel
+          requests={pendingRequests}
+          isLoading={isPendingRequestsLoading}
+          onApproveRequest={approvePendingEvent}
+          onRejectRequest={rejectPendingEvent}
+          onRequestClick={handleRequestClick}
+        />
       </div>
 
       {isDialogOpen && (

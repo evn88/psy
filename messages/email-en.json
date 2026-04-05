@@ -29,6 +29,30 @@
     "button": "View My Schedule",
     "footer": "If you have any questions, please contact us."
   },
+  "bookingPending": {
+    "subject": "Booking request received - Vershkov.com",
+    "heading": "Booking request received",
+    "greeting": "Hello, {name}!",
+    "message": "You booked '{title}'. Your request is waiting for administrator approval.",
+    "dateLabel": "Date",
+    "timeLabel": "Time",
+    "typeLabel": "Event Type",
+    "meetLinkLabel": "Meeting Link",
+    "button": "Open My Schedule",
+    "footer": "We will send a separate email once your booking is approved or declined."
+  },
+  "bookingConfirmed": {
+    "subject": "Booking confirmed - Vershkov.com",
+    "heading": "Booking confirmed",
+    "greeting": "Hello, {name}!",
+    "message": "Your booking for '{title}' has been confirmed.",
+    "dateLabel": "Date",
+    "timeLabel": "Time",
+    "typeLabel": "Event Type",
+    "meetLinkLabel": "Meeting Link",
+    "button": "Open My Schedule",
+    "footer": "If you have any questions, please contact us."
+  },
   "eventCancellation": {
     "subject": "Event Cancelled - Vershkov.com",
     "heading": "Event Cancelled",
@@ -40,6 +64,18 @@
     "reasonLabel": "Reason",
     "button": "View My Schedule",
     "footer": "If you have any questions, please contact us."
+  },
+  "bookingRejected": {
+    "subject": "Booking request declined - Vershkov.com",
+    "heading": "Booking request declined",
+    "greeting": "Hello, {name}!",
+    "message": "Unfortunately, your booking request for '{title}' was declined.",
+    "dateLabel": "Date",
+    "timeLabel": "Time",
+    "typeLabel": "Event Type",
+    "reasonLabel": "Decline reason",
+    "button": "View My Schedule",
+    "footer": "You can choose another available slot in your schedule."
   },
   "sessionReminder": {
     "subjectInMinutes": "Session starts in {minutes} min - Vershkov.com",

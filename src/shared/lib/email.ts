@@ -57,6 +57,56 @@ const interpolate = (template: string, vars: Record<string, string>): string => 
   );
 };
 
+type EventNotificationVariant = 'default' | 'bookingPending' | 'bookingConfirmed';
+
+type EventCancellationVariant = 'default' | 'bookingRejected';
+
+/**
+ * Возвращает тексты письма для уведомления о событии в зависимости от сценария.
+ * @param locale - locale пользователя.
+ * @param variant - сценарий письма.
+ * @returns Локализованный набор строк для шаблона уведомления.
+ */
+const getEventNotificationCopy = (
+  locale: string,
+  variant: EventNotificationVariant
+): (typeof getEmailTranslations extends (locale?: string | null) => infer TResult
+  ? TResult
+  : never)['eventNotification'] => {
+  const translations = getEmailTranslations(locale);
+
+  if (variant === 'bookingPending') {
+    return translations.bookingPending ?? translations.eventNotification;
+  }
+
+  if (variant === 'bookingConfirmed') {
+    return translations.bookingConfirmed ?? translations.eventNotification;
+  }
+
+  return translations.eventNotification;
+};
+
+/**
+ * Возвращает тексты письма об отмене события в зависимости от сценария.
+ * @param locale - locale пользователя.
+ * @param variant - сценарий письма.
+ * @returns Локализованный набор строк для шаблона отмены.
+ */
+const getEventCancellationCopy = (
+  locale: string,
+  variant: EventCancellationVariant
+): (typeof getEmailTranslations extends (locale?: string | null) => infer TResult
+  ? TResult
+  : never)['eventCancellation'] => {
+  const translations = getEmailTranslations(locale);
+
+  if (variant === 'bookingRejected') {
+    return translations.bookingRejected ?? translations.eventCancellation;
+  }
+
+  return translations.eventCancellation;
+};
+
 interface SendVerificationEmailParams {
   email: string;
   name: string;
@@ -341,6 +391,7 @@ interface SendEventNotificationEmailParams {
   manageUrl: string;
   locale: string;
   timezone: string;
+  variant?: EventNotificationVariant;
 }
 
 /**
@@ -357,9 +408,10 @@ export const sendEventNotificationEmail = async ({
   meetLink,
   manageUrl,
   locale,
-  timezone
+  timezone,
+  variant = 'default'
 }: SendEventNotificationEmailParams): Promise<string | null> => {
-  const translations = getEmailTranslations(locale);
+  const copy = getEventNotificationCopy(locale, variant);
   const localizedTitle = getLocalizedEventTitle(title, eventType, locale);
   const eventTypeLabel = getLocalizedEventTypeLabel(eventType, locale);
   const { dateText, timeText } = formatEmailEventDateTime({
@@ -372,7 +424,7 @@ export const sendEventNotificationEmail = async ({
   const { data, error } = await resend.emails.send({
     from: FROM_ADDRESS,
     to: [email],
-    subject: translations.eventNotification?.subject || 'Schedule Update',
+    subject: copy?.subject || 'Schedule Update',
     react: EventNotificationTemplate({
       name,
       title: localizedTitle,
@@ -382,17 +434,17 @@ export const sendEventNotificationEmail = async ({
       meetLink,
       manageUrl,
       translations: {
-        heading: translations.eventNotification?.heading || '',
-        greeting: interpolate(translations.eventNotification?.greeting || '', { name }),
-        message: interpolate(translations.eventNotification?.message || '', {
+        heading: copy?.heading || '',
+        greeting: interpolate(copy?.greeting || '', { name }),
+        message: interpolate(copy?.message || '', {
           title: localizedTitle
         }),
-        dateLabel: translations.eventNotification?.dateLabel || '',
-        timeLabel: translations.eventNotification?.timeLabel || '',
-        typeLabel: translations.eventNotification?.typeLabel || '',
-        meetLinkLabel: translations.eventNotification?.meetLinkLabel || '',
-        button: translations.eventNotification?.button || '',
-        footer: translations.eventNotification?.footer || ''
+        dateLabel: copy?.dateLabel || '',
+        timeLabel: copy?.timeLabel || '',
+        typeLabel: copy?.typeLabel || '',
+        meetLinkLabel: copy?.meetLinkLabel || '',
+        button: copy?.button || '',
+        footer: copy?.footer || ''
       }
     })
   });
@@ -517,6 +569,7 @@ interface SendEventCancellationEmailParams {
   manageUrl: string;
   locale: string;
   timezone: string;
+  variant?: EventCancellationVariant;
 }
 
 /**
@@ -533,9 +586,10 @@ export const sendEventCancellationEmail = async ({
   reason,
   manageUrl,
   locale,
-  timezone
+  timezone,
+  variant = 'default'
 }: SendEventCancellationEmailParams): Promise<string | null> => {
-  const translations = getEmailTranslations(locale);
+  const copy = getEventCancellationCopy(locale, variant);
   const localizedTitle = getLocalizedEventTitle(title, eventType, locale);
   const eventTypeLabel = getLocalizedEventTypeLabel(eventType, locale);
   const { dateText, timeText } = formatEmailEventDateTime({
@@ -548,7 +602,7 @@ export const sendEventCancellationEmail = async ({
   const { data, error } = await resend.emails.send({
     from: FROM_ADDRESS,
     to: [email],
-    subject: translations.eventCancellation?.subject || 'Event Cancelled',
+    subject: copy?.subject || 'Event Cancelled',
     react: EventCancellationTemplate({
       name,
       title: localizedTitle,
@@ -558,17 +612,17 @@ export const sendEventCancellationEmail = async ({
       reason,
       manageUrl,
       translations: {
-        heading: translations.eventCancellation?.heading || '',
-        greeting: interpolate(translations.eventCancellation?.greeting || '', { name }),
-        message: interpolate(translations.eventCancellation?.message || '', {
+        heading: copy?.heading || '',
+        greeting: interpolate(copy?.greeting || '', { name }),
+        message: interpolate(copy?.message || '', {
           title: localizedTitle
         }),
-        dateLabel: translations.eventCancellation?.dateLabel || '',
-        timeLabel: translations.eventCancellation?.timeLabel || '',
-        typeLabel: translations.eventCancellation?.typeLabel || '',
-        reasonLabel: translations.eventCancellation?.reasonLabel || '',
-        button: translations.eventCancellation?.button || '',
-        footer: translations.eventCancellation?.footer || ''
+        dateLabel: copy?.dateLabel || '',
+        timeLabel: copy?.timeLabel || '',
+        typeLabel: copy?.typeLabel || '',
+        reasonLabel: copy?.reasonLabel || '',
+        button: copy?.button || '',
+        footer: copy?.footer || ''
       }
     })
   });

@@ -148,7 +148,7 @@ export const WeekView = ({
                               e.stopPropagation();
                               if (onEventClick) onEventClick(event);
                             }}
-                            className={`absolute left-0.5 right-0.5 sm:left-1 sm:right-1 rounded-md px-1.5 py-1 text-xs flex flex-col overflow-hidden cursor-pointer shadow-sm hover:shadow-md hover:ring-1 hover:ring-primary/50 transition-all border pointer-events-auto ${getEventStyle(event.type)}`}
+                            className={`absolute left-0.5 right-0.5 sm:left-1 sm:right-1 rounded-md px-1.5 py-1 text-xs flex flex-col overflow-hidden cursor-pointer shadow-sm hover:shadow-md hover:ring-1 hover:ring-primary/50 transition-all border pointer-events-auto ${getEventStyle(event)}`}
                             style={{
                               top: `${top}rem`,
                               height: `${height}rem`

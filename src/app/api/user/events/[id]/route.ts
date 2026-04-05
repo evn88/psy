@@ -100,6 +100,7 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
           userId: userId,
           status: 'PENDING_CONFIRMATION',
           type: 'CONSULTATION',
+          cancelReason: null,
           bookingReminderMinutesBeforeStart:
             typeof reminderMinutesBeforeStart === 'number' ? reminderMinutesBeforeStart : null,
           reminderEmailSentAt: null,
@@ -126,7 +127,8 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
           meetLink: updatedEvent.meetLink || undefined,
           manageUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/my/sessions`,
           locale: updatedEvent.user.language || 'ru',
-          timezone: updatedEvent.user.timezone || 'UTC'
+          timezone: updatedEvent.user.timezone || 'UTC',
+          variant: 'bookingPending'
         });
       }
 
@@ -241,6 +243,7 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
             userId: userId,
             status: 'PENDING_CONFIRMATION',
             type: 'CONSULTATION',
+            cancelReason: null,
             bookingReminderMinutesBeforeStart:
               typeof reminderMinutesBeforeStart === 'number'
                 ? reminderMinutesBeforeStart
@@ -286,7 +289,8 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
           meetLink: updatedEvent.meetLink || undefined,
           manageUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/my/sessions`,
           locale: updatedEvent.user.language || 'ru',
-          timezone: updatedEvent.user.timezone || 'UTC'
+          timezone: updatedEvent.user.timezone || 'UTC',
+          variant: 'bookingPending'
         });
       }
 

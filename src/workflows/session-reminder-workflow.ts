@@ -10,7 +10,7 @@ import {
   getSessionReminderPushContent
 } from '@/shared/lib/session-reminders';
 
-const REMINDER_ELIGIBLE_STATUSES = new Set<string>(['SCHEDULED', 'PENDING_CONFIRMATION']);
+const REMINDER_ELIGIBLE_STATUSES = new Set<string>(['SCHEDULED']);
 
 type SessionReminderWorkflowParams = {
   eventId: string;

@@ -12,11 +12,20 @@ import {
   MIN_SESSION_REMINDER_MINUTES
 } from '@/shared/lib/session-reminders';
 
+const eventUserSelect = {
+  id: true,
+  name: true,
+  email: true,
+  language: true,
+  timezone: true
+} as const;
+
 const updateEventSchema = z.object({
   type: z.nativeEnum(EventType).optional(),
   start: z.string().datetime().optional(),
   end: z.string().datetime().optional(),
   status: z.nativeEnum(EventStatus).optional(),
+  cancelReason: z.string().trim().max(1000).optional().nullable(),
   title: z.string().optional().nullable(),
   meetLink: z.string().url().optional().or(z.literal('')).nullable(),
   userId: z.string().optional().nullable(),
@@ -32,6 +41,21 @@ type EventConflict = {
   id: string;
   start: Date;
   end: Date;
+};
+
+/**
+ * Возвращает причину отклонения запроса в стабильном виде для хранения и письма.
+ * @param cancelReason - значение, переданное из формы отклонения.
+ * @returns Нормализованная причина или `null`, если её нет.
+ */
+const normalizeCancelReason = (cancelReason?: string | null): string | null => {
+  const normalizedReason = cancelReason?.trim();
+
+  if (!normalizedReason) {
+    return null;
+  }
+
+  return normalizedReason;
 };
 
 /**
@@ -62,18 +86,23 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
     }
 
     const event = await prisma.event.findUnique({
-      where: { id: eventId }
+      where: { id: eventId },
+      include: {
+        user: { select: eventUserSelect }
+      }
     });
 
     if (!event) {
       return NextResponse.json({ message: 'Event not found' }, { status: 404 });
     }
 
-    const { start, end, status, ...restData } = result.data;
+    const { start, end, status, cancelReason, ...restData } = result.data;
     const nextStart = start ? new Date(start) : event.start;
     const nextEnd = end ? new Date(end) : event.end;
     const nextStatus = status ?? event.status;
+    const normalizedCancelReason = normalizeCancelReason(cancelReason);
     const hasUserField = Object.prototype.hasOwnProperty.call(result.data, 'userId');
+    const hasCancelReasonField = Object.prototype.hasOwnProperty.call(result.data, 'cancelReason');
     const isStartChanged = Boolean(start) && nextStart.getTime() !== event.start.getTime();
     const isEndChanged = Boolean(end) && nextEnd.getTime() !== event.end.getTime();
     const isStatusChanged = typeof status === 'string' && status !== event.status;
@@ -81,15 +110,30 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
       typeof result.data.reminderMinutesBeforeStart === 'number' &&
       result.data.reminderMinutesBeforeStart !== event.reminderMinutesBeforeStart;
     const isUserChanged = hasUserField && result.data.userId !== event.userId;
+    const isRejectingPendingRequest =
+      event.status === 'PENDING_CONFIRMATION' &&
+      nextStatus === 'CANCELLED' &&
+      Boolean(event.userId) &&
+      Boolean(event.user);
+    const isApprovingPendingRequest =
+      event.status === 'PENDING_CONFIRMATION' &&
+      nextStatus === 'SCHEDULED' &&
+      Boolean(event.userId) &&
+      Boolean(event.user);
+    const effectiveNextStatus = isRejectingPendingRequest ? 'SCHEDULED' : nextStatus;
     const shouldResetReminderSentAt =
-      isStartChanged || isEndChanged || isReminderMinutesChanged || isUserChanged;
+      isStartChanged ||
+      isEndChanged ||
+      isReminderMinutesChanged ||
+      isUserChanged ||
+      isRejectingPendingRequest;
     const shouldBumpReminderWorkflowVersion = shouldResetReminderSentAt || isStatusChanged;
 
     if (!isValidDateRange({ start: nextStart, end: nextEnd })) {
       return NextResponse.json({ message: 'Invalid date range' }, { status: 400 });
     }
 
-    if (nextStatus !== 'CANCELLED') {
+    if (effectiveNextStatus !== 'CANCELLED') {
       const conflictingEvents = (await prisma.event.findMany({
         where: {
           id: { not: eventId },
@@ -116,7 +160,11 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
       }
     }
 
-    const updateData: Prisma.EventUncheckedUpdateInput = { ...restData, status: nextStatus };
+    const updateData: Prisma.EventUncheckedUpdateInput = {
+      ...restData,
+      status: effectiveNextStatus
+    };
+
     if (start) {
       updateData.start = nextStart;
     }
@@ -132,19 +180,46 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
         increment: 1
       };
     }
-    if (hasUserField) {
+    if (hasUserField || isRejectingPendingRequest) {
       updateData.bookingReminderMinutesBeforeStart = null;
+    }
+    if (hasCancelReasonField) {
+      updateData.cancelReason = normalizedCancelReason;
+    }
+    if (isRejectingPendingRequest) {
+      updateData.type = EventType.FREE_SLOT;
+      updateData.status = EventStatus.SCHEDULED;
+      updateData.userId = null;
+      updateData.cancelReason = normalizedCancelReason;
+      updateData.meetLink = null;
+    }
+    if (isApprovingPendingRequest) {
+      updateData.cancelReason = null;
     }
 
     const updatedEvent = await prisma.event.update({
       where: { id: eventId },
       data: updateData,
       include: {
-        user: { select: { id: true, name: true, email: true, language: true, timezone: true } }
+        user: { select: eventUserSelect }
       }
     });
 
-    if (updatedEvent.user && updatedEvent.user.email) {
+    if (isRejectingPendingRequest && event.user?.email) {
+      await sendEventCancellationEmail({
+        email: event.user.email,
+        name: event.user.name || 'User',
+        title: event.title || '',
+        eventType: event.type,
+        start: event.start,
+        end: event.end,
+        reason: normalizedCancelReason || undefined,
+        manageUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/my/sessions`,
+        locale: event.user.language || 'ru',
+        timezone: event.user.timezone || 'UTC',
+        variant: 'bookingRejected'
+      });
+    } else if (updatedEvent.user && updatedEvent.user.email) {
       if (updatedEvent.status === 'CANCELLED') {
         await sendEventCancellationEmail({
           email: updatedEvent.user.email,
@@ -153,9 +228,38 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
           eventType: updatedEvent.type,
           start: updatedEvent.start,
           end: updatedEvent.end,
+          reason: updatedEvent.cancelReason || undefined,
           manageUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/my/sessions`,
           locale: updatedEvent.user.language || 'ru',
           timezone: updatedEvent.user.timezone || 'UTC'
+        });
+      } else if (updatedEvent.status === 'PENDING_CONFIRMATION') {
+        await sendEventNotificationEmail({
+          email: updatedEvent.user.email,
+          name: updatedEvent.user.name || 'User',
+          title: updatedEvent.title || '',
+          eventType: updatedEvent.type,
+          start: updatedEvent.start,
+          end: updatedEvent.end,
+          meetLink: updatedEvent.meetLink || undefined,
+          manageUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/my/sessions`,
+          locale: updatedEvent.user.language || 'ru',
+          timezone: updatedEvent.user.timezone || 'UTC',
+          variant: 'bookingPending'
+        });
+      } else if (isApprovingPendingRequest) {
+        await sendEventNotificationEmail({
+          email: updatedEvent.user.email,
+          name: updatedEvent.user.name || 'User',
+          title: updatedEvent.title || '',
+          eventType: updatedEvent.type,
+          start: updatedEvent.start,
+          end: updatedEvent.end,
+          meetLink: updatedEvent.meetLink || undefined,
+          manageUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/my/sessions`,
+          locale: updatedEvent.user.language || 'ru',
+          timezone: updatedEvent.user.timezone || 'UTC',
+          variant: 'bookingConfirmed'
         });
       } else {
         await sendEventNotificationEmail({
@@ -210,7 +314,7 @@ export async function DELETE(req: Request, props: { params: Promise<{ id: string
     const event = await prisma.event.findUnique({
       where: { id: eventId },
       include: {
-        user: { select: { id: true, name: true, email: true, language: true, timezone: true } }
+        user: { select: eventUserSelect }
       }
     });
 
@@ -235,7 +339,8 @@ export async function DELETE(req: Request, props: { params: Promise<{ id: string
         end: event.end,
         manageUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/my/sessions`,
         locale: event.user.language || 'ru',
-        timezone: event.user.timezone || 'UTC'
+        timezone: event.user.timezone || 'UTC',
+        variant: event.status === 'PENDING_CONFIRMATION' ? 'bookingRejected' : 'default'
       });
     }
 

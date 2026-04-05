@@ -4,8 +4,27 @@ import { Event } from './use-events';
 export const weekDaysFull = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 export const weekDaysMobile = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-export const getEventStyle = (type: string) => {
-  switch (type) {
+/**
+ * Возвращает `true`, если событие требует подтверждения администратора.
+ * @param event - событие календаря.
+ * @returns Признак pending-запроса.
+ */
+export const isPendingConfirmationEvent = (event: Pick<Event, 'status'>): boolean => {
+  return event.status === 'PENDING_CONFIRMATION';
+};
+
+/**
+ * Возвращает CSS-классы карточки события с учётом статуса и типа.
+ * Pending-события подсвечиваются отдельно, чтобы админ видел их в календаре.
+ * @param event - событие календаря.
+ * @returns Набор Tailwind-классов.
+ */
+export const getEventStyle = (event: Pick<Event, 'type' | 'status'>) => {
+  if (isPendingConfirmationEvent(event)) {
+    return 'bg-amber-100 text-amber-900 dark:bg-amber-900/35 dark:text-amber-200 border-amber-300 dark:border-amber-700 ring-1 ring-amber-200/80 dark:ring-amber-800/80';
+  }
+
+  switch (event.type) {
     case 'FREE_SLOT':
       return 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200 dark:border-blue-800';
     case 'CONSULTATION':
@@ -21,8 +40,17 @@ export const getEventStyle = (type: string) => {
   }
 };
 
-export const getEventDotStyle = (type: string) => {
-  switch (type) {
+/**
+ * Возвращает цвет маркера события для month-view.
+ * @param event - событие календаря.
+ * @returns Tailwind-класс цвета точки.
+ */
+export const getEventDotStyle = (event: Pick<Event, 'type' | 'status'>) => {
+  if (isPendingConfirmationEvent(event)) {
+    return 'bg-amber-500';
+  }
+
+  switch (event.type) {
     case 'FREE_SLOT':
       return 'bg-blue-500';
     case 'CONSULTATION':
@@ -38,6 +66,12 @@ export const getEventDotStyle = (type: string) => {
   }
 };
 
+/**
+ * Возвращает список событий для конкретного дня календаря.
+ * @param events - полный список событий.
+ * @param day - день, для которого нужна фильтрация.
+ * @returns События выбранного дня.
+ */
 export const getEventsForDay = (events: Event[], day: Date) => {
   return events.filter(event => isSameDay(new Date(event.start), day));
 };

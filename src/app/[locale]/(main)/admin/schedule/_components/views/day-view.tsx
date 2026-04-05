@@ -112,7 +112,7 @@ export const DayView = ({
                       e.stopPropagation();
                       if (onEventClick) onEventClick(event);
                     }}
-                    className={`absolute left-2 right-2 rounded-md p-2 text-sm overflow-hidden cursor-pointer shadow-sm hover:shadow-md hover:ring-1 hover:ring-primary/50 transition-all border pointer-events-auto ${getEventStyle(event.type)}`}
+                    className={`absolute left-2 right-2 rounded-md p-2 text-sm overflow-hidden cursor-pointer shadow-sm hover:shadow-md hover:ring-1 hover:ring-primary/50 transition-all border pointer-events-auto ${getEventStyle(event)}`}
                     style={{
                       top: `${top}rem`,
                       height: `${height}rem`

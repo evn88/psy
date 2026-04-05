@@ -29,6 +29,30 @@
     "button": "Pogledaj raspored",
     "footer": "Ako imate pitanja, slobodno nas kontaktirajte."
   },
+  "bookingPending": {
+    "subject": "Zahtev za termin je poslat - Vershkov.com",
+    "heading": "Zahtev za termin je poslat",
+    "greeting": "Pozdrav, {name}!",
+    "message": "Rezervisali ste događaj „{title}“. Zahtev čeka potvrdu administratora.",
+    "dateLabel": "Datum",
+    "timeLabel": "Vreme",
+    "typeLabel": "Tip događaja",
+    "meetLinkLabel": "Link za sastanak",
+    "button": "Otvori raspored",
+    "footer": "Poslaćemo vam posebnu poruku kada zahtev bude potvrđen ili odbijen."
+  },
+  "bookingConfirmed": {
+    "subject": "Termin je potvrđen - Vershkov.com",
+    "heading": "Termin je potvrđen",
+    "greeting": "Pozdrav, {name}!",
+    "message": "Vaša rezervacija za događaj „{title}“ je potvrđena.",
+    "dateLabel": "Datum",
+    "timeLabel": "Vreme",
+    "typeLabel": "Tip događaja",
+    "meetLinkLabel": "Link za sastanak",
+    "button": "Otvori raspored",
+    "footer": "Ako imate pitanja, slobodno nas kontaktirajte."
+  },
   "eventCancellation": {
     "subject": "Događaj je otkazan - Vershkov.com",
     "heading": "Događaj je otkazan",
@@ -40,6 +64,18 @@
     "reasonLabel": "Razlog",
     "button": "Pogledaj raspored",
     "footer": "Ako imate pitanja, slobodno nas kontaktirajte."
+  },
+  "bookingRejected": {
+    "subject": "Zahtev za termin je odbijen - Vershkov.com",
+    "heading": "Zahtev za termin je odbijen",
+    "greeting": "Pozdrav, {name}!",
+    "message": "Nažalost, vaš zahtev za događaj „{title}“ je odbijen.",
+    "dateLabel": "Datum",
+    "timeLabel": "Vreme",
+    "typeLabel": "Tip događaja",
+    "reasonLabel": "Razlog odbijanja",
+    "button": "Pogledaj raspored",
+    "footer": "Možete izabrati drugi slobodan termin u rasporedu."
   },
   "sessionReminder": {
     "subjectInMinutes": "Sesija počinje za {minutes} min - Vershkov.com",
