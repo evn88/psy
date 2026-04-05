@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/shared/lib/prisma';
 import { auth } from '@/auth';
-import { z } from 'zod';
 import { EventStatus, EventType, Prisma } from '@prisma/client';
+import { z } from 'zod';
+import prisma from '@/shared/lib/prisma';
 import { sendEventNotificationEmail } from '@/shared/lib/email';
 import { fetchGoogleEvents, syncEventWithGoogle } from '@/shared/lib/google-sync';
 import { doesDateRangeOverlap, isValidDateRange } from '@/shared/lib/event-utils';
+import { optionalMeetingUrlSchema } from '@/shared/lib/safe-url';
 import { startSessionReminderWorkflow } from '@/shared/lib/session-reminder-workflow';
 import {
   DEFAULT_SESSION_REMINDER_MINUTES,
@@ -115,7 +116,7 @@ const createEventSchema = z.object({
   end: z.string().datetime(),
   status: z.nativeEnum(EventStatus).optional().default('SCHEDULED'),
   title: z.string().optional(),
-  meetLink: z.string().url().optional().or(z.literal('')),
+  meetLink: optionalMeetingUrlSchema,
   userId: z.string().nullable().optional(),
   reminderMinutesBeforeStart: z.coerce
     .number()

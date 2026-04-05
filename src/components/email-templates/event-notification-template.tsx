@@ -12,6 +12,7 @@ import {
   Text
 } from '@react-email/components';
 import * as React from 'react';
+import { getSafeMeetingUrl } from '@/shared/lib/safe-url';
 
 interface EventNotificationTranslations {
   heading: string;
@@ -49,6 +50,8 @@ export const EventNotificationTemplate = ({
   manageUrl,
   translations
 }: EventNotificationTemplateProps) => {
+  const safeMeetLink = getSafeMeetingUrl(meetLink);
+
   return (
     <Html>
       <Head />
@@ -73,10 +76,10 @@ export const EventNotificationTemplate = ({
             <Text style={detailRow}>
               <strong>{translations.timeLabel}:</strong> {timeText}
             </Text>
-            {meetLink && (
+            {safeMeetLink && (
               <Text style={detailRow}>
                 <strong>{translations.meetLinkLabel}:</strong>{' '}
-                <Link href={meetLink}>{meetLink}</Link>
+                <Link href={safeMeetLink}>{safeMeetLink}</Link>
               </Text>
             )}
           </Section>

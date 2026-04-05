@@ -19,6 +19,10 @@
       "prettier --write"
     ]
   },
+  "overrides": {
+    "devalue": "5.6.4",
+    "undici": "7.24.7"
+  },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.48",
     "@auth/prisma-adapter": "^2.10.0",
@@ -79,7 +83,7 @@
     "tailwind-merge": "^3.4.1",
     "tailwindcss-animate": "^1.0.7",
     "web-push": "^3.6.7",
-    "workflow": "^4.2.0-beta.74",
+    "workflow": "^4.2.0-beta.76",
     "zod": "^4.3.6"
   },
   "devDependencies": {

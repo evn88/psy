@@ -4,15 +4,15 @@ import Credentials from 'next-auth/providers/credentials';
 import WebAuthn from 'next-auth/providers/webauthn';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import { Role } from '@prisma/client';
-import prisma from '@/shared/lib/prisma';
 import bcrypt from 'bcryptjs';
-import { z } from 'zod';
-import type { Adapter } from 'next-auth/adapters';
-import { authConfig } from './auth.config';
-import { getRPID } from '@/app/api/profile/passkeys/register/config';
-import { sendWelcomeGoogleEmail } from '@/shared/lib/email';
 import { cookies, headers } from 'next/headers';
+import type { Adapter } from 'next-auth/adapters';
+import { z } from 'zod';
+import { getRPID } from '@/app/api/profile/passkeys/register/config';
 import { defaultLocale, isLocale } from '@/i18n/config';
+import prisma from '@/shared/lib/prisma';
+import { sendWelcomeGoogleEmail } from '@/shared/lib/email';
+import { authConfig } from './auth.config';
 
 class EmailNotVerifiedError extends AuthError {
   static type = 'EmailNotVerified';
@@ -25,7 +25,13 @@ class TooManyAttemptsError extends AuthError {
 }
 
 /** Максимальное количество записей истории входов на пользователя */
-const MAX_LOGIN_HISTORY = 3;
+const MAX_LOGIN_HISTORY = 10;
+/** Максимум неудачных попыток с одного IP для конкретного email */
+const MAX_LOGIN_ATTEMPTS_PER_EMAIL_AND_IP = 5;
+/** Максимум неудачных попыток с одного IP за окно */
+const MAX_LOGIN_ATTEMPTS_PER_IP = 20;
+/** Окно учёта неудачных попыток входа */
+const LOGIN_ATTEMPT_WINDOW_MS = 60 * 60 * 1000;
 
 /**
  * Проверяет, что значение является поддерживаемой ролью пользователя.
@@ -48,6 +54,14 @@ async function getUser(email: string) {
 }
 
 /**
+ * Возвращает нижнюю границу окна для анализа неудачных попыток входа.
+ * @returns Дата начала окна rate limiting.
+ */
+const getLoginAttemptWindowStart = (): Date => {
+  return new Date(Date.now() - LOGIN_ATTEMPT_WINDOW_MS);
+};
+
+/**
  * Получает IP адрес из заголовков запроса.
  * @returns IP адрес или null
  */
@@ -59,6 +73,83 @@ async function getClientIp(): Promise<string | null> {
     return null;
   }
 }
+
+/**
+ * Возвращает количество недавних неудачных попыток для пары email + IP.
+ * @param email - email пользователя, по которому идёт вход.
+ * @param ip - IP адрес текущего запроса.
+ * @returns Количество неудачных попыток в активном окне.
+ */
+const countRecentAttemptsForEmailAndIp = async (
+  email: string,
+  ip: string | null
+): Promise<number> => {
+  const createdAfter = getLoginAttemptWindowStart();
+
+  if (!ip) {
+    return prisma.loginAttempt.count({
+      where: {
+        email,
+        createdAt: { gt: createdAfter }
+      }
+    });
+  }
+
+  return prisma.loginAttempt.count({
+    where: {
+      email,
+      ip,
+      createdAt: { gt: createdAfter }
+    }
+  });
+};
+
+/**
+ * Возвращает количество недавних неудачных попыток с одного IP по всем email.
+ * @param ip - IP адрес текущего запроса.
+ * @returns Количество попыток в активном окне.
+ */
+const countRecentAttemptsForIp = async (ip: string | null): Promise<number> => {
+  if (!ip) {
+    return 0;
+  }
+
+  return prisma.loginAttempt.count({
+    where: {
+      ip,
+      createdAt: { gt: getLoginAttemptWindowStart() }
+    }
+  });
+};
+
+/**
+ * Сохраняет неудачную попытку входа.
+ * @param email - email пользователя.
+ * @param ip - IP адрес текущего запроса.
+ */
+const recordFailedLoginAttempt = async (email: string, ip: string | null): Promise<void> => {
+  await prisma.loginAttempt.create({
+    data: { email, ip }
+  });
+};
+
+/**
+ * Очищает неудачные попытки для текущего источника после успешного входа.
+ * @param email - email пользователя.
+ * @param ip - IP адрес текущего запроса.
+ */
+const clearLoginAttempts = async (email: string, ip: string | null): Promise<void> => {
+  if (!ip) {
+    await prisma.loginAttempt.deleteMany({
+      where: { email }
+    });
+    return;
+  }
+
+  await prisma.loginAttempt.deleteMany({
+    where: { email, ip }
+  });
+};
 
 /**
  * Записывает вход пользователя в историю.
@@ -116,25 +207,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (parsedCredentials.success) {
           const { email, password } = parsedCredentials.data;
+          const clientIp = await getClientIp();
+          const [attemptsForEmailAndIp, attemptsForIp] = await Promise.all([
+            countRecentAttemptsForEmailAndIp(email, clientIp),
+            countRecentAttemptsForIp(clientIp)
+          ]);
 
-          // Rate Limit Check
-          const now = new Date();
-          const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-          const attempts = await prisma.loginAttempt.count({
-            where: {
-              email,
-              createdAt: { gt: oneHourAgo }
-            }
-          });
-
-          if (attempts >= 3) {
+          if (
+            attemptsForEmailAndIp >= MAX_LOGIN_ATTEMPTS_PER_EMAIL_AND_IP ||
+            attemptsForIp >= MAX_LOGIN_ATTEMPTS_PER_IP
+          ) {
             throw new TooManyAttemptsError();
           }
 
           const user = await getUser(email);
           if (!user || !user.password) {
-            // Record failed attempt
-            await prisma.loginAttempt.create({ data: { email } });
+            await recordFailedLoginAttempt(email, clientIp);
             return null;
           }
 
@@ -150,13 +238,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
           const passwordsMatch = await bcrypt.compare(password, user.password);
           if (passwordsMatch) {
+            await clearLoginAttempts(email, clientIp);
             // Записываем вход в историю
             await recordLoginHistory(user.id, 'credentials');
             return user;
           }
 
-          // Record failed attempt
-          await prisma.loginAttempt.create({ data: { email } });
+          await recordFailedLoginAttempt(email, clientIp);
         }
         return null;
       }

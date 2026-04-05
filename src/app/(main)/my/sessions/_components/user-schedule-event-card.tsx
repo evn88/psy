@@ -7,6 +7,7 @@ import { Clock, MessageSquare, Video } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { getSafeMeetingUrl } from '@/shared/lib/safe-url';
 import { UserEvent } from './use-user-events';
 
 interface UserScheduleEventCardProps {
@@ -32,6 +33,7 @@ export function UserScheduleEventCard({
   const isPending = event.type === 'CONSULTATION' && event.status === 'PENDING_CONFIRMATION';
   const isCancelled = event.status === 'CANCELLED';
   const isPast = startDate < new Date();
+  const safeMeetLink = getSafeMeetingUrl(event.meetLink);
 
   return (
     <div
@@ -104,11 +106,11 @@ export function UserScheduleEventCard({
           </div>
         )}
 
-        {event.meetLink && (
+        {safeMeetLink && (
           <div className="flex items-center text-sm mt-3 pt-3 border-t">
             <Video className="w-4 h-4 mr-2 text-primary" />
             <a
-              href={event.meetLink}
+              href={safeMeetLink}
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary hover:underline font-medium"

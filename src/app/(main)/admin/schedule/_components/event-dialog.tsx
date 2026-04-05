@@ -33,6 +33,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import { optionalMeetingUrlSchema } from '@/shared/lib/safe-url';
 
 const eventSchema = z.object({
   title: z.string().optional(),
@@ -40,7 +41,7 @@ const eventSchema = z.object({
   status: z.enum(['SCHEDULED', 'CANCELLED', 'COMPLETED', 'PENDING_CONFIRMATION']),
   start: z.string().min(1, 'Required'),
   end: z.string().min(1, 'Required'),
-  meetLink: z.string().url('Must be a valid URL').optional().or(z.literal('')),
+  meetLink: optionalMeetingUrlSchema,
   userId: z.string().optional().nullable()
 });
 
@@ -271,7 +272,11 @@ export const EventDialog = ({
                 <FormItem>
                   <FormLabel>{t('meetLink')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="https://meet.google.com/..." {...field} />
+                    <Input
+                      placeholder="https://meet.google.com/..."
+                      {...field}
+                      value={field.value ?? ''}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
