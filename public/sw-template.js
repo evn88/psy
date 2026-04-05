@@ -3,8 +3,9 @@
  *
  * Стратегии кеширования:
  *  - /api/**          → Network Only (никогда не кешировать)
+ *  - /my/**, /admin/** → Network Only + no-store + без offline fallback
  *  - /_next/static/** → Cache First  (иммутабельные бандлы с хешем)
- *  - HTML-страницы    → Network First → fallback в кеш
+ *  - Публичные HTML   → Network First → fallback в кеш
  *  - Остальное        → Network First
  *
  * Чтобы добавить новую страницу в офлайн-кеш — добавьте путь в PRE_CACHED_URLS ниже.
@@ -18,7 +19,10 @@ const STATIC_CACHE_NAME = `vershkov-static-${CACHE_VERSION}`;
  * Страницы, которые будут доступны офлайн.
  * Добавьте сюда новые пути при необходимости.
  */
-const PRE_CACHED_URLS = ['/', '/my', '/my/sessions', '/my/surveys'];
+const PRE_CACHED_URLS = ['/'];
+
+const SUPPORTED_LOCALES = ['ru', 'en', 'sr'];
+const PRIVATE_ROUTE_PREFIXES = ['/my', '/admin'];
 
 const STATIC_ASSETS = [
   '/web-app-manifest-192x192.png',
@@ -48,6 +52,12 @@ self.addEventListener('activate', event => {
           keys.filter(k => k !== CACHE_NAME && k !== STATIC_CACHE_NAME).map(k => caches.delete(k))
         )
       )
+      .then(() =>
+        Promise.all([
+          purgePrivateEntriesFromCache(CACHE_NAME),
+          purgePrivateEntriesFromCache(STATIC_CACHE_NAME)
+        ])
+      )
       .then(() => self.clients.claim())
   );
 });
@@ -60,6 +70,12 @@ self.addEventListener('fetch', event => {
 
   // Только GET запросы и только с нашего домена
   if (request.method !== 'GET' || url.origin !== self.location.origin) {
+    return;
+  }
+
+  // Приватные HTML-страницы — только сеть, без cache и без offline fallback
+  if (isHtmlRequest(request) && isPrivatePath(url.pathname)) {
+    event.respondWith(networkOnlyPrivate(request));
     return;
   }
 
@@ -93,6 +109,46 @@ self.addEventListener('fetch', event => {
 
 // ─── Стратегии ────────────────────────────────────────────────────────────────
 
+function stripLocalePrefix(pathname) {
+  const segments = pathname.split('/').filter(Boolean);
+  if (segments.length === 0) {
+    return '/';
+  }
+
+  if (!SUPPORTED_LOCALES.includes(segments[0])) {
+    return pathname;
+  }
+
+  if (segments.length === 1) {
+    return '/';
+  }
+
+  return `/${segments.slice(1).join('/')}`;
+}
+
+function isPrivatePath(pathname) {
+  const normalizedPath = stripLocalePrefix(pathname);
+
+  return PRIVATE_ROUTE_PREFIXES.some(prefix => {
+    return normalizedPath === prefix || normalizedPath.startsWith(`${prefix}/`);
+  });
+}
+
+function isHtmlRequest(request) {
+  return request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html');
+}
+
+async function purgePrivateEntriesFromCache(cacheName) {
+  const cache = await caches.open(cacheName);
+  const keys = await cache.keys();
+
+  await Promise.all(
+    keys
+      .filter(request => isPrivatePath(new URL(request.url).pathname))
+      .map(request => cache.delete(request))
+  );
+}
+
 async function cacheFirst(request, cacheName = STATIC_CACHE_NAME) {
   const cached = await caches.match(request);
   if (cached) return cached;
@@ -106,6 +162,22 @@ async function cacheFirst(request, cacheName = STATIC_CACHE_NAME) {
     return response;
   } catch {
     return new Response('Ресурс недоступен офлайн', { status: 503 });
+  }
+}
+
+async function networkOnlyPrivate(request) {
+  await Promise.all([
+    purgePrivateEntriesFromCache(CACHE_NAME),
+    purgePrivateEntriesFromCache(STATIC_CACHE_NAME)
+  ]);
+
+  try {
+    return await fetch(new Request(request, { cache: 'no-store' }));
+  } catch {
+    return new Response('Приватная страница недоступна без интернета', {
+      status: 503,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+    });
   }
 }
 

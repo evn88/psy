@@ -1,10 +1,12 @@
 'use server';
 
-import prisma from '@/shared/lib/prisma';
+import { auth } from '@/auth';
 import { Role } from '@prisma/client';
-import { revalidatePath } from 'next/cache';
-import { z } from 'zod';
 import bcrypt from 'bcryptjs';
+import { revalidatePath } from 'next/cache';
+import prisma from '@/shared/lib/prisma';
+import { isValidTimeZone } from '@/shared/lib/timezone';
+import { z } from 'zod';
 
 const updateUserSchema = z.object({
   id: z.string(),
@@ -12,10 +14,23 @@ const updateUserSchema = z.object({
   email: z.string().email().optional(),
   role: z.nativeEnum(Role).optional(),
   password: z.string().optional(),
-  timezone: z.string().optional()
+  timezone: z
+    .string()
+    .trim()
+    .refine(isValidTimeZone, { message: 'Некорректный часовой пояс' })
+    .optional()
 });
 
 export type UpdateUserSchema = z.infer<typeof updateUserSchema>;
+
+/**
+ * Проверяет, что server action запущен администратором.
+ * @returns `true`, если текущая сессия принадлежит ADMIN.
+ */
+const hasAdminAccess = async (): Promise<boolean> => {
+  const session = await auth();
+  return Boolean(session?.user?.id && session.user.role === 'ADMIN');
+};
 
 /**
  * Обновляет данные пользователя.
@@ -23,6 +38,10 @@ export type UpdateUserSchema = z.infer<typeof updateUserSchema>;
  * @returns результат операции
  */
 export async function updateUser(data: UpdateUserSchema) {
+  if (!(await hasAdminAccess())) {
+    return { error: 'Unauthorized' };
+  }
+
   const result = updateUserSchema.safeParse(data);
 
   if (!result.success) {
@@ -66,6 +85,10 @@ export async function updateUser(data: UpdateUserSchema) {
  * @returns результат операции
  */
 export async function deleteUser(userId: string) {
+  if (!(await hasAdminAccess())) {
+    return { error: 'Unauthorized' };
+  }
+
   try {
     await prisma.user.delete({
       where: { id: userId }
@@ -86,6 +109,10 @@ export async function deleteUser(userId: string) {
  * @returns результат операции
  */
 export async function toggleUserDisabled(userId: string, isDisabled: boolean) {
+  if (!(await hasAdminAccess())) {
+    return { error: 'Unauthorized' };
+  }
+
   try {
     await prisma.user.update({
       where: { id: userId },

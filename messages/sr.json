@@ -49,6 +49,14 @@
     "userExists": "Korisnik sa ovim emailom je već registrovan na drugi način. Molimo prijavite se lozinkom ili povežite Google nalog u profilu.",
     "oauthAccountNotLinked": "Ovaj Google nalog nije povezan sa vašim profilom. Povežite ga u podešavanjima profila."
   },
+  "EmailVerificationConfirm": {
+    "title": "Potvrdite email",
+    "description": "Da biste završili registraciju, potvrdite email adresu dugmetom ispod.",
+    "action": "Potvrdi email",
+    "invalidTitle": "Nevažeći link",
+    "invalidDescription": "Link za potvrdu izgleda oštećeno ili token nedostaje.",
+    "backToAuth": "Nazad na prijavu"
+  },
   "Profile": {
     "title": "Profil",
     "description": "Upravljanje podešavanjima naloga.",
@@ -495,6 +503,23 @@
     "notFound": "Članak nije pronađen",
     "blogNotifications": "Primajte obaveštenja o novim blog člancima",
     "blogNotificationsDesc": "Slаćemo vam pregled novih materijala na email"
+  },
+  "BlogUnsubscribeConfirm": {
+    "title": "Potvrdite otpretplatu",
+    "description": "Da biste završili otpretplatu na obaveštenja o novim blog člancima, potvrdite radnju dugmetom ispod.",
+    "action": "Otpretplatite se",
+    "invalidTitle": "Nevažeći link",
+    "invalidDescription": "Link za otpretplatu izgleda oštećeno ili je istekao.",
+    "backToBlog": "Nazad na blog"
+  },
+  "AccountDeletionConfirm": {
+    "title": "Potvrdite brisanje naloga",
+    "description": "Kliknite na dugme ispod da trajno obrišete nalog i povezane podatke.",
+    "warning": "Ova radnja se ne može opozvati. Nalog se više ne briše samim otvaranjem linka iz emaila.",
+    "action": "Obriši nalog",
+    "invalidTitle": "Nevažeći link",
+    "invalidDescription": "Link za brisanje izgleda oštećeno, istekao je ili je već iskorišćen.",
+    "backToHome": "Na početnu"
   },
   "Settings": {
     "title": "Podešavanja",

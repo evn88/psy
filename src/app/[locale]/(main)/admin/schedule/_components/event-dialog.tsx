@@ -39,6 +39,7 @@ import {
   MIN_SESSION_REMINDER_MINUTES,
   SESSION_REMINDER_PRESET_MINUTES
 } from '@/shared/lib/session-reminders';
+import { optionalMeetingUrlSchema } from '@/shared/lib/safe-url';
 
 const eventTypeOptions = [
   'CONSULTATION',
@@ -57,7 +58,7 @@ const eventSchema = z
     status: z.enum(eventStatusOptions),
     start: z.string().min(1, 'Required'),
     end: z.string().min(1, 'Required'),
-    meetLink: z.string().url('Must be a valid URL').optional().or(z.literal('')),
+    meetLink: optionalMeetingUrlSchema,
     userId: z.string().optional().nullable(),
     reminderMinutesBeforeStart: z
       .number()
@@ -307,7 +308,11 @@ export const EventDialog = ({
                 <FormItem>
                   <FormLabel>{t('meetLink')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="https://meet.google.com/..." {...field} />
+                    <Input
+                      placeholder="https://meet.google.com/..."
+                      {...field}
+                      value={field.value ?? ''}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

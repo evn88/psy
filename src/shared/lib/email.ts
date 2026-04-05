@@ -25,7 +25,8 @@ import {
   getAdminEventCancellationTranslations,
   getEmailTranslations,
   getLocalizedEventTitle,
-  getLocalizedEventTypeLabel
+  getLocalizedEventTypeLabel,
+  normalizeEmailLocale
 } from '@/shared/lib/email-localization';
 
 /** Инстанс Resend для отправки писем */
@@ -126,7 +127,8 @@ export const sendVerificationEmail = async ({
   locale
 }: SendVerificationEmailParams): Promise<string | null> => {
   const translations = getEmailTranslations(locale);
-  const verificationUrl = `${getBaseUrl()}/api/auth/verify-email?token=${token}`;
+  const normalizedLocale = normalizeEmailLocale(locale);
+  const verificationUrl = `${getBaseUrl()}/${normalizedLocale}/auth/verify-email?token=${encodeURIComponent(token)}`;
 
   const { data, error } = await resend.emails.send({
     from: FROM_ADDRESS,
@@ -657,11 +659,11 @@ export const sendBlogNotificationEmail = async (
 
   const results = await Promise.allSettled(
     subscribers.map(async subscriber => {
-      const locale = ['ru', 'en', 'sr'].includes(subscriber.locale) ? subscriber.locale : 'ru';
+      const locale = normalizeEmailLocale(subscriber.locale);
       const publishedAt = post.publishedAt ? formatBlogDate(post.publishedAt, locale) : '';
 
       const unsubscribeUrl = subscriber.unsubscribeToken
-        ? `${baseUrl}/api/blog/unsubscribe?token=${subscriber.unsubscribeToken}`
+        ? `${baseUrl}/${locale}/blog/unsubscribe?token=${encodeURIComponent(subscriber.unsubscribeToken)}`
         : undefined;
 
       const html = await render(
@@ -714,7 +716,8 @@ export const sendAccountDeletionRequestEmail = async ({
 }: SendAccountDeletionRequestEmailParams): Promise<void> => {
   const t = getEmailTranslations(language);
   const baseUrl = getBaseUrl();
-  const deletionUrl = `${baseUrl}/api/profile/delete?token=${token}&email=${encodeURIComponent(to)}`;
+  const locale = normalizeEmailLocale(language);
+  const deletionUrl = `${baseUrl}/${locale}/account/delete?token=${encodeURIComponent(token)}`;
 
   const html = await render(
     AccountDeletionRequestTemplate({

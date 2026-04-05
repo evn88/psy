@@ -1,4 +1,5 @@
 import prisma from '@/shared/lib/prisma';
+import { getSafeGoogleCalendarSyncUrl } from '@/shared/lib/safe-url';
 import { parseICal } from './ical-parser';
 
 export async function fetchGoogleEvents(userId: string) {
@@ -8,8 +9,14 @@ export async function fetchGoogleEvents(userId: string) {
       return [];
     }
 
+    const syncUrl = getSafeGoogleCalendarSyncUrl(user.googleCalendarSyncUrl);
+    if (!syncUrl) {
+      console.error('Blocked unsafe Google Calendar sync URL', { userId });
+      return [];
+    }
+
     // Скачиваем iCal формат по указанному Secret URL
-    const res = await fetch(user.googleCalendarSyncUrl, { cache: 'no-store' });
+    const res = await fetch(syncUrl, { cache: 'no-store' });
     if (!res.ok) return [];
 
     const text = await res.text();

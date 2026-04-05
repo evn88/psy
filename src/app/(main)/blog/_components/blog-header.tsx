@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Home, Moon, Sun } from 'lucide-react';
-import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
+import { useTheme } from '@/components/theme-provider';
 
 const LOCALES = ['ru', 'en', 'sr'] as const;
 const LOCALE_LABELS: Record<string, string> = { ru: 'RU', en: 'EN', sr: 'SR' };

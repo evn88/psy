@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "predev": "node scripts/generate-sw.js",
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "prebuild": "node scripts/generate-sw.js",
     "build": "prisma generate && next build",
     "start": "next start",
@@ -18,6 +18,12 @@
       "eslint --fix",
       "prettier --write"
     ]
+  },
+  "overrides": {
+    "devalue": "5.6.4",
+    "undici": "7.24.7",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.48",
@@ -62,13 +68,13 @@
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
     "lucide-react": "^0.564.0",
-    "next": "16.2.1",
+    "next": "16.2.2",
     "next-auth": "^5.0.0-beta.30",
     "next-intl": "^4.8.3",
     "next-themes": "latest",
     "pg": "^8.13.0",
-    "react": "^18",
-    "react-dom": "^18",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
     "react-hook-form": "^7.71.1",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
@@ -79,19 +85,19 @@
     "tailwind-merge": "^3.4.1",
     "tailwindcss-animate": "^1.0.7",
     "web-push": "^3.6.7",
-    "workflow": "^4.2.0-beta.74",
+    "workflow": "^4.2.0-beta.76",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@parcel/watcher": "latest",
     "@types/node": "^20",
     "@types/pg": "^8.11.0",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
     "@types/web-push": "^3.6.4",
     "babel-plugin-react-compiler": "^1.0.0",
     "eslint": "^9.39.2",
-    "eslint-config-next": "^16.1.6",
+    "eslint-config-next": "16.2.2",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "postcss": "^8",

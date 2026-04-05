@@ -51,6 +51,14 @@
     "userExists": "A user with this email already exists with a different sign-in method. Please sign in with your password or link Google in your profile.",
     "oauthAccountNotLinked": "This Google account is not linked to your profile. Link it in profile settings."
   },
+  "EmailVerificationConfirm": {
+    "title": "Confirm your email",
+    "description": "To finish registration, confirm your email address with the button below.",
+    "action": "Confirm email",
+    "invalidTitle": "Invalid link",
+    "invalidDescription": "The verification link looks broken or the token is missing.",
+    "backToAuth": "Back to login"
+  },
   "Profile": {
     "title": "Profile",
     "description": "Manage your account settings.",
@@ -523,6 +531,23 @@
     "notFound": "Article not found",
     "blogNotifications": "Receive notifications about new blog articles",
     "blogNotificationsDesc": "We will send you article previews to your email"
+  },
+  "BlogUnsubscribeConfirm": {
+    "title": "Confirm unsubscribe",
+    "description": "To unsubscribe from new blog article notifications, confirm the action with the button below.",
+    "action": "Unsubscribe",
+    "invalidTitle": "Invalid link",
+    "invalidDescription": "The unsubscribe link looks broken or has expired.",
+    "backToBlog": "Back to blog"
+  },
+  "AccountDeletionConfirm": {
+    "title": "Confirm account deletion",
+    "description": "Click the button below to permanently delete your account and related data.",
+    "warning": "This action cannot be undone. The account is no longer deleted by simply opening the email link.",
+    "action": "Delete account",
+    "invalidTitle": "Invalid link",
+    "invalidDescription": "The deletion link looks broken, expired, or has already been used.",
+    "backToHome": "Home"
   },
   "Settings": {
     "title": "Settings",
