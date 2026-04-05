@@ -44,6 +44,13 @@ const securityHeaders = [
   }
 ];
 
+const privatePageHeaders = [
+  {
+    key: 'Cache-Control',
+    value: 'private, no-store, max-age=0, must-revalidate'
+  }
+];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -53,6 +60,22 @@ const nextConfig = {
       {
         source: '/:path*',
         headers: securityHeaders
+      },
+      {
+        source: '/my/:path*',
+        headers: privatePageHeaders
+      },
+      {
+        source: '/admin/:path*',
+        headers: privatePageHeaders
+      },
+      {
+        source: '/:locale(ru|en|sr)/my/:path*',
+        headers: privatePageHeaders
+      },
+      {
+        source: '/:locale(ru|en|sr)/admin/:path*',
+        headers: privatePageHeaders
       }
     ];
   },
