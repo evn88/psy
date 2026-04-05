@@ -6,6 +6,7 @@ import { Services } from '@/components/landing/Services/Services';
 import { HowItWorks } from '@/components/landing/HowItWorks/HowItWorks';
 import { Testimonials } from '@/components/landing/Testimonials/Testimonials';
 import { FAQ } from '@/components/landing/FAQ/FAQ';
+import { DevBanner } from '@/components/landing/DevBanner/DevBanner';
 import { Footer } from '@/components/landing/Footer/Footer';
 import { defaultLocale, isLocale } from '@/i18n/config';
 import {
@@ -68,12 +69,13 @@ const HomePage = () => {
     <div className={styles.landingWrapper}>
       {/*<ThemeToggle />*/}
       <Hero />
-      <About />
-      <Problems />
-      <Services />
-      <HowItWorks />
-      <Testimonials />
-      <FAQ />
+      {/*<About />*/}
+      {/*<Problems />*/}
+      {/*<Services />*/}
+      {/*<HowItWorks />*/}
+      {/*<Testimonials />*/}
+      {/*<FAQ />*/}
+      <DevBanner />
       <Footer />
     </div>
   );

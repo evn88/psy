@@ -21,6 +21,16 @@
   padding: 0;
   width: 100%;
   overflow-x: clip;
+  overflow-y: hidden;
+}
+
+/* ---- Принудительная светлая тема для лендинга ---- */
+/* Переопределяем dark-токены обратно в светлые значения */
+:global(.dark) .landingWrapper {
+  --landing-bg: var(--color-white);
+  --landing-text: var(--color-dark);
+  --landing-surface: rgba(0, 0, 0, 0.03);
+  --landing-border: rgba(0, 0, 0, 0.08);
 }
 
 /* ---- Theme Toggle Button ---- */
