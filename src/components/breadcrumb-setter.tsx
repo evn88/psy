@@ -15,11 +15,16 @@ interface BreadcrumbSetterProps {
  * Не рендерит ничего визуально — только обновляет контекст.
  */
 export const BreadcrumbSetter = ({ segment, title }: BreadcrumbSetterProps) => {
-  const { setSegmentName } = useBreadcrumbContext();
+  const { setSegmentName, clearSegmentName } = useBreadcrumbContext();
 
   useEffect(() => {
+    if (!segment || !title) {
+      return;
+    }
+
     setSegmentName(segment, title);
-  }, [segment, title, setSegmentName]);
+    return () => clearSegmentName(segment);
+  }, [clearSegmentName, segment, setSegmentName, title]);
 
   return null;
 };

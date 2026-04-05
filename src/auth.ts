@@ -3,13 +3,16 @@ import Google from 'next-auth/providers/google';
 import Credentials from 'next-auth/providers/credentials';
 import WebAuthn from 'next-auth/providers/webauthn';
 import { PrismaAdapter } from '@auth/prisma-adapter';
+import { Role } from '@prisma/client';
 import prisma from '@/shared/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
+import type { Adapter } from 'next-auth/adapters';
 import { authConfig } from './auth.config';
 import { getRPID } from '@/app/api/profile/passkeys/register/config';
 import { sendWelcomeGoogleEmail } from '@/shared/lib/email';
-import { headers, cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
+import { defaultLocale, isLocale } from '@/i18n/config';
 
 class EmailNotVerifiedError extends AuthError {
   static type = 'EmailNotVerified';
@@ -23,6 +26,14 @@ class TooManyAttemptsError extends AuthError {
 
 /** Максимальное количество записей истории входов на пользователя */
 const MAX_LOGIN_HISTORY = 3;
+
+/**
+ * Проверяет, что значение является поддерживаемой ролью пользователя.
+ * @param value - произвольное значение роли.
+ * @returns true, если значение входит в enum Role.
+ */
+const isRole = (value: unknown): value is Role =>
+  typeof value === 'string' && Object.values(Role).includes(value as Role);
 
 async function getUser(email: string) {
   try {
@@ -85,7 +96,7 @@ async function recordLoginHistory(userId: string, provider: string): Promise<voi
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
-  adapter: PrismaAdapter(prisma) as any,
+  adapter: PrismaAdapter(prisma) as Adapter,
   session: { strategy: 'jwt' },
   providers: [
     Google({
@@ -154,12 +165,70 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     ...authConfig.callbacks,
 
+    async jwt({ token, user, trigger, session }) {
+      if (user && user.role) {
+        token.role = user.role;
+      }
+
+      if (
+        user &&
+        'language' in user &&
+        typeof user.language === 'string' &&
+        isLocale(user.language)
+      ) {
+        token.language = user.language;
+      }
+
+      if ((typeof token.language !== 'string' || !isLocale(token.language)) && token.sub) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.sub },
+          select: { language: true, role: true }
+        });
+
+        if (dbUser?.role && isRole(dbUser.role)) {
+          token.role = dbUser.role;
+        }
+
+        token.language =
+          dbUser?.language && isLocale(dbUser.language) ? dbUser.language : defaultLocale;
+      }
+
+      // Handle session update
+      if (trigger === 'update' && session?.name) {
+        token.name = session.name;
+      }
+      return token;
+    },
+
+    session({ session, token }) {
+      const resolvedRole: Role = isRole(token.role) ? token.role : Role.GUEST;
+      const resolvedLanguage =
+        typeof token.language === 'string' && isLocale(token.language)
+          ? token.language
+          : defaultLocale;
+
+      if (token.sub && session.user) {
+        session.user.id = token.sub;
+      }
+      if (session.user) {
+        session.user.role = resolvedRole;
+      }
+      if (session.user) {
+        session.user.language = resolvedLanguage;
+      }
+      return session;
+    },
+
     async signIn({ user, account }) {
-      // Проверяем isDisabled для всех провайдеров
       if (user.email) {
         const dbUser = await prisma.user.findUnique({
           where: { email: user.email },
-          select: { isDisabled: true, id: true }
+          select: {
+            isDisabled: true,
+            id: true,
+            role: true,
+            accounts: { select: { provider: true } }
+          }
         });
 
         if (dbUser?.isDisabled) {
@@ -172,34 +241,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             await recordLoginHistory(dbUser.id, account.provider);
           }
         }
-      }
 
-      if (account?.provider === 'google') {
-        const existingUser = await prisma.user.findUnique({
-          where: { email: user.email as string },
-          include: { accounts: true }
-        });
+        if (account?.provider === 'google' && dbUser) {
+          const isLinkedInDB = (dbUser.accounts as Array<{ provider: string }>).some(
+            (acc: { provider: string }) => acc.provider === 'google'
+          );
 
-        if (existingUser) {
-          const isLinkedInDB = existingUser.accounts.some((acc: any) => acc.provider === 'google');
-          // Если аккаунт НЕ привязан и это НЕ специальный пользователь
-          if (!isLinkedInDB && user.email !== 'evn88fx64@gmail.com') {
+          // Разрешаем вход только для уже привязанного Google-аккаунта или для явного ADMIN-пользователя
+          if (!isLinkedInDB && dbUser.role !== 'ADMIN') {
             return '/auth?error=UserExists';
           }
         }
       }
 
-      if (user.email === 'evn88fx64@gmail.com') {
-        // @ts-ignore
-        if (user.role !== 'ADMIN') {
-          await prisma.user.update({
-            where: { email: user.email },
-            data: { role: 'ADMIN' }
-          });
-          // @ts-ignore
-          user.role = 'ADMIN';
-        }
-      }
       return true;
     }
   },
@@ -211,16 +265,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async createUser({ user }) {
       if (user.id) {
         let timezone = 'UTC';
+        let language = defaultLocale;
         try {
           const cookieStore = await cookies();
           timezone = cookieStore.get('NEXT_TIMEZONE')?.value || 'UTC';
+          const cookieLocale = cookieStore.get('NEXT_LOCALE')?.value;
+          language = cookieLocale && isLocale(cookieLocale) ? cookieLocale : defaultLocale;
         } catch {
           // Игнорируем ошибки чтения cookies
         }
 
         await prisma.user.update({
           where: { id: user.id },
-          data: { emailVerified: new Date(), timezone }
+          data: { emailVerified: new Date(), timezone, language }
         });
       }
     },
@@ -241,7 +298,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             select: { language: true }
           });
 
-          const locale = dbUser?.language ?? 'en';
+          const locale = dbUser?.language ?? defaultLocale;
 
           await sendWelcomeGoogleEmail({
             email: user.email as string,

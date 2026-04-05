@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/generate-sw.js",
     "dev": "next dev --turbopack",
+    "prebuild": "node scripts/generate-sw.js",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint .",
@@ -80,6 +82,7 @@
     "tailwind-merge": "^3.4.1",
     "tailwindcss-animate": "^1.0.7",
     "web-push": "^3.6.7",
+    "workflow": "^4.2.0-beta.74",
     "zod": "^4.3.6"
   },
   "devDependencies": {

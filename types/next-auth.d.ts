@@ -1,28 +1,31 @@
+import { Role } from '@prisma/client';
+import type { AppLocale } from '../src/i18n/config';
+import { DefaultSession } from 'next-auth';
 
-import { Role } from "@prisma/client"
-import NextAuth, { DefaultSession } from "next-auth"
-import { JWT } from "next-auth/jwt"
-
-declare module "next-auth" {
+declare module 'next-auth' {
   interface Session {
     user: {
-      role: Role
-    } & DefaultSession["user"]
+      role: Role;
+      language: AppLocale;
+    } & DefaultSession['user'];
   }
 
   interface User {
-    role: Role
+    role: Role;
+    language: AppLocale;
   }
 }
 
-declare module "next-auth/adapters" {
+declare module 'next-auth/adapters' {
   interface AdapterUser {
-    role: Role
+    role: Role;
+    language: AppLocale;
   }
 }
 
-declare module "next-auth/jwt" {
+declare module 'next-auth/jwt' {
   interface JWT {
-    role: Role
+    role: Role;
+    language: AppLocale;
   }
 }

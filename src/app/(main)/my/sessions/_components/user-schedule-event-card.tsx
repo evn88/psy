@@ -1,9 +1,9 @@
 'use client';
 
 import { format } from 'date-fns';
-import { useTranslations, useLocale } from 'next-intl';
-import { ru, enUS } from 'date-fns/locale';
-import { Clock, Video, MessageSquare } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
+import { enUS, ru } from 'date-fns/locale';
+import { Clock, MessageSquare, Video } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

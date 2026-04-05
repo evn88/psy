@@ -1,18 +1,36 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/shared/lib/prisma';
+import { defaultLocale, isLocale } from '@/i18n/config';
+
+/**
+ * Возвращает базовый URL приложения.
+ */
+const getBaseUrl = (request: Request): string => {
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
+  const { origin } = new URL(request.url);
+  return origin;
+};
+
+/**
+ * Строит локализованный редирект на /auth с сохранением query-параметра.
+ * Без явного locale-префикса middleware теряет query-параметр при добавлении локали.
+ */
+const authRedirect = (baseUrl: string, locale: string, query: string): NextResponse =>
+  NextResponse.redirect(`${baseUrl}/${locale}/auth?${query}`);
 
 /**
  * GET /api/auth/verify-email?token=xxx
  * Верифицирует email пользователя по токену.
- * При успехе — редирект на /my?verified=true.
- * При ошибке — редирект на /auth?error=VerificationFailed или expired.
+ * При успехе — редирект на /{locale}/auth?verified=true.
+ * При ошибке — редирект на /{locale}/auth?error=VerificationFailed или expired.
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const token = searchParams.get('token');
+  const baseUrl = getBaseUrl(request);
 
   if (!token) {
-    return NextResponse.redirect(new URL('/auth?error=VerificationFailed', request.url));
+    return authRedirect(baseUrl, defaultLocale, 'error=VerificationFailed');
   }
 
   try {
@@ -22,12 +40,18 @@ export async function GET(request: Request) {
     });
 
     if (!verificationToken) {
-      return NextResponse.redirect(new URL('/auth?error=VerificationFailed', request.url));
+      return authRedirect(baseUrl, defaultLocale, 'error=VerificationFailed');
     }
+
+    // Определяем язык пользователя для локализованного редиректа
+    const user = await prisma.user.findUnique({
+      where: { email: verificationToken.identifier },
+      select: { language: true }
+    });
+    const locale = isLocale(user?.language ?? '') ? (user!.language as string) : defaultLocale;
 
     // Проверяем срок действия
     if (verificationToken.expires < new Date()) {
-      // Удаляем просроченный токен
       await prisma.verificationToken.delete({
         where: {
           identifier_token: {
@@ -37,7 +61,7 @@ export async function GET(request: Request) {
         }
       });
 
-      return NextResponse.redirect(new URL('/auth?error=VerificationExpired', request.url));
+      return authRedirect(baseUrl, locale, 'error=VerificationExpired');
     }
 
     // Устанавливаем emailVerified на пользователе
@@ -56,10 +80,10 @@ export async function GET(request: Request) {
       }
     });
 
-    // Редирект на страницу авторизации с индикатором успеха
-    return NextResponse.redirect(new URL('/auth?verified=true', request.url));
+    // Редирект на страницу авторизации с сохранённым query-параметром
+    return authRedirect(baseUrl, locale, 'verified=true');
   } catch (error) {
     console.error('Email verification error:', error);
-    return NextResponse.redirect(new URL('/auth?error=VerificationFailed', request.url));
+    return authRedirect(baseUrl, defaultLocale, 'error=VerificationFailed');
   }
 }

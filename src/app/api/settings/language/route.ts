@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/shared/lib/prisma';
 
-const SUPPORTED_LOCALES = ['en', 'ru'];
+const SUPPORTED_LOCALES = ['en', 'ru', 'sr'];
 
 /**
  * PUT /api/settings/language

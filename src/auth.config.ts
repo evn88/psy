@@ -1,4 +1,6 @@
 import type { NextAuthConfig } from 'next-auth';
+import type { Role } from '@prisma/client';
+import { defaultLocale, isLocale } from '@/i18n/config';
 
 export const authConfig = {
   pages: {
@@ -20,6 +22,7 @@ export const authConfig = {
       if (user && user.role) {
         token.role = user.role;
       }
+
       // Handle session update
       if (trigger === 'update' && session?.name) {
         token.name = session.name;
@@ -30,8 +33,14 @@ export const authConfig = {
       if (token.sub && session.user) {
         session.user.id = token.sub;
       }
-      if (token.role && session.user) {
-        session.user.role = token.role;
+      // token.role и token.language уже провалидированы в jwt-колбэке auth.ts
+      if (session.user && typeof token.role === 'string') {
+        session.user.role = token.role as Role;
+      }
+      if (session.user && typeof token.language === 'string' && isLocale(token.language)) {
+        session.user.language = token.language;
+      } else if (session.user) {
+        session.user.language = defaultLocale;
       }
       return session;
     }

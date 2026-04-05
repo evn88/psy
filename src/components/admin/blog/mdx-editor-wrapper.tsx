@@ -2,36 +2,37 @@
 
 import '@mdxeditor/editor/style.css';
 import {
-  MDXEditor,
-  headingsPlugin,
-  listsPlugin,
-  quotePlugin,
-  thematicBreakPlugin,
-  markdownShortcutPlugin,
-  linkPlugin,
-  linkDialogPlugin,
-  imagePlugin,
-  tablePlugin,
+  BlockTypeSelect,
+  BoldItalicUnderlineToggles,
   codeBlockPlugin,
   codeMirrorPlugin,
+  CreateLink,
   diffSourcePlugin,
-  toolbarPlugin,
-  UndoRedo,
-  BoldItalicUnderlineToggles,
-  BlockTypeSelect,
+  headingsPlugin,
+  imagePlugin,
   InsertImage,
   InsertTable,
-  InsertThematicBreak,
+  linkDialogPlugin,
+  linkPlugin,
+  listsPlugin,
   ListsToggle,
-  CreateLink,
+  markdownShortcutPlugin,
+  MDXEditor,
+  type MDXEditorMethods,
+  quotePlugin,
   Separator,
-  CodeToggle,
-  DiffSourceToggleWrapper,
-  type MDXEditorMethods
+  tablePlugin,
+  thematicBreakPlugin,
+  toolbarPlugin,
+  UndoRedo,
+  useCellValues,
+  usePublisher,
+  viewMode$
 } from '@mdxeditor/editor';
-import { forwardRef, useState } from 'react';
-import { Sun, Moon } from 'lucide-react';
-import { useTheme } from 'next-themes';
+import { forwardRef, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { Moon, Sun } from 'lucide-react';
+import { useTheme } from '@/components/theme-provider';
 
 interface MdxEditorWrapperProps {
   value: string;
@@ -39,18 +40,90 @@ interface MdxEditorWrapperProps {
   onImageUpload?: (file: File) => Promise<string>;
   placeholder?: string;
   readOnly?: boolean;
+  diffMarkdown?: string;
 }
 
+// Компонент-портал для переключения режимов (Diff/Source/Rich Text), который рендерится в языковых табах
+const PortalDiffToggle = () => {
+  const [viewMode] = useCellValues(viewMode$);
+  const setViewMode = usePublisher(viewMode$);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const target = document.getElementById('mdx-editor-view-mode');
+    // eslint-disable-next-line
+    if (target) setPortalTarget(target);
+  }, []);
+
+  const toggleButtons = (
+    <div className="flex bg-muted/50 rounded-lg p-0.5 border">
+      <button
+        className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+          viewMode === 'rich-text'
+            ? 'bg-background shadow-sm text-foreground'
+            : 'text-muted-foreground hover:text-foreground'
+        }`}
+        onClick={() => setViewMode('rich-text')}
+        type="button"
+        title="Визуальный редактор"
+      >
+        Editor
+      </button>
+      <button
+        className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+          viewMode === 'diff'
+            ? 'bg-background shadow-sm text-foreground'
+            : 'text-muted-foreground hover:text-foreground'
+        }`}
+        onClick={() => setViewMode('diff')}
+        type="button"
+        title="Сравнение версий"
+      >
+        Diff
+      </button>
+      <button
+        className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+          viewMode === 'source'
+            ? 'bg-background shadow-sm text-foreground'
+            : 'text-muted-foreground hover:text-foreground'
+        }`}
+        onClick={() => setViewMode('source')}
+        type="button"
+        title="Исходный код (Markdown)"
+      >
+        Source
+      </button>
+    </div>
+  );
+
+  if (!portalTarget) return null;
+  return createPortal(toggleButtons, portalTarget);
+};
+
 export const MdxEditorWrapper = forwardRef<MDXEditorMethods, MdxEditorWrapperProps>(
-  function MdxEditorWrapper({ value, onChange, onImageUpload, placeholder, readOnly }, ref) {
+  function MdxEditorWrapper(
+    { value, onChange, onImageUpload, placeholder, readOnly, diffMarkdown },
+    ref
+  ) {
     const { resolvedTheme } = useTheme();
     const [localDark, setLocalDark] = useState<boolean | null>(null);
     const dark = localDark ?? resolvedTheme === 'dark';
 
+    // Применяем классы темы MDXEditor к body, чтобы всплывающие окна (Portals)
+    // получали правильные CSS переменные тёмной темы.
+    useEffect(() => {
+      if (dark) {
+        document.body.classList.add('dark-theme', 'darkEditor');
+      } else {
+        document.body.classList.remove('dark-theme', 'darkEditor');
+      }
+      return () => document.body.classList.remove('dark-theme', 'darkEditor');
+    }, [dark]);
+
     return (
       <div
         data-editor-theme={dark ? 'dark' : 'light'}
-        className="mdx-editor-container mdx-editor-mobile-optimized"
+        className={`mdx-editor-container mdx-editor-mobile-optimized ${dark ? 'dark-theme darkEditor' : ''}`}
       >
         <MDXEditor
           ref={ref}
@@ -59,7 +132,7 @@ export const MdxEditorWrapper = forwardRef<MDXEditorMethods, MdxEditorWrapperPro
           readOnly={readOnly}
           placeholder={placeholder}
           contentEditableClassName="mdx-editor-content"
-          className={dark ? 'dark' : ''}
+          className={dark ? 'dark-theme darkEditor' : ''}
           plugins={[
             headingsPlugin(),
             listsPlugin(),
@@ -92,26 +165,24 @@ export const MdxEditorWrapper = forwardRef<MDXEditorMethods, MdxEditorWrapperPro
                 text: 'Текст'
               }
             }),
-            diffSourcePlugin({ viewMode: 'rich-text' }),
+            diffSourcePlugin({ diffMarkdown: diffMarkdown || value }),
             toolbarPlugin({
               toolbarContents: () => (
-                <DiffSourceToggleWrapper>
-                  {/* Ряд 1: форматирование текста */}
+                <>
+                  <PortalDiffToggle />
                   <UndoRedo />
-                  <Separator />
-                  <BoldItalicUnderlineToggles />
-                  <CodeToggle />
                   <Separator />
                   <BlockTypeSelect />
                   <Separator />
+                  <BoldItalicUnderlineToggles />
+                  <Separator />
                   <ListsToggle />
-                  {/* Принудительный перенос строки */}
-                  <div className="mdx-toolbar-break" />
-                  {/* Ряд 2: вставка элементов */}
+                  <Separator />
                   <CreateLink />
                   <InsertImage />
+                  <Separator />
                   <InsertTable />
-                  <InsertThematicBreak />
+
                   <div className="mdx-toolbar-spacer" />
                   <button
                     type="button"
@@ -121,7 +192,7 @@ export const MdxEditorWrapper = forwardRef<MDXEditorMethods, MdxEditorWrapperPro
                   >
                     {dark ? <Sun size={14} /> : <Moon size={14} />}
                   </button>
-                </DiffSourceToggleWrapper>
+                </>
               )
             })
           ]}

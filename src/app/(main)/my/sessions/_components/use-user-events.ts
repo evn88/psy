@@ -1,5 +1,5 @@
 import useSWR from 'swr';
-import { EventType, EventStatus } from '@prisma/client';
+import { EventStatus, EventType } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 
 export interface UserEvent {

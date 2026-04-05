@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
-import { submitSurveyResult } from '@/app/(main)/my/surveys/actions';
+import { submitSurveyResult } from '@/app/[locale]/(main)/my/surveys/actions';
 
 export type PendingSurvey = {
   assignmentId: string;

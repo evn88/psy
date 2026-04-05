@@ -10,17 +10,25 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const MAX_BATCH_SIZE = 100;
 
 function chunkArray<T>(array: T[], size: number): T[][] {
-  const chunks = [];
+  const chunks: T[][] = [];
   for (let i = 0; i < array.length; i += size) {
     chunks.push(array.slice(i, i + size));
   }
   return chunks;
 }
 
+type ResendBatchResponseItem = {
+  id?: string;
+  error?: {
+    message?: string;
+  };
+};
+
+type ResendBatchResponse = ResendBatchResponseItem[] | { data?: ResendBatchResponseItem[] };
+
 export async function POST(request: Request) {
   try {
     const session = await auth();
-    // @ts-ignore
     if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -90,7 +98,11 @@ export async function POST(request: Request) {
       // If batch is accepted, iterate through individual results
       if (data) {
         // Resend batch sometimes returns data.data as the array
-        const responses = Array.isArray(data) ? data : (data as any).data;
+        const responses: ResendBatchResponse | undefined = Array.isArray(data)
+          ? data
+          : data && typeof data === 'object'
+            ? ((data as { data?: ResendBatchResponseItem[] }).data ?? undefined)
+            : undefined;
 
         if (Array.isArray(responses)) {
           batch.forEach((email, index) => {

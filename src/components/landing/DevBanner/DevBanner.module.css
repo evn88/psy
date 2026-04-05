@@ -1,0 +1,130 @@
+/* ==============================================
+   DEV BANNER — Плашка «Сайт в разработке»
+   ============================================== */
+
+.wrap {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: clamp(4em, 8vw, 8em);
+  padding-bottom: clamp(4em, 8vw, 8em);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  margin-top: -0.5rem;
+}
+
+/* ── Записка ─────────────────────────────────── */
+
+.note {
+  position: relative;
+  width: clamp(280px, 55vw, 800px);
+  min-height: 240px;
+  transform: rotate(-2deg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-top: clamp(3em, 5vw, 4.5em);
+  padding-bottom: clamp(2em, 4vw, 3.5em);
+  padding-left: clamp(2em, 4vw, 3.5em);
+  padding-right: clamp(2em, 4vw, 3.5em);
+  overflow: visible;
+}
+
+/* ── Фоновый клетчатый лист ──────────────────── */
+
+.paper {
+  object-fit: cover;
+  object-position: center;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ── Лента сверху ────────────────────────────── */
+
+.tape {
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%) rotate(1.5deg);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.tapeImg {
+  width: clamp(100px, 18vw, 180px) !important;
+  height: auto !important;
+  display: block !important;
+}
+
+/* ── Контент ─────────────────────────────────── */
+
+.content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6em;
+}
+
+.label {
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--text-small);
+  color: var(--color-blue);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+h2.title {
+  font-family: var(--font-heading), sans-serif;
+  font-size: var(--text-h3);
+  line-height: 0.95;
+  color: var(--color-dark);
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.sub {
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--text-body);
+  line-height: 1.5;
+  color: var(--color-dark);
+  max-width: 36em;
+  margin-top: 0.4em;
+}
+
+/* ── Котик ───────────────────────────────────── */
+
+.cat {
+  position: absolute;
+  bottom: -20px;
+  right: -40px;
+  z-index: 2;
+  transform: rotate(6deg);
+  pointer-events: none;
+}
+
+.catImg {
+  width: clamp(80px, 14vw, 160px) !important;
+  height: auto !important;
+  display: block !important;
+}
+
+/* ── Адаптив ─────────────────────────────────── */
+
+@media (max-width: 600px) {
+  .note {
+    transform: rotate(-1deg);
+    width: calc(100% - 3em);
+  }
+
+  .title {
+    font-size: clamp(2.8rem, 9vw, 4rem);
+  }
+}

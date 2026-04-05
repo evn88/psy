@@ -2,23 +2,22 @@
 
 import * as React from 'react';
 import {
+  Brain,
+  CalendarDays,
+  ChevronsUpDown,
+  ClipboardList,
+  CreditCard,
+  FileText,
+  Home,
   LayoutDashboard,
   LogOut,
   Settings,
-  User,
-  ClipboardList,
-  CalendarDays,
-  CreditCard,
-  FileText,
-  ChevronsUpDown,
-  Brain,
-  Home,
-  ShieldCheck
+  ShieldCheck,
+  User
 } from 'lucide-react';
-import { usePathname } from 'next/navigation';
-import Link from 'next/link';
 import { signOut } from 'next-auth/react';
 import { cn } from '@/lib/utils';
+import { Link, usePathname } from '@/i18n/navigation';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {

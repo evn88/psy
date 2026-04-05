@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/shared/lib/prisma';
 import { sendBlogNotificationEmail } from '@/shared/lib/email';
-import { publishToTelegraph, publishToTelegramChannel } from '@/shared/lib/social-publish';
+import { publishToTelegramChannel, publishToTelegraph } from '@/shared/lib/social-publish';
+import type { BlogPostTranslation } from '@prisma/client';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -24,7 +25,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: 'Статья не найдена' }, { status: 404 });
   }
 
-  const ruTranslation = post.translations.find((t: any) => t.locale === 'ru');
+  const ruTranslation = (post.translations as BlogPostTranslation[]).find(
+    (translation: BlogPostTranslation) => translation.locale === 'ru'
+  );
   if (!ruTranslation) {
     return NextResponse.json({ error: 'Русский перевод не найден' }, { status: 400 });
   }

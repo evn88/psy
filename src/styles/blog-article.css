@@ -1,362 +1,422 @@
 /**
  * Стили для отображения статей блога.
- * Используется в публичной части (article-content.tsx) и переопределяет MDXEditor в редакторе.
- * Цветовая схема: #03070A (тёмный), #900A0B (акцент), #353535 (текст), #FFFFFF (белый)
+ *
+ * Используют CSS-переменные shadcn/ui — автоматически адаптируются к светлой и тёмной теме
+ * без каких-либо .dark-оверрайдов. Цветовая схема берётся из дизайн-системы globals.css.
+ *
+ * Используется в:
+ *   - article-content.tsx (публичные страницы блога)
+ *   - MDXEditor (редактор в админ-панели, через отдельные .mdx-editor-* классы ниже)
  */
 
-.blog-article {
-  color: #353535;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  font-size: 1.0625rem; /* 17px */
-  line-height: 1.75;
-  word-break: break-word;
-}
+/* ---- Основной контейнер ---- */
 
-/* Тёмная тема */
-.blog-article.dark {
-  color: #E2E2E2;
-  background-color: #03070A;
+.blog-article {
+    color: hsl(var(--foreground));
+    font-family: var(--font-body, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+    font-size: 1.0625rem; /* 17px */
+    line-height: 1.75;
+    word-break: break-word;
 }
 
 /* ---- Заголовки ---- */
+
 .blog-article h1,
 .blog-article h2,
 .blog-article h3,
 .blog-article h4,
 .blog-article h5,
 .blog-article h6 {
-  color: #03070A;
-  font-weight: 700;
-  line-height: 1.25;
-  margin-top: 2em;
-  margin-bottom: 0.75em;
+    color: hsl(var(--foreground));
+    font-weight: 700;
+    line-height: 1.25;
+    margin-top: 2em;
+    margin-bottom: 0.75em;
 }
 
-.blog-article.dark h1,
-.blog-article.dark h2,
-.blog-article.dark h3,
-.blog-article.dark h4,
-.blog-article.dark h5,
-.blog-article.dark h6 {
-  color: #FFFFFF;
+.blog-article h1 {
+    font-size: 2rem;
 }
 
-.blog-article h1 { font-size: 2rem; }
-.blog-article h2 { font-size: 1.625rem; border-bottom: 2px solid #E2E2E2; padding-bottom: 0.4em; }
-.blog-article h3 { font-size: 1.375rem; }
-.blog-article h4 { font-size: 1.125rem; }
+.blog-article h2 {
+    font-size: 1.625rem;
+    border-bottom: 2px solid hsl(var(--border));
+    padding-bottom: 0.4em;
+}
+
+.blog-article h3 {
+    font-size: 1.375rem;
+}
+
+.blog-article h4 {
+    font-size: 1.125rem;
+}
+
 .blog-article h5,
-.blog-article h6 { font-size: 1rem; }
-
-.blog-article.dark h2 { border-bottom-color: #353535; }
+.blog-article h6 {
+    font-size: 1rem;
+}
 
 /* ---- Параграфы ---- */
+
 .blog-article p {
-  margin-bottom: 1.25em;
+    margin-bottom: 1.25em;
 }
 
 .blog-article p:last-child {
-  margin-bottom: 0;
+    margin-bottom: 0;
 }
 
 /* ---- Ссылки ---- */
+
 .blog-article a {
-  color: #900A0B;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  transition: opacity 0.15s;
+    color: hsl(var(--primary));
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transition: opacity 0.15s;
 }
 
 .blog-article a:hover {
-  opacity: 0.75;
+    opacity: 0.75;
 }
 
 /* ---- Изображения ---- */
+
 .blog-article img {
-  max-width: 100%;
-  height: auto;
-  border-radius: 8px;
-  margin: 1.5em auto;
-  display: block;
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 1.5em auto;
+    display: block;
 }
 
 .blog-article figure {
-  margin: 1.5em 0;
-  text-align: center;
+    margin: 1.5em 0;
+    text-align: center;
 }
 
 .blog-article figcaption {
-  font-size: 0.875rem;
-  color: #888;
-  margin-top: 0.5em;
-  font-style: italic;
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+    margin-top: 0.5em;
+    font-style: italic;
 }
 
 /* ---- Списки ---- */
+
 .blog-article ul,
 .blog-article ol {
-  padding-left: 1.75em;
-  margin-bottom: 1.25em;
+    padding-left: 1.75em;
+    margin-bottom: 1.25em;
 }
 
 .blog-article ul {
-  list-style-type: disc;
+    list-style-type: disc;
 }
 
 .blog-article ol {
-  list-style-type: decimal;
+    list-style-type: decimal;
 }
 
 .blog-article li {
-  margin-bottom: 0.4em;
+    margin-bottom: 0.4em;
 }
 
 .blog-article li > ul,
 .blog-article li > ol {
-  margin-top: 0.4em;
-  margin-bottom: 0;
+    margin-top: 0.4em;
+    margin-bottom: 0;
 }
 
 /* ---- Цитаты ---- */
-.blog-article blockquote {
-  border-left: 4px solid #900A0B;
-  margin: 1.5em 0;
-  padding: 0.75em 1.25em;
-  background-color: rgba(144, 10, 11, 0.05);
-  border-radius: 0 6px 6px 0;
-  color: #555;
-  font-style: italic;
-}
 
-.blog-article.dark blockquote {
-  background-color: rgba(144, 10, 11, 0.1);
-  color: #D7D7D7;
+.blog-article blockquote {
+    border-left: 4px solid hsl(var(--primary));
+    margin: 1.5em 0;
+    padding: 0.75em 1.25em;
+    background-color: hsl(var(--primary) / 0.08);
+    border-radius: 0 6px 6px 0;
+    color: hsl(var(--muted-foreground));
+    font-style: italic;
 }
 
 .blog-article blockquote p {
-  margin-bottom: 0;
+    margin-bottom: 0;
 }
 
 /* ---- Код (инлайн) ---- */
+
 .blog-article code:not(pre code) {
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-  font-size: 0.875em;
-  background-color: #F2F2F2;
-  color: #900A0B;
-  padding: 0.2em 0.4em;
-  border-radius: 4px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.875em;
+    background-color: hsl(var(--primary) / 0.12);
+    color: hsl(var(--primary));
+    padding: 0.2em 0.4em;
+    border-radius: 4px;
 }
 
-.blog-article.dark code:not(pre code) {
-  background-color: #1a1a1a;
-  color: #f87171;
-}
+/* ---- Блоки кода (намеренно тёмные в обеих темах — как терминал) ---- */
 
-/* ---- Блоки кода ---- */
 .blog-article pre {
-  background-color: #03070A;
-  color: #E2E2E2;
-  border-radius: 8px;
-  padding: 1.25em 1.5em;
-  overflow-x: auto;
-  margin: 1.5em 0;
-  font-size: 0.875rem;
-  line-height: 1.6;
-}
-
-.blog-article.dark pre {
-  background-color: #111;
-  border: 1px solid #333;
+    background-color: #1e1e1e;
+    color: #d4d4d4;
+    border-radius: 8px;
+    padding: 1.25em 1.5em;
+    overflow-x: auto;
+    margin: 1.5em 0;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    border: 1px solid hsl(var(--border) / 0.5);
 }
 
 .blog-article pre code {
-  background: none;
-  color: inherit;
-  padding: 0;
-  font-size: inherit;
+    background: none;
+    color: inherit;
+    padding: 0;
+    font-size: inherit;
 }
 
 /* ---- Разделитель ---- */
-.blog-article hr {
-  border: none;
-  border-top: 2px solid #E2E2E2;
-  margin: 2.5em 0;
-}
 
-.blog-article.dark hr {
-  border-top-color: #333;
+.blog-article hr {
+    border: none;
+    border-top: 2px solid hsl(var(--border));
+    margin: 2.5em 0;
 }
 
 /* ---- Таблицы ---- */
+
 .blog-article table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 1.5em 0;
-  font-size: 0.9375rem;
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5em 0;
+    font-size: 0.9375rem;
 }
 
 .blog-article th,
 .blog-article td {
-  border: 1px solid #D7D7D7;
-  padding: 0.6em 0.875em;
-  text-align: left;
+    border: 1px solid hsl(var(--border));
+    padding: 0.6em 0.875em;
+    text-align: left;
 }
 
 .blog-article th {
-  background-color: #03070A;
-  color: #FFFFFF;
-  font-weight: 600;
+    background-color: hsl(var(--primary) / 0.15);
+    color: hsl(var(--foreground));
+    font-weight: 600;
 }
 
 .blog-article tr:nth-child(even) td {
-  background-color: #F2F2F2;
-}
-
-.blog-article.dark th {
-  background-color: #1a1a1a;
-}
-
-.blog-article.dark td {
-  border-color: #333;
-}
-
-.blog-article.dark tr:nth-child(even) td {
-  background-color: #111;
+    background-color: hsl(var(--muted));
 }
 
 /* ---- Видео (YouTube embed) ---- */
+
 .blog-article .video-embed {
-  position: relative;
-  padding-bottom: 56.25%;
-  height: 0;
-  margin: 1.5em 0;
-  border-radius: 8px;
-  overflow: hidden;
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+    margin: 1.5em 0;
+    border-radius: 8px;
+    overflow: hidden;
 }
 
 .blog-article .video-embed iframe {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
 }
 
 /* ---- Первый элемент без отступа сверху ---- */
+
 .blog-article > *:first-child {
-  margin-top: 0;
+    margin-top: 0;
 }
 
-/* ---- MDXEditor переопределения ---- */
-/* Изолируем редактор от глобальной Tailwind-темы через data-editor-theme */
+/* ==========================================================================
+   MDXEditor — стили для редактора в админ-панели
+   Используем data-атрибут [data-editor-theme] чтобы не конфликтовать с
+   глобальной Tailwind-темой.
+   ========================================================================== */
 
 .mdx-editor-container {
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid #E2E2E2;
-  background-color: #FFFFFF;
-  color: #353535;
+    border-radius: 8px;
+    overflow: visible;
+    border: 1px solid hsl(var(--border));
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
 }
 
-/* Кнопка темы — внутри тулбара как flex-item */
+/* Кнопка переключения темы в тулбаре */
 .mdx-editor-theme-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px 6px;
-  border-radius: 4px;
-  border: none;
-  cursor: pointer;
-  background-color: transparent;
-  color: #353535;
-  opacity: 0.5;
-  transition: opacity 0.15s, background-color 0.15s;
-  flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 6px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    background-color: transparent;
+    color: hsl(var(--foreground));
+    opacity: 0.5;
+    transition: opacity 0.15s, background-color 0.15s;
+    flex-shrink: 0;
 }
-.mdx-editor-theme-toggle:hover { opacity: 1; background-color: #E2E2E2; }
+
+.mdx-editor-theme-toggle:hover {
+    opacity: 1;
+    background-color: hsl(var(--muted));
+}
 
 /* Растягиватель для прижатия кнопки вправо */
-.mdx-toolbar-spacer { flex: 1; min-width: 8px; }
+.mdx-toolbar-spacer {
+    flex: 1;
+    min-width: 8px;
+}
 
-/* Принудительный перенос строки тулбара */
-.mdx-toolbar-break {
-  width: 100%;
-  height: 1px;
-  background: transparent;
-  flex-shrink: 0;
-  border: none;
-  margin: 0;
-  padding: 0;
+/* z-index для модальных окон MDXEditor */
+.mdxeditor-popup-container {
+    z-index: 9999 !important;
+}
+
+/* Тёмная тема портала MDXEditor */
+.dark .mdxeditor-popup-container {
+    color: hsl(var(--foreground)) !important;
+}
+
+.dark .mdxeditor-popup-container [class*='_dialogContent'],
+.dark .mdxeditor-popup-container [class*='_linkDialogPopoverContent'],
+.dark .mdxeditor-popup-container [class*='_selectContainer'] {
+    background-color: hsl(var(--card)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    color: hsl(var(--foreground)) !important;
+}
+
+.dark .mdxeditor-popup-container input {
+    background-color: hsl(var(--input)) !important;
+    color: hsl(var(--foreground)) !important;
+    border-color: hsl(var(--border)) !important;
+}
+
+.dark .mdxeditor-popup-container button[type='submit'] {
+    background-color: hsl(var(--primary)) !important;
+    color: hsl(var(--primary-foreground)) !important;
+    border: none !important;
+}
+
+.dark .mdxeditor-popup-container [class*='_selectItem']:hover {
+    background-color: hsl(var(--accent)) !important;
+}
+
+/* CodeMirror (Source / Diff режим) */
+[data-editor-theme='dark'] .cm-editor,
+[data-editor-theme='dark'] .cm-sourceView,
+[data-editor-theme='dark'] .cm-mergeView,
+[data-editor-theme='dark'] .cm-merge-a,
+[data-editor-theme='dark'] .cm-merge-b {
+    background-color: hsl(var(--card)) !important;
+    color: hsl(var(--foreground)) !important;
+}
+
+[data-editor-theme='dark'] .cm-gutters {
+    background-color: hsl(var(--muted)) !important;
+    color: hsl(var(--muted-foreground)) !important;
+    border-right: 1px solid hsl(var(--border)) !important;
+}
+
+[data-editor-theme='dark'] .cm-mergeViewEditors {
+    background-color: hsl(var(--card)) !important;
 }
 
 /* Sticky тулбар внутри редактора */
 .mdx-editor-container [class*='_editorWrapper'] > [class*='_toolbar'],
 .mdx-editor-container > [class*='_toolbar'] {
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 10 !important;
+    position: sticky !important;
+    top: 48px !important;
+    z-index: 10 !important;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
 }
 
-/* Тулбар — светлая */
+/* Тулбар */
 .mdx-editor-container [class*='_toolbar'] {
-  background-color: #F2F2F2 !important;
-  border-bottom: 1px solid #E2E2E2 !important;
-  padding: 4px 8px !important;
-  display: flex !important;
-  align-items: center !important;
-  flex-wrap: wrap !important;
-  gap: 2px !important;
-  row-gap: 4px !important;
+    background-color: hsl(var(--muted)) !important;
+    border-bottom: 1px solid hsl(var(--border)) !important;
+    padding: 4px 6px !important;
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 2px !important;
+    row-gap: 4px !important;
 }
+
 .mdx-editor-container [class*='_toolbar'] button {
-  color: #353535 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  border: none !important;
+    color: hsl(var(--foreground)) !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    min-width: 28px !important;
+    height: 28px !important;
+    padding: 0 4px !important;
+    border-radius: 4px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
+
 .mdx-editor-container [class*='_toolbar'] button:hover {
-  background-color: #E2E2E2 !important;
+    background-color: hsl(var(--accent)) !important;
 }
+
 .mdx-editor-container [class*='_toolbar'] button[data-state='on'],
 .mdx-editor-container [class*='_toolbar'] button[aria-pressed='true'] {
-  background-color: rgba(144, 10, 11, 0.1) !important;
-  color: #900A0B !important;
+    background-color: hsl(var(--primary) / 0.15) !important;
+    color: hsl(var(--primary)) !important;
 }
+
 .mdx-editor-container [class*='_selectTrigger'] {
-  background-color: #FFFFFF !important;
-  border-color: #E2E2E2 !important;
-  color: #353535 !important;
+    background-color: hsl(var(--background)) !important;
+    border-color: hsl(var(--border)) !important;
+    color: hsl(var(--foreground)) !important;
+    height: 28px !important;
+    padding: 0 8px !important;
+    border-radius: 4px !important;
+    font-size: 0.875rem !important;
 }
-/* Убираем все полоски/бордеры/тени в тулбаре */
+
+/* Убираем лишние бордеры/тени в тулбаре */
 .mdx-editor-container [class*='_toolbarToggleSingleGroup'],
 .mdx-editor-container [class*='_toolbarToggleGroup'],
 .mdx-editor-container [class*='_toolbarRoot'] > *,
 .mdx-editor-container [class*='_toolbarRoot'] [role='separator'],
 .mdx-editor-container [class*='_toolbarRoot'] [data-orientation='vertical'] {
-  border: none !important;
-  box-shadow: none !important;
-  background: transparent !important;
-  outline: none !important;
-}
-/* Разделители между группами инструментов */
-.mdx-editor-container [class*='_toolbarRoot'] hr,
-.mdx-editor-container [class*='_separator'] {
-  border-color: #D7D7D7 !important;
-  opacity: 0.5;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    outline: none !important;
 }
 
-/* Контент — светлая */
-.mdx-editor-content {
-  padding: 1.5rem !important;
-  min-height: 400px;
-  font-size: 1rem !important;
-  line-height: 1.75 !important;
-  color: #353535 !important;
-  background-color: #FFFFFF !important;
-  caret-color: #03070A;
+.mdx-editor-container [class*='_toolbarRoot'] hr,
+.mdx-editor-container [class*='_separator'] {
+    border-color: hsl(var(--border)) !important;
+    opacity: 0.5;
 }
+
+/* Контент редактора */
+.mdx-editor-content {
+    padding: 1.5rem !important;
+    min-height: 400px;
+    font-size: 1rem !important;
+    line-height: 1.75 !important;
+    color: hsl(var(--foreground)) !important;
+    background-color: hsl(var(--background)) !important;
+    caret-color: hsl(var(--foreground));
+}
+
 .mdx-editor-content [data-placeholder]::before {
-  color: #B0B0B0 !important;
+    color: hsl(var(--muted-foreground)) !important;
 }
 
 /* Типографика внутри редактора */
@@ -364,140 +424,159 @@
 .mdx-editor-content h2,
 .mdx-editor-content h3,
 .mdx-editor-content h4 {
-  color: #03070A;
-  font-weight: 700;
-  margin-top: 1.5em;
-  margin-bottom: 0.5em;
-}
-.mdx-editor-content h2 {
-  border-bottom: 2px solid #E2E2E2;
-  padding-bottom: 0.3em;
-}
-.mdx-editor-content a { color: #900A0B; }
-.mdx-editor-content blockquote {
-  border-left: 4px solid #900A0B;
-  background-color: rgba(144, 10, 11, 0.05);
-  padding: 0.5em 1em;
-  border-radius: 0 4px 4px 0;
-  font-style: italic;
+    color: hsl(var(--foreground));
+    font-weight: 700;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
 }
 
-/* ---- Тёмная тема редактора (data-editor-theme="dark") ---- */
-/* Используем data-атрибут вместо .dark чтобы не конфликтовать с Tailwind */
+.mdx-editor-content h2 {
+    border-bottom: 2px solid hsl(var(--border));
+    padding-bottom: 0.3em;
+}
+
+.mdx-editor-content a {
+    color: hsl(var(--primary));
+}
+
+.mdx-editor-content blockquote {
+    border-left: 4px solid hsl(var(--primary));
+    background-color: hsl(var(--primary) / 0.08);
+    padding: 0.5em 1em;
+    border-radius: 0 4px 4px 0;
+    font-style: italic;
+}
+
+/* ---- Тёмная тема редактора [data-editor-theme="dark"] ---- */
 
 [data-editor-theme='dark'].mdx-editor-container {
-  border-color: #2a2a2a;
-  background-color: #1a1a1a;
-  color: #E2E2E2;
+    border-color: hsl(var(--border));
+    background-color: hsl(var(--card));
+    color: hsl(var(--foreground));
 }
 
 [data-editor-theme='dark'] .mdx-editor-theme-toggle {
-  color: #D7D7D7;
+    color: hsl(var(--foreground));
 }
+
 [data-editor-theme='dark'] .mdx-editor-theme-toggle:hover {
-  background-color: #2a2a2a;
+    background-color: hsl(var(--accent));
 }
 
 [data-editor-theme='dark'] [class*='_toolbar'] {
-  background-color: #111111 !important;
-  border-bottom-color: #2a2a2a !important;
-  color: #E2E2E2 !important;
-  display: flex !important;
-  align-items: center !important;
-  flex-wrap: wrap !important;
-  gap: 2px !important;
-  row-gap: 4px !important;
-  padding: 4px 8px !important;
+    background-color: hsl(var(--muted)) !important;
+    border-bottom-color: hsl(var(--border)) !important;
+    color: hsl(var(--foreground)) !important;
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 2px !important;
+    row-gap: 4px !important;
+    padding: 4px 6px !important;
 }
+
 [data-editor-theme='dark'] [class*='_toolbar'] button {
-  color: #D7D7D7 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  border: none !important;
+    color: hsl(var(--foreground)) !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    min-width: 28px !important;
+    height: 28px !important;
+    padding: 0 4px !important;
+    border-radius: 4px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
+
 [data-editor-theme='dark'] [class*='_toolbar'] button:hover {
-  background-color: #2a2a2a !important;
+    background-color: hsl(var(--accent)) !important;
 }
+
 [data-editor-theme='dark'] [class*='_toolbar'] button[data-state='on'],
 [data-editor-theme='dark'] [class*='_toolbar'] button[aria-pressed='true'] {
-  background-color: rgba(144, 10, 11, 0.25) !important;
-  color: #f87171 !important;
+    background-color: hsl(var(--primary) / 0.2) !important;
+    color: hsl(var(--primary)) !important;
 }
+
 [data-editor-theme='dark'] [class*='_selectTrigger'] {
-  background-color: #1a1a1a !important;
-  border-color: #2a2a2a !important;
-  color: #E2E2E2 !important;
+    background-color: hsl(var(--card)) !important;
+    border-color: hsl(var(--border)) !important;
+    color: hsl(var(--foreground)) !important;
+    height: 28px !important;
+    padding: 0 8px !important;
+    border-radius: 4px !important;
+    font-size: 0.875rem !important;
 }
+
 [data-editor-theme='dark'] [class*='_toolbarToggleSingleGroup'],
 [data-editor-theme='dark'] [class*='_toolbarToggleGroup'],
 [data-editor-theme='dark'] [class*='_toolbarRoot'] > *,
 [data-editor-theme='dark'] [class*='_toolbarRoot'] [role='separator'],
 [data-editor-theme='dark'] [class*='_toolbarRoot'] [data-orientation='vertical'] {
-  border: none !important;
-  box-shadow: none !important;
-  background: transparent !important;
-  outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    outline: none !important;
 }
+
 [data-editor-theme='dark'] [class*='_toolbarRoot'] hr,
 [data-editor-theme='dark'] [class*='_separator'] {
-  border-color: #333 !important;
-  opacity: 0.5;
-}
-[data-editor-theme='dark'] .mdx-editor-theme-toggle {
-  color: #D7D7D7;
-  opacity: 0.5;
-}
-[data-editor-theme='dark'] .mdx-editor-theme-toggle:hover {
-  background-color: #2a2a2a;
-  opacity: 1;
+    border-color: hsl(var(--border)) !important;
+    opacity: 0.5;
 }
 
 [data-editor-theme='dark'] .mdx-editor-content {
-  color: #E2E2E2 !important;
-  background-color: #1a1a1a !important;
-  caret-color: #FFFFFF;
+    color: hsl(var(--foreground)) !important;
+    background-color: hsl(var(--card)) !important;
+    caret-color: hsl(var(--foreground));
 }
+
 [data-editor-theme='dark'] .mdx-editor-content h1,
 [data-editor-theme='dark'] .mdx-editor-content h2,
 [data-editor-theme='dark'] .mdx-editor-content h3,
 [data-editor-theme='dark'] .mdx-editor-content h4 {
-  color: #FFFFFF;
+    color: hsl(var(--foreground));
 }
+
 [data-editor-theme='dark'] .mdx-editor-content h2 {
-  border-bottom-color: #2a2a2a;
+    border-bottom-color: hsl(var(--border));
 }
-[data-editor-theme='dark'] .mdx-editor-content a { color: #f87171; }
+
+[data-editor-theme='dark'] .mdx-editor-content a {
+    color: hsl(var(--primary));
+}
+
 [data-editor-theme='dark'] .mdx-editor-content blockquote {
-  background-color: rgba(144, 10, 11, 0.15);
-  color: #D7D7D7;
+    background-color: hsl(var(--primary) / 0.12);
+    color: hsl(var(--muted-foreground));
 }
+
 [data-editor-theme='dark'] .mdx-editor-content code:not(pre code) {
-  background-color: #111;
-  color: #f87171;
+    background-color: hsl(var(--primary) / 0.15);
+    color: hsl(var(--primary));
 }
-/* ---- Адаптивность редактора для мобильных ---- */
-.mdx-editor-mobile-optimized [class*='_toolbar'] > * {
-  flex-shrink: 0 !important;
-}
+
+/* ---- Адаптивность редактора ---- */
 
 @media (max-width: 768px) {
-  .mdx-editor-container [class*='_toolbar'] {
-    padding: 4px 6px !important;
-  }
+    .mdx-editor-container [class*='_toolbar'] {
+        padding: 4px 6px !important;
+    }
 
-  .mdx-editor-container [class*='_toolbar'] button {
-    min-width: 28px !important;
-    height: 28px !important;
-    padding: 0 4px !important;
-  }
+    .mdx-editor-container [class*='_toolbar'] button {
+        min-width: 28px !important;
+        height: 28px !important;
+        padding: 0 4px !important;
+    }
 }
 
 @media (max-width: 640px) {
-  .mdx-editor-content {
-    padding: 1rem !important;
-  }
+    .mdx-editor-content {
+        padding: 1rem !important;
+    }
 
-  .mdx-toolbar-spacer {
-    display: none !important;
-  }
+    .mdx-toolbar-spacer {
+        display: none !important;
+    }
 }

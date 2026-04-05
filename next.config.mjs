@@ -1,6 +1,8 @@
 import createNextIntlPlugin from 'next-intl/plugin';
+import workflowNextPlugin from 'workflow/next';
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
+const { withWorkflow } = workflowNextPlugin;
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -10,9 +12,9 @@ const nextConfig = {
     remotePatterns: [
       new URL('https://lh3.googleusercontent.com/a/**'),
       new URL('https://www.amcharts.com/wp-content/themes/amcharts4/css/img/*'),
-      new URL('https://*.public.blob.vercel-storage.com/**'),
+      new URL('https://*.public.blob.vercel-storage.com/**')
     ]
   }
 };
 
-export default withNextIntl(nextConfig);
+export default withWorkflow(withNextIntl(nextConfig));

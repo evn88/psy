@@ -2,9 +2,15 @@ import { NextResponse } from 'next/server';
 import prisma from '@/shared/lib/prisma';
 import { auth } from '@/auth';
 import { z } from 'zod';
-import { EventType, EventStatus } from '@prisma/client';
-import { sendEventNotificationEmail, sendEventCancellationEmail } from '@/shared/lib/email';
+import { EventStatus, EventType, Prisma } from '@prisma/client';
+import { sendEventCancellationEmail, sendEventNotificationEmail } from '@/shared/lib/email';
 import { syncEventWithGoogle } from '@/shared/lib/google-sync';
+import { doesDateRangeOverlap, isValidDateRange } from '@/shared/lib/event-utils';
+import { startSessionReminderWorkflow } from '@/shared/lib/session-reminder-workflow';
+import {
+  MAX_SESSION_REMINDER_MINUTES,
+  MIN_SESSION_REMINDER_MINUTES
+} from '@/shared/lib/session-reminders';
 
 const updateEventSchema = z.object({
   type: z.nativeEnum(EventType).optional(),
@@ -12,10 +18,21 @@ const updateEventSchema = z.object({
   end: z.string().datetime().optional(),
   status: z.nativeEnum(EventStatus).optional(),
   title: z.string().optional().nullable(),
-  description: z.string().optional().nullable(),
   meetLink: z.string().url().optional().or(z.literal('')).nullable(),
-  userId: z.string().optional().nullable()
+  userId: z.string().optional().nullable(),
+  reminderMinutesBeforeStart: z.coerce
+    .number()
+    .int()
+    .min(MIN_SESSION_REMINDER_MINUTES)
+    .max(MAX_SESSION_REMINDER_MINUTES)
+    .optional()
 });
+
+type EventConflict = {
+  id: string;
+  start: Date;
+  end: Date;
+};
 
 /**
  * PATCH /api/admin/events/[id]
@@ -25,7 +42,6 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
   const params = await props.params;
   try {
     const session = await auth();
-    // @ts-ignore
     if (!session || session.user?.role !== 'ADMIN') {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
@@ -53,12 +69,72 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
       return NextResponse.json({ message: 'Event not found' }, { status: 404 });
     }
 
-    const { start, end, ...restData } = result.data;
+    const { start, end, status, ...restData } = result.data;
+    const nextStart = start ? new Date(start) : event.start;
+    const nextEnd = end ? new Date(end) : event.end;
+    const nextStatus = status ?? event.status;
+    const hasUserField = Object.prototype.hasOwnProperty.call(result.data, 'userId');
+    const isStartChanged = Boolean(start) && nextStart.getTime() !== event.start.getTime();
+    const isEndChanged = Boolean(end) && nextEnd.getTime() !== event.end.getTime();
+    const isStatusChanged = typeof status === 'string' && status !== event.status;
+    const isReminderMinutesChanged =
+      typeof result.data.reminderMinutesBeforeStart === 'number' &&
+      result.data.reminderMinutesBeforeStart !== event.reminderMinutesBeforeStart;
+    const isUserChanged = hasUserField && result.data.userId !== event.userId;
+    const shouldResetReminderSentAt =
+      isStartChanged || isEndChanged || isReminderMinutesChanged || isUserChanged;
+    const shouldBumpReminderWorkflowVersion = shouldResetReminderSentAt || isStatusChanged;
 
-    // Convert date strings to Date objects if provided
-    const updateData: any = { ...restData };
-    if (start) updateData.start = new Date(start);
-    if (end) updateData.end = new Date(end);
+    if (!isValidDateRange({ start: nextStart, end: nextEnd })) {
+      return NextResponse.json({ message: 'Invalid date range' }, { status: 400 });
+    }
+
+    if (nextStatus !== 'CANCELLED') {
+      const conflictingEvents = (await prisma.event.findMany({
+        where: {
+          id: { not: eventId },
+          status: { not: 'CANCELLED' },
+          start: { lt: nextEnd },
+          end: { gt: nextStart }
+        },
+        select: {
+          id: true,
+          start: true,
+          end: true
+        }
+      })) as EventConflict[];
+
+      if (
+        conflictingEvents.some((conflict: EventConflict) =>
+          doesDateRangeOverlap({ start: nextStart, end: nextEnd }, conflict)
+        )
+      ) {
+        return NextResponse.json(
+          { message: 'Event overlaps with an existing event' },
+          { status: 409 }
+        );
+      }
+    }
+
+    const updateData: Prisma.EventUncheckedUpdateInput = { ...restData, status: nextStatus };
+    if (start) {
+      updateData.start = nextStart;
+    }
+    if (end) {
+      updateData.end = nextEnd;
+    }
+    if (shouldResetReminderSentAt) {
+      updateData.reminderEmailSentAt = null;
+      updateData.reminderPushSentAt = null;
+    }
+    if (shouldBumpReminderWorkflowVersion) {
+      updateData.reminderWorkflowVersion = {
+        increment: 1
+      };
+    }
+    if (hasUserField) {
+      updateData.bookingReminderMinutesBeforeStart = null;
+    }
 
     const updatedEvent = await prisma.event.update({
       where: { id: eventId },
@@ -97,6 +173,13 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
       }
     }
 
+    await startSessionReminderWorkflow({
+      id: updatedEvent.id,
+      userId: updatedEvent.userId,
+      status: updatedEvent.status,
+      reminderWorkflowVersion: updatedEvent.reminderWorkflowVersion
+    });
+
     // Trigger Google Calendar sync hook
     syncEventWithGoogle(updatedEvent.id, 'UPDATE');
 
@@ -115,7 +198,6 @@ export async function DELETE(req: Request, props: { params: Promise<{ id: string
   const params = await props.params;
   try {
     const session = await auth();
-    // @ts-ignore
     if (!session || session.user?.role !== 'ADMIN') {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }

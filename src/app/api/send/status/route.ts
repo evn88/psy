@@ -10,7 +10,6 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export async function POST(request: Request) {
   try {
     const session = await auth();
-    // @ts-ignore
     if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -30,11 +29,7 @@ export async function POST(request: Request) {
 
     if (error || !listResponse || !listResponse.data) {
       console.error('Failed to list emails:', error);
-      // Fallback: mark everything as error/queued if we can't fetch the list
-      ids.forEach((id: string) => {
-        statuses[id] = 'queued'; // Keep trying instead of failing hard immediately
-      });
-      return NextResponse.json({ success: true, statuses });
+      return NextResponse.json({ error: 'Failed to load email statuses' }, { status: 502 });
     }
 
     const recentEmails = listResponse.data;

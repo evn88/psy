@@ -1,85 +1,160 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import createMiddleware from 'next-intl/middleware';
 import NextAuth from 'next-auth';
+import { defaultLocale, isLocale, type AppLocale } from './i18n/config';
 import { routing } from './i18n/routing';
 import { authConfig } from '@/auth.config';
 
 // Инициализируем auth специально для Edge
 const { auth } = NextAuth(authConfig);
+const handleI18nRouting = createMiddleware(routing);
 
-const SUPPORTED_LOCALES = routing.locales as unknown as string[];
-const DEFAULT_LOCALE = routing.defaultLocale;
-
-const resolveLocale = (req: NextRequest): string => {
+/**
+ * Определяет предпочитаемую локаль по cookie и Accept-Language.
+ * @param req - входящий запрос.
+ * @returns Локаль, которую следует использовать для редиректа.
+ */
+const resolvePreferredLocale = (req: NextRequest): AppLocale => {
   const cookieLocale = req.cookies.get('NEXT_LOCALE')?.value;
-  if (cookieLocale && SUPPORTED_LOCALES.includes(cookieLocale)) {
+  if (cookieLocale && isLocale(cookieLocale)) {
     return cookieLocale;
   }
 
   const acceptLang = req.headers.get('accept-language') ?? '';
   const preferred = acceptLang
     .split(',')
-    .map(l => l.split(';')[0].trim().substring(0, 2).toLowerCase())
-    .find(l => SUPPORTED_LOCALES.includes(l));
+    .map(language => language.split(';')[0].trim().substring(0, 2).toLowerCase())
+    .find(language => isLocale(language));
 
-  return preferred ?? DEFAULT_LOCALE;
+  return preferred ?? defaultLocale;
 };
 
-// Классическое объявление функции middleware
+/**
+ * Извлекает locale-префикс из pathname.
+ * @param pathname - внешний pathname запроса.
+ * @returns Найденная локаль или `null`.
+ */
+const getPathnameLocale = (pathname: string): AppLocale | null => {
+  const firstSegment = pathname.split('/').filter(Boolean)[0];
+
+  if (!firstSegment || !isLocale(firstSegment)) {
+    return null;
+  }
+
+  return firstSegment;
+};
+
+/**
+ * Убирает locale-префикс из pathname, чтобы проверять бизнес-маршруты.
+ * @param pathname - внешний pathname запроса.
+ * @returns Pathname без locale-префикса.
+ */
+const stripLocalePrefix = (pathname: string): string => {
+  const segments = pathname.split('/').filter(Boolean);
+
+  if (segments.length === 0) {
+    return '/';
+  }
+
+  if (!isLocale(segments[0]!)) {
+    return pathname === '' ? '/' : pathname;
+  }
+
+  if (segments.length === 1) {
+    return '/';
+  }
+
+  return `/${segments.slice(1).join('/')}`;
+};
+
+/**
+ * Добавляет locale-префикс к внутреннему маршруту.
+ * @param locale - локаль, которую нужно префиксовать.
+ * @param pathname - внутренний маршрут приложения.
+ * @returns Локализованный pathname.
+ */
+const localizePathname = (locale: AppLocale, pathname: string): string => {
+  if (pathname === '/') {
+    return `/${locale}`;
+  }
+
+  return `/${locale}${pathname.startsWith('/') ? pathname : `/${pathname}`}`;
+};
+
+/**
+ * Создает locale-aware redirect и синхронизирует cookie `NEXT_LOCALE`.
+ * @param req - входящий запрос.
+ * @param locale - локаль редиректа.
+ * @param pathname - внутренний маршрут назначения.
+ * @returns Redirect response.
+ */
+const redirectToLocalePath = (
+  req: NextRequest,
+  locale: AppLocale,
+  pathname: string
+): NextResponse => {
+  const response = NextResponse.redirect(new URL(localizePathname(locale, pathname), req.url));
+
+  response.cookies.set('NEXT_LOCALE', locale, {
+    path: '/',
+    sameSite: 'lax'
+  });
+
+  return response;
+};
+
 export default async function proxy(req: NextRequest) {
-  // 1. Получаем сессию вручную асинхронным вызовом
+  const locale = getPathnameLocale(req.nextUrl.pathname) ?? resolvePreferredLocale(req);
+  const pathname = stripLocalePrefix(req.nextUrl.pathname);
+
   const session = await auth();
   const isLoggedIn = !!session;
-  // 2. Обращаемся к роли пользователя через session, а не через req.auth
   const userRole = session?.user?.role;
 
-  const pathname = req.nextUrl.pathname;
-  const isAuthPage = pathname.startsWith('/auth');
-  const isAdminRoute = pathname.startsWith('/admin');
-  const isMyRoute = pathname.startsWith('/my');
-
-  const resolvedLocale = resolveLocale(req);
-  const hasLocaleCookie = !!req.cookies.get('NEXT_LOCALE')?.value;
+  const isAuthPage = pathname === '/auth' || pathname.startsWith('/auth/');
+  const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/');
+  const isMyRoute = pathname === '/my' || pathname.startsWith('/my/');
 
   if (isAuthPage) {
     if (isLoggedIn) {
-      if (userRole === 'ADMIN') return NextResponse.redirect(new URL('/admin', req.nextUrl));
-      if (userRole === 'USER') return NextResponse.redirect(new URL('/my', req.nextUrl));
+      if (userRole === 'ADMIN') {
+        return redirectToLocalePath(req, locale, '/admin');
+      }
+      if (userRole === 'USER') {
+        return redirectToLocalePath(req, locale, '/my');
+      }
 
-      return NextResponse.redirect(new URL('/my/profile', req.nextUrl));
+      return redirectToLocalePath(req, locale, '/my/profile');
     }
-
-    if (!hasLocaleCookie) {
-      const response = NextResponse.next();
-      response.cookies.set('NEXT_LOCALE', resolvedLocale, { path: '/' });
-      return response;
-    }
-
-    return null;
   }
 
   if (isAdminRoute) {
-    if (!isLoggedIn) return NextResponse.redirect(new URL('/auth', req.nextUrl));
-    if (userRole !== 'ADMIN') return NextResponse.redirect(new URL('/my', req.nextUrl));
-    return null;
+    if (!isLoggedIn) {
+      return redirectToLocalePath(req, locale, '/auth');
+    }
+    if (userRole !== 'ADMIN') {
+      return redirectToLocalePath(req, locale, '/my');
+    }
   }
 
   if (isMyRoute) {
-    if (!isLoggedIn) return NextResponse.redirect(new URL('/auth', req.nextUrl));
+    if (!isLoggedIn) {
+      return redirectToLocalePath(req, locale, '/auth');
+    }
 
     if (userRole === 'GUEST') {
       const allowedGuestPaths = ['/my/profile', '/my/settings'];
-      const isAllowed = allowedGuestPaths.some(p => pathname.startsWith(p));
+      const isAllowed = allowedGuestPaths.some(allowedPath => pathname.startsWith(allowedPath));
       if (!isAllowed) {
-        return NextResponse.redirect(new URL('/my/profile', req.nextUrl));
+        return redirectToLocalePath(req, locale, '/my/profile');
       }
     }
-    return null;
   }
+
+  return handleI18nRouting(req);
 }
 
 export const config = {
-  matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|manifest.json|robots.txt|sitemap.xml).*)'
-  ]
+  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)']
 };

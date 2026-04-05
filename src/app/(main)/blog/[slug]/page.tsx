@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { cookies } from 'next/headers';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Clock, Calendar } from 'lucide-react';
+import { Calendar, Clock } from 'lucide-react';
 import prisma from '@/shared/lib/prisma';
 import { Badge } from '@/components/ui/badge';
 import { formatBlogDate, getBlogLocale } from '@/shared/lib/blog-utils';

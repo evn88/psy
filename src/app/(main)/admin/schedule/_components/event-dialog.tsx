@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { EventType, EventStatus } from '@prisma/client';
 import { Event } from './use-events';
 import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
@@ -34,7 +33,6 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 
 const eventSchema = z.object({
   title: z.string().optional(),

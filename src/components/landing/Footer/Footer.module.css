@@ -1,0 +1,297 @@
+/* ==============================================
+   FOOTER — Футер лендинга (стиль конверта/письма)
+   ============================================== */
+
+.footer {
+  background-color: var(--color-pink);
+  position: relative;
+  padding-top: clamp(6em, 10vw, 20em);
+  padding-bottom: clamp(3em, 5vw, 5em);
+
+  .footer__title {
+    font-family: var(--font-heading), sans-serif;
+    font-size: var(--text-h4);
+    line-height: 0.95;
+    color: var(--color-dark);
+    margin-bottom: 0.6em;
+  }
+  .footer__accent {
+    font-family: var(--font-accent), sans-serif;
+    color: var(--color-blue);
+    font-size: var(--text-t2);
+  }
+  .footer__link {
+    color: var(--color-blue);
+    text-decoration: underline;
+    font-weight: bold;
+  }
+
+  .footer__copy,
+  .footer__credit {
+    font-family: var(--font-body), sans-serif;
+    font-size: var(--text-small);
+    color: var(--color-dark);
+    opacity: 0.75;
+    line-height: 1.5;
+  }
+}
+
+/* ── Конверт — дальний фон (по центру, за карточкой) ─────── */
+
+.footer__envelop {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 130%;
+  aspect-ratio: 1 / 1;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: top center;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Боковые треугольники (поверх карточки) ──────────────── */
+
+.footer__triLeft,
+.footer__triRight {
+  position: absolute;
+  top: 0;
+  bottom: -20%;
+  width: 50vw;
+  z-index: 3;
+  pointer-events: none;
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+.footer__triLeft {
+  left: 0;
+  bottom: -25%;
+  background-position: left bottom;
+}
+
+.footer__triRight {
+  right: 0;
+  bottom: -12%;
+  background-position: right bottom;
+}
+
+/* ── Белая карточка-письмо ────────────────────────────────── */
+
+.footer__card {
+  position: relative;
+  background: var(--color-white);
+  box-shadow: 6px 7px 20px rgba(52, 52, 52, 0.22);
+  display: flex;
+  align-items: center;
+  gap: clamp(2em, 4vw, 5em);
+  padding: clamp(2.5em, 4vw, 4em) clamp(2em, 4vw, 4.5em) 4rem;
+  /*margin-top: clamp(3em, 15vw, 8em);*/
+  margin-inline: auto;
+  margin-bottom: 3rem;
+  width: 70%;
+  z-index: 1;
+  flex-wrap: wrap;
+}
+
+/* ── Поляроид с фото ──────────────────────────────────────── */
+
+.footer__polaroid {
+  flex-shrink: 0;
+  transform: rotate(-5deg) translateY(-1.5em);
+  align-self: flex-start;
+  margin: -2% 0 0 -5%;
+}
+
+.footer__polaroidInner {
+  background: var(--color-white);
+  padding-top: clamp(0.8em, 1.2vw, 1.2em);
+  padding-left: clamp(0.8em, 1.2vw, 1.2em);
+  padding-right: clamp(0.8em, 1.2vw, 1.2em);
+  padding-bottom: clamp(2em, 4vw, 5em);
+  box-shadow: 0px 4px 12px rgba(126, 126, 126, 0.3);
+}
+
+.footer__photo {
+  display: block !important;
+  width: clamp(140px, 18vw, 290px) !important;
+  height: clamp(140px, 18vw, 290px) !important;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  object-position: top center;
+}
+
+/* ── Контентная область ───────────────────────────────────── */
+
+.footer__cardContent {
+  flex: 1 1 60%;
+}
+
+.footer__sub {
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--text-t2);
+  line-height: 1.4;
+  color: #353535;
+  max-width: 36em;
+  margin-bottom: 1.8em;
+}
+
+/* ── Кнопки соцсетей (паттерн oval из HeroNav) ────────────── */
+
+.footer__socials {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.6em, 1.5vw, 1.4em);
+  flex-wrap: wrap;
+  margin-bottom: 2em;
+}
+
+.footer__socialBtn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-accent), sans-serif;
+  font-size: clamp(1.6rem, 1.8vw, 2.2rem);
+  color: var(--color-dark);
+  text-decoration: none;
+  padding: 0.55em 1.8em;
+  white-space: nowrap;
+  cursor: pointer;
+  z-index: 0;
+  transition: color 0.2s;
+}
+
+.footer__socialBtn:hover .footer__socialOval {
+  transform: scale(0.88);
+}
+
+/* Овал: розовый (по умолчанию) */
+.footer__socialOval {
+  position: absolute;
+  inset: 0;
+  display: block;
+  background-color: var(--color-pink);
+  -webkit-mask-image: url('/images/adhd/hero-oval.svg');
+  -webkit-mask-size: 100% 100%;
+  mask-image: url('/images/adhd/hero-oval.svg');
+  mask-size: 100% 100%;
+  pointer-events: none;
+  transition: transform 0.4s ease;
+  z-index: -1;
+}
+
+/* Овал: синий (инстаграмм) */
+.footer__socialOval[data-variant='blue'] {
+  background-color: var(--color-blue);
+}
+
+/* ── Юридические ссылки ───────────────────────────────────── */
+
+.footer__legal {
+  display: flex;
+  align-items: center;
+  gap: clamp(1.2em, 3vw, 2.4em);
+  flex-wrap: wrap;
+}
+
+.footer__legalLink {
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--text-small);
+  color: var(--color-dark);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  transition: opacity 0.2s;
+}
+
+.footer__legalLink:hover {
+  opacity: 0.65;
+}
+
+/* ── Нижняя строка ────────────────────────────────────────── */
+
+.footer__bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3em;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+  flex-grow: 1;
+}
+
+/* ── Адаптив ──────────────────────────────────────────────── */
+
+@media (max-width: 1024px) {
+
+  .footer__triLeft,
+  .footer__triRight {
+    width: clamp(60px, 12vw, 160px);
+  }
+}
+
+@media (max-width: 768px) {
+  .footer__card {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 2.5em 2em;
+    gap: 2em;
+  }
+
+  .footer__polaroid {
+    transform: rotate(-3deg);
+    align-self: center;
+  }
+
+  .footer__photo {
+    width: clamp(120px, 40vw, 200px) !important;
+  }
+
+  .footer__title {
+    font-size: clamp(2rem, 6vw, 3.2rem);
+  }
+
+  .footer__triLeft,
+  .footer__triRight {
+    width: clamp(40px, 8vw, 100px);
+  }
+}
+
+@media (max-width: 533px) {
+  .footer__socials {
+    gap: 0.8em;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .footer__card {
+    transform: none;
+    padding: 2em 1.6em;
+  }
+
+  .footer__polaroid {
+    transform: rotate(-2deg);
+    align-self: center;
+  }
+
+  .footer__socialBtn {
+    font-size: 1.6rem;
+    padding: 0.5em 1.4em;
+  }
+
+  .footer__legal {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6em;
+  }
+
+  .footer__triLeft,
+  .footer__triRight {
+    display: none;
+  }
+}

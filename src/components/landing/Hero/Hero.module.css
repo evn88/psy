@@ -1,0 +1,286 @@
+/* ==============================================
+   HERO — Первый экран лендинга
+   ============================================== */
+
+/* Секция — розовый фон, полный экран */
+.hero {
+  position: relative;
+  background: var(--color-pink);
+  display: flex;
+  flex-direction: column;
+  padding-bottom: clamp(6em, 10vw, 14em); /* место под горы */
+
+  p {
+    font-family: var(--font-body);
+    font-size: var(--text-body);
+    line-height: 1.6;
+    color: var(--text-body)
+  }
+}
+
+/* Синие горы (фото) */
+.hero__mountains {
+  position: absolute;
+  bottom: clamp(2em, 5vw, 7em);
+  left: 0;
+  right: 0;
+  height: 42%;
+  z-index: 0;
+  background-size: contain;
+  background-position: top center;
+  background-repeat: no-repeat;
+}
+
+.hero__blueBg {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 42%;
+  z-index: 0;
+  background-size: cover;
+  background-position: top center;
+  background-repeat: no-repeat;
+}
+
+/* Крафт-конверт */
+.hero__envelope {
+  position: relative;
+  display: flex;
+  z-index: 2;
+  max-width: 116em;
+  width: calc(100% - clamp(3em, 15vw, 8em));
+  margin: clamp(3em, 15vw, 8em) auto 0;
+  border-radius: 0.6em;
+}
+
+/* Конверт — фоновый слой */
+.hero__envelopImg {
+  z-index: 1;
+  background-position: top;
+  background-repeat: no-repeat;
+  background-size: contain;
+  border-radius: .6em;
+  width: 105vw;
+  max-width: 2000px;
+  height: 148%;
+  position: absolute;
+  top: -48%;
+  left: 50%;
+  transform: translateX(-51%);
+}
+
+/* Белая карточка поверх конверта */
+.hero__card {
+  position: relative;
+  z-index: 1;
+  background: var(--color-white);
+  border-radius: 0.6em 0.6em 0 0;
+  overflow: visible;
+  box-shadow: 6px 7px 6.3px 0 rgba(52, 52, 52, 0.26);
+}
+
+/* Контентная область (отступы, чтобы освободить место под фото) */
+.hero__content {
+  padding: 1rem clamp(1rem, 8vw, 8rem);
+  text-align: center;
+}
+
+/* Заголовок */
+.hero__title {
+  font-family: var(--font-heading);
+  font-size: var(--text-h1);
+  line-height: 0.9;
+  color: var(--color-dark);
+  margin-bottom: 3rem;
+}
+
+/* Обёртка для «ты устал» + SVG овал */
+.hero__titleCircled {
+  position: relative;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.hero__titleAccent {
+  font-family: var(--font-accent);
+  color: var(--color-blue);
+  display: inline-block;
+  font-size: clamp(1.2em, 8vw, 2em);
+  margin-bottom: -1rem;
+}
+
+/* SVG овал — span с mask-image, размер свободно задаётся через width/height */
+.hero__oval {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 130%;
+  height: 125%;
+  display: block;
+  pointer-events: none;
+  background-color: var(--color-blue);
+  -webkit-mask-image: url('/images/adhd/hero-oval.svg');
+  -webkit-mask-size: 100% 100%;
+  mask-image: url('/images/adhd/hero-oval.svg');
+  mask-size: 100% 100%;
+}
+
+/* Подзаголовок */
+.hero__sub {
+  font-family: var(--font-body);
+  font-size: var(--text-t2);
+  line-height: 1.5;
+  color: var(--color-dark);
+  max-width: 46em;
+  margin: 0 auto 1.2em;
+}
+
+/* Вопрос с хайлайтом */
+.hero__question {
+  font-family: var(--font-body);
+  font-size: var(--text-t1);
+  line-height: 1.6;
+  color: var(--color-dark);
+  max-width: 46em;
+  margin: 1.2rem auto 0;
+}
+
+.hero__questionAccent{
+  font-family: var(--font-heading);
+  font-size: var(--text-body);
+  display: inline-block;
+  margin-top: -0.3em;
+  line-height: 1;
+}
+
+/* Розовый хайлайт */
+.hero__highlight {
+  background: var(--color-pink-soft);
+  padding: 0.15em 0.5em;
+  font-weight: 600;
+  text-align: right;
+  font-size: var(--text-body);
+}
+
+/* Стрелка вниз */
+.hero__arrow {
+  display: flex;
+  justify-content: center;
+  padding-bottom: clamp(2em, 3vw, 3em);
+}
+
+/* Фото кота — абсолютно, слева */
+.hero__cat {
+  position: absolute;
+  bottom: 1em;
+  left: -1rem;
+  width: clamp(10em, 30vw, 40em);
+  transform: rotate(-5.819deg);
+  pointer-events: none;
+}
+
+/* Фото собаки — абсолютно, справа */
+.hero__dog {
+  position: absolute;
+  bottom: 1em;
+  right: clamp(-2em, -4vw, -6em);
+  width: clamp(10em, 25vw, 30em);
+  transform: rotate(4.067deg);
+  pointer-events: none;
+}
+
+.hero {
+  @media (max-width: 1245px) {
+    .hero__envelopImg {
+      width: 140vw;
+    }
+    .hero__envelope {
+      margin-top: 0;
+    }
+  }
+
+  @media (max-width: 950px) {
+    .hero__title {
+      font-size: 2rem;
+    }
+    .hero__questionAccent {
+      font-size: 1.2rem;
+    }
+    .hero__arrow {
+      height: 10vw;
+    }
+  }
+
+  @media (max-width: 800px) {
+    .hero__envelopImg {
+      width: 110vw;
+      top: -11rem;
+    }
+
+    .hero__content {
+      padding: 0 2rem;
+    }
+  }
+
+  @media (max-width: 684px) {
+    .hero__titleAccent {
+      font-size: 8vw;
+      margin-bottom: -1rem;
+    }
+    .hero__title {
+      font-size: 1.4rem;
+      margin-bottom: 1rem;
+      line-height: 1.2;
+    }
+    .hero__arrow {
+      height: 15vw;
+    }
+    .hero__cat {
+      width: 12rem;
+      left: 0rem;
+      margin: -4rem;
+    }
+    .hero__dog {
+      width: 10rem;
+      right: 0;
+      margin: -3rem;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .hero__envelope {
+      margin-top: -1rem;
+    }
+    .hero__content {
+      padding: 0 1rem;
+    }
+    .hero__titleAccent {
+      font-size: 10vw;
+      margin-bottom: -1rem;
+    }
+    .hero__title {
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+      line-height: 1.2;
+    }
+    p {
+      font-size: 1.2em;
+    }
+    .hero__question {
+      position: relative;
+      z-index: 10;
+    }
+    .hero__cat {
+      width: 14rem;
+      bottom: -3rem;
+      left: -1rem;
+    }
+    .hero__dog {
+      width: 12rem;
+      right: -1rem;
+      bottom: -3rem;
+    }
+  }
+}

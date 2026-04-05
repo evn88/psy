@@ -2,11 +2,13 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/shared/lib/prisma';
 import { calculateReadingTime } from '@/shared/lib/blog-utils';
+import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 
 const updateSchema = z.object({
   coverImage: z.string().nullable().optional(),
   categoryIds: z.array(z.string()).optional(),
+  authorId: z.string().min(1).optional(),
   status: z.enum(['DRAFT', 'PUBLISHED']).optional(),
   translations: z
     .array(
@@ -65,17 +67,29 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     );
   }
 
-  const { coverImage, categoryIds, status, translations } = parsed.data;
+  const { coverImage, categoryIds, status, translations, authorId } = parsed.data;
+
+  if (authorId !== undefined) {
+    const author = await prisma.user.findUnique({
+      where: { id: authorId },
+      select: { id: true }
+    });
+
+    if (!author) {
+      return NextResponse.json({ error: 'Автор не найден' }, { status: 400 });
+    }
+  }
 
   // Пересчитываем время чтения по русской версии
   const ruTranslation = translations?.find((t: { locale: string }) => t.locale === 'ru');
   const readingTime = ruTranslation ? calculateReadingTime(ruTranslation.content) : undefined;
 
-  await prisma.$transaction(async (tx: any) => {
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     await tx.blogPost.update({
       where: { id },
       data: {
         ...(coverImage !== undefined && { coverImage }),
+        ...(authorId !== undefined && { authorId }),
         ...(readingTime !== undefined && { readingTime }),
         ...(status !== undefined && { status }),
         // При переводе в черновик сбрасываем publishedAt

@@ -1,6 +1,5 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -10,9 +9,9 @@ import {
   BreadcrumbSeparator
 } from '@/components/ui/breadcrumb';
 import React from 'react';
-import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useBreadcrumbContext } from '@/components/breadcrumb-context';
+import { Link, usePathname } from '@/i18n/navigation';
 
 /**
  * Breadcrumbs компонент для навигации внутри личного кабинета.

@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import prisma from '@/shared/lib/prisma';
 import { auth } from '@/auth';
 import { z } from 'zod';
+import type { Prisma } from '@prisma/client';
+import type { ParsedEvent } from '@/shared/lib/ical-parser';
+import { doesDateRangeOverlap, isValidDateRange } from '@/shared/lib/event-utils';
 
 const getEventsSchema = z.object({
   start: z.string().datetime().optional(),
@@ -33,32 +36,25 @@ export async function GET(req: Request) {
     }
 
     const { start, end } = result.data;
+    if (start && end && !isValidDateRange({ start: new Date(start), end: new Date(end) })) {
+      return NextResponse.json({ message: 'Invalid date range' }, { status: 400 });
+    }
 
-    const whereClause: any = {
+    const whereClause: Prisma.EventWhereInput = {
       OR: [{ userId: null }, { type: 'FREE_SLOT' }, { userId: session.user.id }]
     };
 
     if (start && end) {
       whereClause.AND = [
         {
-          OR: [
-            {
-              start: {
-                gte: new Date(start),
-                lt: new Date(end)
-              }
-            },
-            {
-              end: {
-                gt: new Date(start),
-                lte: new Date(end)
-              }
-            },
-            {
-              start: { lte: new Date(start) },
-              end: { gte: new Date(end) }
-            }
-          ]
+          start: {
+            lt: new Date(end)
+          }
+        },
+        {
+          end: {
+            gt: new Date(start)
+          }
         }
       ];
     }
@@ -75,20 +71,16 @@ export async function GET(req: Request) {
       where: { role: 'ADMIN', googleCalendarSyncEnabled: true }
     });
 
-    let googleEvents: any[] = [];
+    let googleEvents: ParsedEvent[] = [];
     if (admin) {
       const { fetchGoogleEvents } = await import('@/shared/lib/google-sync');
       googleEvents = await fetchGoogleEvents(admin.id);
       if (start && end) {
         const startD = new Date(start);
         const endD = new Date(end);
-        googleEvents = googleEvents.filter(e => {
-          return (
-            (e.start >= startD && e.start < endD) ||
-            (e.end > startD && e.end <= endD) ||
-            (e.start <= startD && e.end >= endD)
-          );
-        });
+        googleEvents = googleEvents.filter(event =>
+          doesDateRangeOverlap({ start: startD, end: endD }, event)
+        );
       }
     }
 
@@ -96,7 +88,7 @@ export async function GET(req: Request) {
     allEvents.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
 
     const sanitizedEvents = allEvents
-      .map((event: any) => {
+      .map(event => {
         if (!event.userId) {
           return {
             ...event,
@@ -122,7 +114,12 @@ export async function GET(req: Request) {
 
         return event;
       })
-      .filter(Boolean);
+      .filter(
+        (
+          event
+        ): event is (typeof events)[number] | (ParsedEvent & { user: null; userId: 'hidden' }) =>
+          event !== null
+      );
 
     return NextResponse.json(sanitizedEvents);
   } catch (error) {

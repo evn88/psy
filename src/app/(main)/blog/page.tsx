@@ -1,6 +1,5 @@
 import { Suspense } from 'react';
 import { cookies } from 'next/headers';
-import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import prisma from '@/shared/lib/prisma';
 import { BlogCard } from './_components/blog-card';

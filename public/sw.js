@@ -10,7 +10,7 @@
  * Чтобы добавить новую страницу в офлайн-кеш — добавьте путь в PRE_CACHED_URLS ниже.
  */
 
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'vmnl0c110';
 const CACHE_NAME = `vershkov-${CACHE_VERSION}`;
 const STATIC_CACHE_NAME = `vershkov-static-${CACHE_VERSION}`;
 

@@ -1,8 +1,8 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import Image from 'next/image';
-import { Upload, X, Loader2 } from 'lucide-react';
+import NextImage from 'next/image';
+import { Loader2, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -46,7 +46,7 @@ export function CoverImageUpload({
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = e => {
-          const img = new (window as any).Image();
+          const img = new globalThis.Image();
           img.src = e.target?.result as string;
           img.onload = () => {
             const canvas = document.createElement('canvas');
@@ -131,7 +131,7 @@ export function CoverImageUpload({
       >
         {value ? (
           <div className="relative">
-            <Image
+            <NextImage
               src={value}
               alt="Обложка статьи"
               width={600}

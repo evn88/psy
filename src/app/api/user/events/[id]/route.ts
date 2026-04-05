@@ -3,18 +3,41 @@ import prisma from '@/shared/lib/prisma';
 import { auth } from '@/auth';
 import { z } from 'zod';
 import {
-  sendEventNotificationEmail,
-  sendEventCancellationEmail,
   sendAdminEventBookingEmail,
-  sendAdminEventCancellationEmail
+  sendAdminEventCancellationEmail,
+  sendEventCancellationEmail,
+  sendEventNotificationEmail
 } from '@/shared/lib/email';
 import { syncEventWithGoogle } from '@/shared/lib/google-sync';
+import { startSessionReminderWorkflow } from '@/shared/lib/session-reminder-workflow';
+import {
+  MAX_SESSION_REMINDER_MINUTES,
+  MIN_SESSION_REMINDER_MINUTES
+} from '@/shared/lib/session-reminders';
 
-const updateEventSchema = z.object({
-  action: z.enum(['book', 'cancel', 'reschedule']),
-  reason: z.string().optional(), // for cancellation
-  newEventId: z.string().optional() // for rescheduling
-});
+const reminderMinutesSchema = z.coerce
+  .number()
+  .int()
+  .min(MIN_SESSION_REMINDER_MINUTES)
+  .max(MAX_SESSION_REMINDER_MINUTES)
+  .optional();
+
+const updateEventSchema = z.discriminatedUnion('action', [
+  z.object({
+    action: z.literal('book'),
+    reminderMinutesBeforeStart: reminderMinutesSchema
+  }),
+  z.object({
+    action: z.literal('cancel'),
+    reason: z.string().optional()
+  }),
+  z.object({
+    action: z.literal('reschedule'),
+    reason: z.string().optional(),
+    newEventId: z.string(),
+    reminderMinutesBeforeStart: reminderMinutesSchema
+  })
+]);
 
 /**
  * PATCH /api/user/events/[id]
@@ -43,7 +66,7 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
       );
     }
 
-    const { action, reason } = result.data;
+    const { action } = result.data;
     const userId = session.user.id;
 
     // Fetch the event
@@ -62,6 +85,7 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
     let updatedEvent;
 
     if (action === 'book') {
+      const reminderMinutesBeforeStart = result.data.reminderMinutesBeforeStart;
       if (event.userId || event.status !== 'SCHEDULED') {
         return NextResponse.json({ message: 'Slot is not available' }, { status: 400 });
       }
@@ -75,7 +99,14 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
         data: {
           userId: userId,
           status: 'PENDING_CONFIRMATION',
-          type: 'CONSULTATION'
+          type: 'CONSULTATION',
+          bookingReminderMinutesBeforeStart:
+            typeof reminderMinutesBeforeStart === 'number' ? reminderMinutesBeforeStart : null,
+          reminderEmailSentAt: null,
+          reminderPushSentAt: null,
+          reminderWorkflowVersion: {
+            increment: 1
+          }
         },
         include: {
           user: { select: { id: true, name: true, email: true, language: true, timezone: true } },
@@ -114,7 +145,15 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
           locale: updatedEvent.author.language || 'ru'
         });
       }
+
+      await startSessionReminderWorkflow({
+        id: updatedEvent.id,
+        userId: updatedEvent.userId,
+        status: updatedEvent.status,
+        reminderWorkflowVersion: updatedEvent.reminderWorkflowVersion
+      });
     } else if (action === 'cancel') {
+      const reason = result.data.reason;
       // Logic for canceling an event
       if (event.userId !== userId) {
         return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
@@ -128,7 +167,10 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
         where: { id: eventId },
         data: {
           status: 'CANCELLED',
-          cancelReason: reason ? `User cancellation reason: ${reason}` : null
+          cancelReason: reason ? `User cancellation reason: ${reason}` : null,
+          reminderWorkflowVersion: {
+            increment: 1
+          }
         },
         include: {
           user: { select: { id: true, name: true, email: true, language: true, timezone: true } },
@@ -169,10 +211,7 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
         });
       }
     } else if (action === 'reschedule') {
-      const { newEventId } = result.data;
-      if (!newEventId) {
-        return NextResponse.json({ message: 'Missing new event ID' }, { status: 400 });
-      }
+      const { newEventId, reason, reminderMinutesBeforeStart } = result.data;
 
       if (event.userId !== userId) {
         return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
@@ -188,7 +227,10 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
           where: { id: eventId },
           data: {
             status: 'CANCELLED',
-            cancelReason: 'User requested reschedule. Reason: ' + (reason || 'Not specified')
+            cancelReason: 'User requested reschedule. Reason: ' + (reason || 'Not specified'),
+            reminderWorkflowVersion: {
+              increment: 1
+            }
           }
         }),
         prisma.event.update({
@@ -196,7 +238,16 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
           data: {
             userId: userId,
             status: 'PENDING_CONFIRMATION',
-            type: 'CONSULTATION'
+            type: 'CONSULTATION',
+            bookingReminderMinutesBeforeStart:
+              typeof reminderMinutesBeforeStart === 'number'
+                ? reminderMinutesBeforeStart
+                : event.bookingReminderMinutesBeforeStart,
+            reminderEmailSentAt: null,
+            reminderPushSentAt: null,
+            reminderWorkflowVersion: {
+              increment: 1
+            }
           }
         })
       ]);
@@ -262,6 +313,15 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
           end: updatedEvent.end,
           manageUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/admin/schedule`,
           locale: updatedEvent.author.language || 'ru'
+        });
+      }
+
+      if (updatedEvent) {
+        await startSessionReminderWorkflow({
+          id: updatedEvent.id,
+          userId: updatedEvent.userId,
+          status: updatedEvent.status,
+          reminderWorkflowVersion: updatedEvent.reminderWorkflowVersion
         });
       }
     }

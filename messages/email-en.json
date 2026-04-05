@@ -40,5 +40,45 @@
     "reasonLabel": "Reason",
     "button": "View My Schedule",
     "footer": "If you have any questions, please contact us."
+  },
+  "sessionReminder": {
+    "subjectInMinutes": "Session starts in {minutes} min - Vershkov.com",
+    "subjectNow": "Session starts now - Vershkov.com",
+    "headingInMinutes": "Session Reminder",
+    "headingNow": "Your session starts now",
+    "greeting": "Hello, {name}!",
+    "messageInMinutes": "Your session \"{title}\" starts in {minutes} minutes.",
+    "messageNow": "Your session \"{title}\" starts right now.",
+    "dateLabel": "Date",
+    "timeLabel": "Time",
+    "typeLabel": "Event Type",
+    "meetLinkLabel": "Meeting Link",
+    "button": "Open My Schedule",
+    "footer": "This is an automated reminder. Please do not reply."
+  },
+  "accountDeletionRequest": {
+    "subject": "Confirm Account Deletion — Vershkov.com",
+    "heading": "Account Deletion Request",
+    "greeting": "Hello, {name}!",
+    "message": "We received a request to delete your Vershkov.com account. If you wish to proceed, click the button below.",
+    "warning": "Warning: this action cannot be undone. All your data (history, bookings, survey results) will be permanently deleted.",
+    "button": "Confirm Account Deletion",
+    "linkHint": "Or copy this link into your browser:",
+    "expiry": "This link will expire in 24 hours.",
+    "footer": "If you did not request account deletion, please ignore this email."
+  },
+  "accountDeleted": {
+    "subject": "Your account has been deleted — Vershkov.com",
+    "heading": "Account Deleted",
+    "greeting": "Hello, {name}!",
+    "message": "Your Vershkov.com account and all associated data have been successfully deleted. Thank you for using our service.",
+    "footer": "If you have any questions, please contact us."
+  },
+  "adminAccountDeleted": {
+    "subject": "User deleted their account — Vershkov.com",
+    "heading": "User Account Deleted",
+    "message": "User {name} ({email}) has deleted their account.",
+    "dateLabel": "Deletion date",
+    "footer": "This is an automated system notification."
   }
 }

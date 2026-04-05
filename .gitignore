@@ -12,6 +12,7 @@
 # next.js
 /.next/
 /out/
+/public/sw.js
 
 # production
 /build
@@ -44,3 +45,6 @@ next-env.d.ts
 skills-lock.json
 /.vscode
 /.tmp-install
+/public/.well-known/workflow/
+/src/app/.well-known/workflow/
+/app/.well-known/workflow/

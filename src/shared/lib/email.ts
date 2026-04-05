@@ -5,7 +5,11 @@ import { EventNotificationTemplate } from '@/components/email-templates/event-no
 import { EventCancellationTemplate } from '@/components/email-templates/event-cancellation-template';
 import { AdminEventBookingTemplate } from '@/components/email-templates/admin-event-booking-template';
 import { AdminEventCancellationTemplate } from '@/components/email-templates/admin-event-cancellation-template';
+import { AdminMessageTemplate } from '@/components/email-templates/admin-message-template';
 import { BlogNotificationEmail } from '@/components/email-templates/blog-notification-template';
+import { AccountDeletionRequestTemplate } from '@/components/email-templates/account-deletion-request-template';
+import { AccountDeletedUserTemplate } from '@/components/email-templates/account-deleted-user-template';
+import { AccountDeletedAdminTemplate } from '@/components/email-templates/account-deleted-admin-template';
 import { render } from '@react-email/render';
 import type { BlogPost, BlogPostTranslation } from '@prisma/client';
 import { formatBlogDate } from '@/shared/lib/blog-utils';
@@ -275,6 +279,57 @@ export const sendAdminEventCancellationEmail = async ({
   return data?.id ?? null;
 };
 
+interface SendWorkflowStepsThresholdAlertEmailParams {
+  email: string;
+  name: string;
+  periodKey: string;
+  estimatedSteps: number;
+  monthlyLimit: number;
+  usagePercent: number;
+  thresholdPercent: number;
+  remindersCount: number;
+}
+
+/**
+ * Отправляет администратору оповещение о приближении к месячному лимиту Workflow.
+ * @returns id письма в Resend или null при ошибке
+ */
+export const sendWorkflowStepsThresholdAlertEmail = async ({
+  email,
+  name,
+  periodKey,
+  estimatedSteps,
+  monthlyLimit,
+  usagePercent,
+  thresholdPercent,
+  remindersCount
+}: SendWorkflowStepsThresholdAlertEmailParams): Promise<string | null> => {
+  const subject = `[Workflow Alert] Порог ${thresholdPercent}% за ${periodKey}`;
+  const message = [
+    `Здравствуйте, ${name}!`,
+    '',
+    `За период ${periodKey} оценочный расход Workflow Steps достиг ${usagePercent.toFixed(1)}%.`,
+    `Оценка: ${estimatedSteps} / ${monthlyLimit} steps.`,
+    `Оценка основана на количестве отправленных напоминаний: ${remindersCount}.`,
+    '',
+    'Рекомендуется проверить usage в Vercel и при необходимости снизить частоту/объём напоминаний.'
+  ].join('\n');
+
+  const { data, error } = await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: [email],
+    subject,
+    react: AdminMessageTemplate({ subject, message })
+  });
+
+  if (error) {
+    console.error('Ошибка отправки workflow threshold alert email:', error);
+    return null;
+  }
+
+  return data?.id ?? null;
+};
+
 interface SendEventNotificationEmailParams {
   email: string;
   name: string;
@@ -337,6 +392,100 @@ export const sendEventNotificationEmail = async ({
 
   if (error) {
     console.error('Ошибка отправки event notification email:', error);
+    return null;
+  }
+
+  return data?.id ?? null;
+};
+
+interface SendSessionReminderEmailParams {
+  email: string;
+  name: string;
+  title: string;
+  eventType: string;
+  start: Date | string;
+  end: Date | string;
+  meetLink?: string;
+  manageUrl: string;
+  locale: string;
+  timezone: string;
+  reminderMinutes: number;
+}
+
+/**
+ * Отправляет email-напоминание о скором начале сессии.
+ * @returns id письма в Resend или null при ошибке
+ */
+export const sendSessionReminderEmail = async ({
+  email,
+  name,
+  title,
+  eventType,
+  start,
+  end,
+  meetLink,
+  manageUrl,
+  locale,
+  timezone,
+  reminderMinutes
+}: SendSessionReminderEmailParams): Promise<string | null> => {
+  const translations = getEmailTranslations(locale);
+  const sessionReminder = translations.sessionReminder;
+  const isStartsNow = reminderMinutes === 0;
+  const subjectTemplate = isStartsNow
+    ? sessionReminder?.subjectNow || 'Session starts now - Vershkov.com'
+    : sessionReminder?.subjectInMinutes || 'Session starts in {minutes} min - Vershkov.com';
+
+  const { data, error } = await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: [email],
+    subject: interpolate(subjectTemplate, {
+      minutes: String(reminderMinutes)
+    }),
+    react: EventNotificationTemplate({
+      name,
+      title,
+      eventType,
+      start,
+      end,
+      meetLink,
+      manageUrl,
+      timezone,
+      translations: {
+        heading:
+          (isStartsNow ? sessionReminder?.headingNow : sessionReminder?.headingInMinutes) ||
+          'Session Reminder',
+        greeting: interpolate(sessionReminder?.greeting || 'Hello, {name}!', { name }),
+        message: interpolate(
+          (isStartsNow ? sessionReminder?.messageNow : sessionReminder?.messageInMinutes) ||
+            'Your session "{title}" starts in {minutes} minutes.',
+          {
+            title: title || eventType,
+            minutes: String(reminderMinutes)
+          }
+        ),
+        dateLabel:
+          sessionReminder?.dateLabel || translations.eventNotification?.dateLabel || 'Date',
+        timeLabel:
+          sessionReminder?.timeLabel || translations.eventNotification?.timeLabel || 'Time',
+        typeLabel:
+          sessionReminder?.typeLabel || translations.eventNotification?.typeLabel || 'Event Type',
+        meetLinkLabel:
+          sessionReminder?.meetLinkLabel ||
+          translations.eventNotification?.meetLinkLabel ||
+          'Meeting Link',
+        button:
+          sessionReminder?.button || translations.eventNotification?.button || 'View My Schedule',
+        footer:
+          sessionReminder?.footer ||
+          translations.eventNotification?.footer ||
+          'This is an automated reminder. Please do not reply.'
+      }
+    })
+  });
+
+  if (error) {
+    console.error('Ошибка отправки session reminder email:', error);
     return null;
   }
 
@@ -469,4 +618,112 @@ export const sendBlogNotificationEmail = async (
       `Ошибка отправки blog notification: ${failed.length} из ${subscribers.length} не отправлены`
     );
   }
+};
+
+interface SendAccountDeletionRequestEmailParams {
+  to: string;
+  name: string;
+  token: string;
+  language: string;
+}
+
+/**
+ * Отправляет письмо с подтверждением удаления аккаунта.
+ * Содержит ссылку, по которой пользователь подтверждает удаление.
+ */
+export const sendAccountDeletionRequestEmail = async ({
+  to,
+  name,
+  token,
+  language
+}: SendAccountDeletionRequestEmailParams): Promise<void> => {
+  const t = getEmailTranslations(language);
+  const baseUrl = getBaseUrl();
+  const deletionUrl = `${baseUrl}/api/profile/delete?token=${token}&email=${encodeURIComponent(to)}`;
+
+  const html = await render(
+    AccountDeletionRequestTemplate({
+      name,
+      deletionUrl,
+      translations: t.accountDeletionRequest
+    })
+  );
+
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to,
+    subject: t.accountDeletionRequest.subject,
+    html
+  });
+};
+
+interface SendAccountDeletedUserEmailParams {
+  to: string;
+  name: string;
+  language: string;
+}
+
+/**
+ * Отправляет письмо пользователю после успешного удаления его аккаунта.
+ */
+export const sendAccountDeletedUserEmail = async ({
+  to,
+  name,
+  language
+}: SendAccountDeletedUserEmailParams): Promise<void> => {
+  const t = getEmailTranslations(language);
+
+  const html = await render(
+    AccountDeletedUserTemplate({
+      name,
+      translations: t.accountDeleted
+    })
+  );
+
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to,
+    subject: t.accountDeleted.subject,
+    html
+  });
+};
+
+interface SendAccountDeletedAdminEmailParams {
+  to: string;
+  name: string;
+  email: string;
+}
+
+/**
+ * Отправляет уведомление администратору об удалении пользовательского аккаунта.
+ */
+export const sendAccountDeletedAdminEmail = async ({
+  to,
+  name,
+  email
+}: SendAccountDeletedAdminEmailParams): Promise<void> => {
+  const t = getEmailTranslations('ru');
+  const deletedAt = new Date().toLocaleString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  const html = await render(
+    AccountDeletedAdminTemplate({
+      name,
+      email,
+      deletedAt,
+      translations: t.adminAccountDeleted
+    })
+  );
+
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to,
+    subject: t.adminAccountDeleted.subject,
+    html
+  });
 };
