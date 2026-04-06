@@ -73,9 +73,13 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Приватные HTML-страницы — только сеть, без cache и без offline fallback
-  if (isHtmlRequest(request) && isPrivatePath(url.pathname)) {
-    event.respondWith(networkOnlyPrivate(request));
+  // Полностью исключаем логику PWA для админки и личного кабинета (браузер отработает запрос сам)
+  const normalizedPath = stripLocalePrefix(url.pathname);
+  const isExcluded = PRIVATE_ROUTE_PREFIXES.some(
+    prefix => normalizedPath === prefix || normalizedPath.startsWith(`${prefix}/`)
+  );
+
+  if (isExcluded) {
     return;
   }
 
