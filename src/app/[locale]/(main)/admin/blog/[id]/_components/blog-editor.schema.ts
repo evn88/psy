@@ -8,12 +8,12 @@ export const blogEditorSchema = z
       .trim()
       .min(3, 'Slug должен содержать минимум 3 символа')
       .regex(/^[a-z0-9-]+$/, 'Только строчные латинские буквы, цифры и дефис'),
-    description: z.string().max(200, 'Описание не может превышать 200 символов').optional()
+    description: z.string().max(400, 'Описание не может превышать 200 символов').optional()
   })
   .superRefine((data, ctx) => {
     if (!data.title) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         message: 'Заголовок обязателен',
         path: ['title'],
         fatal: true
@@ -21,7 +21,7 @@ export const blogEditorSchema = z
     }
     if (!data.slug) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         message: 'Slug обязателен',
         path: ['slug'],
         fatal: true

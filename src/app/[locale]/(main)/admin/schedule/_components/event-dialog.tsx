@@ -69,7 +69,7 @@ const eventSchema = z
   .superRefine((data, ctx) => {
     if (new Date(data.start).getTime() >= new Date(data.end).getTime()) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         path: ['end'],
         message: 'Время окончания должно быть позже времени начала'
       });
