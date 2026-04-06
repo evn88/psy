@@ -44,6 +44,7 @@ export function BlogEditorMainContent({
   const translations = useWatch({ control, name: 'translations' });
   const coverImage = useWatch({ control, name: 'coverImage' });
   const categoryIds = useWatch({ control, name: 'categoryIds' });
+  const slug = useWatch({ control, name: 'slug' });
 
   const activeTranslationIndex = ALL_LOCALES.indexOf(activeLocale);
   const activeTranslation = translations[activeTranslationIndex] ?? translations[0];
@@ -70,22 +71,65 @@ export function BlogEditorMainContent({
   return (
     <div className="flex-1 flex flex-col overflow-y-auto no-scrollbar min-w-0 bg-background custom-scrollbar">
       <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full">
-        {/* Поля Заголовок и Описание */}
-        <div className="space-y-3 px-4 pb-2 pt-4">
-          <div className="space-y-1.5">
-            <Label
-              htmlFor="blog-editor-title"
-              className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70"
-            >
-              Заголовок
-            </Label>
-            <Input
-              id="blog-editor-title"
-              value={activeTranslation.title}
-              onChange={e => updateTranslationField('title', e.target.value)}
-              placeholder="Введите заголовок статьи"
-              className={`${META_INPUT_BASE_CLASSNAME} h-10 text-sm font-semibold`}
-            />
+        {/* Поля Заголовок, Slug и Описание */}
+        <div className="space-y-3 px-4 pb-2 pt-3">
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="space-y-1.5 flex-1">
+              <Label
+                htmlFor="blog-editor-title"
+                className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70"
+              >
+                Заголовок
+              </Label>
+              <Input
+                id="blog-editor-title"
+                value={activeTranslation.title}
+                onChange={e => updateTranslationField('title', e.target.value)}
+                placeholder="Введите заголовок статьи"
+                className={`${META_INPUT_BASE_CLASSNAME} h-9 text-sm font-semibold`}
+              />
+            </div>
+
+            <div className="space-y-1.5 flex-1">
+              <div className="flex items-center justify-between">
+                <Label
+                  htmlFor="blog-editor-slug"
+                  className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70"
+                >
+                  Slug (URL)
+                </Label>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const ruTitle =
+                      translations.find(t => t.locale === 'ru')?.title || activeTranslation.title;
+                    if (ruTitle) {
+                      const { generateSlug } = await import('@/shared/lib/blog-utils');
+                      setValue('slug', generateSlug(ruTitle), { shouldDirty: true });
+                    }
+                  }}
+                  className="text-[10px] text-[#900A0B] hover:underline font-medium"
+                >
+                  Сгенерировать
+                </button>
+              </div>
+              <div className="relative">
+                <span className="absolute left-3 top-2 text-muted-foreground/50 text-sm pointer-events-none">
+                  /blog/
+                </span>
+                <Input
+                  id="blog-editor-slug"
+                  value={slug || ''}
+                  onChange={e =>
+                    setValue('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'), {
+                      shouldDirty: true
+                    })
+                  }
+                  placeholder="post-slug"
+                  className={`${META_INPUT_BASE_CLASSNAME} h-9 text-sm pl-14 font-mono text-muted-foreground`}
+                />
+              </div>
+            </div>
           </div>
 
           <div className="space-y-1.5">
@@ -100,8 +144,8 @@ export function BlogEditorMainContent({
               value={activeTranslation.description}
               onChange={e => updateTranslationField('description', e.target.value)}
               placeholder="Краткое описание для карточки"
-              rows={2}
-              className={`${META_INPUT_BASE_CLASSNAME} min-h-[60px] resize-y py-2 text-sm text-muted-foreground`}
+              rows={1}
+              className={`${META_INPUT_BASE_CLASSNAME} min-h-[36px] max-h-[80px] resize-y py-1.5 text-sm text-muted-foreground leading-relaxed`}
             />
           </div>
         </div>

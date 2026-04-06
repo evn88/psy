@@ -45,6 +45,7 @@ export default async function AdminBlogEditPage({ params }: Props) {
     <div className="h-[calc(100vh-6.5rem)] min-h-[500px] flex flex-col">
       <BlogEditorForm
         postId={post.id}
+        initialSlug={post.slug}
         initialStatus={post.status}
         initialCoverImage={post.coverImage}
         initialTranslations={post.translations as EditorTranslation[]}

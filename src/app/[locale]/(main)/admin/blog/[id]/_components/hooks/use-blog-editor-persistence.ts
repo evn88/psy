@@ -19,6 +19,8 @@ interface UseBlogEditorPersistenceParams {
   editorRef: RefObject<MDXEditorMethods | null>;
   activeLocale: EditorTranslation['locale'];
   selectedDiffVersionId: string | null;
+  slug: string;
+  setSlug: (slug: string) => void;
   coverImage: string | null;
   categoryIds: string[];
   authorId: string;
@@ -75,6 +77,8 @@ export const useBlogEditorPersistence = ({
   editorRef,
   activeLocale,
   selectedDiffVersionId,
+  slug,
+  setSlug,
   coverImage,
   categoryIds,
   authorId,
@@ -98,7 +102,11 @@ export const useBlogEditorPersistence = ({
    * @returns `true`, если сохранение завершилось успешно.
    */
   const save = useCallback(
-    async ({ showToast = true, createVersion = false }: BlogEditorSaveOptions = {}) => {
+    async ({
+      showToast = true,
+      createVersion = false,
+      newSlug
+    }: BlogEditorSaveOptions & { newSlug?: string } = {}) => {
       if (!showToast && selectedDiffVersionId) {
         return false;
       }
@@ -117,10 +125,12 @@ export const useBlogEditorPersistence = ({
         }
 
         const savableTranslations = getSavableTranslations(nextTranslations);
+        const currentSlug = newSlug ?? slug;
         const response = await fetch(`/api/admin/blog/${postId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            slug: currentSlug,
             coverImage,
             categoryIds,
             authorId,
@@ -173,9 +183,58 @@ export const useBlogEditorPersistence = ({
       onVersionCreated,
       postId,
       selectedDiffVersionId,
+      slug,
       status,
       translations
     ]
+  );
+
+  /**
+   * Генерирует транскрипцию заголовка для ссылки
+   */
+  const generateSlugForTitle = useCallback(
+    (title: string) => {
+      if (!title) return '';
+      const generated = title
+        .toLowerCase()
+        .replace(/а/g, 'a')
+        .replace(/б/g, 'b')
+        .replace(/в/g, 'v')
+        .replace(/г/g, 'g')
+        .replace(/д/g, 'd')
+        .replace(/е|ё/g, 'e')
+        .replace(/ж/g, 'zh')
+        .replace(/з/g, 'z')
+        .replace(/и|й/g, 'i')
+        .replace(/к/g, 'k')
+        .replace(/л/g, 'l')
+        .replace(/м/g, 'm')
+        .replace(/н/g, 'n')
+        .replace(/о/g, 'o')
+        .replace(/п/g, 'p')
+        .replace(/р/g, 'r')
+        .replace(/с/g, 's')
+        .replace(/т/g, 't')
+        .replace(/у/g, 'u')
+        .replace(/ф/g, 'f')
+        .replace(/х/g, 'h')
+        .replace(/ц/g, 'c')
+        .replace(/ч/g, 'ch')
+        .replace(/ш/g, 'sh')
+        .replace(/щ/g, 'sch')
+        .replace(/ы/g, 'y')
+        .replace(/э/g, 'e')
+        .replace(/ю/g, 'yu')
+        .replace(/я/g, 'ya')
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim();
+
+      setSlug(generated);
+      return generated;
+    },
+    [setSlug]
   );
 
   useEffect(() => {
@@ -202,7 +261,15 @@ export const useBlogEditorPersistence = ({
    * @returns Promise без возвращаемого значения.
    */
   const publish = useCallback(async () => {
-    const isSaved = await save({ showToast: false });
+    let finalSlug = slug;
+    if (slug.startsWith('draft-') || slug.startsWith('novaya-statya-')) {
+      const activeTranslation = translations.find(t => t.locale === activeLocale);
+      if (activeTranslation?.title) {
+        finalSlug = generateSlugForTitle(activeTranslation.title);
+      }
+    }
+
+    const isSaved = await save({ showToast: false, newSlug: finalSlug });
 
     if (!isSaved) {
       return;
@@ -225,7 +292,17 @@ export const useBlogEditorPersistence = ({
     } finally {
       setPublishing(false);
     }
-  }, [onPublished, postId, router, save, startRefreshTransition]);
+  }, [
+    onPublished,
+    postId,
+    router,
+    save,
+    startRefreshTransition,
+    slug,
+    translations,
+    activeLocale,
+    generateSlugForTitle
+  ]);
 
   /**
    * Загружает изображение и возвращает URL для вставки в markdown.
@@ -256,6 +333,7 @@ export const useBlogEditorPersistence = ({
     publishing: publishing || isRefreshPending,
     save,
     publish,
-    uploadImage
+    uploadImage,
+    generateSlugForTitle
   };
 };

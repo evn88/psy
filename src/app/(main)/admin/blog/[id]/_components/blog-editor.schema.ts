@@ -15,6 +15,7 @@ export const translationSchema = z.object({
 });
 
 export const formSchema = z.object({
+  slug: z.string().min(1),
   status: z.enum(['DRAFT', 'PUBLISHED']),
   coverImage: z.string().nullable(),
   categoryIds: z.array(z.string()),

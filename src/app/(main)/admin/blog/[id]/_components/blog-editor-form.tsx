@@ -18,6 +18,7 @@ import { BlogEditorSidebar } from './blog-editor-sidebar';
 
 interface BlogEditorFormProps {
   postId: string;
+  initialSlug: string;
   initialStatus: 'DRAFT' | 'PUBLISHED';
   initialCoverImage: string | null;
   initialTranslations: Translation[];
@@ -29,6 +30,7 @@ const ALL_LOCALES = ['ru', 'en', 'sr'];
 
 export function BlogEditorForm({
   postId,
+  initialSlug,
   initialStatus,
   initialCoverImage,
   initialTranslations,
@@ -38,6 +40,7 @@ export function BlogEditorForm({
   const methods = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      slug: initialSlug,
       status: initialStatus,
       coverImage: initialCoverImage,
       categoryIds: initialCategoryIds,

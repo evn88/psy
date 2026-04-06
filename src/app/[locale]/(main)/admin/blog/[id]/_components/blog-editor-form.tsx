@@ -62,6 +62,7 @@ const ArticleContent = dynamic(
 
 interface BlogEditorFormProps {
   postId: string;
+  initialSlug: string;
   initialStatus: BlogEditorStatus;
   initialCoverImage: string | null;
   initialTranslations: EditorTranslation[];
@@ -79,6 +80,7 @@ interface BlogEditorFormProps {
  */
 export function BlogEditorForm({
   postId,
+  initialSlug,
   initialStatus,
   initialCoverImage,
   initialTranslations,
@@ -89,6 +91,8 @@ export function BlogEditorForm({
 }: BlogEditorFormProps) {
   const editorRef = useRef<MDXEditorMethods | null>(null);
   const {
+    slug,
+    setSlug,
     translations,
     setTranslations,
     activeLocale,
@@ -112,6 +116,7 @@ export function BlogEditorForm({
     applyTranslatedContent,
     applyRestoredVersion
   } = useBlogEditorState({
+    initialSlug,
     initialStatus,
     initialCoverImage,
     initialTranslations,
@@ -136,21 +141,24 @@ export function BlogEditorForm({
     activeTranslation,
     selectedVersion
   });
-  const { saving, publishing, save, publish, uploadImage } = useBlogEditorPersistence({
-    postId,
-    editorRef,
-    activeLocale,
-    selectedDiffVersionId,
-    coverImage,
-    categoryIds,
-    authorId,
-    status,
-    translations,
-    onTranslationsChange: setTranslations,
-    onVersionCreated: prependVersion,
-    onSelectedVersionReset: () => setSelectedDiffVersionId(null),
-    onPublished: () => setStatus('PUBLISHED')
-  });
+  const { saving, publishing, save, publish, uploadImage, generateSlugForTitle } =
+    useBlogEditorPersistence({
+      postId,
+      editorRef,
+      activeLocale,
+      selectedDiffVersionId,
+      slug,
+      setSlug,
+      coverImage,
+      categoryIds,
+      authorId,
+      status,
+      translations,
+      onTranslationsChange: setTranslations,
+      onVersionCreated: prependVersion,
+      onSelectedVersionReset: () => setSelectedDiffVersionId(null),
+      onPublished: () => setStatus('PUBLISHED')
+    });
 
   return (
     <div className="flex h-full flex-col bg-background">
@@ -234,20 +242,50 @@ export function BlogEditorForm({
         <div className="custom-scrollbar flex min-w-0 flex-1 flex-col overflow-y-auto bg-background no-scrollbar">
           <div className="mx-auto flex w-full max-w-5xl flex-col pb-20">
             <div className="space-y-4 px-4 pb-2 pt-6">
-              <div className="space-y-2">
-                <Label
-                  htmlFor="blog-editor-title"
-                  className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground/80"
-                >
-                  Заголовок
-                </Label>
-                <Input
-                  id="blog-editor-title"
-                  value={activeTranslation.title}
-                  onChange={event => updateTranslation('title', event.target.value)}
-                  placeholder="Введите заголовок статьи"
-                  className={`${BLOG_EDITOR_META_FIELD_CLASSNAME} h-12 text-base font-semibold sm:h-14 sm:text-lg`}
-                />
+              <div className="flex flex-col gap-3 md:flex-row">
+                <div className="flex-1 space-y-2">
+                  <Label
+                    htmlFor="blog-editor-title"
+                    className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground/80"
+                  >
+                    Заголовок
+                  </Label>
+                  <Input
+                    id="blog-editor-title"
+                    value={activeTranslation.title}
+                    onChange={event => updateTranslation('title', event.target.value)}
+                    placeholder="Введите заголовок статьи"
+                    className={`${BLOG_EDITOR_META_FIELD_CLASSNAME} h-9 text-sm font-semibold sm:text-base`}
+                  />
+                </div>
+
+                <div className="flex-1 space-y-2">
+                  <Label
+                    htmlFor="blog-editor-slug"
+                    className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground/80"
+                  >
+                    Ссылка (Slug)
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="blog-editor-slug"
+                      value={slug}
+                      onChange={event =>
+                        setSlug(event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))
+                      }
+                      placeholder="adresa-stati"
+                      className={`${BLOG_EDITOR_META_FIELD_CLASSNAME} h-9 text-sm font-semibold sm:text-base`}
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => generateSlugForTitle(activeTranslation.title)}
+                      variant="outline"
+                      className="h-9 px-3"
+                    >
+                      Сгенерировать
+                    </Button>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -262,8 +300,8 @@ export function BlogEditorForm({
                   value={activeTranslation.description}
                   onChange={event => updateTranslation('description', event.target.value)}
                   placeholder="Введите краткое описание для карточки статьи"
-                  rows={3}
-                  className={`${BLOG_EDITOR_META_FIELD_CLASSNAME} min-h-[104px] resize-y py-3 text-sm text-muted-foreground sm:text-base`}
+                  rows={1}
+                  className={`${BLOG_EDITOR_META_FIELD_CLASSNAME} min-h-[36px] max-h-[80px] resize-y py-1.5 text-sm text-muted-foreground sm:text-base leading-relaxed`}
                 />
               </div>
             </div>

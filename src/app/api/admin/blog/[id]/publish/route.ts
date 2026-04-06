@@ -76,5 +76,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     publishToTelegramChannel(published, ruTranslation)
   ]);
 
+  const { revalidatePath } = await import('next/cache');
+  revalidatePath('/', 'layout');
+
   return NextResponse.json({ success: true, publishedAt: published.publishedAt });
 }

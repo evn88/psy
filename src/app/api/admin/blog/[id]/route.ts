@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import prisma from '@/shared/lib/prisma';
 import { calculateReadingTime } from '@/shared/lib/blog-utils';
@@ -6,6 +7,7 @@ import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 
 const updateSchema = z.object({
+  slug: z.string().min(1).optional(),
   coverImage: z.string().nullable().optional(),
   categoryIds: z.array(z.string()).optional(),
   authorId: z.string().min(1).optional(),
@@ -67,7 +69,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     );
   }
 
-  const { coverImage, categoryIds, status, translations, authorId } = parsed.data;
+  const { coverImage, categoryIds, status, translations, authorId, slug } = parsed.data;
 
   if (authorId !== undefined) {
     const author = await prisma.user.findUnique({
@@ -80,6 +82,13 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }
   }
 
+  if (slug !== undefined) {
+    const existing = await prisma.blogPost.findUnique({ where: { slug } });
+    if (existing && existing.id !== id) {
+      return NextResponse.json({ error: 'Slug уже используется' }, { status: 400 });
+    }
+  }
+
   // Пересчитываем время чтения по русской версии
   const ruTranslation = translations?.find((t: { locale: string }) => t.locale === 'ru');
   const readingTime = ruTranslation ? calculateReadingTime(ruTranslation.content) : undefined;
@@ -88,6 +97,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     await tx.blogPost.update({
       where: { id },
       data: {
+        ...(slug !== undefined && { slug }),
         ...(coverImage !== undefined && { coverImage }),
         ...(authorId !== undefined && { authorId }),
         ...(readingTime !== undefined && { readingTime }),
@@ -130,6 +140,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }
   });
 
+  revalidatePath('/', 'layout');
+
   return NextResponse.json(updated);
 }
 
@@ -140,6 +152,8 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   const { id } = await params;
 
   await prisma.blogPost.delete({ where: { id } });
+
+  revalidatePath('/', 'layout');
 
   return NextResponse.json({ success: true });
 }

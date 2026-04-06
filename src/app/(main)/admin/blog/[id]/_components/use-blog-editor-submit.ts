@@ -22,6 +22,7 @@ export function useBlogEditorSubmit(
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+              slug: values.slug,
               coverImage: values.coverImage,
               categoryIds: values.categoryIds,
               status: values.status,
@@ -29,7 +30,10 @@ export function useBlogEditorSubmit(
             })
           });
 
-          if (!res.ok) throw new Error('Ошибка сохранения');
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || 'Ошибка сохранения');
+          }
 
           if (createVersion && filteredTranslations.length > 0) {
             const vRes = await fetch(`/api/admin/blog/${postId}/versions`, {
@@ -48,8 +52,8 @@ export function useBlogEditorSubmit(
           }
 
           if (showToast) toast.success('Сохранено');
-        } catch {
-          toast.error('Не удалось сохранить');
+        } catch (err: any) {
+          toast.error(err.message || 'Не удалось сохранить');
         }
       });
     },
@@ -62,10 +66,23 @@ export function useBlogEditorSubmit(
         const values = getValues();
         const filteredTranslations = values.translations.filter(t => t.title.trim().length > 0);
 
+        let finalSlug = values.slug;
+        if (finalSlug.startsWith('draft-') || finalSlug.startsWith('novaya-statya-')) {
+          const { generateSlug } = await import('@/shared/lib/blog-utils');
+          const ruTitle =
+            values.translations.find(t => t.locale === 'ru')?.title ||
+            values.translations[0]?.title ||
+            '';
+          if (ruTitle) {
+            finalSlug = generateSlug(ruTitle);
+          }
+        }
+
         const saveRes = await fetch(`/api/admin/blog/${postId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            slug: finalSlug,
             coverImage: values.coverImage,
             categoryIds: values.categoryIds,
             status: values.status,

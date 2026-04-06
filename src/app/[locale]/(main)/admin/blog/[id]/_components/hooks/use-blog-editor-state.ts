@@ -7,6 +7,7 @@ import type {
 } from '../blog-editor-form.types';
 
 interface UseBlogEditorStateParams {
+  initialSlug: string;
   initialStatus: BlogEditorStatus;
   initialCoverImage: string | null;
   initialTranslations: EditorTranslation[];
@@ -60,6 +61,7 @@ const isSupportedLocale = (locale: string): locale is EditorTranslation['locale'
  * @returns Состояние редактора и действия для его изменения.
  */
 export const useBlogEditorState = ({
+  initialSlug,
   initialStatus,
   initialCoverImage,
   initialTranslations,
@@ -69,6 +71,7 @@ export const useBlogEditorState = ({
   const [translations, setTranslations] = useState<EditorTranslation[]>(() =>
     normalizeTranslations(initialTranslations)
   );
+  const [slug, setSlug] = useState(initialSlug);
   const [activeLocale, setActiveLocale] = useState<EditorTranslation['locale']>('ru');
   const [status, setStatus] = useState<BlogEditorStatus>(initialStatus);
   const [coverImage, setCoverImage] = useState<string | null>(initialCoverImage);
@@ -152,6 +155,8 @@ export const useBlogEditorState = ({
   }, []);
 
   return {
+    slug,
+    setSlug,
     translations,
     setTranslations,
     activeLocale,

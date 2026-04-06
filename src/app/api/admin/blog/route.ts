@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import prisma from '@/shared/lib/prisma';
 import { calculateReadingTime, generateSlug } from '@/shared/lib/blog-utils';
@@ -69,13 +70,7 @@ export async function POST(req: Request) {
   }
 
   const readingTime = calculateReadingTime(content);
-  let slug = generateSlug(title);
-
-  // Проверяем уникальность slug
-  const existing = await prisma.blogPost.findUnique({ where: { slug } });
-  if (existing) {
-    slug = `${slug}-${Date.now()}`;
-  }
+  let slug = `draft-${Date.now()}`;
 
   const post = await prisma.blogPost.create({
     data: {
@@ -102,6 +97,8 @@ export async function POST(req: Request) {
       categories: { include: { category: true } }
     }
   });
+
+  revalidatePath('/', 'layout');
 
   return NextResponse.json(post, { status: 201 });
 }
