@@ -1,5 +1,5 @@
 import type { MDXEditorMethods } from '@mdxeditor/editor';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 import type { RefObject } from 'react';
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { toast } from 'sonner';
