@@ -26,6 +26,7 @@ interface UseBlogEditorPersistenceParams {
   authorId: string;
   status: BlogEditorStatus;
   translations: EditorTranslation[];
+  isValid: boolean;
   onTranslationsChange: (translations: EditorTranslation[]) => void;
   onVersionCreated: (version: BlogEditorVersion) => void;
   onSelectedVersionReset: () => void;
@@ -84,6 +85,7 @@ export const useBlogEditorPersistence = ({
   authorId,
   status,
   translations,
+  isValid,
   onTranslationsChange,
   onVersionCreated,
   onSelectedVersionReset,
@@ -107,6 +109,9 @@ export const useBlogEditorPersistence = ({
       createVersion = false,
       newSlug
     }: BlogEditorSaveOptions & { newSlug?: string } = {}) => {
+      // Блокируем сохранение если форма невалидно заполнена (напр. нет заголовка или slug)
+      if (!isValid) return false;
+
       if (!showToast && selectedDiffVersionId) {
         return false;
       }
@@ -126,6 +131,8 @@ export const useBlogEditorPersistence = ({
 
         const savableTranslations = getSavableTranslations(nextTranslations);
         const currentSlug = newSlug ?? slug;
+        if (!currentSlug) throw new Error('Slug is empty'); // Fallback если валидация почему-то пропустила
+
         const response = await fetch(`/api/admin/blog/${postId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -166,7 +173,9 @@ export const useBlogEditorPersistence = ({
 
         return true;
       } catch {
-        toast.error('Не удалось сохранить');
+        if (showToast) {
+          toast.error('Не удалось сохранить');
+        }
         return false;
       } finally {
         setSaving(false);
@@ -178,6 +187,7 @@ export const useBlogEditorPersistence = ({
       categoryIds,
       coverImage,
       editorRef,
+      isValid,
       onSelectedVersionReset,
       onTranslationsChange,
       onVersionCreated,
@@ -242,7 +252,7 @@ export const useBlogEditorPersistence = ({
       clearTimeout(autoSaveTimerRef.current);
     }
 
-    if (!selectedDiffVersionId) {
+    if (!selectedDiffVersionId && isValid) {
       autoSaveTimerRef.current = setTimeout(() => {
         void save({ showToast: false });
       }, 30_000);
@@ -253,7 +263,7 @@ export const useBlogEditorPersistence = ({
         clearTimeout(autoSaveTimerRef.current);
       }
     };
-  }, [save, selectedDiffVersionId]);
+  }, [save, selectedDiffVersionId, isValid]);
 
   /**
    * Публикует статью после успешного сохранения черновика.

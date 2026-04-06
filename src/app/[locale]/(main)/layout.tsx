@@ -104,6 +104,7 @@ const RootLayout = async ({ children, params }: Readonly<MainLayoutProps>) => {
       suppressHydrationWarning
       className={htmlClassName}
       style={themeClassName ? { colorScheme: themeClassName } : undefined}
+      data-scroll-behavior="smooth"
     >
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>

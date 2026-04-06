@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { MDXEditorMethods } from '@mdxeditor/editor';
 import dynamic from 'next/dynamic';
 import { Eye, EyeOff, Globe, History, Languages, Loader2, Save } from 'lucide-react';
@@ -28,6 +28,9 @@ import type {
   BlogEditorStatus,
   EditorTranslation
 } from './blog-editor-form.types';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { blogEditorSchema, type BlogEditorFormValues } from './blog-editor.schema';
 import { BlogEditorTranslationStatus } from './blog-editor-translation-status';
 import { BlogEditorVersionHistory } from './blog-editor-version-history';
 import { useBlogEditorContentSync } from './hooks/use-blog-editor-content-sync';
@@ -141,6 +144,43 @@ export function BlogEditorForm({
     activeTranslation,
     selectedVersion
   });
+
+  const methods = useForm<BlogEditorFormValues>({
+    resolver: zodResolver(blogEditorSchema),
+    defaultValues: {
+      title: activeTranslation.title || '',
+      slug: slug || '',
+      description: activeTranslation.description || ''
+    },
+    mode: 'onChange'
+  });
+
+  // Синхронизация формы при смене локали/версии/состояния
+  useEffect(() => {
+    methods.reset({
+      title: activeTranslation.title || '',
+      slug: slug || '',
+      description: activeTranslation.description || ''
+    });
+  }, [activeLocale, activeTranslation.title, slug, activeTranslation.description, methods]);
+
+  // Обновление локального стейта при изменении полей формы
+  useEffect(() => {
+    const subscription = methods.watch((value, { name, type }) => {
+      if (type === 'change') {
+        if (name === 'title' && value.title !== undefined) {
+          updateTranslation('title', value.title);
+        }
+        if (name === 'description' && value.description !== undefined) {
+          updateTranslation('description', value.description);
+        }
+        if (name === 'slug' && value.slug !== undefined) {
+          // slug is already updated via its onChange wrapper manually to enforce lowercase dashes
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [methods, updateTranslation]);
   const { saving, publishing, save, publish, uploadImage, generateSlugForTitle } =
     useBlogEditorPersistence({
       postId,
@@ -154,6 +194,7 @@ export function BlogEditorForm({
       authorId,
       status,
       translations,
+      isValid: methods.formState.isValid,
       onTranslationsChange: setTranslations,
       onVersionCreated: prependVersion,
       onSelectedVersionReset: () => setSelectedDiffVersionId(null),
@@ -204,7 +245,7 @@ export function BlogEditorForm({
             <Button
               size="sm"
               onClick={() => void publish()}
-              disabled={publishing || !activeTranslation.title}
+              disabled={publishing || !activeTranslation.title || !methods.formState.isValid}
               className="h-9 bg-[#900A0B] text-white shadow-sm hover:bg-[#900A0B]/90"
             >
               {publishing ? '...' : <span className="hidden sm:inline">Опубликовать</span>}
@@ -215,7 +256,7 @@ export function BlogEditorForm({
           <Button
             size="sm"
             onClick={() => void save({ showToast: true, createVersion: true })}
-            disabled={saving}
+            disabled={saving || !methods.formState.isValid}
             className="h-9 bg-[#03070A] text-white hover:bg-[#03070A]/90"
           >
             {saving ? (
@@ -238,14 +279,28 @@ export function BlogEditorForm({
                     htmlFor="blog-editor-title"
                     className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground/80"
                   >
-                    Заголовок
+                    Заголовок 123
                   </Label>
-                  <Input
-                    id="blog-editor-title"
-                    value={activeTranslation.title}
-                    onChange={event => updateTranslation('title', event.target.value)}
-                    placeholder="Введите заголовок статьи"
-                    className={`${BLOG_EDITOR_META_FIELD_CLASSNAME} h-9 text-sm font-semibold sm:text-base`}
+                  <Controller
+                    name="title"
+                    control={methods.control}
+                    render={({ field, fieldState }) => (
+                      <>
+                        <Input
+                          {...field}
+                          id="blog-editor-title"
+                          placeholder="Введите заголовок статьи"
+                          className={`${BLOG_EDITOR_META_FIELD_CLASSNAME} ${
+                            fieldState.error
+                              ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20'
+                              : ''
+                          } h-9 text-sm font-semibold sm:text-base`}
+                        />
+                        {fieldState.error && (
+                          <p className="text-xs text-red-500 mt-1">{fieldState.error.message}</p>
+                        )}
+                      </>
+                    )}
                   />
                 </div>
 
@@ -257,20 +312,40 @@ export function BlogEditorForm({
                     Ссылка (Slug)
                   </Label>
                   <div className="flex items-center gap-2">
-                    <Input
-                      id="blog-editor-slug"
-                      value={slug}
-                      onChange={event =>
-                        setSlug(event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))
-                      }
-                      placeholder="adresa-stati"
-                      className={`${BLOG_EDITOR_META_FIELD_CLASSNAME} h-9 text-sm font-semibold sm:text-base`}
+                    <Controller
+                      name="slug"
+                      control={methods.control}
+                      render={({ field, fieldState }) => (
+                        <div className="flex-1">
+                          <Input
+                            {...field}
+                            id="blog-editor-slug"
+                            onChange={e => {
+                              const v = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+                              field.onChange(v);
+                              setSlug(v);
+                            }}
+                            placeholder="adresa-stati"
+                            className={`${BLOG_EDITOR_META_FIELD_CLASSNAME} ${
+                              fieldState.error
+                                ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20'
+                                : ''
+                            } h-9 text-sm font-semibold sm:text-base`}
+                          />
+                          {fieldState.error && (
+                            <p className="text-xs text-red-500 mt-1">{fieldState.error.message}</p>
+                          )}
+                        </div>
+                      )}
                     />
                     <Button
                       type="button"
-                      onClick={() => generateSlugForTitle(activeTranslation.title)}
+                      onClick={() => {
+                        const newSlug = generateSlugForTitle(activeTranslation.title);
+                        methods.setValue('slug', newSlug, { shouldValidate: true });
+                      }}
                       variant="outline"
-                      className="h-9 px-3"
+                      className="h-9 px-3 self-start"
                     >
                       Сгенерировать
                     </Button>
@@ -285,13 +360,27 @@ export function BlogEditorForm({
                 >
                   Описание
                 </Label>
-                <Textarea
-                  id="blog-editor-description"
-                  value={activeTranslation.description}
-                  onChange={event => updateTranslation('description', event.target.value)}
-                  placeholder="Введите краткое описание для карточки статьи"
-                  rows={1}
-                  className={`${BLOG_EDITOR_META_FIELD_CLASSNAME} min-h-[36px] max-h-[80px] resize-y py-1.5 text-sm text-muted-foreground sm:text-base leading-relaxed`}
+                <Controller
+                  name="description"
+                  control={methods.control}
+                  render={({ field, fieldState }) => (
+                    <>
+                      <Textarea
+                        {...field}
+                        id="blog-editor-description"
+                        placeholder="Введите краткое описание для карточки статьи"
+                        rows={2}
+                        className={`${BLOG_EDITOR_META_FIELD_CLASSNAME} ${
+                          fieldState.error
+                            ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20'
+                            : ''
+                        } min-h-[36px] max-h-[80px] resize-y py-1.5 text-sm text-muted-foreground sm:text-base leading-relaxed`}
+                      />
+                      {fieldState.error && (
+                        <p className="text-xs text-red-500 mt-1">{fieldState.error.message}</p>
+                      )}
+                    </>
+                  )}
                 />
               </div>
             </div>

@@ -23,7 +23,13 @@ CRITICAL REQUIREMENTS:
 3. Output ONLY the EXACT translated Markdown. No explanations, no preamble.`;
 
   if (targetLocale === 'sr') {
-    prompt += `\n4. You MUST ALWAYS use the Latin alphabet (латиница) for Serbian, NOT Cyrillic.`;
+    prompt += `Ты — профессиональный переводчик-лингвист, специализирующийся на паре языков русский — сербский. Твоя задача — перевести предоставленный текст, строго придерживаясь норм стандартного сербского языка (ekavica).
+Соблюдай следующие правила:
+Исключи регионализмы: Категорически избегай лексики, характерной для хорватского (например, используй hleb вместо kruh, hiljada вместо tisuća, названия месяцев только латинского происхождения) или боснийского языков.
+Приоритет смысла (Локализация): Не делай подстрочный перевод. Передавай смысл так, как это сформулировал бы носитель языка в Сербии.
+Никаких выдуманных слов: Если прямого эквивалента слова в сербском языке не существует, не пытайся его сконструировать. Вместо этого используй синоним или перефразируй предложение, сохраняя исходный контекст и эмоциональную окраску, как это сделал бы опытный переводчик.
+Письменность: Используй исключительно латиницу (latinica).
+Стиль: Сохраняй стиль оригинала.`;
   }
 
   return prompt;
@@ -70,17 +76,17 @@ Output ONLY plain text. NO Markdown characters (like #, *, _, [, ], ( ), etc.).`
 
   const [titleResult, descriptionResult, contentResult] = await Promise.all([
     generateText({
-      model: gateway('anthropic/claude-haiku-4-5-20251001'),
+      model: gateway('openai/gpt-5.4-mini'),
       system: systemPromptText,
       prompt: `Translate this blog title to ${targetLocale}: ${ruTranslation.title}`
     }),
     generateText({
-      model: gateway('anthropic/claude-haiku-4-5-20251001'),
+      model: gateway('openai/gpt-5.4-mini'),
       system: systemPromptText,
       prompt: `Translate this blog description to ${targetLocale}: ${ruTranslation.description}`
     }),
     generateText({
-      model: gateway('anthropic/claude-haiku-4-5-20251001'),
+      model: gateway('openai/gpt-5.4'),
       system: systemPromptMD,
       prompt: ruTranslation.content
     })
