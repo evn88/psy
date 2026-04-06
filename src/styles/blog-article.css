@@ -415,17 +415,26 @@
     caret-color: hsl(var(--foreground));
 }
 
-.mdx-editor-content [data-placeholder]::before {
+/* ---- Placeholder и Курсор (Lexical Doms) ---- */
+.mdx-editor-container [class*='_placeholder_'] {
     color: hsl(var(--muted-foreground)) !important;
+    opacity: 0.5 !important;
+    font-style: italic !important;
+    pointer-events: none !important;
 }
 
-/* Типографика внутри редактора */
+/* Ensure the Lexical content area takes full height so clicking anywhere focuses it */
+.mdx-editor-content {
+    min-height: 400px;
+    outline: none;
+    cursor: text;
+}
+
+/* Типографика внутри редактора - наследуется из .blog-article, но здесь можно оставить оверрайды если нужно */
 .mdx-editor-content h1,
 .mdx-editor-content h2,
 .mdx-editor-content h3,
 .mdx-editor-content h4 {
-    color: hsl(var(--foreground));
-    font-weight: 700;
     margin-top: 1.5em;
     margin-bottom: 0.5em;
 }
@@ -433,18 +442,6 @@
 .mdx-editor-content h2 {
     border-bottom: 2px solid hsl(var(--border));
     padding-bottom: 0.3em;
-}
-
-.mdx-editor-content a {
-    color: hsl(var(--primary));
-}
-
-.mdx-editor-content blockquote {
-    border-left: 4px solid hsl(var(--primary));
-    background-color: hsl(var(--primary) / 0.08);
-    padding: 0.5em 1em;
-    border-radius: 0 4px 4px 0;
-    font-style: italic;
 }
 
 /* ---- Тёмная тема редактора [data-editor-theme="dark"] ---- */
@@ -527,16 +524,7 @@
 }
 
 [data-editor-theme='dark'] .mdx-editor-content {
-    color: hsl(var(--foreground)) !important;
     background-color: hsl(var(--card)) !important;
-    caret-color: hsl(var(--foreground));
-}
-
-[data-editor-theme='dark'] .mdx-editor-content h1,
-[data-editor-theme='dark'] .mdx-editor-content h2,
-[data-editor-theme='dark'] .mdx-editor-content h3,
-[data-editor-theme='dark'] .mdx-editor-content h4 {
-    color: hsl(var(--foreground));
 }
 
 [data-editor-theme='dark'] .mdx-editor-content h2 {
@@ -545,11 +533,6 @@
 
 [data-editor-theme='dark'] .mdx-editor-content a {
     color: hsl(var(--primary));
-}
-
-[data-editor-theme='dark'] .mdx-editor-content blockquote {
-    background-color: hsl(var(--primary) / 0.12);
-    color: hsl(var(--muted-foreground));
 }
 
 [data-editor-theme='dark'] .mdx-editor-content code:not(pre code) {

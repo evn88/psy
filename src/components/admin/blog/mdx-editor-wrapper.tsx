@@ -131,7 +131,7 @@ export const MdxEditorWrapper = forwardRef<MDXEditorMethods, MdxEditorWrapperPro
           onChange={onChange}
           readOnly={readOnly}
           placeholder={placeholder}
-          contentEditableClassName="mdx-editor-content"
+          contentEditableClassName="mdx-editor-content blog-article"
           className={dark ? 'dark-theme darkEditor' : ''}
           plugins={[
             headingsPlugin(),

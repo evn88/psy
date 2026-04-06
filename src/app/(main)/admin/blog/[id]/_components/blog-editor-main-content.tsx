@@ -144,8 +144,8 @@ export function BlogEditorMainContent({
               value={activeTranslation.description}
               onChange={e => updateTranslationField('description', e.target.value)}
               placeholder="Краткое описание для карточки"
-              rows={1}
-              className={`${META_INPUT_BASE_CLASSNAME} min-h-[36px] max-h-[80px] resize-y py-1.5 text-sm text-muted-foreground leading-relaxed`}
+              rows={2}
+              className={`${META_INPUT_BASE_CLASSNAME} min-h-[36px] max-h-[120px] resize-y py-1.5 text-sm text-muted-foreground leading-relaxed`}
             />
           </div>
         </div>

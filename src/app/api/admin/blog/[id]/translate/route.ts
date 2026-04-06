@@ -15,11 +15,18 @@ const LOCALE_NAMES: Record<string, string> = {
 };
 
 function buildSystemPrompt(targetLocale: string): string {
-  return `You are a professional translator specializing in psychology and therapy content.
+  let prompt = `You are a professional translator specializing in psychology and therapy content.
 Translate the following Markdown text from Russian to ${LOCALE_NAMES[targetLocale] ?? targetLocale}.
-Preserve all Markdown formatting exactly: headings (#, ##, ###), bold (**text**), italic (*text*), code blocks (\`\`\`), inline code, links, lists, blockquotes, and tables.
-Do not translate technical terms that are better kept in their original form (e.g. ACT, RO DBT, ADHD, ASD, Schema Therapy).
-Output ONLY the translated Markdown. No explanations, no preamble.`;
+CRITICAL REQUIREMENTS:
+1. You MUST NOT change the Markdown formatting in any way. The translated text must have exactly the same structure, line breaks, headings, bold/italic markers, and image alignments as the original.
+2. Do not translate technical terms that are better kept in their original form (e.g. ACT, RO DBT, ADHD, ASD, Schema Therapy).
+3. Output ONLY the EXACT translated Markdown. No explanations, no preamble.`;
+
+  if (targetLocale === 'sr') {
+    prompt += `\n4. You MUST ALWAYS use the Latin alphabet (латиница) for Serbian, NOT Cyrillic.`;
+  }
+
+  return prompt;
 }
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
