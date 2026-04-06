@@ -29,9 +29,9 @@ import {
   usePublisher,
   viewMode$
 } from '@mdxeditor/editor';
-import { forwardRef, useEffect, useState } from 'react';
+import { forwardRef, useEffect, useState, useRef, useCallback, useImperativeHandle } from 'react';
 import { createPortal } from 'react-dom';
-import { Moon, Sun } from 'lucide-react';
+import { Moon, Sun, Languages } from 'lucide-react';
 import { useTheme } from '@/components/theme-provider';
 
 interface MdxEditorWrapperProps {
@@ -41,6 +41,7 @@ interface MdxEditorWrapperProps {
   placeholder?: string;
   readOnly?: boolean;
   diffMarkdown?: string;
+  onTranslateClick?: () => void;
 }
 
 // Компонент-портал для переключения режимов (Diff/Source/Rich Text), который рендерится в языковых табах
@@ -102,15 +103,36 @@ const PortalDiffToggle = () => {
 
 export const MdxEditorWrapper = forwardRef<MDXEditorMethods, MdxEditorWrapperProps>(
   function MdxEditorWrapper(
-    { value, onChange, onImageUpload, placeholder, readOnly, diffMarkdown },
+    { value, onChange, onImageUpload, placeholder, readOnly, diffMarkdown, onTranslateClick },
     ref
   ) {
     const { resolvedTheme } = useTheme();
     const [localDark, setLocalDark] = useState<boolean | null>(null);
     const dark = localDark ?? resolvedTheme === 'dark';
 
-    // Применяем классы темы MDXEditor к body, чтобы всплывающие окна (Portals)
-    // получали правильные CSS переменные тёмной темы.
+    const editorRef = useRef<MDXEditorMethods>(null);
+    // @ts-ignore
+    useImperativeHandle(ref, () => editorRef.current);
+
+    const [initialMarkdown] = useState(value);
+    const lastValueRef = useRef(value);
+
+    useEffect(() => {
+      if (editorRef.current && value !== lastValueRef.current) {
+        editorRef.current.setMarkdown(value);
+        lastValueRef.current = value;
+      }
+    }, [value]);
+
+    const handleChange = useCallback(
+      (v: string) => {
+        lastValueRef.current = v;
+        onChange(v);
+      },
+      [onChange]
+    );
+
+    // Применяем классы темы MDXEditor к body
     useEffect(() => {
       if (dark) {
         document.body.classList.add('dark-theme', 'darkEditor');
@@ -126,9 +148,9 @@ export const MdxEditorWrapper = forwardRef<MDXEditorMethods, MdxEditorWrapperPro
         className={`mdx-editor-container mdx-editor-mobile-optimized ${dark ? 'dark-theme darkEditor' : ''}`}
       >
         <MDXEditor
-          ref={ref}
-          markdown={value}
-          onChange={onChange}
+          ref={editorRef}
+          markdown={initialMarkdown}
+          onChange={handleChange}
           readOnly={readOnly}
           placeholder={placeholder}
           contentEditableClassName="mdx-editor-content blog-article"
@@ -182,6 +204,19 @@ export const MdxEditorWrapper = forwardRef<MDXEditorMethods, MdxEditorWrapperPro
                   <InsertImage />
                   <Separator />
                   <InsertTable />
+                  {onTranslateClick && (
+                    <>
+                      <Separator />
+                      <button
+                        type="button"
+                        onClick={onTranslateClick}
+                        className="mdx-editor-theme-toggle"
+                        title="Перевести статью"
+                      >
+                        <Languages size={14} />
+                      </button>
+                    </>
+                  )}
 
                   <div className="mdx-toolbar-spacer" />
                   <button

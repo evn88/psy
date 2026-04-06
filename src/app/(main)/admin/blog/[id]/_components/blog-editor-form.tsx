@@ -101,18 +101,14 @@ export function BlogEditorForm({
   return (
     <FormProvider {...methods}>
       <div className="flex flex-col h-full bg-background">
-        <BlogEditorTopBar
-          isPending={isPending}
-          publish={publish}
-          save={save}
-          setShowTranslateModal={setShowTranslateModal}
-        />
+        <BlogEditorTopBar isPending={isPending} publish={publish} save={save} />
 
         <div className="flex flex-1 overflow-hidden flex-col lg:flex-row">
           <BlogEditorMainContent
             activeLocale={activeLocale}
             setActiveLocale={setActiveLocale}
             allCategories={allCategories}
+            setShowTranslateModal={setShowTranslateModal}
           />
           <BlogEditorSidebar
             allCategories={allCategories}

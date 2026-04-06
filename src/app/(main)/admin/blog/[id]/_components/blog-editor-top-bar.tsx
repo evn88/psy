@@ -14,15 +14,9 @@ interface BlogEditorTopBarProps {
   isPending: boolean;
   publish: () => void;
   save: (showToast?: boolean, createVersion?: boolean) => void;
-  setShowTranslateModal: (show: boolean) => void;
 }
 
-export function BlogEditorTopBar({
-  isPending,
-  publish,
-  save,
-  setShowTranslateModal
-}: BlogEditorTopBarProps) {
+export function BlogEditorTopBar({ isPending, publish, save }: BlogEditorTopBarProps) {
   const { control, setValue } = useFormContext<FormValues>();
   const status = useWatch({ control, name: 'status' });
   const translations = useWatch({ control, name: 'translations' });
@@ -53,16 +47,6 @@ export function BlogEditorTopBar({
             </SelectItem>
           </SelectContent>
         </Select>
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowTranslateModal(true)}
-          className="h-9 px-2 sm:px-3 text-[#900A0B] border-[#900A0B]/20 hover:bg-[#900A0B]/5"
-        >
-          <Languages className="size-4 sm:mr-1.5" />
-          <span className="hidden sm:inline">Перевести</span>
-        </Button>
       </div>
 
       <div className="flex items-center gap-2 flex-shrink-0">

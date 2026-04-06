@@ -27,6 +27,7 @@ interface BlogEditorMainContentProps {
   activeLocale: string;
   setActiveLocale: (locale: string) => void;
   allCategories: (BlogCategory & { name: Record<string, string> })[];
+  setShowTranslateModal: (show: boolean) => void;
 }
 
 const LOCALE_LABELS: Record<string, string> = { ru: 'RU', en: 'EN', sr: 'SR' };
@@ -37,7 +38,8 @@ const META_INPUT_BASE_CLASSNAME =
 export function BlogEditorMainContent({
   activeLocale,
   setActiveLocale,
-  allCategories
+  allCategories,
+  setShowTranslateModal
 }: BlogEditorMainContentProps) {
   const { control, setValue, getValues } = useFormContext<FormValues>();
 
@@ -181,6 +183,7 @@ export function BlogEditorMainContent({
               onChange={v => updateTranslationField('content', v)}
               onImageUpload={uploadImage}
               placeholder="Начните писать статью..."
+              onTranslateClick={() => setShowTranslateModal(true)}
             />
           </div>
         </div>

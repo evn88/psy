@@ -197,16 +197,6 @@ export function BlogEditorForm({
             )}
             <span className="hidden sm:inline">{showPreview ? 'Редактор' : 'Предпросмотр'}</span>
           </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowTranslateModal(true)}
-            className="h-9 border-[#900A0B]/20 px-2 text-[#900A0B] hover:bg-[#900A0B]/5 sm:px-3"
-          >
-            <Languages className="size-4 sm:mr-1.5" />
-            <span className="hidden sm:inline">Перевести</span>
-          </Button>
         </div>
 
         <div className="flex flex-shrink-0 items-center gap-2">
@@ -359,6 +349,7 @@ export function BlogEditorForm({
                     placeholder="Начните писать статью..."
                     diffMarkdown={diffMarkdown}
                     readOnly={false}
+                    onTranslateClick={() => setShowTranslateModal(true)}
                   />
                 </div>
               )}
