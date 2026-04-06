@@ -1,27 +1,45 @@
+import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
 import HeroNavBurger from './HeroNavBurger';
 import styles from './HeroNav.module.css';
 
-const NAV_LINKS = [
-  { href: '#about', label: 'Обо мне' },
-  { href: '#services', label: 'как я могу помочь?' },
-  // { href: '#problems', label: 'Работа с нейроотличиями' },
-  { href: '#faq', label: 'Частые вопросы' },
-  { href: '#footer', label: 'контакты' },
-  { href: '/blog', label: 'Статьи и тесты' },
-  { href: '/my', label: 'Войти в ЛК' }
-];
+interface HeroNavLink {
+  kind: 'anchor' | 'route';
+  href: string;
+  label: string;
+}
 
-/** Навигация Hero-секции лендинга */
+/**
+ * Навигация Hero-секции лендинга.
+ * Сама собирает локализованные подписи и передаёт в клиентское бургер-меню уже готовые данные.
+ * @returns Главная навигация первого экрана.
+ */
 const HeroNav = () => {
+  const t = useTranslations('Home.nav');
+  const links: HeroNavLink[] = [
+    { kind: 'anchor', href: '#about', label: t('about') },
+    { kind: 'anchor', href: '#services', label: t('services') },
+    { kind: 'anchor', href: '#faq', label: t('faq') },
+    { kind: 'anchor', href: '#footer', label: t('contact') },
+    { kind: 'route', href: '/blog', label: t('blog') },
+    { kind: 'route', href: '/account', label: t('account') }
+  ];
+
   return (
     <nav className={styles.nav}>
       {/* Десктопный список ссылок — скрывается на мобиле через CSS */}
       <ul className={styles.nav__list}>
-        {NAV_LINKS.map(({ href, label }) => (
+        {links.map(({ kind, href, label }) => (
           <li key={href}>
-            <a href={href} className={styles.nav__link}>
-              {label}
-            </a>
+            {kind === 'route' ? (
+              <Link href={href} className={styles.nav__link}>
+                {label}
+              </Link>
+            ) : (
+              <a href={href} className={styles.nav__link}>
+                {label}
+              </a>
+            )}
           </li>
         ))}
       </ul>
@@ -30,12 +48,17 @@ const HeroNav = () => {
       <div className={styles.nav__btn_wrap}>
         <span className={styles.hero__oval} aria-hidden="true" />
         <a href="#footer" className={styles.nav__btn}>
-          Записаться
+          {t('cta')}
         </a>
       </div>
 
       {/* Бургер-кнопка — минимальный клиентский «лист» */}
-      <HeroNavBurger links={NAV_LINKS} />
+      <HeroNavBurger
+        links={links}
+        ctaLabel={t('cta')}
+        openMenuLabel={t('openMenu')}
+        closeMenuLabel={t('closeMenu')}
+      />
     </nav>
   );
 };

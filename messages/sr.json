@@ -15,7 +15,50 @@
     "work4": "Rad sa poremećajima u ishrani.",
     "contactTitle": "Sajt je u razvoju, ali možete me kontaktirati:",
     "telegramLink": "Telegram Kanal",
-    "tags": ["Šema terapija", "ACT", "RO DBT", "ADHD/ASD", "Poremećaji ishrane"]
+    "instagramLink": "Instagram",
+    "blogLink": "Blog",
+    "tags": ["Šema terapija", "ACT", "RO DBT", "ADHD/ASD", "Poremećaji ishrane"],
+    "nav": {
+      "about": "O meni",
+      "services": "Kako mogu da pomognem?",
+      "faq": "Česta pitanja",
+      "contact": "Kontakti",
+      "blog": "Blog",
+      "account": "Lični kabinet",
+      "cta": "Zakaži termin",
+      "openMenu": "Otvori meni",
+      "closeMenu": "Zatvori meni"
+    },
+    "hero": {
+      "titleAccent": "da li si umoran?",
+      "titleRest": "od beskrajne borbe sa prokrastinacijom, anksioznošću i sagorevanjem?",
+      "subtitleLine1": "Ponovo sebi obećavaš da ćeš se „sabrati” — i ponovo",
+      "subtitleLine2": "osećaš krivicu i stid kada ne uspe.",
+      "highlight": "A iznutra se stalno vraća isto pitanje:",
+      "questionLine1": "Zašto ne mogu kao drugi?",
+      "questionLine2": "Šta nije u redu sa mnom?",
+      "catAlt": "Mačka umotana u ćebe",
+      "dogAlt": "Iznenađeni pas"
+    },
+    "devBanner": {
+      "title": "Sajt je u razvoju",
+      "descriptionLine1": "Svi odeljci će uskoro biti dostupni ovde.",
+      "descriptionLine2": "Za sada mi možete pisati direktno ↓"
+    },
+    "footer": {
+      "titleLine1": "Ako i dalje imate",
+      "titleAccent": "pitanja, javite mi se",
+      "descriptionStart": "Izaberite kanal koji vam je najudobniji i posetite",
+      "blogLabel": "blog",
+      "descriptionEnd": "za članke i korisne materijale.",
+      "telegramLabel": "Telegram",
+      "whatsappLabel": "WhatsApp",
+      "instagramLabel": "Instagram",
+      "privacyLabel": "Politika privatnosti",
+      "consentLabel": "Saglasnost za obradu podataka",
+      "copyright": "@ Sva prava zadržana. {year}",
+      "credit": "Dizajn sajta uradila @akwebd"
+    }
   },
   "Auth": {
     "title": "Dobrodošli",
@@ -139,6 +182,23 @@
     "message": "Vaš nalog i svi povezani podaci su uspešno obrisani. Hvala vam što ste bili s nama.",
     "regretMessage": "Ako se ikada predomislite — biće nam drago da vas ponovo vidimo.",
     "registerButton": "Registrujte se ponovo"
+  },
+  "AccountEntry": {
+    "eyebrow": "Privatan prostor za klijente",
+    "title": "Lični kabinet",
+    "description": "Upravljajte zakazivanjima, upitnicima i podešavanjima profila na jednom mestu.",
+    "primaryCta": "Prijavite se ili se registrujte",
+    "secondaryCta": "Otvorite blog",
+    "cardTitle": "Šta vas čeka unutra",
+    "cardDescription": "Stranica je javna za pretragu, a zaštićeni kabinet se otvara nakon prijave.",
+    "features": {
+      "sessionsTitle": "Zakazivanja i sesije",
+      "sessionsDescription": "Pregledajte naredne konsultacije i upravljajte zahtevima za pomeranje termina.",
+      "surveysTitle": "Upitnici i obrasci",
+      "surveysDescription": "Popunjavajte formulare i čuvajte rezultate na jednom bezbednom mestu.",
+      "settingsTitle": "Profil i podešavanja",
+      "settingsDescription": "Menjajte jezik, temu i lične podatke bez obraćanja podršci."
+    }
   },
   "Admin": {
     "dashboardTitle": "Kontrolna tabla",
@@ -481,6 +541,7 @@
   },
   "Blog": {
     "title": "Blog",
+    "accountLink": "Lični kabinet",
     "readMore": "Čitaj dalje",
     "minRead": "{n} min",
     "allCategories": "Sve",

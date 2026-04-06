@@ -17,7 +17,48 @@
     "telegramLink": "Telegram Channel",
     "instagramLink": "Instagram",
     "blogLink": "Blog",
-    "tags": ["Schema Therapy", "ACT", "RO DBT", "ADHD/ASD", "ED"]
+    "tags": ["Schema Therapy", "ACT", "RO DBT", "ADHD/ASD", "ED"],
+    "nav": {
+      "about": "About me",
+      "services": "How I can help",
+      "faq": "FAQ",
+      "contact": "Contacts",
+      "blog": "Blog",
+      "account": "Personal account",
+      "cta": "Book a session",
+      "openMenu": "Open menu",
+      "closeMenu": "Close menu"
+    },
+    "hero": {
+      "titleAccent": "are you tired?",
+      "titleRest": "of the endless fight with procrastination, anxiety, and burnout?",
+      "subtitleLine1": "You promise yourself to “pull it together” again and again,",
+      "subtitleLine2": "and then feel guilt and shame when it still does not work.",
+      "highlight": "And inside, the same question keeps returning:",
+      "questionLine1": "Why can’t I do it like everyone else?",
+      "questionLine2": "What is wrong with me?",
+      "catAlt": "Cat wrapped in a blanket",
+      "dogAlt": "Surprised dog"
+    },
+    "devBanner": {
+      "title": "The site is under development",
+      "descriptionLine1": "All sections will appear here soon.",
+      "descriptionLine2": "For now, you can write to me directly ↓"
+    },
+    "footer": {
+      "titleLine1": "If you still have",
+      "titleAccent": "questions, reach out to me",
+      "descriptionStart": "Use whichever channel is easiest for you, and also visit",
+      "blogLabel": "the blog",
+      "descriptionEnd": "for articles and practical resources.",
+      "telegramLabel": "Telegram",
+      "whatsappLabel": "WhatsApp",
+      "instagramLabel": "Instagram",
+      "privacyLabel": "Privacy policy",
+      "consentLabel": "Consent to data processing",
+      "copyright": "@ All rights reserved. {year}",
+      "credit": "Site design by @akwebd"
+    }
   },
   "Auth": {
     "title": "Welcome Back",
@@ -141,6 +182,23 @@
     "message": "Your account and all associated data have been successfully deleted. Thank you for being with us.",
     "regretMessage": "If you ever change your mind — we'd love to have you back.",
     "registerButton": "Register again"
+  },
+  "AccountEntry": {
+    "eyebrow": "Private space for clients",
+    "title": "Personal account",
+    "description": "Manage bookings, questionnaires, and profile settings in one place.",
+    "primaryCta": "Sign in or register",
+    "secondaryCta": "Open the blog",
+    "cardTitle": "What you get inside",
+    "cardDescription": "The page is public for search engines, while the real workspace opens after sign-in.",
+    "features": {
+      "sessionsTitle": "Bookings and sessions",
+      "sessionsDescription": "Review upcoming consultations and manage rescheduling requests.",
+      "surveysTitle": "Questionnaires and forms",
+      "surveysDescription": "Complete forms and keep results in one protected place.",
+      "settingsTitle": "Profile and settings",
+      "settingsDescription": "Change language, theme, and personal details without contacting support."
+    }
   },
   "Admin": {
     "dashboardTitle": "Dashboard",
@@ -509,6 +567,7 @@
   },
   "Blog": {
     "title": "Blog",
+    "accountLink": "Personal account",
     "readMore": "Read more",
     "minRead": "{n} min",
     "allCategories": "All",

@@ -86,6 +86,13 @@ export function BlogHeader() {
 
         {/* Правая часть: язык + тема */}
         <div className="flex items-center gap-3">
+          <Link
+            href="/account"
+            className="hidden rounded-md border border-border/70 px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted sm:inline-flex"
+          >
+            {t('accountLink')}
+          </Link>
+
           {/* Переключатель языков */}
           <div className="flex items-center gap-0.5 bg-muted rounded-lg p-0.5">
             {LOCALES.map(loc => (

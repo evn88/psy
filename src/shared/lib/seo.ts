@@ -4,6 +4,7 @@ import { type AppLocale, defaultLocale, locales } from '@/i18n/config';
 export const SITE_URL = 'https://vershkov.com';
 export const SITE_ORIGIN = new URL(SITE_URL);
 export const SITE_NAME = 'Vershkov.com';
+export const SITE_ALTERNATE_NAMES = ['Vershkov', 'vershkov.com'] as const;
 
 const DEFAULT_OG_IMAGE_PATH = '/apple-icon.png';
 
@@ -14,9 +15,16 @@ interface SeoLocaleCopy {
   homeDescription: string;
   blogTitle: string;
   blogDescription: string;
+  accountTitle: string;
+  accountDescription: string;
 }
 
 type OpenGraphMetadata = NonNullable<Metadata['openGraph']>;
+
+interface WebsiteStructuredDataNavigationItem {
+  name: string;
+  pathname: string;
+}
 
 const SEO_COPY: Record<AppLocale, SeoLocaleCopy> = {
   en: {
@@ -28,7 +36,10 @@ const SEO_COPY: Record<AppLocale, SeoLocaleCopy> = {
       'Online psychological counseling, practical ADHD support, and a clear therapy journey for adults and families.',
     blogTitle: 'Mental health blog',
     blogDescription:
-      'Articles about psychology, ADHD, self-regulation, and mental health in Russian, English, and Serbian.'
+      'Articles about psychology, ADHD, self-regulation, and mental health in Russian, English, and Serbian.',
+    accountTitle: 'Personal account',
+    accountDescription:
+      'A secure client area for bookings, questionnaires, profile settings, and personal updates.'
   },
   ru: {
     siteTitle: 'Vershkov.com',
@@ -39,7 +50,10 @@ const SEO_COPY: Record<AppLocale, SeoLocaleCopy> = {
       'Онлайн-консультации психолога, поддержка при СДВГ и понятный путь терапии для взрослых и семей.',
     blogTitle: 'Блог о ментальном здоровье',
     blogDescription:
-      'Статьи о психологии, СДВГ, саморегуляции и mental health на русском, английском и сербском.'
+      'Статьи о психологии, СДВГ, саморегуляции и mental health на русском, английском и сербском.',
+    accountTitle: 'Личный кабинет',
+    accountDescription:
+      'Безопасный кабинет клиента для записей, анкет, настроек профиля и личных обновлений.'
   },
   sr: {
     siteTitle: 'Vershkov.com',
@@ -50,7 +64,10 @@ const SEO_COPY: Record<AppLocale, SeoLocaleCopy> = {
       'Online psihološko savetovanje, podrška kod ADHD-a i jasan terapijski put za odrasle i porodice.',
     blogTitle: 'Blog o mentalnom zdravlju',
     blogDescription:
-      'Članci o psihologiji, ADHD-u, samoregulaciji i mentalnom zdravlju na ruskom, engleskom i srpskom.'
+      'Članci o psihologiji, ADHD-u, samoregulaciji i mentalnom zdravlju na ruskom, engleskom i srpskom.',
+    accountTitle: 'Lični kabinet',
+    accountDescription:
+      'Bezbedan korisnički prostor za zakazivanja, upitnike, podešavanja profila i lična obaveštenja.'
   }
 };
 
@@ -156,6 +173,51 @@ export const createOpenGraphMetadata = (metadata: OpenGraphMetadata): OpenGraphM
   return {
     siteName: SITE_NAME,
     ...metadata
+  };
+};
+
+/**
+ * Создает schema.org-разметку сайта и ключевых разделов навигации.
+ * Используется на главной странице, чтобы поисковик видел стабильные публичные ссылки
+ * на блог и входную страницу личного кабинета.
+ * @param locale - активная локаль страницы.
+ * @param navigationItems - важные публичные разделы сайта.
+ * @returns JSON-LD объект для `WebSite` и `SiteNavigationElement`.
+ */
+export const createWebsiteStructuredData = (
+  locale: AppLocale,
+  navigationItems: readonly WebsiteStructuredDataNavigationItem[]
+): Record<string, unknown> => {
+  const localizedHomeUrl = getLocalizedUrl(locale, '/');
+
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'WebSite',
+        '@id': `${SITE_URL}#website`,
+        url: SITE_URL,
+        name: SITE_NAME,
+        alternateName: [...SITE_ALTERNATE_NAMES]
+      },
+      {
+        '@type': 'WebPage',
+        '@id': `${localizedHomeUrl}#webpage`,
+        url: localizedHomeUrl,
+        name: getSeoCopy(locale).homeTitle,
+        isPartOf: {
+          '@id': `${SITE_URL}#website`
+        }
+      },
+      ...navigationItems.map(item => ({
+        '@type': 'SiteNavigationElement',
+        name: item.name,
+        url: getLocalizedUrl(locale, item.pathname),
+        isPartOf: {
+          '@id': `${SITE_URL}#website`
+        }
+      }))
+    ]
   };
 };
 

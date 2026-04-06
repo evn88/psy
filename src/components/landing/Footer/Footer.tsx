@@ -1,20 +1,37 @@
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 import styles from './Footer.module.css';
 
-import envelopImg from '@/assets/images/adhd/envelop.png';
-import envelopLeft from '@/assets/images/adhd/envelop-left.png';
-import envelopRight from '@/assets/images/adhd/envelop-right.png';
 import psychoPhoto from '@/assets/images/adhd/Ann.jpeg';
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 
-const SOCIAL_LINKS = [
-  { href: 'https://t.me/looking_dopamine', label: 'телеграмм', variant: 'pink' as const },
-  { href: 'https://wa.me/79370843451', label: 'вотсап', variant: 'pink' as const },
-  { href: 'https://www.instagram.com/ania_vverh/', label: 'инстаграмм', variant: 'blue' as const }
-];
-
-/** Футер лендинга: CTA-блок в стиле конверта, контакты, копирайт */
+/**
+ * Футер лендинга: CTA-блок в стиле конверта, контакты, копирайт.
+ * Сам загружает тексты футера, чтобы не получать большой объект через props.
+ * @returns Нижняя секция лендинга.
+ */
 export const Footer = () => {
+  const tHome = useTranslations('Home');
+  const tFooter = useTranslations('Home.footer');
+  const currentYear = new Date().getFullYear();
+  const socialLinks = [
+    {
+      href: 'https://t.me/looking_dopamine',
+      label: tFooter('telegramLabel'),
+      variant: 'pink' as const
+    },
+    {
+      href: 'https://wa.me/79370843451',
+      label: tFooter('whatsappLabel'),
+      variant: 'pink' as const
+    },
+    {
+      href: 'https://www.instagram.com/ania_vverh/',
+      label: tFooter('instagramLabel'),
+      variant: 'blue' as const
+    }
+  ];
+
   return (
     <footer className={styles.footer} id="footer">
       {/* ── Конверт — дальний фон ────────────────────────────── */}
@@ -43,7 +60,7 @@ export const Footer = () => {
           <div className={styles.footer__polaroidInner}>
             <Image
               src={psychoPhoto}
-              alt="Психолог Аня"
+              alt={tHome('photoAlt')}
               className={styles.footer__photo}
               placeholder="blur"
             />
@@ -53,22 +70,21 @@ export const Footer = () => {
         {/* Контентная область */}
         <div className={styles.footer__cardContent}>
           <h2 className={styles.footer__title}>
-            Если у тебя остались <br />
-            вопросы, <span className={styles.footer__accent}>свяжись со мной</span>
+            {tFooter('titleLine1')} <br />
+            <span className={styles.footer__accent}>{tFooter('titleAccent')}</span>
           </h2>
           <p className={styles.footer__sub}>
-            Любимым удобным для тебя способом, а так же переходи
+            {tFooter('descriptionStart')}
             <br />
-            в&nbsp;
-            <Link href={'/blog'} className={styles.footer__link}>
-              мой блог
+            <Link href="/blog" className={styles.footer__link}>
+              {tFooter('blogLabel')}
             </Link>
-            , там много полезной информации про нейроотличия
+            &nbsp;{tFooter('descriptionEnd')}
           </p>
 
           {/* ── Кнопки соцсетей (паттерн oval из HeroNav) ───── */}
           <div className={styles.footer__socials}>
-            {SOCIAL_LINKS.map(({ href, label, variant }) => (
+            {socialLinks.map(({ href, label, variant }) => (
               <a
                 key={label}
                 href={href}
@@ -90,17 +106,17 @@ export const Footer = () => {
           {/* ── Юридические ссылки ───────────────────────────── */}
           <div className={styles.footer__legal}>
             <Link href="/privacy" className={styles.footer__legalLink}>
-              Политика конфиденциальности
+              {tFooter('privacyLabel')}
             </Link>
             <Link href="/consent" className={styles.footer__legalLink}>
-              Согласие на обработку данных
+              {tFooter('consentLabel')}
             </Link>
           </div>
         </div>
         {/* ── Нижняя строка ────────────────────────────────────── */}
         <div className={styles.footer__bottom}>
-          <p className={styles.footer__copy}>@ Все права защищены. 2025</p>
-          <p className={styles.footer__credit}>Дизайн сайта разработала @akwebd</p>
+          <p className={styles.footer__copy}>{tFooter('copyright', { year: currentYear })}</p>
+          <p className={styles.footer__credit}>{tFooter('credit')}</p>
         </div>
       </div>
     </footer>
