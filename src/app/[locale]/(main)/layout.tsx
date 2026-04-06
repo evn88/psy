@@ -6,17 +6,11 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Dela_Gothic_One, Inter } from 'next/font/google';
 import localFont from 'next/font/local';
 import { type ReactNode } from 'react';
-import { Toaster } from 'sonner';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import '../../globals.css';
-import { HeartbeatProvider } from '@/components/heartbeat-provider';
-import { OfflineIndicator } from '@/components/pwa/OfflineIndicator';
-import { PushPermissionBanner } from '@/components/pwa/PushPermissionBanner';
-import { ServiceWorkerRegistration } from '@/components/pwa/ServiceWorkerRegistration';
-import { ThemeProvider } from '@/components/theme-provider';
-import { Providers } from '@/shared/Providers';
 import { defaultLocale, isLocale } from '@/i18n/config';
+import { Providers } from '@/shared/Providers';
 import { createBaseMetadata } from '@/shared/lib/seo';
 import {
   DEFAULT_THEME,
@@ -78,7 +72,7 @@ export const generateViewport = async (): Promise<Viewport> => {
 
 /**
  * Корневой layout публичной части сайта.
- * Настраивает локаль, провайдеры и общие UI-интеграции.
+ * Оставляет в серверном слое только locale, cookie и SSR-подготовку темы.
  * @param props - children и текущая locale из URL.
  * @returns HTML-обертка публичной части.
  */
@@ -92,6 +86,15 @@ const RootLayout = async ({ children, params }: Readonly<MainLayoutProps>) => {
 
   const theme = normalizeTheme(cookieStore.get(THEME_COOKIE_NAME)?.value, DEFAULT_THEME);
   const themeClassName = getThemeClassName(theme);
+  const htmlClassName = [
+    inter.variable,
+    sunlessDay.variable,
+    delaGothicOne.variable,
+    themeClassName
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   setRequestLocale(locale);
   const messages = await getMessages();
 
@@ -99,31 +102,15 @@ const RootLayout = async ({ children, params }: Readonly<MainLayoutProps>) => {
     <html
       lang={locale}
       suppressHydrationWarning
-      className={[inter.variable, sunlessDay.variable, delaGothicOne.variable, themeClassName]
-        .filter(Boolean)
-        .join(' ')}
+      className={htmlClassName}
       style={themeClassName ? { colorScheme: themeClassName } : undefined}
     >
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <Providers>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme={theme}
-              enableSystem
-              disableTransitionOnChange
-            >
-              <HeartbeatProvider>
-                {/*<Navbar />*/}
-                <main>{children}</main>
-                <Analytics />
-                <SpeedInsights />
-              </HeartbeatProvider>
-              <Toaster position="bottom-right" richColors closeButton />
-              <OfflineIndicator />
-              <PushPermissionBanner />
-              <ServiceWorkerRegistration />
-            </ThemeProvider>
+          <Providers defaultTheme={theme}>
+            <main>{children}</main>
+            <Analytics />
+            <SpeedInsights />
           </Providers>
         </NextIntlClientProvider>
       </body>
