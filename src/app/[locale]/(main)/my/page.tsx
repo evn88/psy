@@ -1,41 +1,64 @@
 import { auth } from '@/auth';
-import { redirect } from 'next/navigation';
 import prisma from '@/shared/lib/prisma';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, CalendarDays, ClipboardList } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 import { formatInTimeZone } from 'date-fns-tz';
 import { enUS, ru } from 'date-fns/locale';
+import { type AppLocale, defaultLocale, isLocale } from '@/i18n/config';
+import { redirect } from '@/i18n/navigation';
+
+interface MyDashboardPageProps {
+  params: Promise<{ locale: string }>;
+}
+
+/**
+ * Возвращает авторизованного пользователя или выполняет locale-aware redirect на вход.
+ * Дополнительный `throw` нужен только для корректного сужения типов после redirect.
+ * @param user - пользователь из сессии.
+ * @param locale - активная locale.
+ * @returns Авторизованный пользователь.
+ */
+const requireAuthenticatedUser = <TUser,>(
+  user: TUser | null | undefined,
+  locale: AppLocale
+): TUser => {
+  if (!user) {
+    redirect({ href: '/auth', locale });
+    throw new Error('UNREACHABLE_AUTH_REDIRECT');
+  }
+
+  return user;
+};
 
 /**
  * Дашборд личного кабинета пользователя.
  * Отображает приветствие и виджет-пример со статистикой.
  * GUEST перенаправляется на /my/profile.
  */
-export default async function MyDashboardPage() {
+export default async function MyDashboardPage({ params }: MyDashboardPageProps) {
+  const { locale } = await params;
+  const currentLocale: AppLocale = isLocale(locale) ? locale : defaultLocale;
   const session = await auth();
   const t = await getTranslations('My');
-
-  if (!session?.user) {
-    redirect('/auth');
-  }
+  const user = requireAuthenticatedUser(session?.user, currentLocale);
 
   // GUEST не имеет доступа к дашборду
-  if (session.user.role === 'GUEST') {
-    redirect('/my/profile');
+  if (user.role === 'GUEST') {
+    redirect({ href: '/my/profile', locale: currentLocale });
   }
 
   // Статистика по опросам пользователя
   const pendingSurveys = await prisma.surveyAssignment.count({
     where: {
-      userId: session.user.id,
+      userId: user.id,
       status: 'PENDING'
     }
   });
 
   const completedSurveys = await prisma.surveyAssignment.count({
     where: {
-      userId: session.user.id,
+      userId: user.id,
       status: 'COMPLETED'
     }
   });
@@ -43,7 +66,7 @@ export default async function MyDashboardPage() {
   // Получаем ближайшую сессию
   const nextSession = await prisma.event.findFirst({
     where: {
-      userId: session.user.id,
+      userId: user.id,
       status: { in: ['SCHEDULED', 'PENDING_CONFIRMATION'] },
       start: {
         gte: new Date()
@@ -56,7 +79,7 @@ export default async function MyDashboardPage() {
 
   // Получаем полные данные пользователя для timezone и language
   const dbUser = await prisma.user.findUnique({
-    where: { id: session.user.id },
+    where: { id: user.id },
     select: { timezone: true, language: true }
   });
 
@@ -71,7 +94,7 @@ export default async function MyDashboardPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
-          {t('dashboardGreeting', { name: session.user.name || '' })}
+          {t('dashboardGreeting', { name: user.name || '' })}
         </h2>
         <p className="text-muted-foreground mt-1">{t('dashboardSubtitle')}</p>
       </div>

@@ -1,19 +1,13 @@
 import type { Metadata } from 'next';
-import { auth } from '@/auth';
-import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
-
-import { AppSidebar } from '@/components/admin/app-sidebar';
+import { redirect } from 'next/navigation';
+import { type ReactNode } from 'react';
+import { auth } from '@/auth';
 import { AdminBreadcrumbs } from '@/components/admin/admin-breadcrumbs';
-import { BreadcrumbProvider } from '@/components/breadcrumb-context';
+import { AppSidebar } from '@/components/admin/app-sidebar';
+import { SIDEBAR_COOKIE_NAME } from '@/components/ui/sidebar';
+import { SidebarWorkspaceLayout } from '@/shared/SidebarWorkspaceLayout';
 import { getAdminUnreadSurveysCount } from './surveys/actions';
-import { Separator } from '@/components/ui/separator';
-import {
-  SIDEBAR_COOKIE_NAME,
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger
-} from '@/components/ui/sidebar';
 
 export const metadata: Metadata = {
   robots: {
@@ -22,14 +16,20 @@ export const metadata: Metadata = {
   }
 };
 
+interface AdminLayoutProps {
+  children: ReactNode;
+}
+
 /**
  * Layout для админ-панели.
- * Оборачивает содержимое в BreadcrumbProvider для поддержки динамических названий.
+ * Оставляет на сервере только проверку доступа и загрузку данных для shell.
+ * @param props - дочернее дерево админского раздела.
+ * @returns Серверная обёртка, передающая данные в клиентский shell.
  */
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+const AdminLayout = async ({ children }: Readonly<AdminLayoutProps>) => {
   const session = await auth();
   const cookieStore = await cookies();
-  const defaultOpen =
+  const defaultSidebarOpen =
     cookieStore.get(SIDEBAR_COOKIE_NAME)?.value === 'true' ||
     cookieStore.get('sidebar:state')?.value === 'true';
 
@@ -44,20 +44,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const unreadSurveysCount = await getAdminUnreadSurveysCount();
 
   return (
-    <SidebarProvider defaultOpen={defaultOpen}>
-      <AppSidebar user={session.user} unreadSurveysCount={unreadSurveysCount} />
-      <SidebarInset>
-        <BreadcrumbProvider>
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-            <div className="flex items-center gap-2 px-4">
-              <SidebarTrigger className="-ml-1 h-9 w-9 md:h-7 md:w-7" />
-              <Separator orientation="vertical" className="mr-2 h-4" />
-              <AdminBreadcrumbs />
-            </div>
-          </header>
-          <div className="flex flex-1 flex-col gap-4 p-4 pt-6">{children}</div>
-        </BreadcrumbProvider>
-      </SidebarInset>
-    </SidebarProvider>
+    <SidebarWorkspaceLayout
+      defaultSidebarOpen={defaultSidebarOpen}
+      sidebar={<AppSidebar user={session.user} unreadSurveysCount={unreadSurveysCount} />}
+      breadcrumbs={<AdminBreadcrumbs />}
+    >
+      {children}
+    </SidebarWorkspaceLayout>
   );
-}
+};
+
+export default AdminLayout;

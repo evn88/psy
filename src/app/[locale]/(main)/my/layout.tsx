@@ -1,20 +1,15 @@
 import type { Metadata } from 'next';
-import { auth } from '@/auth';
-import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
-
-import { MySidebar } from '@/components/my/my-sidebar';
+import { type ReactNode } from 'react';
+import { auth } from '@/auth';
 import { MyBreadcrumbs } from '@/components/my/my-breadcrumbs';
-import { BreadcrumbProvider } from '@/components/breadcrumb-context';
-import { getUserUnreadSurveysCount } from './surveys/actions';
-import { Separator } from '@/components/ui/separator';
-import {
-  SIDEBAR_COOKIE_NAME,
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger
-} from '@/components/ui/sidebar';
+import { MySidebar } from '@/components/my/my-sidebar';
 import { SurveySync } from '@/components/pwa/SurveySync';
+import { SIDEBAR_COOKIE_NAME } from '@/components/ui/sidebar';
+import { type AppLocale, defaultLocale, isLocale } from '@/i18n/config';
+import { redirect } from '@/i18n/navigation';
+import { SidebarWorkspaceLayout } from '@/shared/SidebarWorkspaceLayout';
+import { getUserUnreadSurveysCount } from './surveys/actions';
 
 export const metadata: Metadata = {
   robots: {
@@ -23,39 +18,58 @@ export const metadata: Metadata = {
   }
 };
 
+interface MyLayoutProps {
+  children: ReactNode;
+  params: Promise<{ locale: string }>;
+}
+
+/**
+ * Возвращает авторизованного пользователя или выполняет locale-aware redirect на вход.
+ * Дополнительный `throw` нужен только для корректного сужения типов после redirect.
+ * @param user - пользователь из сессии.
+ * @param locale - активная locale.
+ * @returns Авторизованный пользователь.
+ */
+const requireAuthenticatedUser = <TUser,>(
+  user: TUser | null | undefined,
+  locale: AppLocale
+): TUser => {
+  if (!user) {
+    redirect({ href: '/auth', locale });
+    throw new Error('UNREACHABLE_AUTH_REDIRECT');
+  }
+
+  return user;
+};
+
 /**
  * Layout для личного кабинета пользователя.
- * Оборачивает содержимое в BreadcrumbProvider для поддержки динамических названий.
+ * Оставляет на сервере только авторизацию и загрузку данных для клиентской оболочки.
+ * @param props - дочернее дерево раздела пользователя.
+ * @returns Серверная обёртка, передающая данные в клиентский shell.
  */
-export default async function MyLayout({ children }: { children: React.ReactNode }) {
+const MyLayout = async ({ children, params }: Readonly<MyLayoutProps>) => {
+  const { locale } = await params;
+  const currentLocale: AppLocale = isLocale(locale) ? locale : defaultLocale;
   const session = await auth();
   const cookieStore = await cookies();
-  const defaultOpen =
+  const user = requireAuthenticatedUser(session?.user, currentLocale);
+  const defaultSidebarOpen =
     cookieStore.get(SIDEBAR_COOKIE_NAME)?.value === 'true' ||
     cookieStore.get('sidebar:state')?.value === 'true';
-
-  if (!session?.user) {
-    redirect('/auth');
-  }
 
   const unreadSurveysCount = await getUserUnreadSurveysCount();
 
   return (
-    <SidebarProvider defaultOpen={defaultOpen}>
-      <MySidebar user={session.user} unreadSurveysCount={unreadSurveysCount} />
-      <SidebarInset>
-        <BreadcrumbProvider>
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-            <div className="flex items-center gap-2 px-4">
-              <SidebarTrigger className="-ml-1 h-9 w-9 md:h-7 md:w-7" />
-              <Separator orientation="vertical" className="mr-2 h-4" />
-              <MyBreadcrumbs />
-            </div>
-          </header>
-          <div className="flex flex-1 flex-col gap-4 p-4 pt-6">{children}</div>
-        </BreadcrumbProvider>
-        <SurveySync />
-      </SidebarInset>
-    </SidebarProvider>
+    <SidebarWorkspaceLayout
+      defaultSidebarOpen={defaultSidebarOpen}
+      sidebar={<MySidebar user={user} unreadSurveysCount={unreadSurveysCount} />}
+      breadcrumbs={<MyBreadcrumbs />}
+      afterContent={<SurveySync />}
+    >
+      {children}
+    </SidebarWorkspaceLayout>
   );
-}
+};
+
+export default MyLayout;

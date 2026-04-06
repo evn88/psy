@@ -1,19 +1,37 @@
 'use client';
 
 import { useState } from 'react';
+import { Link } from '@/i18n/navigation';
+import DocumentLocaleLink from '@/components/document-locale-link';
 import styles from './HeroNav.module.css';
 
-interface NavLink {
-  href: string;
-  label: string;
-}
+type NavLink =
+  | {
+      href: string;
+      kind: 'anchor';
+      label: string;
+    }
+  | {
+      href: string;
+      kind: 'route';
+      label: string;
+      navigation: 'client' | 'document';
+    };
 
 interface HeroNavBurgerProps {
   links: NavLink[];
+  ctaLabel: string;
+  openMenuLabel: string;
+  closeMenuLabel: string;
 }
 
-/** Бургер-кнопка и мобильное меню для Hero-навигации */
-const HeroNavBurger = ({ links }: HeroNavBurgerProps) => {
+/**
+ * Бургер-кнопка и мобильное меню для Hero-навигации.
+ * Сохраняет locale-aware маршруты для публичных ссылок сайта.
+ * @param props - список ссылок и локализованные подписи элементов управления.
+ * @returns Кнопка открытия и мобильное меню.
+ */
+const HeroNavBurger = ({ links, ctaLabel, openMenuLabel, closeMenuLabel }: HeroNavBurgerProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const close = () => setIsOpen(false);
@@ -21,9 +39,10 @@ const HeroNavBurger = ({ links }: HeroNavBurgerProps) => {
   return (
     <>
       <button
+        type="button"
         className={styles.burger}
         onClick={() => setIsOpen(prev => !prev)}
-        aria-label={isOpen ? 'Закрыть меню' : 'Открыть меню'}
+        aria-label={isOpen ? closeMenuLabel : openMenuLabel}
         aria-expanded={isOpen}
       >
         {/* Инлайн SVG из /assets/images/adhd/menu.svg */}
@@ -58,23 +77,44 @@ const HeroNavBurger = ({ links }: HeroNavBurgerProps) => {
 
       {isOpen && (
         <div className={styles.nav__overlay} role="dialog" aria-modal="true">
-          <button className={styles.nav__close} onClick={close} aria-label="Закрыть меню">
+          <button
+            type="button"
+            className={styles.nav__close}
+            onClick={close}
+            aria-label={closeMenuLabel}
+          >
             ✕
           </button>
 
           <ul className={styles.nav__mobile_list}>
-            {links.map(({ href, label }) => (
-              <li key={href}>
-                <a href={href} className={styles.nav__mobile_link} onClick={close}>
-                  {label}
-                </a>
+            {links.map(link => (
+              <li key={link.href}>
+                {link.kind === 'route' ? (
+                  link.navigation === 'document' ? (
+                    <DocumentLocaleLink
+                      href={link.href}
+                      className={styles.nav__mobile_link}
+                      onClick={close}
+                    >
+                      {link.label}
+                    </DocumentLocaleLink>
+                  ) : (
+                    <Link href={link.href} className={styles.nav__mobile_link} onClick={close}>
+                      {link.label}
+                    </Link>
+                  )
+                ) : (
+                  <a href={link.href} className={styles.nav__mobile_link} onClick={close}>
+                    {link.label}
+                  </a>
+                )}
               </li>
             ))}
             <li>
               <div className={styles.nav__btn_wrap}>
                 <span className={styles.hero__oval} aria-hidden="true" />
                 <a href="#footer" className={styles.nav__btn} onClick={close}>
-                  Записаться
+                  {ctaLabel}
                 </a>
               </div>
             </li>

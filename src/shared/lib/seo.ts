@@ -4,6 +4,7 @@ import { type AppLocale, defaultLocale, locales } from '@/i18n/config';
 export const SITE_URL = 'https://vershkov.com';
 export const SITE_ORIGIN = new URL(SITE_URL);
 export const SITE_NAME = 'Vershkov.com';
+export const SITE_ALTERNATE_NAMES = ['Vershkov', 'vershkov.com'] as const;
 
 const DEFAULT_OG_IMAGE_PATH = '/apple-icon.png';
 
@@ -17,6 +18,11 @@ interface SeoLocaleCopy {
 }
 
 type OpenGraphMetadata = NonNullable<Metadata['openGraph']>;
+
+interface WebsiteStructuredDataNavigationItem {
+  name: string;
+  pathname: string;
+}
 
 const SEO_COPY: Record<AppLocale, SeoLocaleCopy> = {
   en: {
@@ -156,6 +162,50 @@ export const createOpenGraphMetadata = (metadata: OpenGraphMetadata): OpenGraphM
   return {
     siteName: SITE_NAME,
     ...metadata
+  };
+};
+
+/**
+ * Создает schema.org-разметку сайта и ключевых разделов навигации.
+ * Используется на главной странице, чтобы поисковик видел ключевые разделы сайта.
+ * @param locale - активная локаль страницы.
+ * @param navigationItems - важные публичные разделы сайта.
+ * @returns JSON-LD объект для `WebSite` и `SiteNavigationElement`.
+ */
+export const createWebsiteStructuredData = (
+  locale: AppLocale,
+  navigationItems: readonly WebsiteStructuredDataNavigationItem[]
+): Record<string, unknown> => {
+  const localizedHomeUrl = getLocalizedUrl(locale, '/');
+
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'WebSite',
+        '@id': `${SITE_URL}#website`,
+        url: SITE_URL,
+        name: SITE_NAME,
+        alternateName: [...SITE_ALTERNATE_NAMES]
+      },
+      {
+        '@type': 'WebPage',
+        '@id': `${localizedHomeUrl}#webpage`,
+        url: localizedHomeUrl,
+        name: getSeoCopy(locale).homeTitle,
+        isPartOf: {
+          '@id': `${SITE_URL}#website`
+        }
+      },
+      ...navigationItems.map(item => ({
+        '@type': 'SiteNavigationElement',
+        name: item.name,
+        url: getLocalizedUrl(locale, item.pathname),
+        isPartOf: {
+          '@id': `${SITE_URL}#website`
+        }
+      }))
+    ]
   };
 };
 

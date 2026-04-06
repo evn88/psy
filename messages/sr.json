@@ -15,7 +15,50 @@
     "work4": "Rad sa poremećajima u ishrani.",
     "contactTitle": "Sajt je u razvoju, ali možete me kontaktirati:",
     "telegramLink": "Telegram Kanal",
-    "tags": ["Šema terapija", "ACT", "RO DBT", "ADHD/ASD", "Poremećaji ishrane"]
+    "instagramLink": "Instagram",
+    "blogLink": "Blog",
+    "tags": ["Šema terapija", "ACT", "RO DBT", "ADHD/ASD", "Poremećaji ishrane"],
+    "nav": {
+      "about": "O meni",
+      "services": "Kako mogu da pomognem?",
+      "faq": "Česta pitanja",
+      "contact": "Kontakti",
+      "blog": "Blog",
+      "account": "Lični kabinet",
+      "cta": "Zakaži termin",
+      "openMenu": "Otvori meni",
+      "closeMenu": "Zatvori meni"
+    },
+    "hero": {
+      "titleAccent": "da li si umoran?",
+      "titleRest": "od beskrajne borbe sa prokrastinacijom, anksioznošću i sagorevanjem?",
+      "subtitleLine1": "Ponovo sebi obećavaš da ćeš se „sabrati” — i ponovo",
+      "subtitleLine2": "osećaš krivicu i stid kada ne uspe.",
+      "highlight": "A iznutra se stalno vraća isto pitanje:",
+      "questionLine1": "Zašto ne mogu kao drugi?",
+      "questionLine2": "Šta nije u redu sa mnom?",
+      "catAlt": "Mačka umotana u ćebe",
+      "dogAlt": "Iznenađeni pas"
+    },
+    "devBanner": {
+      "title": "Sajt je u razvoju",
+      "descriptionLine1": "Svi odeljci će uskoro biti dostupni ovde.",
+      "descriptionLine2": "Za sada mi možete pisati direktno ↓"
+    },
+    "footer": {
+      "titleLine1": "Ako i dalje imate",
+      "titleAccent": "pitanja, javite mi se",
+      "descriptionStart": "Izaberite kanal koji vam je najudobniji i posetite",
+      "blogLabel": "blog",
+      "descriptionEnd": "za članke i korisne materijale.",
+      "telegramLabel": "Telegram",
+      "whatsappLabel": "WhatsApp",
+      "instagramLabel": "Instagram",
+      "privacyLabel": "Politika privatnosti",
+      "consentLabel": "Saglasnost za obradu podataka",
+      "copyright": "@ Sva prava zadržana. {year}",
+      "credit": "Dizajn sajta uradila @akwebd"
+    }
   },
   "Auth": {
     "title": "Dobrodošli",
@@ -47,7 +90,8 @@
     "accountDisabled": "Vaš nalog je onemogućen. Kontaktirajte administratora.",
     "tooManyAttempts": "Previše pokušaja prijave. Pokušajte ponovo za 1 sat.",
     "userExists": "Korisnik sa ovim emailom je već registrovan na drugi način. Molimo prijavite se lozinkom ili povežite Google nalog u profilu.",
-    "oauthAccountNotLinked": "Ovaj Google nalog nije povezan sa vašim profilom. Povežite ga u podešavanjima profila."
+    "oauthAccountNotLinked": "Ovaj Google nalog nije povezan sa vašim profilom. Povežite ga u podešavanjima profila.",
+    "legalNotice": "Klikom na <signIn>„Prijavi se”</signIn> ili <createAccount>„Kreiraj nalog”</createAccount>, prihvatate uslove <agreement>Korisničkog ugovora</agreement> i dajete saglasnost za obradu <consent>ličnih podataka</consent>."
   },
   "EmailVerificationConfirm": {
     "title": "Potvrdite email",
@@ -481,6 +525,7 @@
   },
   "Blog": {
     "title": "Blog",
+    "accountLink": "Lični kabinet",
     "readMore": "Čitaj dalje",
     "minRead": "{n} min",
     "allCategories": "Sve",

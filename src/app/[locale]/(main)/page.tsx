@@ -1,22 +1,19 @@
 import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
 import styles from '@/styles/landing/landing.module.css';
-import { About } from '@/components/landing/About/About';
-import { Problems } from '@/components/landing/Problems/Problems';
-import { Services } from '@/components/landing/Services/Services';
-import { HowItWorks } from '@/components/landing/HowItWorks/HowItWorks';
-import { Testimonials } from '@/components/landing/Testimonials/Testimonials';
-import { FAQ } from '@/components/landing/FAQ/FAQ';
 import { DevBanner } from '@/components/landing/DevBanner/DevBanner';
 import { Footer } from '@/components/landing/Footer/Footer';
+import { Hero } from '@/components/landing/Hero/Hero';
 import { defaultLocale, isLocale } from '@/i18n/config';
+import { JsonLd } from '@/shared/json-ld';
 import {
   createCanonicalAlternates,
   createOpenGraphMetadata,
+  createWebsiteStructuredData,
   getLocalizedUrl,
   getSeoCopy,
   resolveMetadataImage
 } from '@/shared/lib/seo';
-import { Hero } from '@/components/landing/Hero/Hero';
 
 // import { ThemeToggle } from '@/components/landing/ThemeToggle';
 
@@ -64,9 +61,18 @@ export const generateMetadata = async ({ params }: HomePageProps): Promise<Metad
  * Лендинг — главная страница.
  * Все компоненты обёрнуты в .landingWrapper (CSS Module) для 100% изоляции от admin/my.
  */
-const HomePage = () => {
+const HomePage = async ({ params }: HomePageProps) => {
+  const { locale } = await params;
+  const currentLocale = isLocale(locale) ? locale : defaultLocale;
+  const tNav = await getTranslations({ locale: currentLocale, namespace: 'Home.nav' });
+  const structuredData = createWebsiteStructuredData(currentLocale, [
+    { name: tNav('blog'), pathname: '/blog' },
+    { name: tNav('account'), pathname: '/my' }
+  ]);
+
   return (
     <div className={styles.landingWrapper}>
+      <JsonLd data={structuredData} />
       {/*<ThemeToggle />*/}
       <Hero />
       {/*<About />*/}

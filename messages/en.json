@@ -17,7 +17,48 @@
     "telegramLink": "Telegram Channel",
     "instagramLink": "Instagram",
     "blogLink": "Blog",
-    "tags": ["Schema Therapy", "ACT", "RO DBT", "ADHD/ASD", "ED"]
+    "tags": ["Schema Therapy", "ACT", "RO DBT", "ADHD/ASD", "ED"],
+    "nav": {
+      "about": "About me",
+      "services": "How I can help",
+      "faq": "FAQ",
+      "contact": "Contacts",
+      "blog": "Blog",
+      "account": "Personal account",
+      "cta": "Book a session",
+      "openMenu": "Open menu",
+      "closeMenu": "Close menu"
+    },
+    "hero": {
+      "titleAccent": "are you tired?",
+      "titleRest": "of the endless fight with procrastination, anxiety, and burnout?",
+      "subtitleLine1": "You promise yourself to “pull it together” again and again,",
+      "subtitleLine2": "and then feel guilt and shame when it still does not work.",
+      "highlight": "And inside, the same question keeps returning:",
+      "questionLine1": "Why can’t I do it like everyone else?",
+      "questionLine2": "What is wrong with me?",
+      "catAlt": "Cat wrapped in a blanket",
+      "dogAlt": "Surprised dog"
+    },
+    "devBanner": {
+      "title": "The site is under development",
+      "descriptionLine1": "All sections will appear here soon.",
+      "descriptionLine2": "For now, you can write to me directly ↓"
+    },
+    "footer": {
+      "titleLine1": "If you still have",
+      "titleAccent": "questions, reach out to me",
+      "descriptionStart": "Use whichever channel is easiest for you, and also visit",
+      "blogLabel": "the blog",
+      "descriptionEnd": "for articles and practical resources.",
+      "telegramLabel": "Telegram",
+      "whatsappLabel": "WhatsApp",
+      "instagramLabel": "Instagram",
+      "privacyLabel": "Privacy policy",
+      "consentLabel": "Consent to data processing",
+      "copyright": "@ All rights reserved. {year}",
+      "credit": "Site design by @akwebd"
+    }
   },
   "Auth": {
     "title": "Welcome Back",
@@ -49,7 +90,8 @@
     "accountDisabled": "Your account has been disabled. Please contact the administrator.",
     "tooManyAttempts": "Too many login attempts. Please try again in 1 hour.",
     "userExists": "A user with this email already exists with a different sign-in method. Please sign in with your password or link Google in your profile.",
-    "oauthAccountNotLinked": "This Google account is not linked to your profile. Link it in profile settings."
+    "oauthAccountNotLinked": "This Google account is not linked to your profile. Link it in profile settings.",
+    "legalNotice": "By clicking <signIn>“Sign In”</signIn> or <createAccount>“Create Account”</createAccount>, you accept the <agreement>User Agreement</agreement> and consent to the processing of <consent>personal data</consent>."
   },
   "EmailVerificationConfirm": {
     "title": "Confirm your email",
@@ -509,6 +551,7 @@
   },
   "Blog": {
     "title": "Blog",
+    "accountLink": "Personal account",
     "readMore": "Read more",
     "minRead": "{n} min",
     "allCategories": "All",
