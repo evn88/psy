@@ -7,8 +7,7 @@ export const revalidate = 3600;
 
 const STATIC_PUBLIC_ROUTES = [
   { pathname: '/', changeFrequency: 'weekly' as const, priority: 1 },
-  { pathname: '/blog', changeFrequency: 'weekly' as const, priority: 0.8 },
-  { pathname: '/account', changeFrequency: 'weekly' as const, priority: 0.7 }
+  { pathname: '/blog', changeFrequency: 'weekly' as const, priority: 0.8 }
 ];
 
 interface SitemapTranslationRecord {

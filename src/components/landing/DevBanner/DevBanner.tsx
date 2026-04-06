@@ -24,7 +24,14 @@ export const DevBanner = () => {
         </div>
 
         {/* Фон — клетчатый лист */}
-        <Image src={paperImg} alt="" fill className={styles.paper} aria-hidden />
+        <Image
+          src={paperImg}
+          alt=""
+          fill
+          sizes="(max-width: 600px) calc(100vw - 3rem), (max-width: 1280px) 55vw, 800px"
+          className={styles.paper}
+          aria-hidden
+        />
 
         {/* Котик */}
         <div className={styles.cat} aria-hidden="true">

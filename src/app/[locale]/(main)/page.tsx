@@ -67,7 +67,7 @@ const HomePage = async ({ params }: HomePageProps) => {
   const tNav = await getTranslations({ locale: currentLocale, namespace: 'Home.nav' });
   const structuredData = createWebsiteStructuredData(currentLocale, [
     { name: tNav('blog'), pathname: '/blog' },
-    { name: tNav('account'), pathname: '/account' }
+    { name: tNav('account'), pathname: '/my' }
   ]);
 
   return (

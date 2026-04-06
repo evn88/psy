@@ -90,7 +90,8 @@
     "accountDisabled": "Your account has been disabled. Please contact the administrator.",
     "tooManyAttempts": "Too many login attempts. Please try again in 1 hour.",
     "userExists": "A user with this email already exists with a different sign-in method. Please sign in with your password or link Google in your profile.",
-    "oauthAccountNotLinked": "This Google account is not linked to your profile. Link it in profile settings."
+    "oauthAccountNotLinked": "This Google account is not linked to your profile. Link it in profile settings.",
+    "legalNotice": "By clicking <signIn>“Sign In”</signIn> or <createAccount>“Create Account”</createAccount>, you accept the <agreement>User Agreement</agreement> and consent to the processing of <consent>personal data</consent>."
   },
   "EmailVerificationConfirm": {
     "title": "Confirm your email",
@@ -182,23 +183,6 @@
     "message": "Your account and all associated data have been successfully deleted. Thank you for being with us.",
     "regretMessage": "If you ever change your mind — we'd love to have you back.",
     "registerButton": "Register again"
-  },
-  "AccountEntry": {
-    "eyebrow": "Private space for clients",
-    "title": "Personal account",
-    "description": "Manage bookings, questionnaires, and profile settings in one place.",
-    "primaryCta": "Sign in or register",
-    "secondaryCta": "Open the blog",
-    "cardTitle": "What you get inside",
-    "cardDescription": "The page is public for search engines, while the real workspace opens after sign-in.",
-    "features": {
-      "sessionsTitle": "Bookings and sessions",
-      "sessionsDescription": "Review upcoming consultations and manage rescheduling requests.",
-      "surveysTitle": "Questionnaires and forms",
-      "surveysDescription": "Complete forms and keep results in one protected place.",
-      "settingsTitle": "Profile and settings",
-      "settingsDescription": "Change language, theme, and personal details without contacting support."
-    }
   },
   "Admin": {
     "dashboardTitle": "Dashboard",

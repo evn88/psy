@@ -54,6 +54,9 @@ const privatePageHeaders = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  devIndicators: {
+    position: 'bottom-right'
+  },
   output: 'standalone', //создает папку со всеми необходимыми файлами, включая урезанные node_modules
   async headers() {
     return [

@@ -90,7 +90,8 @@
     "accountDisabled": "Vaš nalog je onemogućen. Kontaktirajte administratora.",
     "tooManyAttempts": "Previše pokušaja prijave. Pokušajte ponovo za 1 sat.",
     "userExists": "Korisnik sa ovim emailom je već registrovan na drugi način. Molimo prijavite se lozinkom ili povežite Google nalog u profilu.",
-    "oauthAccountNotLinked": "Ovaj Google nalog nije povezan sa vašim profilom. Povežite ga u podešavanjima profila."
+    "oauthAccountNotLinked": "Ovaj Google nalog nije povezan sa vašim profilom. Povežite ga u podešavanjima profila.",
+    "legalNotice": "Klikom na <signIn>„Prijavi se”</signIn> ili <createAccount>„Kreiraj nalog”</createAccount>, prihvatate uslove <agreement>Korisničkog ugovora</agreement> i dajete saglasnost za obradu <consent>ličnih podataka</consent>."
   },
   "EmailVerificationConfirm": {
     "title": "Potvrdite email",
@@ -182,23 +183,6 @@
     "message": "Vaš nalog i svi povezani podaci su uspešno obrisani. Hvala vam što ste bili s nama.",
     "regretMessage": "Ako se ikada predomislite — biće nam drago da vas ponovo vidimo.",
     "registerButton": "Registrujte se ponovo"
-  },
-  "AccountEntry": {
-    "eyebrow": "Privatan prostor za klijente",
-    "title": "Lični kabinet",
-    "description": "Upravljajte zakazivanjima, upitnicima i podešavanjima profila na jednom mestu.",
-    "primaryCta": "Prijavite se ili se registrujte",
-    "secondaryCta": "Otvorite blog",
-    "cardTitle": "Šta vas čeka unutra",
-    "cardDescription": "Stranica je javna za pretragu, a zaštićeni kabinet se otvara nakon prijave.",
-    "features": {
-      "sessionsTitle": "Zakazivanja i sesije",
-      "sessionsDescription": "Pregledajte naredne konsultacije i upravljajte zahtevima za pomeranje termina.",
-      "surveysTitle": "Upitnici i obrasci",
-      "surveysDescription": "Popunjavajte formulare i čuvajte rezultate na jednom bezbednom mestu.",
-      "settingsTitle": "Profil i podešavanja",
-      "settingsDescription": "Menjajte jezik, temu i lične podatke bez obraćanja podršci."
-    }
   },
   "Admin": {
     "dashboardTitle": "Kontrolna tabla",

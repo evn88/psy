@@ -2,13 +2,21 @@
 
 import { useState } from 'react';
 import { Link } from '@/i18n/navigation';
+import DocumentLocaleLink from '@/components/document-locale-link';
 import styles from './HeroNav.module.css';
 
-interface NavLink {
-  kind: 'anchor' | 'route';
-  href: string;
-  label: string;
-}
+type NavLink =
+  | {
+      href: string;
+      kind: 'anchor';
+      label: string;
+    }
+  | {
+      href: string;
+      kind: 'route';
+      label: string;
+      navigation: 'client' | 'document';
+    };
 
 interface HeroNavBurgerProps {
   links: NavLink[];
@@ -79,15 +87,25 @@ const HeroNavBurger = ({ links, ctaLabel, openMenuLabel, closeMenuLabel }: HeroN
           </button>
 
           <ul className={styles.nav__mobile_list}>
-            {links.map(({ kind, href, label }) => (
-              <li key={href}>
-                {kind === 'route' ? (
-                  <Link href={href} className={styles.nav__mobile_link} onClick={close}>
-                    {label}
-                  </Link>
+            {links.map(link => (
+              <li key={link.href}>
+                {link.kind === 'route' ? (
+                  link.navigation === 'document' ? (
+                    <DocumentLocaleLink
+                      href={link.href}
+                      className={styles.nav__mobile_link}
+                      onClick={close}
+                    >
+                      {link.label}
+                    </DocumentLocaleLink>
+                  ) : (
+                    <Link href={link.href} className={styles.nav__mobile_link} onClick={close}>
+                      {link.label}
+                    </Link>
+                  )
                 ) : (
-                  <a href={href} className={styles.nav__mobile_link} onClick={close}>
-                    {label}
+                  <a href={link.href} className={styles.nav__mobile_link} onClick={close}>
+                    {link.label}
                   </a>
                 )}
               </li>

@@ -1,13 +1,21 @@
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
+import DocumentLocaleLink from '@/components/document-locale-link';
 import HeroNavBurger from './HeroNavBurger';
 import styles from './HeroNav.module.css';
 
-interface HeroNavLink {
-  kind: 'anchor' | 'route';
-  href: string;
-  label: string;
-}
+type HeroNavLink =
+  | {
+      href: string;
+      kind: 'anchor';
+      label: string;
+    }
+  | {
+      href: string;
+      kind: 'route';
+      label: string;
+      navigation: 'client' | 'document';
+    };
 
 /**
  * Навигация Hero-секции лендинга.
@@ -21,23 +29,29 @@ const HeroNav = () => {
     { kind: 'anchor', href: '#services', label: t('services') },
     { kind: 'anchor', href: '#faq', label: t('faq') },
     { kind: 'anchor', href: '#footer', label: t('contact') },
-    { kind: 'route', href: '/blog', label: t('blog') },
-    { kind: 'route', href: '/account', label: t('account') }
+    { kind: 'route', href: '/blog', label: t('blog'), navigation: 'client' },
+    { kind: 'route', href: '/my', label: t('account'), navigation: 'document' }
   ];
 
   return (
     <nav className={styles.nav}>
       {/* Десктопный список ссылок — скрывается на мобиле через CSS */}
       <ul className={styles.nav__list}>
-        {links.map(({ kind, href, label }) => (
-          <li key={href}>
-            {kind === 'route' ? (
-              <Link href={href} className={styles.nav__link}>
-                {label}
-              </Link>
+        {links.map(link => (
+          <li key={link.href}>
+            {link.kind === 'route' ? (
+              link.navigation === 'document' ? (
+                <DocumentLocaleLink href={link.href} className={styles.nav__link}>
+                  {link.label}
+                </DocumentLocaleLink>
+              ) : (
+                <Link href={link.href} className={styles.nav__link}>
+                  {link.label}
+                </Link>
+              )
             ) : (
-              <a href={href} className={styles.nav__link}>
-                {label}
+              <a href={link.href} className={styles.nav__link}>
+                {link.label}
               </a>
             )}
           </li>

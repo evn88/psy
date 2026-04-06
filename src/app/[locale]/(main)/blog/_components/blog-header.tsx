@@ -4,6 +4,7 @@ import { useSyncExternalStore } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, Home, Moon, Sun } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
+import DocumentLocaleLink from '@/components/document-locale-link';
 import { getPathname, Link, usePathname } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/components/theme-provider';
@@ -86,12 +87,12 @@ export function BlogHeader() {
 
         {/* Правая часть: язык + тема */}
         <div className="flex items-center gap-3">
-          <Link
-            href="/account"
+          <DocumentLocaleLink
+            href="/my"
             className="hidden rounded-md border border-border/70 px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted sm:inline-flex"
           >
             {t('accountLink')}
-          </Link>
+          </DocumentLocaleLink>
 
           {/* Переключатель языков */}
           <div className="flex items-center gap-0.5 bg-muted rounded-lg p-0.5">

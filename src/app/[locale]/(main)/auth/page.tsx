@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Home } from 'lucide-react';
 import { signIn, useSession } from 'next-auth/react';
 import { signIn as webAuthnSignIn } from 'next-auth/webauthn';
 import { useSearchParams } from 'next/navigation';
@@ -12,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { getPathname, useRouter } from '@/i18n/navigation';
+import { getPathname, Link, useRouter } from '@/i18n/navigation';
 import { type AppLocale, defaultLocale, isLocale } from '@/i18n/config';
 
 /**
@@ -106,9 +107,31 @@ const getPostAuthPath = (role: 'ADMIN' | 'USER' | 'GUEST' | undefined): string =
   return '/my';
 };
 
+/**
+ * Компактная кнопка возврата на главную страницу.
+ * Размещается в карточках авторизации и подтверждения регистрации.
+ * @param props - подпись для accessibility.
+ * @returns Иконка-действие перехода на главную.
+ */
+const HomeShortcut = ({ label }: { label: string }) => {
+  return (
+    <Button
+      asChild
+      variant="outline"
+      size="icon"
+      className="absolute left-4 top-4 h-9 w-9 rounded-full border-border/70 bg-background/90 shadow-sm"
+    >
+      <Link href="/" aria-label={label} title={label}>
+        <Home className="h-4 w-4" />
+      </Link>
+    </Button>
+  );
+};
+
 export default function AuthPage() {
   const locale = useLocale();
   const t = useTranslations('Auth');
+  const tCommon = useTranslations('Common');
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
@@ -116,6 +139,30 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const legalNotice = t.rich('legalNotice', {
+    signIn: chunks => <span className="font-medium text-foreground">{chunks}</span>,
+    createAccount: chunks => <span className="font-medium text-foreground">{chunks}</span>,
+    agreement: chunks => (
+      <a
+        href="/documents/user-agreement.pdf"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-medium text-foreground underline underline-offset-4 transition-colors hover:text-primary"
+      >
+        {chunks}
+      </a>
+    ),
+    consent: chunks => (
+      <a
+        href="/documents/personal-data-consent.pdf"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-medium text-foreground underline underline-offset-4 transition-colors hover:text-primary"
+      >
+        {chunks}
+      </a>
+    )
+  });
 
   useEffect(() => {
     const errorParam = searchParams.get('error');
@@ -265,7 +312,8 @@ export default function AuthPage() {
   if (registrationSuccess) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md border-border shadow-lg">
+        <Card className="relative w-full max-w-md border-border shadow-lg">
+          <HomeShortcut label={tCommon('home')} />
           <CardHeader className="space-y-1 text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
               <svg
@@ -310,7 +358,8 @@ export default function AuthPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md border-border shadow-lg">
+      <Card className="relative w-full max-w-md border-border shadow-lg">
+        <HomeShortcut label={tCommon('home')} />
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold tracking-tight text-center">
             {t('title')}
@@ -337,7 +386,6 @@ export default function AuthPage() {
                   <Input
                     id="login-email"
                     type="email"
-                    placeholder="m@example.com"
                     value={loginEmail}
                     onChange={e => setLoginEmail(e.target.value)}
                     required
@@ -365,7 +413,6 @@ export default function AuthPage() {
                   <Label htmlFor="register-name">{t('nameLabel')}</Label>
                   <Input
                     id="register-name"
-                    placeholder={t('namePlaceholder')}
                     value={registerName}
                     onChange={e => setRegisterName(e.target.value)}
                     required
@@ -376,7 +423,6 @@ export default function AuthPage() {
                   <Input
                     id="register-email"
                     type="email"
-                    placeholder="m@example.com"
                     value={registerEmail}
                     onChange={e => setRegisterEmail(e.target.value)}
                     required
@@ -459,6 +505,8 @@ export default function AuthPage() {
               </Button>
             )}
           </div>
+
+          <p className="mt-5 text-center text-xs leading-5 text-muted-foreground">{legalNotice}</p>
         </CardContent>
       </Card>
     </div>

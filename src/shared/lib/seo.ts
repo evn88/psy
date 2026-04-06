@@ -15,8 +15,6 @@ interface SeoLocaleCopy {
   homeDescription: string;
   blogTitle: string;
   blogDescription: string;
-  accountTitle: string;
-  accountDescription: string;
 }
 
 type OpenGraphMetadata = NonNullable<Metadata['openGraph']>;
@@ -36,10 +34,7 @@ const SEO_COPY: Record<AppLocale, SeoLocaleCopy> = {
       'Online psychological counseling, practical ADHD support, and a clear therapy journey for adults and families.',
     blogTitle: 'Mental health blog',
     blogDescription:
-      'Articles about psychology, ADHD, self-regulation, and mental health in Russian, English, and Serbian.',
-    accountTitle: 'Personal account',
-    accountDescription:
-      'A secure client area for bookings, questionnaires, profile settings, and personal updates.'
+      'Articles about psychology, ADHD, self-regulation, and mental health in Russian, English, and Serbian.'
   },
   ru: {
     siteTitle: 'Vershkov.com',
@@ -50,10 +45,7 @@ const SEO_COPY: Record<AppLocale, SeoLocaleCopy> = {
       'Онлайн-консультации психолога, поддержка при СДВГ и понятный путь терапии для взрослых и семей.',
     blogTitle: 'Блог о ментальном здоровье',
     blogDescription:
-      'Статьи о психологии, СДВГ, саморегуляции и mental health на русском, английском и сербском.',
-    accountTitle: 'Личный кабинет',
-    accountDescription:
-      'Безопасный кабинет клиента для записей, анкет, настроек профиля и личных обновлений.'
+      'Статьи о психологии, СДВГ, саморегуляции и mental health на русском, английском и сербском.'
   },
   sr: {
     siteTitle: 'Vershkov.com',
@@ -64,10 +56,7 @@ const SEO_COPY: Record<AppLocale, SeoLocaleCopy> = {
       'Online psihološko savetovanje, podrška kod ADHD-a i jasan terapijski put za odrasle i porodice.',
     blogTitle: 'Blog o mentalnom zdravlju',
     blogDescription:
-      'Članci o psihologiji, ADHD-u, samoregulaciji i mentalnom zdravlju na ruskom, engleskom i srpskom.',
-    accountTitle: 'Lični kabinet',
-    accountDescription:
-      'Bezbedan korisnički prostor za zakazivanja, upitnike, podešavanja profila i lična obaveštenja.'
+      'Članci o psihologiji, ADHD-u, samoregulaciji i mentalnom zdravlju na ruskom, engleskom i srpskom.'
   }
 };
 
@@ -178,8 +167,7 @@ export const createOpenGraphMetadata = (metadata: OpenGraphMetadata): OpenGraphM
 
 /**
  * Создает schema.org-разметку сайта и ключевых разделов навигации.
- * Используется на главной странице, чтобы поисковик видел стабильные публичные ссылки
- * на блог и входную страницу личного кабинета.
+ * Используется на главной странице, чтобы поисковик видел ключевые разделы сайта.
  * @param locale - активная локаль страницы.
  * @param navigationItems - важные публичные разделы сайта.
  * @returns JSON-LD объект для `WebSite` и `SiteNavigationElement`.
