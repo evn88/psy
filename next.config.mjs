@@ -14,11 +14,11 @@ const contentSecurityPolicy = [
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
   "style-src 'self' 'unsafe-inline'",
-  `script-src 'self' 'unsafe-inline'${isDevelopment ? " 'unsafe-eval'" : ''}`,
+  `script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com${isDevelopment ? " 'unsafe-eval'" : ''}`,
   "connect-src 'self' https: wss:",
   "frame-src 'self' https:",
   "object-src 'none'",
-  'upgrade-insecure-requests'
+  ...(isDevelopment ? [] : ['upgrade-insecure-requests'])
 ].join('; ');
 
 const securityHeaders = [

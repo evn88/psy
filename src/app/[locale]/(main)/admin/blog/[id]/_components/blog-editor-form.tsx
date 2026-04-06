@@ -279,7 +279,7 @@ export function BlogEditorForm({
                     htmlFor="blog-editor-title"
                     className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground/80"
                   >
-                    Заголовок 123
+                    Заголовок
                   </Label>
                   <Controller
                     name="title"
