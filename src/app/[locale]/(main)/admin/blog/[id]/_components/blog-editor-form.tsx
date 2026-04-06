@@ -1,11 +1,12 @@
 'use client';
 
+import { useRef, useState } from 'react';
 import type { MDXEditorMethods } from '@mdxeditor/editor';
 import dynamic from 'next/dynamic';
-import { useRef } from 'react';
 import { Eye, EyeOff, Globe, History, Languages, Loader2, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import {
   Select,
@@ -14,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { CoverImageUpload } from '@/components/admin/blog/cover-image-upload';
 import { PreviewSizeSwitcher } from '@/components/admin/blog/preview-size-switcher';
 import { TranslateModal } from '@/components/admin/blog/translate-modal';
@@ -46,6 +48,9 @@ const MdxEditorWrapper = dynamic(
     )
   }
 );
+
+const BLOG_EDITOR_META_FIELD_CLASSNAME =
+  'rounded-xl border-input bg-card shadow-sm transition-[border-color,box-shadow] focus-visible:border-[#900A0B]/40 focus-visible:ring-2 focus-visible:ring-[#900A0B]/20 focus-visible:ring-offset-0';
 
 const ArticleContent = dynamic(
   () =>
@@ -227,26 +232,43 @@ export function BlogEditorForm({
 
       <div className="flex flex-1 flex-col overflow-hidden lg:flex-row">
         <div className="custom-scrollbar flex min-w-0 flex-1 flex-col overflow-y-auto bg-background no-scrollbar">
-          <div className="mx-auto flex h-full w-full max-w-5xl flex-col">
-            <div className="px-4 pt-6">
-              <Input
-                value={activeTranslation.title}
-                onChange={event => updateTranslation('title', event.target.value)}
-                placeholder="Заголовок статьи..."
-                className="h-auto rounded-none border-0 border-b-2 border-transparent px-0 py-2 text-2xl font-bold shadow-none transition-all placeholder:text-muted-foreground/30 focus-visible:border-[#900A0B]/30 focus-visible:ring-0 sm:text-3xl"
-              />
+          <div className="mx-auto flex w-full max-w-5xl flex-col pb-20">
+            <div className="space-y-4 px-4 pb-2 pt-6">
+              <div className="space-y-2">
+                <Label
+                  htmlFor="blog-editor-title"
+                  className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground/80"
+                >
+                  Заголовок
+                </Label>
+                <Input
+                  id="blog-editor-title"
+                  value={activeTranslation.title}
+                  onChange={event => updateTranslation('title', event.target.value)}
+                  placeholder="Введите заголовок статьи"
+                  className={`${BLOG_EDITOR_META_FIELD_CLASSNAME} h-12 text-base font-semibold sm:h-14 sm:text-lg`}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label
+                  htmlFor="blog-editor-description"
+                  className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground/80"
+                >
+                  Описание
+                </Label>
+                <Textarea
+                  id="blog-editor-description"
+                  value={activeTranslation.description}
+                  onChange={event => updateTranslation('description', event.target.value)}
+                  placeholder="Введите краткое описание для карточки статьи"
+                  rows={3}
+                  className={`${BLOG_EDITOR_META_FIELD_CLASSNAME} min-h-[104px] resize-y py-3 text-sm text-muted-foreground sm:text-base`}
+                />
+              </div>
             </div>
 
-            <div className="px-4 pb-2 pt-4">
-              <Input
-                value={activeTranslation.description}
-                onChange={event => updateTranslation('description', event.target.value)}
-                placeholder="Краткое описание для превью..."
-                className="h-auto border-0 border-l-2 border-[#900A0B]/20 bg-muted/30 px-3 py-2 text-sm italic text-muted-foreground transition-all focus-visible:border-[#900A0B] focus-visible:ring-0 sm:text-base"
-              />
-            </div>
-
-            <div className="sticky top-0 z-20 flex items-center justify-between border-b bg-background/90 px-4 pb-0 pt-2 backdrop-blur-md">
+            <div className="sticky top-0 z-20 flex items-center justify-between border-b bg-background/95 px-4 pb-0 pt-2 backdrop-blur-md">
               <div className="flex items-center gap-1">
                 {translations.map(translation => (
                   <button
