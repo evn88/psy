@@ -173,7 +173,7 @@ export const ProfileForm = ({
    * и затем запрашивает серверное состояние из того же API-контекста, что используется для WebAuthn.
    */
   useEffect(() => {
-    setPasskeys(safeInitialPasskeys);
+    setPasskeys(Array.isArray(initialPasskeys) ? initialPasskeys : []);
     void fetchPasskeys();
   }, [initialPasskeys]);
 

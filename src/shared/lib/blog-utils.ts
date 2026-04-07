@@ -36,7 +36,7 @@ export function generateSlug(title: string): string {
 /**
  * Возвращает локаль для блога с откатом на русский.
  */
-export function getBlogLocale(locale: string, availableLocales: string[]): AppLocale {
+export function getBlogLocale(locale: string, availableLocales: readonly string[]): AppLocale {
   if (availableLocales.includes(locale)) {
     return locale as AppLocale;
   }
@@ -45,9 +45,7 @@ export function getBlogLocale(locale: string, availableLocales: string[]): AppLo
     return defaultLocale;
   }
 
-  const firstAvailableLocale = locales.find(appLocale =>
-    availableLocales.includes(appLocale)
-  );
+  const firstAvailableLocale = locales.find(appLocale => availableLocales.includes(appLocale));
 
   return firstAvailableLocale ?? defaultLocale;
 }

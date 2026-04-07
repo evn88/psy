@@ -9,11 +9,10 @@ import { executeAiSkill } from '@/shared/lib/ai/execute-ai-skill.server';
 import type { BlogArticleTranslationResult } from '@/shared/lib/ai/skills/blog-article-translation.contract';
 import prisma from '@/shared/lib/prisma';
 
-/** Целевые локали для перевода (исключает исходный язык) */
-const TARGET_LOCALES = locales.filter(l => l !== defaultLocale) as const;
-
 const schema = z.object({
-  targetLocale: z.enum(TARGET_LOCALES),
+  targetLocale: z.enum(locales).refine(val => val !== defaultLocale, {
+    message: 'Целевая локаль не может совпадать с исходной'
+  }),
   modelId: aiModelIdSchema.optional(),
   overrides: aiSkillPromptOverridesSchema.optional()
 });
