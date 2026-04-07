@@ -1,5 +1,6 @@
+import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
-import { BLOG_EDITOR_LOCALE_NAMES } from './blog-editor-form.constants';
+import { BLOG_EDITOR_LOCALE_MESSAGE_KEYS } from './blog-editor-form.constants';
 import type { EditorTranslation } from './blog-editor-form.types';
 
 interface BlogEditorTranslationStatusProps {
@@ -13,6 +14,9 @@ interface BlogEditorTranslationStatusProps {
  * @returns Блок статусов переводов.
  */
 export const BlogEditorTranslationStatus = ({ translations }: BlogEditorTranslationStatusProps) => {
+  const tBlog = useTranslations('Admin.blog');
+  const tSidebar = useTranslations('Admin.blog.editor.sidebar');
+
   return (
     <div className="space-y-3">
       {translations.map(translation => (
@@ -28,21 +32,21 @@ export const BlogEditorTranslationStatus = ({ translations }: BlogEditorTranslat
                   : 'bg-muted-foreground/30'
               }`}
             />
-            <span>{BLOG_EDITOR_LOCALE_NAMES[translation.locale]}</span>
+            <span>{tBlog(BLOG_EDITOR_LOCALE_MESSAGE_KEYS[translation.locale])}</span>
           </div>
           {translation.title ? (
             <Badge
               variant="outline"
               className="bg-green-600/5 text-[10px] font-bold uppercase text-green-600 border-green-600/20"
             >
-              Ready
+              {tSidebar('translationReady')}
             </Badge>
           ) : (
             <Badge
               variant="outline"
               className="text-[10px] font-bold uppercase text-muted-foreground/60"
             >
-              None
+              {tSidebar('translationEmpty')}
             </Badge>
           )}
         </div>

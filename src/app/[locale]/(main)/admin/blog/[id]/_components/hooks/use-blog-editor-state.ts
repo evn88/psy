@@ -84,7 +84,7 @@ export const useBlogEditorState = ({
     translations.find(translation => translation.locale === activeLocale) ?? translations[0];
   const deferredPreviewContent = useDeferredValue(activeTranslation.content);
   const existingLocales = translations
-    .filter(translation => translation.title)
+    .filter(translation => translation.title || translation.description || translation.content)
     .map(({ locale }) => locale);
 
   /**
@@ -148,10 +148,6 @@ export const useBlogEditorState = ({
     setTranslations(normalizeTranslations(version.translations));
     setCategoryIds(version.categoryIds);
     setCoverImage(version.coverImage);
-
-    if (version.authorId) {
-      setAuthorId(version.authorId);
-    }
   }, []);
 
   return {

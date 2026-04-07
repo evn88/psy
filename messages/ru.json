@@ -323,7 +323,97 @@
       "createCategory": "Создать категорию",
       "categoryName": "Название категории",
       "createCategoryDesc": "Введите название категории на русском языке.",
-      "categorySaved": "Категория создана"
+      "categorySaved": "Категория создана",
+      "editor": {
+        "loadingEditor": "Загрузка редактора...",
+        "toolbar": {
+          "editor": "Редактор",
+          "preview": "Предпросмотр"
+        },
+        "fields": {
+          "titleLabel": "Заголовок",
+          "titlePlaceholder": "Введите заголовок статьи",
+          "slugLabel": "Ссылка (slug)",
+          "slugPlaceholder": "adresa-stati",
+          "generateSlug": "Сгенерировать",
+          "descriptionLabel": "Описание",
+          "descriptionPlaceholder": "Введите краткое описание для карточки статьи",
+          "authorLabel": "Автор",
+          "authorPlaceholder": "Выберите автора",
+          "authorEmpty": "Нет доступных авторов.",
+          "authorUnnamed": "Без имени"
+        },
+        "preview": {
+          "emptyState": "Нет контента для предпросмотра"
+        },
+        "sidebar": {
+          "coverTitle": "Обложка",
+          "categoriesTitle": "Категории",
+          "categoriesEmpty": "Категорий пока нет.",
+          "categoriesCreate": "Создать",
+          "categoriesManage": "Изменить",
+          "versionsTitle": "История версий",
+          "versionsEmpty": "Версий пока нет. Они появятся после ручного сохранения.",
+          "currentDraftTitle": "Текущий черновик",
+          "currentDraftDescription": "Текущее рабочее состояние",
+          "latestVersion": "Последняя",
+          "versionTitle": "Версия {number}",
+          "restoreVersion": "Восстановить эту версию",
+          "translationsTitle": "Статус переводов",
+          "translationReady": "Готово",
+          "translationEmpty": "Пусто"
+        },
+        "notifications": {
+          "saveSuccess": "Изменения сохранены",
+          "saveError": "Не удалось сохранить изменения",
+          "publishSuccess": "Статья опубликована",
+          "publishError": "Не удалось опубликовать статью",
+          "imageUploadError": "Ошибка загрузки изображения"
+        },
+        "versioning": {
+          "confirmRestore": "Восстановить эту версию? Текущие несохранённые изменения будут потеряны.",
+          "restoreSuccess": "Версия восстановлена. Не забудьте сохранить изменения."
+        },
+        "translateDialog": {
+          "title": "Перевести статью",
+          "description": "Выберите языки для автоматического перевода с помощью ИИ. Исходным языком будет русский.",
+          "alreadyExists": "перевод уже есть",
+          "close": "Закрыть",
+          "closePending": "Подождите...",
+          "submit": "Перевести",
+          "submitting": "Перевожу...",
+          "allSuccess": "Все переводы выполнены",
+          "errorSingle": "Ошибка перевода на {locale}: {message}",
+          "unknownError": "Неизвестная ошибка"
+        },
+        "cover": {
+          "label": "Обложка",
+          "upload": "Загрузить обложку",
+          "change": "Изменить обложку",
+          "imageAlt": "Обложка статьи",
+          "hint": "PNG, JPG, WebP до 5 МБ",
+          "invalidFile": "Можно загружать только изображения",
+          "uploadError": "Не удалось загрузить изображение"
+        },
+        "previewSwitcher": {
+          "mobile": "Мобильный",
+          "tablet": "Планшет",
+          "desktop": "Десктоп"
+        },
+        "mdx": {
+          "richText": "Редактор",
+          "diff": "Сравнение",
+          "source": "Код",
+          "richTextTitle": "Визуальный редактор",
+          "diffTitle": "Сравнение версий",
+          "sourceTitle": "Исходный markdown",
+          "translateArticle": "Перевести статью",
+          "lightTheme": "Светлая тема",
+          "darkTheme": "Тёмная тема",
+          "textLanguage": "Текст",
+          "placeholder": "Начните писать статью..."
+        }
+      }
     }
   },
   "My": {

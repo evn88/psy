@@ -1,15 +1,16 @@
 'use client';
 
-import { useState } from 'react';
-import { Loader2, Check, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Check, Loader2, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
-  DialogFooter
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -40,11 +41,25 @@ export function TranslateModal({
   existingLocales,
   onTranslated
 }: TranslateModalProps) {
+  const tDialog = useTranslations('Admin.blog.editor.translateDialog');
   const [selected, setSelected] = useState<string[]>(
     AVAILABLE_LOCALES.filter(l => !existingLocales.includes(l.locale)).map(l => l.locale)
   );
   const [statuses, setStatuses] = useState<Record<string, TranslateStatus>>({});
   const [isTranslating, setIsTranslating] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      return;
+    }
+
+    setSelected(
+      AVAILABLE_LOCALES.filter(item => !existingLocales.includes(item.locale)).map(
+        item => item.locale
+      )
+    );
+    setStatuses({});
+  }, [existingLocales, open]);
 
   const toggleLocale = (locale: string) => {
     setSelected(prev =>
@@ -53,8 +68,12 @@ export function TranslateModal({
   };
 
   const handleTranslate = async () => {
-    if (selected.length === 0) return;
+    if (selected.length === 0) {
+      return;
+    }
+
     setIsTranslating(true);
+    const nextStatuses: Record<string, TranslateStatus> = {};
 
     for (const locale of selected) {
       setStatuses(prev => ({ ...prev, [locale]: 'loading' }));
@@ -71,6 +90,7 @@ export function TranslateModal({
         }
 
         const data = await res.json();
+        nextStatuses[locale] = 'success';
         setStatuses(prev => ({ ...prev, [locale]: 'success' }));
         onTranslated(locale, {
           title: data.title,
@@ -78,17 +98,21 @@ export function TranslateModal({
           content: data.content
         });
       } catch (error) {
+        nextStatuses[locale] = 'error';
         setStatuses(prev => ({ ...prev, [locale]: 'error' }));
         toast.error(
-          `Ошибка перевода на ${locale}: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`
+          tDialog('errorSingle', {
+            locale,
+            message: error instanceof Error ? error.message : tDialog('unknownError')
+          })
         );
       }
     }
 
     setIsTranslating(false);
-    const allSuccess = selected.every(l => statuses[l] === 'success');
+    const allSuccess = selected.every(locale => nextStatuses[locale] === 'success');
     if (allSuccess) {
-      toast.success('Все переводы выполнены');
+      toast.success(tDialog('allSuccess'));
     }
   };
 
@@ -103,11 +127,8 @@ export function TranslateModal({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Перевести статью</DialogTitle>
-          <DialogDescription>
-            Выберите языки для автоматического перевода с помощью ИИ. Статья будет переведена с
-            русского языка.
-          </DialogDescription>
+          <DialogTitle>{tDialog('title')}</DialogTitle>
+          <DialogDescription>{tDialog('description')}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3 py-2">
@@ -116,7 +137,7 @@ export function TranslateModal({
             const hasTranslation = existingLocales.includes(locale);
 
             return (
-              <div key={locale} className="flex items-center gap-3 p-3 border rounded-lg">
+              <div key={locale} className="flex items-center gap-3 rounded-lg border p-3">
                 <Checkbox
                   id={`locale-${locale}`}
                   checked={selected.includes(locale)}
@@ -126,10 +147,12 @@ export function TranslateModal({
                 <Label htmlFor={`locale-${locale}`} className="flex-1 cursor-pointer">
                   <span>{label}</span>
                   {hasTranslation && (
-                    <span className="ml-2 text-xs text-muted-foreground">(уже есть перевод)</span>
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      ({tDialog('alreadyExists')})
+                    </span>
                   )}
                 </Label>
-                <div className="w-5 h-5 flex items-center justify-center">
+                <div className="flex h-5 w-5 items-center justify-center">
                   {status === 'loading' && (
                     <Loader2 className="size-4 animate-spin text-[#900A0B]" />
                   )}
@@ -143,7 +166,7 @@ export function TranslateModal({
 
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={handleClose} disabled={isTranslating}>
-            {isTranslating ? 'Подождите...' : 'Закрыть'}
+            {isTranslating ? tDialog('closePending') : tDialog('close')}
           </Button>
           <Button
             onClick={handleTranslate}
@@ -152,11 +175,11 @@ export function TranslateModal({
           >
             {isTranslating ? (
               <>
-                <Loader2 className="size-4 mr-2 animate-spin" />
-                Перевожу...
+                <Loader2 className="mr-2 size-4 animate-spin" />
+                {tDialog('submitting')}
               </>
             ) : (
-              'Перевести'
+              tDialog('submit')
             )}
           </Button>
         </DialogFooter>

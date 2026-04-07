@@ -29,9 +29,10 @@ import {
   usePublisher,
   viewMode$
 } from '@mdxeditor/editor';
-import { forwardRef, useEffect, useState, useRef, useCallback, useImperativeHandle } from 'react';
+import { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Moon, Sun, Languages } from 'lucide-react';
+import { Languages, Moon, Sun } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useTheme } from '@/components/theme-provider';
 
 interface MdxEditorWrapperProps {
@@ -44,17 +45,17 @@ interface MdxEditorWrapperProps {
   onTranslateClick?: () => void;
 }
 
+const MDX_EDITOR_VIEW_MODE_TARGET_ID = 'mdx-editor-view-mode';
+
 // Компонент-портал для переключения режимов (Diff/Source/Rich Text), который рендерится в языковых табах
 const PortalDiffToggle = () => {
+  const tMdx = useTranslations('Admin.blog.editor.mdx');
   const [viewMode] = useCellValues(viewMode$);
   const setViewMode = usePublisher(viewMode$);
-  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
-
-  useEffect(() => {
-    const target = document.getElementById('mdx-editor-view-mode');
-    // eslint-disable-next-line
-    if (target) setPortalTarget(target);
-  }, []);
+  const portalTarget =
+    typeof document === 'undefined'
+      ? null
+      : document.getElementById(MDX_EDITOR_VIEW_MODE_TARGET_ID);
 
   const toggleButtons = (
     <div className="flex bg-muted/50 rounded-lg p-0.5 border">
@@ -66,9 +67,9 @@ const PortalDiffToggle = () => {
         }`}
         onClick={() => setViewMode('rich-text')}
         type="button"
-        title="Визуальный редактор"
+        title={tMdx('richTextTitle')}
       >
-        Editor
+        {tMdx('richText')}
       </button>
       <button
         className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
@@ -78,9 +79,9 @@ const PortalDiffToggle = () => {
         }`}
         onClick={() => setViewMode('diff')}
         type="button"
-        title="Сравнение версий"
+        title={tMdx('diffTitle')}
       >
-        Diff
+        {tMdx('diff')}
       </button>
       <button
         className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
@@ -90,9 +91,9 @@ const PortalDiffToggle = () => {
         }`}
         onClick={() => setViewMode('source')}
         type="button"
-        title="Исходный код (Markdown)"
+        title={tMdx('sourceTitle')}
       >
-        Source
+        {tMdx('source')}
       </button>
     </div>
   );
@@ -101,18 +102,34 @@ const PortalDiffToggle = () => {
   return createPortal(toggleButtons, portalTarget);
 };
 
-export const MdxEditorWrapper = forwardRef<MDXEditorMethods, MdxEditorWrapperProps>(
+export const MdxEditorWrapper = forwardRef<MDXEditorMethods | null, MdxEditorWrapperProps>(
   function MdxEditorWrapper(
     { value, onChange, onImageUpload, placeholder, readOnly, diffMarkdown, onTranslateClick },
     ref
   ) {
+    const tMdx = useTranslations('Admin.blog.editor.mdx');
     const { resolvedTheme } = useTheme();
     const [localDark, setLocalDark] = useState<boolean | null>(null);
     const dark = localDark ?? resolvedTheme === 'dark';
 
-    const editorRef = useRef<MDXEditorMethods>(null);
-    // @ts-ignore
-    useImperativeHandle(ref, () => editorRef.current);
+    const editorRef = useRef<MDXEditorMethods | null>(null);
+    const handleEditorRef = useCallback(
+      (instance: MDXEditorMethods | null) => {
+        editorRef.current = instance;
+
+        if (!ref) {
+          return;
+        }
+
+        if (typeof ref === 'function') {
+          ref(instance);
+          return;
+        }
+
+        ref.current = instance;
+      },
+      [ref]
+    );
 
     const [initialMarkdown] = useState(value);
     const lastValueRef = useRef(value);
@@ -148,7 +165,7 @@ export const MdxEditorWrapper = forwardRef<MDXEditorMethods, MdxEditorWrapperPro
         className={`mdx-editor-container mdx-editor-mobile-optimized ${dark ? 'dark-theme darkEditor' : ''}`}
       >
         <MDXEditor
-          ref={editorRef}
+          ref={handleEditorRef}
           markdown={initialMarkdown}
           onChange={handleChange}
           readOnly={readOnly}
@@ -184,7 +201,7 @@ export const MdxEditorWrapper = forwardRef<MDXEditorMethods, MdxEditorWrapperPro
                 bash: 'Bash',
                 sh: 'Shell',
                 json: 'JSON',
-                text: 'Текст'
+                text: tMdx('textLanguage')
               }
             }),
             diffSourcePlugin({ diffMarkdown: diffMarkdown || value }),
@@ -211,7 +228,7 @@ export const MdxEditorWrapper = forwardRef<MDXEditorMethods, MdxEditorWrapperPro
                         type="button"
                         onClick={onTranslateClick}
                         className="mdx-editor-theme-toggle"
-                        title="Перевести статью"
+                        title={tMdx('translateArticle')}
                       >
                         <Languages size={14} />
                       </button>
@@ -223,7 +240,7 @@ export const MdxEditorWrapper = forwardRef<MDXEditorMethods, MdxEditorWrapperPro
                     type="button"
                     onClick={() => setLocalDark(!dark)}
                     className="mdx-editor-theme-toggle"
-                    title={dark ? 'Светлая тема' : 'Тёмная тема'}
+                    title={dark ? tMdx('lightTheme') : tMdx('darkTheme')}
                   >
                     {dark ? <Sun size={14} /> : <Moon size={14} />}
                   </button>

@@ -1,4 +1,5 @@
-import Link from 'next/link';
+import { useLocale, useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
 import type { BlogEditorCategory } from './blog-editor-form.types';
 
 interface BlogEditorCategorySelectorProps {
@@ -12,10 +13,11 @@ interface BlogEditorCategorySelectorProps {
  * Возвращает человекочитаемое имя категории.
  *
  * @param category Категория статьи.
+ * @param locale Текущая локаль интерфейса.
  * @returns Подпись категории для интерфейса.
  */
-const getCategoryLabel = (category: BlogEditorCategory) => {
-  return category.name.ru ?? category.slug;
+const getCategoryLabel = (category: BlogEditorCategory, locale: string) => {
+  return category.name[locale] ?? category.name.ru ?? category.slug;
 };
 
 /**
@@ -30,12 +32,15 @@ export const BlogEditorCategorySelector = ({
   onToggleCategory,
   variant
 }: BlogEditorCategorySelectorProps) => {
+  const locale = useLocale();
+  const tSidebar = useTranslations('Admin.blog.editor.sidebar');
+
   if (categories.length === 0) {
     return (
       <p className="text-xs text-muted-foreground">
-        Нет категорий.{' '}
+        {tSidebar('categoriesEmpty')}{' '}
         <Link href="/admin/blog/categories" className="text-[#900A0B] hover:underline">
-          Создать
+          {tSidebar('categoriesCreate')}
         </Link>
       </p>
     );
@@ -45,7 +50,7 @@ export const BlogEditorCategorySelector = ({
     <>
       {variant === 'desktop' && (
         <Link href="/admin/blog/categories" className="text-[#900A0B] hover:underline">
-          Изменить
+          {tSidebar('categoriesManage')}
         </Link>
       )}
       <div className="flex flex-wrap gap-2">
@@ -69,9 +74,10 @@ export const BlogEditorCategorySelector = ({
               key={category.id}
               type="button"
               onClick={() => onToggleCategory(category.id)}
+              aria-pressed={isSelected}
               className={`${baseClassName} ${stateClassName}`}
             >
-              {getCategoryLabel(category)}
+              {getCategoryLabel(category, locale)}
             </button>
           );
         })}

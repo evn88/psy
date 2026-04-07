@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import type { BlogEditorVersion } from '../blog-editor-form.types';
 
@@ -17,6 +18,7 @@ export const useBlogEditorVersions = ({
   postId,
   onRestoreVersion
 }: UseBlogEditorVersionsParams) => {
+  const tVersioning = useTranslations('Admin.blog.editor.versioning');
   const [versions, setVersions] = useState<BlogEditorVersion[]>([]);
   const [restoringVersion, setRestoringVersion] = useState(false);
   const [selectedDiffVersionId, setSelectedDiffVersionId] = useState<string | null>(null);
@@ -77,9 +79,7 @@ export const useBlogEditorVersions = ({
    */
   const restoreVersion = useCallback(
     async (version: BlogEditorVersion) => {
-      const shouldRestore = window.confirm(
-        'Восстановить эту версию? Текущие несохранённые изменения будут потеряны.'
-      );
+      const shouldRestore = window.confirm(tVersioning('confirmRestore'));
 
       if (!shouldRestore) {
         return;
@@ -89,12 +89,12 @@ export const useBlogEditorVersions = ({
 
       try {
         onRestoreVersion(version);
-        toast.success('Версия восстановлена — не забудьте сохранить');
+        toast.success(tVersioning('restoreSuccess'));
       } finally {
         setRestoringVersion(false);
       }
     },
-    [onRestoreVersion]
+    [onRestoreVersion, tVersioning]
   );
 
   return {

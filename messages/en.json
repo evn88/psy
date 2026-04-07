@@ -323,7 +323,97 @@
       "createCategory": "Create category",
       "categoryName": "Category name",
       "createCategoryDesc": "Enter the category name in Russian.",
-      "categorySaved": "Category created"
+      "categorySaved": "Category created",
+      "editor": {
+        "loadingEditor": "Loading editor...",
+        "toolbar": {
+          "editor": "Editor",
+          "preview": "Preview"
+        },
+        "fields": {
+          "titleLabel": "Title",
+          "titlePlaceholder": "Enter the article title",
+          "slugLabel": "Link (slug)",
+          "slugPlaceholder": "article-slug",
+          "generateSlug": "Generate",
+          "descriptionLabel": "Description",
+          "descriptionPlaceholder": "Enter a short description for the article card",
+          "authorLabel": "Author",
+          "authorPlaceholder": "Select an author",
+          "authorEmpty": "No authors available.",
+          "authorUnnamed": "Unnamed"
+        },
+        "preview": {
+          "emptyState": "No content available for preview"
+        },
+        "sidebar": {
+          "coverTitle": "Cover image",
+          "categoriesTitle": "Categories",
+          "categoriesEmpty": "No categories yet.",
+          "categoriesCreate": "Create",
+          "categoriesManage": "Manage",
+          "versionsTitle": "Version history",
+          "versionsEmpty": "No versions yet. They will appear after a manual save.",
+          "currentDraftTitle": "Current draft",
+          "currentDraftDescription": "Current working state",
+          "latestVersion": "Latest",
+          "versionTitle": "Version {number}",
+          "restoreVersion": "Restore this version",
+          "translationsTitle": "Translation status",
+          "translationReady": "Ready",
+          "translationEmpty": "Empty"
+        },
+        "notifications": {
+          "saveSuccess": "Changes saved",
+          "saveError": "Failed to save changes",
+          "publishSuccess": "Article published",
+          "publishError": "Failed to publish the article",
+          "imageUploadError": "Image upload failed"
+        },
+        "versioning": {
+          "confirmRestore": "Restore this version? Current unsaved changes will be lost.",
+          "restoreSuccess": "Version restored. Do not forget to save your changes."
+        },
+        "translateDialog": {
+          "title": "Translate article",
+          "description": "Choose languages for AI-assisted translation. Russian will be used as the source language.",
+          "alreadyExists": "translation already exists",
+          "close": "Close",
+          "closePending": "Please wait...",
+          "submit": "Translate",
+          "submitting": "Translating...",
+          "allSuccess": "All translations completed",
+          "errorSingle": "Translation error for {locale}: {message}",
+          "unknownError": "Unknown error"
+        },
+        "cover": {
+          "label": "Cover image",
+          "upload": "Upload cover",
+          "change": "Change cover",
+          "imageAlt": "Article cover image",
+          "hint": "PNG, JPG, WebP up to 5 MB",
+          "invalidFile": "Only image files can be uploaded",
+          "uploadError": "Failed to upload the image"
+        },
+        "previewSwitcher": {
+          "mobile": "Mobile",
+          "tablet": "Tablet",
+          "desktop": "Desktop"
+        },
+        "mdx": {
+          "richText": "Editor",
+          "diff": "Diff",
+          "source": "Source",
+          "richTextTitle": "Visual editor",
+          "diffTitle": "Version comparison",
+          "sourceTitle": "Source markdown",
+          "translateArticle": "Translate article",
+          "lightTheme": "Light theme",
+          "darkTheme": "Dark theme",
+          "textLanguage": "Text",
+          "placeholder": "Start writing the article..."
+        }
+      }
     }
   },
   "My": {

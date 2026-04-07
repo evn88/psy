@@ -8,7 +8,7 @@ export const blogEditorSchema = z
       .trim()
       .min(3, 'Slug должен содержать минимум 3 символа')
       .regex(/^[a-z0-9-]+$/, 'Только строчные латинские буквы, цифры и дефис'),
-    description: z.string().max(400, 'Описание не может превышать 200 символов').optional()
+    description: z.string().max(400, 'Описание не может превышать 400 символов').optional()
   })
   .superRefine((data, ctx) => {
     if (!data.title) {

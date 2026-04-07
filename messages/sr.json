@@ -323,7 +323,97 @@
       "createCategory": "Kreiraj kategoriju",
       "categoryName": "Naziv kategorije",
       "createCategoryDesc": "Unesite naziv kategorije na ruskom jeziku.",
-      "categorySaved": "Kategorija kreirana"
+      "categorySaved": "Kategorija kreirana",
+      "editor": {
+        "loadingEditor": "Učitavanje editora...",
+        "toolbar": {
+          "editor": "Editor",
+          "preview": "Pregled"
+        },
+        "fields": {
+          "titleLabel": "Naslov",
+          "titlePlaceholder": "Unesite naslov članka",
+          "slugLabel": "Link (slug)",
+          "slugPlaceholder": "slug-clanka",
+          "generateSlug": "Generiši",
+          "descriptionLabel": "Opis",
+          "descriptionPlaceholder": "Unesite kratak opis za karticu članka",
+          "authorLabel": "Autor",
+          "authorPlaceholder": "Izaberite autora",
+          "authorEmpty": "Nema dostupnih autora.",
+          "authorUnnamed": "Bez imena"
+        },
+        "preview": {
+          "emptyState": "Nema sadržaja za pregled"
+        },
+        "sidebar": {
+          "coverTitle": "Naslovna slika",
+          "categoriesTitle": "Kategorije",
+          "categoriesEmpty": "Još nema kategorija.",
+          "categoriesCreate": "Kreiraj",
+          "categoriesManage": "Izmeni",
+          "versionsTitle": "Istorija verzija",
+          "versionsEmpty": "Još nema verzija. Pojaviće se nakon ručnog čuvanja.",
+          "currentDraftTitle": "Trenutni nacrt",
+          "currentDraftDescription": "Trenutno radno stanje",
+          "latestVersion": "Poslednja",
+          "versionTitle": "Verzija {number}",
+          "restoreVersion": "Vrati ovu verziju",
+          "translationsTitle": "Status prevoda",
+          "translationReady": "Spremno",
+          "translationEmpty": "Prazno"
+        },
+        "notifications": {
+          "saveSuccess": "Izmene su sačuvane",
+          "saveError": "Nije uspelo čuvanje izmena",
+          "publishSuccess": "Članak je objavljen",
+          "publishError": "Nije uspelo objavljivanje članka",
+          "imageUploadError": "Greška pri otpremanju slike"
+        },
+        "versioning": {
+          "confirmRestore": "Vratiti ovu verziju? Trenutne nesačuvane izmene biće izgubljene.",
+          "restoreSuccess": "Verzija je vraćena. Ne zaboravite da sačuvate izmene."
+        },
+        "translateDialog": {
+          "title": "Prevedi članak",
+          "description": "Izaberite jezike za automatski prevod pomoću AI. Kao izvorni jezik koristiće se ruski.",
+          "alreadyExists": "prevod već postoji",
+          "close": "Zatvori",
+          "closePending": "Sačekajte...",
+          "submit": "Prevedi",
+          "submitting": "Prevodim...",
+          "allSuccess": "Svi prevodi su završeni",
+          "errorSingle": "Greška prevoda za {locale}: {message}",
+          "unknownError": "Nepoznata greška"
+        },
+        "cover": {
+          "label": "Naslovna slika",
+          "upload": "Otpremi naslovnu sliku",
+          "change": "Promeni naslovnu sliku",
+          "imageAlt": "Naslovna slika članka",
+          "hint": "PNG, JPG, WebP do 5 MB",
+          "invalidFile": "Mogu se otpremati samo slike",
+          "uploadError": "Nije uspelo otpremanje slike"
+        },
+        "previewSwitcher": {
+          "mobile": "Mobilni",
+          "tablet": "Tablet",
+          "desktop": "Desktop"
+        },
+        "mdx": {
+          "richText": "Editor",
+          "diff": "Uporedi",
+          "source": "Kod",
+          "richTextTitle": "Vizuelni editor",
+          "diffTitle": "Poređenje verzija",
+          "sourceTitle": "Izvorni markdown",
+          "translateArticle": "Prevedi članak",
+          "lightTheme": "Svetla tema",
+          "darkTheme": "Tamna tema",
+          "textLanguage": "Tekst",
+          "placeholder": "Počnite da pišete članak..."
+        }
+      }
     }
   },
   "My": {

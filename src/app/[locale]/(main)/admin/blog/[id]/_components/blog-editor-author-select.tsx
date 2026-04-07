@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import {
   Select,
   SelectContent,
@@ -17,14 +18,15 @@ interface BlogEditorAuthorSelectProps {
  * Возвращает подпись автора для выпадающего списка.
  *
  * @param author Автор статьи.
+ * @param fallbackLabel Резервная подпись при отсутствии имени и email.
  * @returns Текстовую подпись опции.
  */
-const getAuthorOptionLabel = (author: BlogAuthorOption) => {
+const getAuthorOptionLabel = (author: BlogAuthorOption, fallbackLabel: string) => {
   if (author.name && author.email) {
     return `${author.name} (${author.email})`;
   }
 
-  return author.name ?? author.email ?? 'Без имени';
+  return author.name ?? author.email ?? fallbackLabel;
 };
 
 /**
@@ -38,22 +40,24 @@ export const BlogEditorAuthorSelect = ({
   value,
   onChange
 }: BlogEditorAuthorSelectProps) => {
+  const tFields = useTranslations('Admin.blog.editor.fields');
+
   return (
     <div className="space-y-2">
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/70">
-        Автор
+        {tFields('authorLabel')}
       </p>
       {authors.length === 0 ? (
-        <p className="text-xs text-muted-foreground">Нет доступных авторов.</p>
+        <p className="text-xs text-muted-foreground">{tFields('authorEmpty')}</p>
       ) : (
         <Select value={value} onValueChange={onChange}>
           <SelectTrigger className="w-full bg-background">
-            <SelectValue placeholder="Выберите автора" />
+            <SelectValue placeholder={tFields('authorPlaceholder')} />
           </SelectTrigger>
           <SelectContent>
             {authors.map(author => (
               <SelectItem key={author.id} value={author.id}>
-                {getAuthorOptionLabel(author)}
+                {getAuthorOptionLabel(author, tFields('authorUnnamed'))}
               </SelectItem>
             ))}
           </SelectContent>

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Monitor, Tablet, Smartphone } from 'lucide-react';
+import { Monitor, Smartphone, Tablet } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 
 type ScreenSize = 'mobile' | 'tablet' | 'desktop';
@@ -11,13 +12,17 @@ interface PreviewSizeSwitcherProps {
   className?: string;
 }
 
-const sizes: Record<ScreenSize, { label: string; icon: typeof Monitor; width: string }> = {
-  mobile: { label: 'Мобильный', icon: Smartphone, width: '375px' },
-  tablet: { label: 'Планшет', icon: Tablet, width: '768px' },
-  desktop: { label: 'Десктоп', icon: Monitor, width: '100%' }
+const sizes: Record<
+  ScreenSize,
+  { labelKey: 'mobile' | 'tablet' | 'desktop'; icon: typeof Monitor; width: string }
+> = {
+  mobile: { labelKey: 'mobile', icon: Smartphone, width: '375px' },
+  tablet: { labelKey: 'tablet', icon: Tablet, width: '768px' },
+  desktop: { labelKey: 'desktop', icon: Monitor, width: '100%' }
 };
 
 export function PreviewSizeSwitcher({ children, className }: PreviewSizeSwitcherProps) {
+  const tPreviewSwitcher = useTranslations('Admin.blog.editor.previewSwitcher');
   const [current, setCurrent] = useState<ScreenSize>('desktop');
 
   return (
@@ -25,7 +30,7 @@ export function PreviewSizeSwitcher({ children, className }: PreviewSizeSwitcher
       {/* Переключатель */}
       <div className="flex items-center gap-1 p-1 bg-muted rounded-lg w-fit">
         {(Object.entries(sizes) as [ScreenSize, (typeof sizes)[ScreenSize]][]).map(
-          ([key, { label, icon: Icon }]) => (
+          ([key, { labelKey, icon: Icon }]) => (
             <button
               key={key}
               type="button"
@@ -36,10 +41,10 @@ export function PreviewSizeSwitcher({ children, className }: PreviewSizeSwitcher
                   ? 'bg-white shadow-sm text-[#03070A]'
                   : 'text-muted-foreground hover:text-foreground'
               )}
-              title={label}
+              title={tPreviewSwitcher(labelKey)}
             >
               <Icon className="size-4" />
-              <span className="hidden sm:inline">{label}</span>
+              <span className="hidden sm:inline">{tPreviewSwitcher(labelKey)}</span>
             </button>
           )
         )}

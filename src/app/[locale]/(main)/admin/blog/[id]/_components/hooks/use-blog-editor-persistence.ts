@@ -1,8 +1,10 @@
 import type { MDXEditorMethods } from '@mdxeditor/editor';
-import { useRouter } from '@/i18n/navigation';
 import type { RefObject } from 'react';
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
+import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
+import { useRouter } from '@/i18n/navigation';
+import { generateSlug } from '@/shared/lib/blog-utils';
 import type {
   BlogEditorStatus,
   BlogEditorVersion,
@@ -92,6 +94,7 @@ export const useBlogEditorPersistence = ({
   onPublished
 }: UseBlogEditorPersistenceParams) => {
   const router = useRouter();
+  const tNotifications = useTranslations('Admin.blog.editor.notifications');
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -109,8 +112,9 @@ export const useBlogEditorPersistence = ({
       createVersion = false,
       newSlug
     }: BlogEditorSaveOptions & { newSlug?: string } = {}) => {
-      // Блокируем сохранение если форма невалидно заполнена (напр. нет заголовка или slug)
-      if (!isValid) return false;
+      if (!isValid) {
+        return false;
+      }
 
       if (!showToast && selectedDiffVersionId) {
         return false;
@@ -168,13 +172,13 @@ export const useBlogEditorPersistence = ({
         }
 
         if (showToast) {
-          toast.success('Сохранено');
+          toast.success(tNotifications('saveSuccess'));
         }
 
         return true;
       } catch {
         if (showToast) {
-          toast.error('Не удалось сохранить');
+          toast.error(tNotifications('saveError'));
         }
         return false;
       } finally {
@@ -195,52 +199,24 @@ export const useBlogEditorPersistence = ({
       selectedDiffVersionId,
       slug,
       status,
+      tNotifications,
       translations
     ]
   );
 
   /**
-   * Генерирует транскрипцию заголовка для ссылки
+   * Генерирует slug из заголовка статьи.
+   *
+   * @param title Заголовок статьи.
+   * @returns Нормализованный slug.
    */
   const generateSlugForTitle = useCallback(
     (title: string) => {
-      if (!title) return '';
-      const generated = title
-        .toLowerCase()
-        .replace(/а/g, 'a')
-        .replace(/б/g, 'b')
-        .replace(/в/g, 'v')
-        .replace(/г/g, 'g')
-        .replace(/д/g, 'd')
-        .replace(/е|ё/g, 'e')
-        .replace(/ж/g, 'zh')
-        .replace(/з/g, 'z')
-        .replace(/и|й/g, 'i')
-        .replace(/к/g, 'k')
-        .replace(/л/g, 'l')
-        .replace(/м/g, 'm')
-        .replace(/н/g, 'n')
-        .replace(/о/g, 'o')
-        .replace(/п/g, 'p')
-        .replace(/р/g, 'r')
-        .replace(/с/g, 's')
-        .replace(/т/g, 't')
-        .replace(/у/g, 'u')
-        .replace(/ф/g, 'f')
-        .replace(/х/g, 'h')
-        .replace(/ц/g, 'c')
-        .replace(/ч/g, 'ch')
-        .replace(/ш/g, 'sh')
-        .replace(/щ/g, 'sch')
-        .replace(/ы/g, 'y')
-        .replace(/э/g, 'e')
-        .replace(/ю/g, 'yu')
-        .replace(/я/g, 'ya')
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim();
+      if (!title) {
+        return '';
+      }
 
+      const generated = generateSlug(title);
       setSlug(generated);
       return generated;
     },
@@ -272,8 +248,12 @@ export const useBlogEditorPersistence = ({
    */
   const publish = useCallback(async () => {
     let finalSlug = slug;
-    if (slug.startsWith('draft-') || slug.startsWith('novaya-statya-')) {
-      const activeTranslation = translations.find(t => t.locale === activeLocale);
+
+    if (!slug || slug.startsWith('draft-')) {
+      const activeTranslation = translations.find(
+        translation => translation.locale === activeLocale
+      );
+
       if (activeTranslation?.title) {
         finalSlug = generateSlugForTitle(activeTranslation.title);
       }
@@ -295,10 +275,10 @@ export const useBlogEditorPersistence = ({
       }
 
       onPublished();
-      toast.success('Статья опубликована!');
+      toast.success(tNotifications('publishSuccess'));
       startRefreshTransition(() => router.refresh());
     } catch {
-      toast.error('Не удалось опубликовать');
+      toast.error(tNotifications('publishError'));
     } finally {
       setPublishing(false);
     }
@@ -311,7 +291,8 @@ export const useBlogEditorPersistence = ({
     slug,
     translations,
     activeLocale,
-    generateSlugForTitle
+    generateSlugForTitle,
+    tNotifications
   ]);
 
   /**
@@ -320,23 +301,26 @@ export const useBlogEditorPersistence = ({
    * @param file Файл изображения.
    * @returns URL загруженного файла.
    */
-  const uploadImage = useCallback(async (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
+  const uploadImage = useCallback(
+    async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
 
-    const response = await fetch('/api/upload', {
-      method: 'POST',
-      body: formData
-    });
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
 
-    if (!response.ok) {
-      throw new Error('Ошибка загрузки');
-    }
+      if (!response.ok) {
+        throw new Error(tNotifications('imageUploadError'));
+      }
 
-    const payload = (await response.json()) as { url: string };
+      const payload = (await response.json()) as { url: string };
 
-    return payload.url;
-  }, []);
+      return payload.url;
+    },
+    [tNotifications]
+  );
 
   return {
     saving,

@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import NextImage from 'next/image';
 import { Loader2, Upload, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -17,25 +18,30 @@ interface CoverImageUploadProps {
 export function CoverImageUpload({
   value,
   onChange,
-  label = 'Обложка',
-  uploadLabel = 'Загрузить обложку',
-  changeLabel = 'Изменить обложку'
+  label,
+  uploadLabel,
+  changeLabel
 }: CoverImageUploadProps) {
+  const tCover = useTranslations('Admin.blog.editor.cover');
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
+  const resolvedLabel = label ?? tCover('label');
+  const resolvedUploadLabel = uploadLabel ?? tCover('upload');
+  const resolvedChangeLabel = changeLabel ?? tCover('change');
+
   const deleteBlob = async (url: string) => {
     try {
       await fetch(`/api/upload/delete?url=${encodeURIComponent(url)}`, { method: 'DELETE' });
-    } catch (error) {
-      console.error('Failed to delete old blob:', error);
+    } catch {
+      return;
     }
   };
 
   const uploadFile = async (file: File) => {
     if (!file.type.startsWith('image/')) {
-      toast.error('Можно загружать только изображения');
+      toast.error(tCover('invalidFile'));
       return;
     }
 
@@ -57,7 +63,10 @@ export function CoverImageUpload({
             canvas.height = img.height * ratio;
 
             const ctx = canvas.getContext('2d');
-            if (!ctx) return reject(new Error('Could not get canvas context'));
+            if (!ctx) {
+              reject(new Error('Could not get canvas context'));
+              return;
+            }
 
             // Включаем высококачественное сглаживание
             ctx.imageSmoothingEnabled = true;
@@ -91,9 +100,8 @@ export function CoverImageUpload({
       }
 
       onChange(data.url);
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast.error('Не удалось загрузить изображение');
+    } catch {
+      toast.error(tCover('uploadError'));
     } finally {
       setUploading(false);
     }
@@ -114,7 +122,7 @@ export function CoverImageUpload({
 
   return (
     <div className="space-y-2">
-      <p className="text-sm font-medium text-foreground">{label}</p>
+      <p className="text-sm font-medium text-foreground">{resolvedLabel}</p>
       <div
         className={cn(
           'relative border-2 border-dashed rounded-lg overflow-hidden transition-colors',
@@ -133,7 +141,7 @@ export function CoverImageUpload({
           <div className="relative">
             <NextImage
               src={value}
-              alt="Обложка статьи"
+              alt={tCover('imageAlt')}
               width={600}
               height={300}
               className="w-full h-48 object-cover"
@@ -147,7 +155,7 @@ export function CoverImageUpload({
                 }}
                 className="bg-white text-[#03070A] px-3 py-1.5 rounded-md text-sm font-medium hover:bg-gray-100 transition-colors"
               >
-                {changeLabel}
+                {resolvedChangeLabel}
               </button>
               <button
                 type="button"
@@ -171,8 +179,8 @@ export function CoverImageUpload({
             ) : (
               <>
                 <Upload className="size-8" />
-                <p className="text-sm text-center">{uploadLabel}</p>
-                <p className="text-xs text-center opacity-60">PNG, JPG, WebP до 5 МБ</p>
+                <p className="text-sm text-center">{resolvedUploadLabel}</p>
+                <p className="text-xs text-center opacity-60">{tCover('hint')}</p>
               </>
             )}
           </div>

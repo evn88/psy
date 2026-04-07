@@ -22,9 +22,20 @@ export interface BlogEditorVersion {
   translations: EditorTranslation[];
   categoryIds: string[];
   coverImage: string | null;
-  authorId?: string;
 }
 
 export type BlogEditorCategory = BlogCategory & {
   name: Record<string, string>;
 };
+
+export interface BlogEditorInitialData {
+  postId: string;
+  slug: string;
+  status: BlogEditorStatus;
+  coverImage: string | null;
+  translations: EditorTranslation[];
+  categoryIds: string[];
+  authorId: string;
+  categories: BlogEditorCategory[];
+  authors: BlogAuthorOption[];
+}
