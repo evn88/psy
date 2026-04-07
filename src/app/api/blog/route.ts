@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
+import { locales } from '@/i18n/config';
 import prisma from '@/shared/lib/prisma';
 import { getBlogLocale } from '@/shared/lib/blog-utils';
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const locale = getBlogLocale(searchParams.get('locale') ?? 'ru', ['ru', 'en', 'sr']);
+  const locale = getBlogLocale(searchParams.get('locale') ?? 'ru', locales);
   const category = searchParams.get('category');
   const page = parseInt(searchParams.get('page') ?? '1');
   const limit = parseInt(searchParams.get('limit') ?? '10');

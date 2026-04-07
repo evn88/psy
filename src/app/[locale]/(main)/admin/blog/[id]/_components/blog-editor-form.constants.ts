@@ -1,6 +1,7 @@
+import { locales } from '@/i18n/config';
 import type { BlogEditorLocale } from './blog-editor-form.types';
 
-export const ALL_BLOG_EDITOR_LOCALES: BlogEditorLocale[] = ['ru', 'en', 'sr'];
+export const ALL_BLOG_EDITOR_LOCALES = locales satisfies BlogEditorLocale[];
 
 export const BLOG_EDITOR_LOCALE_CODES: Record<BlogEditorLocale, string> = {
   ru: 'RU',

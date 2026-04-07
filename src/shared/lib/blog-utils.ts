@@ -1,6 +1,5 @@
 import slugify from 'slugify';
-import type { BlogLocale } from '@/shared/types/blog';
-import { BLOG_DEFAULT_LOCALE, BLOG_LOCALES } from '@/shared/types/blog';
+import { defaultLocale, locales, type AppLocale } from '@/i18n/config';
 
 /**
  * Вычисляет примерное время чтения в минутах.
@@ -37,20 +36,20 @@ export function generateSlug(title: string): string {
 /**
  * Возвращает локаль для блога с откатом на русский.
  */
-export function getBlogLocale(locale: string, availableLocales: string[]): BlogLocale {
+export function getBlogLocale(locale: string, availableLocales: string[]): AppLocale {
   if (availableLocales.includes(locale)) {
-    return locale as BlogLocale;
+    return locale as AppLocale;
   }
 
-  if (availableLocales.includes(BLOG_DEFAULT_LOCALE)) {
-    return BLOG_DEFAULT_LOCALE;
+  if (availableLocales.includes(defaultLocale)) {
+    return defaultLocale;
   }
 
-  const firstAvailableLocale = BLOG_LOCALES.find(blogLocale =>
-    availableLocales.includes(blogLocale)
+  const firstAvailableLocale = locales.find(appLocale =>
+    availableLocales.includes(appLocale)
   );
 
-  return firstAvailableLocale ?? BLOG_DEFAULT_LOCALE;
+  return firstAvailableLocale ?? defaultLocale;
 }
 
 /**

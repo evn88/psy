@@ -5,8 +5,10 @@ import type {
   BlogPostStatus,
   User
 } from '@prisma/client';
+import type { AppLocale } from '@/i18n/config';
 
 export type { BlogPostStatus };
+export type { AppLocale as BlogLocale };
 
 export interface BlogPostWithTranslations extends BlogPost {
   translations: BlogPostTranslation[];
@@ -50,7 +52,3 @@ export interface BlogTranslationInput {
   content: string;
 }
 
-export type BlogLocale = 'ru' | 'en' | 'sr';
-
-export const BLOG_LOCALES: BlogLocale[] = ['ru', 'en', 'sr'];
-export const BLOG_DEFAULT_LOCALE: BlogLocale = 'ru';
