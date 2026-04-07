@@ -3,11 +3,11 @@ import type { BlogEditorLocale } from './blog-editor-form.types';
 
 export const ALL_BLOG_EDITOR_LOCALES = [...locales] satisfies BlogEditorLocale[];
 
-export const BLOG_EDITOR_LOCALE_CODES: Record<BlogEditorLocale, string> = {
+export const BLOG_EDITOR_LOCALE_CODES = {
   ru: 'RU',
   en: 'EN',
   sr: 'SR'
-};
+} as const satisfies Record<BlogEditorLocale, string>;
 
 export const BLOG_EDITOR_LOCALE_MESSAGE_KEYS = {
   ru: 'langRu',

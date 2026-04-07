@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { defaultLocale } from '@/i18n/config';
 import prisma from '@/shared/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
@@ -13,7 +14,7 @@ const registerSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
-  locale: z.string().optional().default('ru'),
+  locale: z.string().optional().default(defaultLocale),
   timezone: z.string().optional().default('UTC')
 });
 

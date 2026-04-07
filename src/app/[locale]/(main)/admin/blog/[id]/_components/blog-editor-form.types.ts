@@ -1,6 +1,7 @@
+import type { AppLocale } from '@/i18n/config';
 import type { BlogCategory } from '@prisma/client';
 
-export type BlogEditorLocale = 'ru' | 'en' | 'sr';
+export type BlogEditorLocale = AppLocale;
 export type BlogEditorStatus = 'DRAFT' | 'PUBLISHED';
 
 export interface EditorTranslation {

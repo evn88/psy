@@ -8,10 +8,9 @@ import DocumentLocaleLink from '@/components/document-locale-link';
 import { getPathname, Link, usePathname } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/components/theme-provider';
-import { type AppLocale, isLocale } from '@/i18n/config';
+import { locales, type AppLocale, isLocale } from '@/i18n/config';
 
-const LOCALES = ['ru', 'en', 'sr'] as const;
-const LOCALE_LABELS: Record<string, string> = { ru: 'RU', en: 'EN', sr: 'SR' };
+const LOCALE_LABELS: Record<AppLocale, string> = { ru: 'RU', en: 'EN', sr: 'SR' };
 
 /**
  * Выполняет полную навигацию документа при смене locale.
@@ -96,7 +95,7 @@ export function BlogHeader() {
 
           {/* Переключатель языков */}
           <div className="flex items-center gap-0.5 bg-muted rounded-lg p-0.5">
-            {LOCALES.map(loc => (
+            {locales.map(loc => (
               <button
                 key={loc}
                 type="button"

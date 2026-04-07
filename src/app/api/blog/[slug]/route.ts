@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
+import { defaultLocale } from '@/i18n/config';
 import prisma from '@/shared/lib/prisma';
 
 export async function GET(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const { searchParams } = new URL(req.url);
-  const locale = searchParams.get('locale') ?? 'ru';
+  const locale = searchParams.get('locale') ?? defaultLocale;
 
   const post = await prisma.blogPost.findUnique({
     where: { slug, status: 'PUBLISHED' },
@@ -19,10 +20,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     return NextResponse.json({ error: 'Статья не найдена' }, { status: 404 });
   }
 
-  // Находим нужный перевод с откатом на русский
+  // Находим нужный перевод с откатом на дефолтный язык
   const translation =
     post.translations.find((t: { locale: string }) => t.locale === locale) ??
-    post.translations.find((t: { locale: string }) => t.locale === 'ru') ??
+    post.translations.find((t: { locale: string }) => t.locale === defaultLocale) ??
     post.translations[0];
 
   return NextResponse.json({ ...post, activeTranslation: translation });

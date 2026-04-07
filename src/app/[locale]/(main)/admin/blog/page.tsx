@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
+import { defaultLocale, locales } from '@/i18n/config';
 import prisma from '@/shared/lib/prisma';
 import { Clock, Tag } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -68,10 +69,10 @@ export default async function AdminBlogPage() {
       ) : (
         <div className="space-y-3">
           {posts.map(post => {
-            const ruTranslation = post.translations.find(
-              translation => translation.locale === 'ru'
+            const defaultTranslation = post.translations.find(
+              translation => translation.locale === defaultLocale
             );
-            const title = ruTranslation?.title || 'Без заголовка';
+            const title = defaultTranslation?.title || 'Без заголовка';
             const postCategories = post.categories.map(
               categoryRelation => categoryRelation.category.name.ru ?? categoryRelation.category.id
             );
@@ -117,7 +118,7 @@ export default async function AdminBlogPage() {
                     )}
                     {/* Флаги переводов */}
                     <span className="flex items-center gap-1">
-                      {['ru', 'en', 'sr'].map((locale: string) => {
+                      {locales.map((locale: string) => {
                         const hasTranslation = post.translations.some(
                           (t: { locale: string }) => t.locale === locale
                         );

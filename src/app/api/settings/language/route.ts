@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
+import { locales } from '@/i18n/config';
 import { auth } from '@/auth';
 import prisma from '@/shared/lib/prisma';
-
-const SUPPORTED_LOCALES = ['en', 'ru', 'sr'];
 
 /**
  * PUT /api/settings/language
@@ -20,7 +19,7 @@ export const PUT = async (request: Request): Promise<NextResponse> => {
     const body = await request.json();
     const { language } = body;
 
-    if (!language || !SUPPORTED_LOCALES.includes(language)) {
+    if (!language || !locales.includes(language as any)) {
       return NextResponse.json({ error: 'Invalid language' }, { status: 400 });
     }
 

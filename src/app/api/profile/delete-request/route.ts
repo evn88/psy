@@ -1,4 +1,5 @@
 import { auth } from '@/auth';
+import { defaultLocale } from '@/i18n/config';
 import { NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
 import prisma from '@/shared/lib/prisma';
@@ -54,7 +55,7 @@ export async function POST() {
       to: user.email,
       name: user.name ?? user.email,
       token,
-      language: user.language ?? 'ru'
+      language: user.language ?? defaultLocale
     });
 
     return NextResponse.json({ success: true });

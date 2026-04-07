@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z, ZodError } from 'zod';
+import { defaultLocale, locales } from '@/i18n/config';
 import { auth } from '@/auth';
 import { aiModelIdSchema } from '@/shared/lib/ai/ai-model-catalog';
 import { aiSkillPromptOverridesSchema } from '@/shared/lib/ai/ai-contracts';
@@ -8,8 +9,11 @@ import { executeAiSkill } from '@/shared/lib/ai/execute-ai-skill.server';
 import type { BlogArticleTranslationResult } from '@/shared/lib/ai/skills/blog-article-translation.contract';
 import prisma from '@/shared/lib/prisma';
 
+/** Целевые локали для перевода (исключает исходный язык) */
+const TARGET_LOCALES = locales.filter(l => l !== defaultLocale) as const;
+
 const schema = z.object({
-  targetLocale: z.enum(['en', 'sr']),
+  targetLocale: z.enum(TARGET_LOCALES),
   modelId: aiModelIdSchema.optional(),
   overrides: aiSkillPromptOverridesSchema.optional()
 });
@@ -25,23 +29,26 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const { id } = await params;
     const body = await req.json();
     const parsed = schema.parse(body);
-    const ruTranslation = await prisma.blogPostTranslation.findUnique({
-      where: { postId_locale: { postId: id, locale: 'ru' } }
+    const sourceTranslation = await prisma.blogPostTranslation.findUnique({
+      where: { postId_locale: { postId: id, locale: defaultLocale } }
     });
 
-    if (!ruTranslation) {
-      return NextResponse.json({ error: 'Русский перевод не найден' }, { status: 404 });
+    if (!sourceTranslation) {
+      return NextResponse.json(
+        { error: `Перевод на язык ${defaultLocale} не найден` },
+        { status: 404 }
+      );
     }
 
     const translatedData = await executeAiSkill<BlogArticleTranslationResult>(
       'blog-article-translation',
       {
         input: {
-          sourceLocale: 'ru',
+          sourceLocale: defaultLocale,
           targetLocale: parsed.targetLocale,
-          title: ruTranslation.title,
-          description: ruTranslation.description,
-          content: ruTranslation.content
+          title: sourceTranslation.title,
+          description: sourceTranslation.description,
+          content: sourceTranslation.content
         },
         modelId: parsed.modelId,
         overrides: parsed.overrides

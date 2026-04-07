@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { unstable_cache } from 'next/cache';
 import { getTranslations } from 'next-intl/server';
-import { type AppLocale, defaultLocale, isLocale } from '@/i18n/config';
+import { locales, type AppLocale, defaultLocale, isLocale } from '@/i18n/config';
 import prisma from '@/shared/lib/prisma';
 import {
   createCanonicalAlternates,
@@ -128,7 +128,16 @@ const BlogContent = async ({
     getCachedCategories()
   ])) as [BlogPostRecord[], BlogCategoryRecord[]];
 
-  const localeOrder = [locale, 'ru', 'en', 'sr'];
+  /**
+   * Создает порядок локалей для поиска перевода.
+   * Текущая локаль первой, затем остальные в порядке конфига.
+   */
+  const getLocaleOrder = (currentLocale: AppLocale): AppLocale[] => {
+    const otherLocales = locales.filter(l => l !== currentLocale);
+    return [currentLocale, ...otherLocales];
+  };
+
+  const localeOrder = getLocaleOrder(locale);
 
   const getTranslation = (translations: BlogTranslation[]) => {
     for (const localeCode of localeOrder) {
