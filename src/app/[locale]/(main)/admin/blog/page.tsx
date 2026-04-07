@@ -3,7 +3,7 @@ import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { defaultLocale, locales } from '@/i18n/config';
 import prisma from '@/shared/lib/prisma';
-import { Clock, Tag } from 'lucide-react';
+import { Clock, Tag, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatBlogDate } from '@/shared/lib/blog-utils';
 import { CreateArticleButton } from './_components/create-article-button';
@@ -102,10 +102,12 @@ export default async function AdminBlogPage() {
                     </Badge>
                   </div>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-                    <span className="flex items-center gap-1">
-                      <Clock className="size-3" />
-                      {post.readingTime} мин
-                    </span>
+                    {post.author?.name && (
+                      <span className="flex items-center gap-1">
+                        <User className="size-3" />
+                        {post.author.name}
+                      </span>
+                    )}
                     {post.publishedAt && <span>{formatBlogDate(post.publishedAt, 'ru')}</span>}
                     {!post.publishedAt && (
                       <span>Создано: {formatBlogDate(post.createdAt, 'ru')}</span>
@@ -116,6 +118,10 @@ export default async function AdminBlogPage() {
                         {postCategories.join(', ')}
                       </span>
                     )}
+                    <span className="flex items-center gap-1">
+                      <Clock className="size-3" />
+                      {post.readingTime} мин
+                    </span>
                     {/* Флаги переводов */}
                     <span className="flex items-center gap-1">
                       {locales.map((locale: string) => {
