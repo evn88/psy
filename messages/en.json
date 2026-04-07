@@ -384,6 +384,7 @@
           "closePending": "Please wait...",
           "submit": "Translate",
           "submitting": "Translating...",
+          "sourceRequired": "Fill in the source Russian version of the article first",
           "allSuccess": "All translations completed",
           "errorSingle": "Translation error for {locale}: {message}",
           "unknownError": "Unknown error"

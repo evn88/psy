@@ -384,6 +384,7 @@
           "closePending": "Sačekajte...",
           "submit": "Prevedi",
           "submitting": "Prevodim...",
+          "sourceRequired": "Prvo popunite izvornu rusku verziju članka",
           "allSuccess": "Svi prevodi su završeni",
           "errorSingle": "Greška prevoda za {locale}: {message}",
           "unknownError": "Nepoznata greška"

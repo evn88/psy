@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Check, Loader2, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -12,15 +14,23 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { useAiSkill } from '@/shared/lib/ai/hooks/use-ai-skill';
+import type {
+  BlogArticleTranslationInput,
+  BlogArticleTranslationResult
+} from '@/shared/lib/ai/skills/blog-article-translation.contract';
 
 interface TranslateModalProps {
-  postId: string;
   open: boolean;
   onClose: () => void;
   existingLocales: string[];
+  sourceTranslation: {
+    locale: string;
+    title: string;
+    description: string;
+    content: string;
+  } | null;
   onTranslated: (
     locale: string,
     data: { title: string; description: string; content: string }
@@ -34,41 +44,63 @@ const AVAILABLE_LOCALES = [
 
 type TranslateStatus = 'idle' | 'loading' | 'success' | 'error';
 
-export function TranslateModal({
-  postId,
+/**
+ * Модальное окно массового AI-перевода статьи из редактора.
+ *
+ * @param props Данные о доступных локалях и callback применения перевода.
+ * @returns Диалог выбора локалей для перевода.
+ */
+export const TranslateModal = ({
   open,
   onClose,
   existingLocales,
+  sourceTranslation,
   onTranslated
-}: TranslateModalProps) {
+}: TranslateModalProps) => {
   const tDialog = useTranslations('Admin.blog.editor.translateDialog');
-  const [selected, setSelected] = useState<string[]>(
-    AVAILABLE_LOCALES.filter(l => !existingLocales.includes(l.locale)).map(l => l.locale)
-  );
+
+  const getAvailableLocales = () =>
+    AVAILABLE_LOCALES.filter(localeItem => !existingLocales.includes(localeItem.locale)).map(
+      localeItem => localeItem.locale
+    );
+
+  const [selected, setSelected] = useState<string[]>(getAvailableLocales);
   const [statuses, setStatuses] = useState<Record<string, TranslateStatus>>({});
   const [isTranslating, setIsTranslating] = useState(false);
+  const { run: runTranslationSkill } = useAiSkill<
+    BlogArticleTranslationInput,
+    BlogArticleTranslationResult
+  >({
+    skillId: 'blog-article-translation'
+  });
 
-  useEffect(() => {
-    if (open) {
-      return;
-    }
-
-    setSelected(
-      AVAILABLE_LOCALES.filter(item => !existingLocales.includes(item.locale)).map(
-        item => item.locale
-      )
-    );
-    setStatuses({});
-  }, [existingLocales, open]);
-
+  /**
+   * Переключает выбранную локаль в списке перевода.
+   *
+   * @param locale Локаль для переключения.
+   */
   const toggleLocale = (locale: string) => {
-    setSelected(prev =>
-      prev.includes(locale) ? prev.filter(l => l !== locale) : [...prev, locale]
+    setSelected(previousLocales =>
+      previousLocales.includes(locale)
+        ? previousLocales.filter(selectedLocale => selectedLocale !== locale)
+        : [...previousLocales, locale]
     );
   };
 
+  /**
+   * Запускает AI-перевод по выбранным локалям и применяет результат в редактор.
+   */
   const handleTranslate = async () => {
     if (selected.length === 0) {
+      return;
+    }
+
+    if (
+      !sourceTranslation ||
+      !sourceTranslation.title.trim() ||
+      !sourceTranslation.content.trim()
+    ) {
+      toast.error(tDialog('sourceRequired'));
       return;
     }
 
@@ -76,22 +108,21 @@ export function TranslateModal({
     const nextStatuses: Record<string, TranslateStatus> = {};
 
     for (const locale of selected) {
-      setStatuses(prev => ({ ...prev, [locale]: 'loading' }));
+      setStatuses(previousStatuses => ({ ...previousStatuses, [locale]: 'loading' }));
+
       try {
-        const res = await fetch(`/api/admin/blog/${postId}/translate`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ targetLocale: locale })
+        const data = await runTranslationSkill({
+          input: {
+            sourceLocale: sourceTranslation.locale,
+            targetLocale: locale,
+            title: sourceTranslation.title,
+            description: sourceTranslation.description,
+            content: sourceTranslation.content
+          }
         });
 
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error ?? 'Ошибка перевода');
-        }
-
-        const data = await res.json();
         nextStatuses[locale] = 'success';
-        setStatuses(prev => ({ ...prev, [locale]: 'success' }));
+        setStatuses(previousStatuses => ({ ...previousStatuses, [locale]: 'success' }));
         onTranslated(locale, {
           title: data.title,
           description: data.description,
@@ -99,7 +130,7 @@ export function TranslateModal({
         });
       } catch (error) {
         nextStatuses[locale] = 'error';
-        setStatuses(prev => ({ ...prev, [locale]: 'error' }));
+        setStatuses(previousStatuses => ({ ...previousStatuses, [locale]: 'error' }));
         toast.error(
           tDialog('errorSingle', {
             locale,
@@ -111,13 +142,18 @@ export function TranslateModal({
 
     setIsTranslating(false);
     const allSuccess = selected.every(locale => nextStatuses[locale] === 'success');
+
     if (allSuccess) {
       toast.success(tDialog('allSuccess'));
     }
   };
 
+  /**
+   * Закрывает модальное окно после завершения перевода.
+   */
   const handleClose = () => {
     if (!isTranslating) {
+      setSelected(getAvailableLocales());
       setStatuses({});
       onClose();
     }
@@ -171,7 +207,7 @@ export function TranslateModal({
           <Button
             onClick={handleTranslate}
             disabled={selected.length === 0 || isTranslating}
-            className="bg-[#900A0B] hover:bg-[#900A0B]/90 text-white"
+            className="bg-[#900A0B] text-white hover:bg-[#900A0B]/90"
           >
             {isTranslating ? (
               <>
@@ -186,4 +222,4 @@ export function TranslateModal({
       </DialogContent>
     </Dialog>
   );
-}
+};

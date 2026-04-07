@@ -13,6 +13,8 @@ interface BlogEditorMetadataSectionProps {
   activeTitle: string;
   onSlugChange: (slug: string) => void;
   onGenerateSlug: (title: string) => string;
+  onTitleChange: (title: string) => void;
+  onDescriptionChange: (description: string) => void;
 }
 
 /**
@@ -38,7 +40,9 @@ const normalizeSlug = (value: string) => {
 export const BlogEditorMetadataSection = ({
   activeTitle,
   onSlugChange,
-  onGenerateSlug
+  onGenerateSlug,
+  onTitleChange,
+  onDescriptionChange
 }: BlogEditorMetadataSectionProps) => {
   const methods = useFormContext<BlogEditorFormValues>();
   const tFields = useTranslations('Admin.blog.editor.fields');
@@ -61,6 +65,10 @@ export const BlogEditorMetadataSection = ({
                 <Input
                   {...field}
                   id="blog-editor-title"
+                  onChange={event => {
+                    field.onChange(event.target.value);
+                    onTitleChange(event.target.value);
+                  }}
                   placeholder={tFields('titlePlaceholder')}
                   className={`${BLOG_EDITOR_META_FIELD_CLASS_NAME} ${
                     fieldState.error
@@ -144,6 +152,10 @@ export const BlogEditorMetadataSection = ({
               <Textarea
                 {...field}
                 id="blog-editor-description"
+                onChange={event => {
+                  field.onChange(event.target.value);
+                  onDescriptionChange(event.target.value);
+                }}
                 placeholder={tFields('descriptionPlaceholder')}
                 rows={2}
                 className={`${BLOG_EDITOR_META_FIELD_CLASS_NAME} ${

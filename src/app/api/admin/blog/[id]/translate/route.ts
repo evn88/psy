@@ -1,113 +1,92 @@
 import { NextResponse } from 'next/server';
+import { z, ZodError } from 'zod';
 import { auth } from '@/auth';
+import { aiModelIdSchema } from '@/shared/lib/ai/ai-model-catalog';
+import { aiSkillPromptOverridesSchema } from '@/shared/lib/ai/ai-contracts';
+import { AiSkillConfigurationError, AiSkillPromptOverrideError } from '@/shared/lib/ai/ai-errors';
+import { executeAiSkill } from '@/shared/lib/ai/execute-ai-skill.server';
+import type { BlogArticleTranslationResult } from '@/shared/lib/ai/skills/blog-article-translation.contract';
 import prisma from '@/shared/lib/prisma';
-import { generateText } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
-import { z } from 'zod';
 
 const schema = z.object({
-  targetLocale: z.enum(['en', 'sr'])
+  targetLocale: z.enum(['en', 'sr']),
+  modelId: aiModelIdSchema.optional(),
+  overrides: aiSkillPromptOverridesSchema.optional()
 });
 
-const LOCALE_NAMES: Record<string, string> = {
-  en: 'English',
-  sr: 'Serbian (Latin script)'
-};
-
-function buildSystemPrompt(targetLocale: string): string {
-  let prompt = `You are a professional translator specializing in psychology and therapy content.
-Translate the following Markdown text from Russian to ${LOCALE_NAMES[targetLocale] ?? targetLocale}.
-CRITICAL REQUIREMENTS:
-1. You MUST NOT change the Markdown formatting in any way. The translated text must have exactly the same structure, line breaks, headings, bold/italic markers, and image alignments as the original.
-2. Do not translate technical terms that are better kept in their original form (e.g. ACT, RO DBT, ADHD, ASD, Schema Therapy).
-3. Output ONLY the EXACT translated Markdown. No explanations, no preamble.`;
-
-  if (targetLocale === 'sr') {
-    prompt += `Ты — профессиональный переводчик-лингвист, специализирующийся на паре языков русский — сербский. Твоя задача — перевести предоставленный текст, строго придерживаясь норм стандартного сербского языка (ekavica).
-Соблюдай следующие правила:
-Исключи регионализмы: Категорически избегай лексики, характерной для хорватского (например, используй hleb вместо kruh, hiljada вместо tisuća, названия месяцев только латинского происхождения) или боснийского языков.
-Приоритет смысла (Локализация): Не делай подстрочный перевод. Передавай смысл так, как это сформулировал бы носитель языка в Сербии.
-Никаких выдуманных слов: Если прямого эквивалента слова в сербском языке не существует, не пытайся его сконструировать. Вместо этого используй синоним или перефразируй предложение, сохраняя исходный контекст и эмоциональную окраску, как это сделал бы опытный переводчик.
-Письменность: Используй исключительно латиницу (latinica).
-Стиль: Сохраняй стиль оригинала.`;
-  }
-
-  return prompt;
-}
-
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session?.user || (session.user as { role?: string }).role !== 'ADMIN') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-  const { id } = await params;
+  try {
+    const session = await auth();
 
-  const body = await req.json();
-  const parsed = schema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: 'Неверные данные' }, { status: 400 });
-  }
+    if (!session?.user || (session.user as { role?: string }).role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-  const { targetLocale } = parsed.data;
+    const { id } = await params;
+    const body = await req.json();
+    const parsed = schema.parse(body);
+    const ruTranslation = await prisma.blogPostTranslation.findUnique({
+      where: { postId_locale: { postId: id, locale: 'ru' } }
+    });
 
-  const ruTranslation = await prisma.blogPostTranslation.findUnique({
-    where: { postId_locale: { postId: id, locale: 'ru' } }
-  });
+    if (!ruTranslation) {
+      return NextResponse.json({ error: 'Русский перевод не найден' }, { status: 404 });
+    }
 
-  if (!ruTranslation) {
-    return NextResponse.json({ error: 'Русский перевод не найден' }, { status: 404 });
-  }
-
-  if (!process.env.AI_GATEWAY_API_KEY) {
-    return NextResponse.json(
-      { error: 'AI Gateway не настроен. Добавьте AI_GATEWAY_API_KEY в переменные окружения.' },
-      { status: 503 }
+    const translatedData = await executeAiSkill<BlogArticleTranslationResult>(
+      'blog-article-translation',
+      {
+        input: {
+          sourceLocale: 'ru',
+          targetLocale: parsed.targetLocale,
+          title: ruTranslation.title,
+          description: ruTranslation.description,
+          content: ruTranslation.content
+        },
+        modelId: parsed.modelId,
+        overrides: parsed.overrides
+      }
     );
+
+    await prisma.blogPostTranslation.upsert({
+      where: { postId_locale: { postId: id, locale: parsed.targetLocale } },
+      create: {
+        postId: id,
+        locale: parsed.targetLocale,
+        title: translatedData.title,
+        description: translatedData.description,
+        content: translatedData.content
+      },
+      update: {
+        title: translatedData.title,
+        description: translatedData.description,
+        content: translatedData.content
+      }
+    });
+
+    return NextResponse.json({
+      success: true,
+      locale: parsed.targetLocale,
+      title: translatedData.title,
+      description: translatedData.description,
+      content: translatedData.content
+    });
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { error: 'Неверные данные', details: z.treeifyError(error) },
+        { status: 400 }
+      );
+    }
+
+    if (error instanceof AiSkillPromptOverrideError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    if (error instanceof AiSkillConfigurationError) {
+      return NextResponse.json({ error: error.message }, { status: 503 });
+    }
+
+    return NextResponse.json({ error: 'Не удалось выполнить перевод' }, { status: 500 });
   }
-
-  const gateway = createOpenAI({
-    apiKey: process.env.AI_GATEWAY_API_KEY,
-    baseURL: 'https://ai-gateway.vercel.sh/v1'
-  });
-
-  const systemPromptMD = buildSystemPrompt(targetLocale);
-  const systemPromptText = `${buildSystemPrompt(targetLocale)}
-Output ONLY plain text. NO Markdown characters (like #, *, _, [, ], ( ), etc.).`;
-
-  const [titleResult, descriptionResult, contentResult] = await Promise.all([
-    generateText({
-      model: gateway('openai/gpt-5.4-mini'),
-      system: systemPromptText,
-      prompt: `Translate this blog title to ${targetLocale}: ${ruTranslation.title}`
-    }),
-    generateText({
-      model: gateway('openai/gpt-5.4-mini'),
-      system: systemPromptText,
-      prompt: `Translate this blog description to ${targetLocale}: ${ruTranslation.description}`
-    }),
-    generateText({
-      model: gateway('openai/gpt-5.4'),
-      system: systemPromptMD,
-      prompt: ruTranslation.content
-    })
-  ]);
-
-  const cleanText = (text: string) => {
-    return text
-      .replace(/^["']|["']$/g, '') // Remove quotes
-      .replace(/[#*`_~]/g, '') // Remove common MD markers just in case
-      .trim();
-  };
-
-  const title = cleanText(titleResult.text);
-  const description = cleanText(descriptionResult.text);
-  const content = contentResult.text.trim();
-
-  await prisma.blogPostTranslation.upsert({
-    where: { postId_locale: { postId: id, locale: targetLocale } },
-    create: { postId: id, locale: targetLocale, title, description, content },
-    update: { title, description, content }
-  });
-
-  return NextResponse.json({ success: true, locale: targetLocale, title, description, content });
 }

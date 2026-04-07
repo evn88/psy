@@ -54,7 +54,14 @@ export const BlogEditorToolbar = ({
   return (
     <div className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b bg-background/95 px-4 py-2 backdrop-blur-sm sm:py-3">
       <div className="-mr-4 flex items-center gap-2 overflow-x-auto py-1 pr-4 no-scrollbar sm:mr-0 sm:pr-0">
-        <Select value={status} onValueChange={value => onStatusChange(value as BlogEditorStatus)}>
+        <Select
+          value={status}
+          onValueChange={value => {
+            if (value !== status) {
+              onStatusChange(value as BlogEditorStatus);
+            }
+          }}
+        >
           <SelectTrigger className="h-9 w-[130px] text-xs sm:text-sm">
             <SelectValue />
           </SelectTrigger>

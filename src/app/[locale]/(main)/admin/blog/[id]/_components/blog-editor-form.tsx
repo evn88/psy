@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import dynamic from 'next/dynamic';
 import { EyeOff } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { FormProvider, useForm, useWatch } from 'react-hook-form';
+import { FormProvider, useForm } from 'react-hook-form';
 import { PreviewSizeSwitcher } from '@/components/admin/blog/preview-size-switcher';
 import { TranslateModal } from '@/components/admin/blog/translate-modal';
 import {
@@ -134,28 +134,15 @@ export const BlogEditorForm = ({ initialData }: BlogEditorFormProps) => {
     },
     mode: 'onChange'
   });
-  const watchedTitle = useWatch({ control: methods.control, name: 'title' });
-  const watchedDescription = useWatch({ control: methods.control, name: 'description' });
+  const { formState, reset } = methods;
 
   useEffect(() => {
-    methods.reset({
+    reset({
       title: activeTranslation.title || '',
       slug: slug || '',
       description: activeTranslation.description || ''
     });
-  }, [activeLocale, activeTranslation.description, activeTranslation.title, methods, slug]);
-
-  useEffect(() => {
-    if (watchedTitle !== undefined) {
-      updateTranslation('title', watchedTitle);
-    }
-  }, [updateTranslation, watchedTitle]);
-
-  useEffect(() => {
-    if (watchedDescription !== undefined) {
-      updateTranslation('description', watchedDescription);
-    }
-  }, [updateTranslation, watchedDescription]);
+  }, [activeLocale, activeTranslation.description, activeTranslation.title, reset, slug]);
 
   const draftSignature = JSON.stringify({
     slug,
@@ -182,7 +169,7 @@ export const BlogEditorForm = ({ initialData }: BlogEditorFormProps) => {
       translations,
       draftSignature,
       isLockedByOther,
-      isValid: methods.formState.isValid,
+      isValid: formState.isValid,
       onTranslationsChange: setTranslations,
       onVersionCreated: prependVersion,
       onSelectedVersionReset: () => setSelectedDiffVersionId(null),
@@ -211,6 +198,7 @@ export const BlogEditorForm = ({ initialData }: BlogEditorFormProps) => {
     onRestoreVersion: (version: (typeof versions)[number]) => void restoreVersion(version),
     translations
   };
+  const sourceTranslation = translations.find(translation => translation.locale === 'ru') ?? null;
 
   return (
     <FormProvider {...methods}>
@@ -223,10 +211,10 @@ export const BlogEditorForm = ({ initialData }: BlogEditorFormProps) => {
           onPublish={() => void publish()}
           onSave={() => void save({ showToast: true, createVersion: true })}
           isPublishDisabled={
-            isLockedByOther || publishing || !activeTranslation.title || !methods.formState.isValid
+            isLockedByOther || publishing || !activeTranslation.title || !formState.isValid
           }
           isPublishPending={publishing}
-          isSaveDisabled={isLockedByOther || saving || !methods.formState.isValid}
+          isSaveDisabled={isLockedByOther || saving || !formState.isValid}
           isSavePending={saving}
           isLockedByOther={isLockedByOther}
           lockOwnerName={ownerName}
@@ -240,6 +228,8 @@ export const BlogEditorForm = ({ initialData }: BlogEditorFormProps) => {
                   activeTitle={activeTranslation.title}
                   onSlugChange={setSlug}
                   onGenerateSlug={generateSlugForTitle}
+                  onTitleChange={value => updateTranslation('title', value)}
+                  onDescriptionChange={value => updateTranslation('description', value)}
                 />
               </div>
 
@@ -299,10 +289,10 @@ export const BlogEditorForm = ({ initialData }: BlogEditorFormProps) => {
         </div>
 
         <TranslateModal
-          postId={initialData.postId}
           open={showTranslateModal}
           onClose={() => setShowTranslateModal(false)}
           existingLocales={existingLocales}
+          sourceTranslation={sourceTranslation}
           onTranslated={applyTranslatedContent}
         />
       </div>

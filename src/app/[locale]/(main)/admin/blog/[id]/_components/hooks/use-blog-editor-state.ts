@@ -95,11 +95,24 @@ export const useBlogEditorState = ({
    */
   const updateTranslation = useCallback(
     (field: keyof Omit<EditorTranslation, 'locale'>, value: string) => {
-      setTranslations(previousTranslations =>
-        previousTranslations.map(translation =>
-          translation.locale === activeLocale ? { ...translation, [field]: value } : translation
-        )
-      );
+      setTranslations(previousTranslations => {
+        let hasChanges = false;
+        const nextTranslations = previousTranslations.map(translation => {
+          if (translation.locale !== activeLocale) {
+            return translation;
+          }
+
+          if (translation[field] === value) {
+            return translation;
+          }
+
+          hasChanges = true;
+
+          return { ...translation, [field]: value };
+        });
+
+        return hasChanges ? nextTranslations : previousTranslations;
+      });
     },
     [activeLocale]
   );
@@ -116,12 +129,29 @@ export const useBlogEditorState = ({
         return;
       }
 
-      setTranslations(previousTranslations =>
-        previousTranslations.map(translation =>
-          translation.locale === locale ? { ...translation, ...translatedData } : translation
-        )
-      );
-      setActiveLocale(locale);
+      setTranslations(previousTranslations => {
+        let hasChanges = false;
+        const nextTranslations = previousTranslations.map(translation => {
+          if (translation.locale !== locale) {
+            return translation;
+          }
+
+          if (
+            translation.title === translatedData.title &&
+            translation.description === translatedData.description &&
+            translation.content === translatedData.content
+          ) {
+            return translation;
+          }
+
+          hasChanges = true;
+
+          return { ...translation, ...translatedData };
+        });
+
+        return hasChanges ? nextTranslations : previousTranslations;
+      });
+      setActiveLocale(previousLocale => (previousLocale === locale ? previousLocale : locale));
     },
     []
   );

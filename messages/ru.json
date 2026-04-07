@@ -384,6 +384,7 @@
           "closePending": "Подождите...",
           "submit": "Перевести",
           "submitting": "Перевожу...",
+          "sourceRequired": "Сначала заполните исходную русскую версию статьи",
           "allSuccess": "Все переводы выполнены",
           "errorSingle": "Ошибка перевода на {locale}: {message}",
           "unknownError": "Неизвестная ошибка"
