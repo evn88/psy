@@ -2,6 +2,7 @@
 
 import { Eye, EyeOff, Globe, Loader2, Save } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -23,6 +24,8 @@ interface BlogEditorToolbarProps {
   isPublishPending: boolean;
   isSaveDisabled: boolean;
   isSavePending: boolean;
+  isLockedByOther: boolean;
+  lockOwnerName: string | null;
 }
 
 /**
@@ -41,7 +44,9 @@ export const BlogEditorToolbar = ({
   isPublishDisabled,
   isPublishPending,
   isSaveDisabled,
-  isSavePending
+  isSavePending,
+  isLockedByOther,
+  lockOwnerName
 }: BlogEditorToolbarProps) => {
   const tBlog = useTranslations('Admin.blog');
   const tToolbar = useTranslations('Admin.blog.editor.toolbar');
@@ -82,6 +87,18 @@ export const BlogEditorToolbar = ({
       </div>
 
       <div className="flex flex-shrink-0 items-center gap-2">
+        {isLockedByOther && (
+          <Badge
+            variant="destructive"
+            className="border-red-600/30 bg-red-600/10 text-red-700 shadow-none"
+          >
+            <span className="sm:hidden">{tToolbar('editing')}</span>
+            <span className="hidden sm:inline">
+              {lockOwnerName ? tToolbar('editingBy', { name: lockOwnerName }) : tToolbar('editing')}
+            </span>
+          </Badge>
+        )}
+
         {status !== 'PUBLISHED' && (
           <Button
             size="sm"

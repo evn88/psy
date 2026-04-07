@@ -328,7 +328,9 @@
         "loadingEditor": "Loading editor...",
         "toolbar": {
           "editor": "Editor",
-          "preview": "Preview"
+          "preview": "Preview",
+          "editing": "Being edited",
+          "editingBy": "Being edited: {name}"
         },
         "fields": {
           "titleLabel": "Title",

@@ -328,7 +328,9 @@
         "loadingEditor": "Učitavanje editora...",
         "toolbar": {
           "editor": "Editor",
-          "preview": "Pregled"
+          "preview": "Pregled",
+          "editing": "Uređuje se",
+          "editingBy": "Uređuje se: {name}"
         },
         "fields": {
           "titleLabel": "Naslov",

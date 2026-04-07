@@ -1,9 +1,15 @@
+import { z } from 'zod';
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/shared/lib/prisma';
+import { acquireBlogEditorLock } from '@/shared/lib/blog-editor-lock-store';
 import { sendBlogNotificationEmail } from '@/shared/lib/email';
 import { publishToTelegramChannel, publishToTelegraph } from '@/shared/lib/social-publish';
 import type { BlogPostTranslation } from '@prisma/client';
+
+const publishSchema = z.object({
+  editorInstanceId: z.string().min(1).optional()
+});
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -11,6 +17,30 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const { id } = await params;
+  const body = await req.json().catch(() => ({}));
+  const parsed = publishSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Неверные данные' }, { status: 400 });
+  }
+
+  if (parsed.data.editorInstanceId) {
+    const lockState = acquireBlogEditorLock({
+      postId: id,
+      instanceId: parsed.data.editorInstanceId,
+      userId: session.user.id!,
+      userName: session.user.name ?? session.user.email ?? 'Admin'
+    });
+
+    if (!lockState.isOwner) {
+      return NextResponse.json(
+        {
+          error: 'Эта статья сейчас редактируется в другом окне или другим администратором.'
+        },
+        { status: 409 }
+      );
+    }
+  }
 
   const post = await prisma.blogPost.findUnique({
     where: { id },

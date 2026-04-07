@@ -328,7 +328,9 @@
         "loadingEditor": "Загрузка редактора...",
         "toolbar": {
           "editor": "Редактор",
-          "preview": "Предпросмотр"
+          "preview": "Предпросмотр",
+          "editing": "Редактируется",
+          "editingBy": "Редактируется: {name}"
         },
         "fields": {
           "titleLabel": "Заголовок",

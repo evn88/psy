@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import prisma from '@/shared/lib/prisma';
+import { acquireBlogEditorLock } from '@/shared/lib/blog-editor-lock-store';
 import { calculateReadingTime } from '@/shared/lib/blog-utils';
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
@@ -11,6 +12,7 @@ const updateSchema = z.object({
   coverImage: z.string().nullable().optional(),
   categoryIds: z.array(z.string()).optional(),
   authorId: z.string().min(1).optional(),
+  editorInstanceId: z.string().min(1).optional(),
   status: z.enum(['DRAFT', 'PUBLISHED']).optional(),
   translations: z
     .array(
@@ -55,7 +57,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!(await requireAdmin())) {
+  const session = await requireAdmin();
+
+  if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const { id } = await params;
@@ -69,7 +73,26 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     );
   }
 
-  const { coverImage, categoryIds, status, translations, authorId, slug } = parsed.data;
+  const { coverImage, categoryIds, status, translations, authorId, slug, editorInstanceId } =
+    parsed.data;
+
+  if (editorInstanceId) {
+    const lockState = acquireBlogEditorLock({
+      postId: id,
+      instanceId: editorInstanceId,
+      userId: session.user.id!,
+      userName: session.user.name ?? session.user.email ?? 'Admin'
+    });
+
+    if (!lockState.isOwner) {
+      return NextResponse.json(
+        {
+          error: 'Эта статья сейчас редактируется в другом окне или другим администратором.'
+        },
+        { status: 409 }
+      );
+    }
+  }
 
   if (authorId !== undefined) {
     const author = await prisma.user.findUnique({

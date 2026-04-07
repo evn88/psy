@@ -19,6 +19,7 @@ interface BlogEditorSaveOptions {
 interface UseBlogEditorPersistenceParams {
   postId: string;
   editorRef: RefObject<MDXEditorMethods | null>;
+  editorInstanceId: string;
   activeLocale: EditorTranslation['locale'];
   selectedDiffVersionId: string | null;
   slug: string;
@@ -28,6 +29,8 @@ interface UseBlogEditorPersistenceParams {
   authorId: string;
   status: BlogEditorStatus;
   translations: EditorTranslation[];
+  draftSignature: string;
+  isLockedByOther: boolean;
   isValid: boolean;
   onTranslationsChange: (translations: EditorTranslation[]) => void;
   onVersionCreated: (version: BlogEditorVersion) => void;
@@ -44,6 +47,8 @@ interface UseBlogEditorPersistenceParams {
 const getSavableTranslations = (translations: EditorTranslation[]) => {
   return translations.filter(translation => translation.title);
 };
+
+const AUTO_SAVE_DEBOUNCE_MS = 5_000;
 
 /**
  * Считывает markdown из текущего редактора и подставляет его в активный перевод.
@@ -78,6 +83,7 @@ const syncTranslationsFromEditor = (
 export const useBlogEditorPersistence = ({
   postId,
   editorRef,
+  editorInstanceId,
   activeLocale,
   selectedDiffVersionId,
   slug,
@@ -87,6 +93,8 @@ export const useBlogEditorPersistence = ({
   authorId,
   status,
   translations,
+  draftSignature,
+  isLockedByOther,
   isValid,
   onTranslationsChange,
   onVersionCreated,
@@ -96,6 +104,7 @@ export const useBlogEditorPersistence = ({
   const router = useRouter();
   const tNotifications = useTranslations('Admin.blog.editor.notifications');
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSavedDraftSignatureRef = useRef(draftSignature);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [isRefreshPending, startRefreshTransition] = useTransition();
@@ -110,9 +119,13 @@ export const useBlogEditorPersistence = ({
     async ({
       showToast = true,
       createVersion = false,
-      newSlug
-    }: BlogEditorSaveOptions & { newSlug?: string } = {}) => {
-      if (!isValid) {
+      newSlug,
+      expectedDraftSignature
+    }: BlogEditorSaveOptions & {
+      newSlug?: string;
+      expectedDraftSignature?: string;
+    } = {}) => {
+      if (!isValid || isLockedByOther) {
         return false;
       }
 
@@ -141,6 +154,7 @@ export const useBlogEditorPersistence = ({
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            editorInstanceId,
             slug: currentSlug,
             coverImage,
             categoryIds,
@@ -151,7 +165,11 @@ export const useBlogEditorPersistence = ({
         });
 
         if (!response.ok) {
-          throw new Error('Ошибка сохранения');
+          const errorPayload = (await response.json().catch(() => null)) as {
+            error?: string;
+          } | null;
+
+          throw new Error(errorPayload?.error ?? 'Ошибка сохранения');
         }
 
         if (createVersion && savableTranslations.length > 0) {
@@ -175,10 +193,12 @@ export const useBlogEditorPersistence = ({
           toast.success(tNotifications('saveSuccess'));
         }
 
+        lastSavedDraftSignatureRef.current = expectedDraftSignature ?? draftSignature;
+
         return true;
-      } catch {
+      } catch (error) {
         if (showToast) {
-          toast.error(tNotifications('saveError'));
+          toast.error(error instanceof Error ? error.message : tNotifications('saveError'));
         }
         return false;
       } finally {
@@ -189,8 +209,11 @@ export const useBlogEditorPersistence = ({
       activeLocale,
       authorId,
       categoryIds,
+      draftSignature,
+      editorInstanceId,
       coverImage,
       editorRef,
+      isLockedByOther,
       isValid,
       onSelectedVersionReset,
       onTranslationsChange,
@@ -228,10 +251,18 @@ export const useBlogEditorPersistence = ({
       clearTimeout(autoSaveTimerRef.current);
     }
 
-    if (!selectedDiffVersionId && isValid) {
+    if (
+      !selectedDiffVersionId &&
+      isValid &&
+      !isLockedByOther &&
+      draftSignature !== lastSavedDraftSignatureRef.current
+    ) {
       autoSaveTimerRef.current = setTimeout(() => {
-        void save({ showToast: false });
-      }, 30_000);
+        void save({
+          showToast: false,
+          expectedDraftSignature: draftSignature
+        });
+      }, AUTO_SAVE_DEBOUNCE_MS);
     }
 
     return () => {
@@ -239,7 +270,7 @@ export const useBlogEditorPersistence = ({
         clearTimeout(autoSaveTimerRef.current);
       }
     };
-  }, [save, selectedDiffVersionId, isValid]);
+  }, [draftSignature, isLockedByOther, isValid, save, selectedDiffVersionId]);
 
   /**
    * Публикует статью после успешного сохранения черновика.
@@ -268,17 +299,25 @@ export const useBlogEditorPersistence = ({
     setPublishing(true);
 
     try {
-      const response = await fetch(`/api/admin/blog/${postId}/publish`, { method: 'POST' });
+      const response = await fetch(`/api/admin/blog/${postId}/publish`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          editorInstanceId
+        })
+      });
 
       if (!response.ok) {
-        throw new Error('Ошибка публикации');
+        const errorPayload = (await response.json().catch(() => null)) as { error?: string } | null;
+
+        throw new Error(errorPayload?.error ?? 'Ошибка публикации');
       }
 
       onPublished();
       toast.success(tNotifications('publishSuccess'));
       startRefreshTransition(() => router.refresh());
-    } catch {
-      toast.error(tNotifications('publishError'));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : tNotifications('publishError'));
     } finally {
       setPublishing(false);
     }
@@ -291,6 +330,7 @@ export const useBlogEditorPersistence = ({
     slug,
     translations,
     activeLocale,
+    editorInstanceId,
     generateSlugForTitle,
     tNotifications
   ]);

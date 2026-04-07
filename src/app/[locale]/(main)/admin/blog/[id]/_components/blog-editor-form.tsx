@@ -20,6 +20,7 @@ import { BlogEditorSidebar } from './blog-editor-sidebar';
 import { BlogEditorToolbar } from './blog-editor-toolbar';
 import type { BlogEditorInitialData, BlogEditorLocale } from './blog-editor-form.types';
 import { useBlogEditorContentSync } from './hooks/use-blog-editor-content-sync';
+import { useBlogEditorLock } from './hooks/use-blog-editor-lock';
 import { useBlogEditorPersistence } from './hooks/use-blog-editor-persistence';
 import { useBlogEditorState } from './hooks/use-blog-editor-state';
 import { useBlogEditorVersions } from './hooks/use-blog-editor-versions';
@@ -66,6 +67,9 @@ export const BlogEditorForm = ({ initialData }: BlogEditorFormProps) => {
   const editorRef = useRef<MDXEditorMethods | null>(null);
   const tEditor = useTranslations('Admin.blog.editor');
   const [isLocalePending, startLocaleTransition] = useTransition();
+  const { editorInstanceId, isLockedByOther, ownerName } = useBlogEditorLock({
+    postId: initialData.postId
+  });
 
   const {
     slug,
@@ -153,10 +157,20 @@ export const BlogEditorForm = ({ initialData }: BlogEditorFormProps) => {
     }
   }, [updateTranslation, watchedDescription]);
 
+  const draftSignature = JSON.stringify({
+    slug,
+    status,
+    coverImage,
+    categoryIds,
+    authorId,
+    translations
+  });
+
   const { saving, publishing, save, publish, uploadImage, generateSlugForTitle } =
     useBlogEditorPersistence({
       postId: initialData.postId,
       editorRef,
+      editorInstanceId,
       activeLocale,
       selectedDiffVersionId,
       slug,
@@ -166,6 +180,8 @@ export const BlogEditorForm = ({ initialData }: BlogEditorFormProps) => {
       authorId,
       status,
       translations,
+      draftSignature,
+      isLockedByOther,
       isValid: methods.formState.isValid,
       onTranslationsChange: setTranslations,
       onVersionCreated: prependVersion,
@@ -206,10 +222,14 @@ export const BlogEditorForm = ({ initialData }: BlogEditorFormProps) => {
           onTogglePreview={() => setShowPreview(previousValue => !previousValue)}
           onPublish={() => void publish()}
           onSave={() => void save({ showToast: true, createVersion: true })}
-          isPublishDisabled={publishing || !activeTranslation.title || !methods.formState.isValid}
+          isPublishDisabled={
+            isLockedByOther || publishing || !activeTranslation.title || !methods.formState.isValid
+          }
           isPublishPending={publishing}
-          isSaveDisabled={saving || !methods.formState.isValid}
+          isSaveDisabled={isLockedByOther || saving || !methods.formState.isValid}
           isSavePending={saving}
+          isLockedByOther={isLockedByOther}
+          lockOwnerName={ownerName}
         />
 
         <div className="flex flex-1 flex-col overflow-hidden lg:flex-row">
