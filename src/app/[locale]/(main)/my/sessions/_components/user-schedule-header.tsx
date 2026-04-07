@@ -2,8 +2,9 @@
 
 import { format } from 'date-fns';
 import { useLocale, useTranslations } from 'next-intl';
-import { enUS, ru } from 'date-fns/locale';
 import { Calendar as CalendarIcon } from 'lucide-react';
+import { getDateFnsLocale } from '@/shared/lib/date-locale';
+import type { AppLocale } from '@/i18n/config';
 
 import { CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -20,8 +21,8 @@ export function UserScheduleHeader({
   onViewModeChange
 }: UserScheduleHeaderProps) {
   const t = useTranslations('My');
-  const locale = useLocale();
-  const dateLocale = locale === 'ru' ? ru : enUS;
+  const locale = useLocale() as AppLocale;
+  const dateLocale = getDateFnsLocale(locale);
 
   return (
     <CardHeader className="pb-3 px-4 sm:px-6">

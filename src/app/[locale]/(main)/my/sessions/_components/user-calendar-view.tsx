@@ -19,7 +19,8 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserEvent } from './use-user-events';
 import { useLocale, useTranslations } from 'next-intl';
-import { enUS, ru } from 'date-fns/locale';
+import { getDateFnsLocale } from '@/shared/lib/date-locale';
+import type { AppLocale } from '@/i18n/config';
 
 interface UserCalendarViewProps {
   currentDate: Date;
@@ -39,8 +40,8 @@ export function UserCalendarView({
   isFetching = false
 }: UserCalendarViewProps) {
   const t = useTranslations('My');
-  const locale = useLocale();
-  const dateLocale = locale === 'ru' ? ru : enUS;
+  const locale = useLocale() as AppLocale;
+  const dateLocale = getDateFnsLocale(locale);
 
   const [direction, setDirection] = useState<'next' | 'prev'>('next');
 

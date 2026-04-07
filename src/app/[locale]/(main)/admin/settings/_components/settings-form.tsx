@@ -32,8 +32,15 @@ import { useEffect, useState } from 'react';
 import { updateSettings } from '../actions';
 import { useLocale, useTranslations } from 'next-intl';
 import { type Theme, useTheme } from '@/components/theme-provider';
-import { type AppLocale, defaultLocale, isLocale } from '@/i18n/config';
+import { locales, type AppLocale, defaultLocale, isLocale } from '@/i18n/config';
 import { getPathname, usePathname, useRouter } from '@/i18n/navigation';
+
+/** Маппинг локалей на i18n ключи для отображения названий языков */
+const LOCALE_I18N_KEYS: Record<AppLocale, string> = {
+  ru: 'langRu',
+  en: 'langEn',
+  sr: 'langSr'
+} as const;
 
 const formSchema = z.object({
   language: z.string(),
@@ -176,9 +183,11 @@ export const SettingsForm = ({ initialSettings }: SettingsFormProps) => {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="ru">{t('langRu')}</SelectItem>
-                      <SelectItem value="en">{t('langEn')}</SelectItem>
-                      <SelectItem value="sr">{t('langSr')}</SelectItem>
+                      {locales.map(locale => (
+                        <SelectItem key={locale} value={locale}>
+                          {t(LOCALE_I18N_KEYS[locale])}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormDescription>{t('languageDescription')}</FormDescription>

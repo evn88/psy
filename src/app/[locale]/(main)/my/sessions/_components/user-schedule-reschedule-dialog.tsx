@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { useLocale, useTranslations } from 'next-intl';
-import { enUS, ru } from 'date-fns/locale';
 import { Calendar as CalendarIcon, Clock, Loader2 } from 'lucide-react';
+import { getDateFnsLocale } from '@/shared/lib/date-locale';
+import type { AppLocale } from '@/i18n/config';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -32,8 +33,8 @@ export function UserScheduleRescheduleDialog({
   onConfirm
 }: UserScheduleRescheduleDialogProps) {
   const t = useTranslations('My');
-  const locale = useLocale();
-  const dateLocale = locale === 'ru' ? ru : enUS;
+  const locale = useLocale() as AppLocale;
+  const dateLocale = getDateFnsLocale(locale);
 
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);

@@ -11,7 +11,15 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { CheckCircle2, Clock, Globe, LogIn, MapPin, Palette, XCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { type AppLocale } from '@/i18n/config';
 import type { AdminUserData } from './types';
+
+/** Названия языков для отображения в интерфейсе */
+const LANGUAGE_NAMES: Record<AppLocale, string> = {
+  ru: 'Русский',
+  en: 'English',
+  sr: 'Srpski'
+};
 
 interface UserDetailsDialogProps {
   user: AdminUserData;
@@ -166,7 +174,7 @@ export const UserDetailsDialog = ({ user, open, onOpenChange }: UserDetailsDialo
                 <Globe className="h-3.5 w-3.5" />
                 {t('detailsLanguage')}
               </span>
-              <span>{user.language === 'ru' ? 'Русский' : 'English'}</span>
+              <span>{LANGUAGE_NAMES[user.language as AppLocale] || 'Unknown'}</span>
 
               <span className="text-muted-foreground flex items-center gap-1.5">
                 <Palette className="h-3.5 w-3.5" />

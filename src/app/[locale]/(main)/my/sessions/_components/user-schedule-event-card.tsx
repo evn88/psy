@@ -2,12 +2,13 @@
 
 import { format } from 'date-fns';
 import { useLocale, useTranslations } from 'next-intl';
-import { enUS, ru } from 'date-fns/locale';
 import { Clock, MessageSquare, Video } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { getDateFnsLocale } from '@/shared/lib/date-locale';
 import { getSafeMeetingUrl } from '@/shared/lib/safe-url';
+import type { AppLocale } from '@/i18n/config';
 import { UserEvent } from './use-user-events';
 
 interface UserScheduleEventCardProps {
@@ -22,8 +23,8 @@ export function UserScheduleEventCard({
   onCancelClick
 }: UserScheduleEventCardProps) {
   const t = useTranslations('My');
-  const locale = useLocale();
-  const dateLocale = locale === 'ru' ? ru : enUS;
+  const locale = useLocale() as AppLocale;
+  const dateLocale = getDateFnsLocale(locale);
 
   const startDate = new Date(event.start);
   const endDate = new Date(event.end);
