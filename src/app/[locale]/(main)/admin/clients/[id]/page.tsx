@@ -7,6 +7,8 @@ import { decryptData } from '@/shared/lib/crypto';
 import { ClientNotes } from './_components/client-notes';
 import { ClientIntakes } from './_components/client-intakes';
 
+import { ClientData } from './_components/client-data';
+
 export default async function AdminClientProfilePage({
   params
 }: {
@@ -100,41 +102,7 @@ export default async function AdminClientProfilePage({
         </TabsContent>
 
         <TabsContent value="data">
-          <Card>
-            <CardHeader>
-              <CardTitle>Базовые данные профиля</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-muted-foreground">ID</p>
-                  <p className="font-mono">{user.id}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Регистрация</p>
-                  <p>{new Date(user.createdAt).toLocaleString('ru-RU')}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Язык / Тема / Таймзона</p>
-                  <p>
-                    {user.language} / {user.theme} / {user.timezone || '—'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">
-                    Согласия (Подписано документов: {user.consents.length})
-                  </p>
-                  <div className="space-y-1 mt-1">
-                    {user.consents.map((c: any) => (
-                      <p key={c.id} className="text-xs text-muted-foreground">
-                        {c.type} — {new Date(c.agreedAt).toLocaleString('ru-RU')}
-                      </p>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <ClientData user={user} />
         </TabsContent>
       </Tabs>
     </div>

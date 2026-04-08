@@ -422,40 +422,58 @@
           "textLanguage": "Tekst",
           "placeholder": "Počnite da pišete članak..."
         }
+      }
+    },
+    "clients": {
+      "title": "Upravljanje klijentima",
+      "description": "Upravljajte profilima korisnika i kliničkim podacima",
+      "addUser": "Dodaj klijenta",
+      "columns": {
+        "name": "Klijent",
+        "email": "Email",
+        "status": "Status",
+        "lastIntake": "Poslednji upitnik",
+        "actions": "Akcije"
       },
-      "clients": {
-        "title": "Upravljanje klijentima",
-        "description": "Upravljajte profilima korisnika i kliničkim podacima",
-        "addUser": "Dodaj klijenta",
-        "columns": {
-          "name": "Klijent",
-          "email": "Email",
-          "status": "Status",
-          "lastIntake": "Poslednji upitnik",
-          "actions": "Akcije"
+      "filters": {
+        "searchPlaceholder": "Pretraži po imenu ili emailu..."
+      },
+      "dashboard": {
+        "tabs": {
+          "intakes": "Upitnici",
+          "notes": "Beleške terapeuta",
+          "tests": "Testovi",
+          "data": "Osnovni podaci"
         },
-        "filters": {
-          "searchPlaceholder": "Pretraži po imenu ili emailu..."
+        "intakes": {
+          "title": "Popunjeni upitnici",
+          "description": "Istorija popunjavanja upitnika",
+          "empty": "Nema popunjenih upitnika",
+          "version": "Verzija",
+          "delete": "Obriši",
+          "deleteConfirmTitle": "Obrisati upitnik?",
+          "deleteConfirmDescription": "Ova radnja se ne može poništiti. Upitnik će biti trajno obrisan.",
+          "deleting": "Brisanje...",
+          "deleteSuccess": "Anketa uspešno obrisana",
+          "cancel": "Otkaži"
         },
-        "dashboard": {
-          "tabs": {
-            "intakes": "Upitnici",
-            "notes": "Beleške terapeuta",
-            "tests": "Testovi",
-            "data": "Osnovni podaci"
-          },
-          "intakes": {
-            "title": "Popunjeni upitnici",
-            "description": "Istorija popunjavanja upitnika",
-            "empty": "Nema popunjenih upitnika",
-            "version": "Verzija",
-            "delete": "Obriši",
-            "deleteConfirmTitle": "Obrisati upitnik?",
-            "deleteConfirmDescription": "Ova radnja se ne može poništiti. Upitnik će biti trajno obrisan.",
-            "deleting": "Brisanje...",
-            "deleteSuccess": "Anketa uspešno obrisana",
-            "cancel": "Otkaži"
-          }
+        "notes": {
+          "title": "Interne beleške",
+          "description": "Beleške su vidljive samo administratorima. Podaci su sigurno šifrovani u bazi podataka.",
+          "save": "Sačuvaj beleške",
+          "saved": "Beleške su sačuvane"
+        },
+        "data": {
+          "title": "Podaci o klijentu",
+          "description": "Osnovne informacije o profilu i pravne saglasnosti",
+          "metadataTitle": "Metapodaci profila",
+          "consentsTitle": "Potpisane saglasnosti",
+          "noConsents": "Nisu pronađeni potpisani dokumenti",
+          "deleteConsent": "Obriši",
+          "deleteConfirmTitle": "Obrisati zapis o saglasnosti?",
+          "deleteConfirmDescription": "Ova radnja se ne može poništiti. Zapis o saglasnosti će biti trajno obrisan.",
+          "deleteSuccess": "Saglasnost obrisana",
+          "cancel": "Otkaži"
         }
       }
     }
@@ -811,12 +829,16 @@
     "trigger": "Popunite upitnik",
     "title": "Kratka anketa pre prvog sastanka",
     "description": "Ova anketa je potrebna kako bih mogla unapred malo da razumem vaš upit i bolje se pripremim za prvu sesiju.\nMožete odgovoriti kratko. Ako neko pitanje ne želite da popunjavate detaljno, o tome možemo razgovarati lično.",
+    "legalNotice": "Pre početka, molimo vas da se upoznate sa našim pravnim dokumentima:",
+    "legalPolicy": "Politika obrade ličnih podataka",
+    "legalAgreement": "Korisnički ugovor",
     "step": "Korak {current} od {total}",
     "next": "Dalje",
     "prev": "Nazad",
     "submit": "Završi i pošalji",
     "submitting": "Slanje...",
     "fields": {
+      "consentTitle": "Saglasnost za obradu podataka",
       "nameLabel": "Kako da vam se obraćam?",
       "namePlaceholder": "Ime",
       "nameHelper": "Navedite ime kojim vam je prijatno da vam se obraćam.",

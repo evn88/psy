@@ -463,6 +463,18 @@
           "description": "Notes are visible to admins only. Data is safely encrypted in the DB.",
           "save": "Save Notes",
           "saved": "Notes saved"
+        },
+        "data": {
+          "title": "Client Metadata",
+          "description": "Basic profile information and legal consents",
+          "metadataTitle": "Profile Metadata",
+          "consentsTitle": "Signed Consents",
+          "noConsents": "No signed documents found",
+          "deleteConsent": "Delete",
+          "deleteConfirmTitle": "Delete consent record?",
+          "deleteConfirmDescription": "This action cannot be undone. The consent record will be permanently deleted.",
+          "deleteSuccess": "Consent deleted",
+          "cancel": "Cancel"
         }
       }
     }
@@ -844,12 +856,16 @@
     "trigger": "Fill out Intake",
     "title": "Short intake before the first meeting",
     "description": "This questionnaire is needed so that I can understand your request a bit in advance and better prepare for the first session.\nYou can answer briefly. If you don't feel like filling out a certain question in detail, we can discuss it in person.",
+    "legalNotice": "Before starting, please review our legal documents:",
+    "legalPolicy": "Personal Data Processing Policy",
+    "legalAgreement": "User Agreement",
     "step": "Step {current} of {total}",
     "next": "Next",
     "prev": "Back",
     "submit": "Complete and Submit",
     "submitting": "Submitting...",
     "fields": {
+      "consentTitle": "Consent to data processing",
       "nameLabel": "How should I address you?",
       "namePlaceholder": "Name",
       "nameHelper": "Indicate the name you're comfortable with me using to address you.",

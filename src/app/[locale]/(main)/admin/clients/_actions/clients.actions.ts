@@ -90,3 +90,25 @@ export async function deleteIntakeResponse(responseId: string) {
     return { success: false, error: 'Internal Server Error' };
   }
 }
+
+/**
+ * Удалить согласие клиента
+ */
+export async function deleteClientConsent(consentId: string) {
+  try {
+    const session = await auth();
+    if (session?.user?.role !== 'ADMIN') {
+      throw new Error('Unauthorized');
+    }
+
+    const consent = await prisma.clientConsent.delete({
+      where: { id: consentId }
+    });
+
+    revalidatePath(`/admin/clients/${consent.userId}`);
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to delete client consent:', error);
+    return { success: false, error: 'Internal Server Error' };
+  }
+}

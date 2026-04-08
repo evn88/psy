@@ -202,7 +202,8 @@ export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
                 <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                   <div className="rounded-xl bg-muted/50 p-6 space-y-4 text-sm text-muted-foreground border border-border/50">
                     <p className="font-medium text-foreground">
-                      Перед началом просим ознакомиться с нашими юридическими документами:
+                      {t('legalNotice') ||
+                        'Перед началом просим ознакомиться с нашими юридическими документами:'}
                     </p>
                     <ul className="space-y-2">
                       <li>
@@ -212,7 +213,7 @@ export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
                           rel="noopener noreferrer"
                           className="text-primary hover:underline inline-flex items-center"
                         >
-                          Политика обработки персональных данных
+                          {t('legalPolicy') || 'Политика обработки персональных данных'}
                         </a>
                       </li>
                       <li>
@@ -222,18 +223,18 @@ export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
                           rel="noopener noreferrer"
                           className="text-primary hover:underline inline-flex items-center"
                         >
-                          Пользовательское соглашение
+                          {t('legalAgreement') || 'Пользовательское соглашение'}
                         </a>
                       </li>
                     </ul>
                     <div className="pt-4 space-y-3 border-t border-border/50 text-muted-foreground">
                       <div className="flex items-start gap-3 text-sm">
                         <ShieldCheck className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
-                        <p>{t('securityNotice')}</p>
+                        <p>{t('fields.securityNotice')}</p>
                       </div>
                       <div className="flex items-start gap-3 text-sm">
                         <PenTool className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
-                        <p>{t('consentLabel')}</p>
+                        <p>{t('fields.consentLabel')}</p>
                       </div>
                     </div>
                   </div>
@@ -248,7 +249,7 @@ export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
                         </FormControl>
                         <div className="space-y-1.5 leading-none">
                           <FormLabel className="text-sm font-semibold cursor-pointer">
-                            Согласие на обработку данных
+                            {t('fields.consentTitle') || 'Согласие на обработку данных'}
                           </FormLabel>
                           <FormDescription className="text-xs leading-normal">
                             {t('fields.consentLabel')}
