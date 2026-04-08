@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { decryptData } from '@/shared/lib/crypto';
 import { ClientNotes } from './_components/client-notes';
 import { ClientIntakes } from './_components/client-intakes';
-
+import { ClientDocuments } from './_components/client-documents';
 import { ClientData } from './_components/client-data';
 
 export default async function AdminClientProfilePage({
@@ -17,23 +17,38 @@ export default async function AdminClientProfilePage({
   const { id } = await params;
   const t = await getTranslations('Admin.clients.dashboard');
 
-  const user = await prisma.user.findUnique({
-    where: { id },
-    include: {
-      clientProfile: {
-        include: {
-          intakes: {
-            orderBy: { createdAt: 'desc' }
+  const [user, documents] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id },
+      include: {
+        clientProfile: {
+          include: {
+            intakes: {
+              orderBy: { createdAt: 'desc' }
+            }
           }
+        },
+        consents: true,
+        loginHistory: {
+          orderBy: { createdAt: 'desc' },
+          take: 5
         }
-      },
-      consents: true,
-      loginHistory: {
-        orderBy: { createdAt: 'desc' },
-        take: 5
       }
-    }
-  });
+    }),
+    prisma.clientDocument.findMany({
+      where: { userId: id },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        name: true,
+        fileType: true,
+        size: true,
+        createdAt: true,
+        uploadedById: true,
+        uploadedBy: { select: { name: true, email: true } }
+      }
+    })
+  ]);
 
   if (!user) {
     notFound();
@@ -82,6 +97,7 @@ export default async function AdminClientProfilePage({
         <TabsList className="bg-muted">
           <TabsTrigger value="intakes">{t('tabs.intakes')}</TabsTrigger>
           <TabsTrigger value="notes">{t('tabs.notes')}</TabsTrigger>
+          <TabsTrigger value="documents">Документы</TabsTrigger>
           <TabsTrigger value="data">{t('tabs.data')}</TabsTrigger>
         </TabsList>
 
@@ -97,6 +113,21 @@ export default async function AdminClientProfilePage({
             </CardHeader>
             <CardContent className="pt-6">
               <ClientNotes userId={user.id} initialMarkdown={notesMarkdown} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="documents">
+          <Card>
+            <CardHeader className="pb-4 border-b">
+              <CardTitle className="text-xl">Документы клиента</CardTitle>
+              <CardDescription>
+                Все файлы шифруются по алгоритму AES-256-GCM. Загружайте документы для клиента или
+                просматривайте файлы, загруженные им самим.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <ClientDocuments clientId={user.id} documents={documents} />
             </CardContent>
           </Card>
         </TabsContent>

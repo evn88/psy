@@ -1,6 +1,7 @@
 import { put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
+import { MAX_BLOG_IMAGE_SIZE_BYTES } from '@/configs/files';
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -19,7 +20,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Можно загружать только изображения' }, { status: 400 });
   }
 
-  if (file.size > 5 * 1024 * 1024) {
+  if (file.size > MAX_BLOG_IMAGE_SIZE_BYTES) {
     return NextResponse.json({ error: 'Размер файла не должен превышать 5 МБ' }, { status: 400 });
   }
 

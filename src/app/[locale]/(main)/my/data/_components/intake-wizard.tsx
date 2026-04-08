@@ -35,8 +35,7 @@ import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { submitIntake, recordConsent } from '../_actions/intake.actions';
 import { Progress } from '@/components/ui/progress';
-
-const TOTAL_STEPS = 5;
+import { INTAKE_TOTAL_STEPS, INTAKE_FORM_ID } from '@/configs/intake';
 
 export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
   const t = useTranslations('IntakeWizard');
@@ -48,7 +47,7 @@ export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
   const [canSubmit, setCanSubmit] = useState(false);
 
   React.useEffect(() => {
-    if (step === TOTAL_STEPS) {
+    if (step === INTAKE_TOTAL_STEPS) {
       setCanSubmit(false);
       const timer = setTimeout(() => {
         setCanSubmit(true);
@@ -127,7 +126,7 @@ export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
 
     const isValid = await form.trigger(fieldsToValidate as any);
     if (isValid) {
-      setStep(prev => Math.min(prev + 1, TOTAL_STEPS));
+      setStep(prev => Math.min(prev + 1, INTAKE_TOTAL_STEPS));
       // Remove focus to prevent keyup events from triggering the next button accidentally
       if (document.activeElement instanceof HTMLElement) {
         document.activeElement.blur();
@@ -141,7 +140,7 @@ export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
 
   const onSubmit = (data: FormValues) => {
     // If the user hit 'Enter' in a text field before the last step, act as 'Next'
-    if (step !== TOTAL_STEPS) {
+    if (step !== INTAKE_TOTAL_STEPS) {
       handleNext();
       return;
     }
@@ -156,7 +155,7 @@ export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
 
       // Убираем согласие, оставляем только ответы
       const { consent, ...answers } = data;
-      const intakeRes = await submitIntake('intake_v1', answers);
+      const intakeRes = await submitIntake(INTAKE_FORM_ID, answers);
 
       if (intakeRes.success) {
         toast.success(t('success'));
@@ -177,7 +176,7 @@ export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
     setOpen(newOpen);
   };
 
-  const progressPercent = step === 1 ? 0 : ((step - 1) / (TOTAL_STEPS - 1)) * 100;
+  const progressPercent = step === 1 ? 0 : ((step - 1) / (INTAKE_TOTAL_STEPS - 1)) * 100;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -188,7 +187,9 @@ export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
         <DialogHeader className="p-6 pb-4 border-b border-border/50 shrink-0">
           <DialogTitle className="text-xl">{t('title')}</DialogTitle>
           <DialogDescription className="text-balance pt-2 leading-relaxed">
-            {step === 1 ? t('description') : t('step', { current: step, total: TOTAL_STEPS })}
+            {step === 1
+              ? t('description')
+              : t('step', { current: step, total: INTAKE_TOTAL_STEPS })}
           </DialogDescription>
 
           <div className="mt-6">
@@ -386,7 +387,7 @@ export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
                   <div />
                 )}
 
-                {step < TOTAL_STEPS ? (
+                {step < INTAKE_TOTAL_STEPS ? (
                   <Button
                     type="button"
                     onClick={handleNext}

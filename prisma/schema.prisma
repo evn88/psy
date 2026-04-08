@@ -455,9 +455,10 @@ model ClientDocument {
   userId String
   user   User   @relation("UserDocuments", fields: [userId], references: [id], onDelete: Cascade)
 
-  url  String // Ссылка в Vercel Blob (private)
-  name String
-  size Int?
+  url      String // Ссылка в Vercel Blob (private, зашифрованный файл)
+  name     String // Отображаемое имя файла
+  fileType String @default("application/octet-stream") // MIME-тип оригинального файла
+  size     Int? // Размер оригинала в байтах (до шифрования)
 
   uploadedById String
   uploadedBy   User   @relation("UploadedDocuments", fields: [uploadedById], references: [id])

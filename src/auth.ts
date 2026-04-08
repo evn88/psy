@@ -13,6 +13,12 @@ import { defaultLocale, isLocale } from '@/i18n/config';
 import prisma from '@/shared/lib/prisma';
 import { sendWelcomeGoogleEmail } from '@/shared/lib/email';
 import { authConfig } from './auth.config';
+import {
+  MAX_LOGIN_HISTORY,
+  MAX_LOGIN_ATTEMPTS_PER_EMAIL_AND_IP,
+  MAX_LOGIN_ATTEMPTS_PER_IP,
+  LOGIN_ATTEMPT_WINDOW_MS
+} from '@/configs/auth';
 
 class EmailNotVerifiedError extends AuthError {
   static type = 'EmailNotVerified';
@@ -23,15 +29,6 @@ class AccountDisabledError extends AuthError {
 class TooManyAttemptsError extends AuthError {
   static type = 'TooManyAttempts';
 }
-
-/** Максимальное количество записей истории входов на пользователя */
-const MAX_LOGIN_HISTORY = 10;
-/** Максимум неудачных попыток с одного IP для конкретного email */
-const MAX_LOGIN_ATTEMPTS_PER_EMAIL_AND_IP = 5;
-/** Максимум неудачных попыток с одного IP за окно */
-const MAX_LOGIN_ATTEMPTS_PER_IP = 20;
-/** Окно учёта неудачных попыток входа */
-const LOGIN_ATTEMPT_WINDOW_MS = 60 * 60 * 1000;
 
 /**
  * Проверяет, что значение является поддерживаемой ролью пользователя.
