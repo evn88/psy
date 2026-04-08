@@ -89,6 +89,15 @@ model User {
   // Блог
   blogNotifications Boolean    @default(false)
   blogPosts         BlogPost[] @relation("BlogAuthor")
+
+  // Настройки пользователя/администратора
+  notificationSettings Json?
+
+  // Система клиентов
+  clientProfile ClientProfile?
+  consents      ClientConsent[]
+  documents     ClientDocument[] @relation("UserDocuments")
+  uploadedDocs  ClientDocument[] @relation("UploadedDocuments")
 }
 
 /// Подписка на Web Push уведомления (PWA)
@@ -396,4 +405,63 @@ model SystemAlert {
   updatedAt DateTime        @updatedAt
 
   @@unique([type, periodKey])
+}
+
+// ============================================================
+// Клиентские данные и опросники (Intake)
+// ============================================================
+
+model ClientProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  metadata Json? // Гибкие данные и внутренние заметки психолога
+
+  intakes IntakeResponse[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model IntakeResponse {
+  id              String        @id @default(cuid())
+  clientProfileId String
+  clientProfile   ClientProfile @relation(fields: [clientProfileId], references: [id], onDelete: Cascade)
+
+  formId  String // Идентификатор анкеты, например "short_intake_v1"
+  status  String @default("COMPLETED")
+  answers String // Зашифрованная строка с JSON данными ответов
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ClientConsent {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type      String // Тип документа, например "INTAKE_V1", "TERMS"
+  ip        String?
+  userAgent String?
+
+  signature String // HMAC отпечаток безопасности
+  agreedAt  DateTime @default(now())
+}
+
+model ClientDocument {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation("UserDocuments", fields: [userId], references: [id], onDelete: Cascade)
+
+  url  String // Ссылка в Vercel Blob (private)
+  name String
+  size Int?
+
+  uploadedById String
+  uploadedBy   User   @relation("UploadedDocuments", fields: [uploadedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

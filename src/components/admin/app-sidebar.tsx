@@ -80,6 +80,12 @@ export function AppSidebar({ user, unreadSurveysCount = 0, ...props }: AppSideba
       isActive: pathname.startsWith('/admin/users')
     },
     {
+      title: tItems('clients'),
+      url: '/admin/clients',
+      icon: UserCircle,
+      isActive: pathname.startsWith('/admin/clients')
+    },
+    {
       title: tItems('surveys'),
       url: '/admin/surveys',
       icon: ClipboardList,

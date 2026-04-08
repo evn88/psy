@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { Resend } from 'resend';
 import { render } from '@react-email/render';
 import type { BlogPost, BlogPostTranslation } from '@prisma/client';
@@ -18,6 +19,7 @@ import { BlogNotificationEmail } from '@/components/email-templates/blog-notific
 import { AccountDeletionRequestTemplate } from '@/components/email-templates/account-deletion-request-template';
 import { AccountDeletedUserTemplate } from '@/components/email-templates/account-deleted-user-template';
 import { AccountDeletedAdminTemplate } from '@/components/email-templates/account-deleted-admin-template';
+import { AdminIntakeNotificationTemplate } from '@/components/email-templates/admin-intake-notification-template';
 import { formatBlogDate } from '@/shared/lib/blog-utils';
 import {
   formatEmailEventDateTime,
@@ -803,5 +805,27 @@ export const sendAccountDeletedAdminEmail = async ({
     to,
     subject: t.adminAccountDeleted.subject,
     html
+  });
+};
+
+/**
+ * Отправляет уведомление администратору о новой анкете клиента.
+ */
+export const sendAdminIntakeNotificationToAdmin = async (
+  adminEmail: string,
+  userId: string,
+  formId: string
+): Promise<void> => {
+  const dashboardUrl = `${getBaseUrl()}/ru/admin/clients`;
+
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: adminEmail,
+    subject: `Новая анкета клиента: ${formId}`,
+    react: React.createElement(AdminIntakeNotificationTemplate, {
+      userId,
+      formId,
+      dashboardUrl
+    })
   });
 };

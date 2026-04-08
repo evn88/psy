@@ -17,7 +17,13 @@
     "telegramLink": "Telegram Kanal",
     "instagramLink": "Instagram",
     "blogLink": "Blog",
-    "tags": ["Šema terapija", "ACT", "RO DBT", "ADHD/ASD", "Poremećaji ishrane"],
+    "tags": [
+      "Šema terapija",
+      "ACT",
+      "RO DBT",
+      "ADHD/ASD",
+      "Poremećaji ishrane"
+    ],
     "nav": {
       "about": "O meni",
       "services": "Kako mogu da pomognem?",
@@ -765,5 +771,38 @@
       "COMPLETED": "Završeno",
       "PENDING_CONFIRMATION": "Čeka potvrdu"
     }
+  },
+  "IntakeWizard": {
+    "trigger": "Fill out Intake",
+    "title": "Intake Questionnaire",
+    "description": "Please answer a few questions before our first session.",
+    "step": "Step {current} of {total}",
+    "next": "Next",
+    "prev": "Back",
+    "submit": "Complete and Submit",
+    "submitting": "Submitting...",
+    "fields": {
+      "nameLabel": "How should I address you?",
+      "namePlaceholder": "Name / Nickname",
+      "ageLabel": "Your age",
+      "agePlaceholder": "18",
+      "mainRequestLabel": "What brought you to me?",
+      "mainRequestPlaceholder": "Describe in your own words the main difficulty...",
+      "checklistLabel": "Check what resonates (optional)",
+      "checklistDesc": "Select statements that describe your state.",
+      "commentLabel": "Anything else important I should know?",
+      "commentPlaceholder": "Eg: past therapy experience, diagnoses, special requests...",
+      "consentLabel": "I consent to the processing of personal data and agree to the privacy policy. I understand this data will be encrypted and only accessible to the specialist."
+    },
+    "checklist": {
+      "stuck": "I feel stuck",
+      "panic": "Frequent anxiety / panic",
+      "adhd_traits": "Suspect/have ADHD or ASD",
+      "procrastination": "Severe procrastination and burnout",
+      "ed": "Eating difficulties / ED",
+      "relationships": "Relationship problems"
+    },
+    "success": "Intake successfully submitted!",
+    "error": "An error occurred. Please try again."
   }
 }

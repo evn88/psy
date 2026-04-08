@@ -17,7 +17,13 @@
     "telegramLink": "Telegram Channel",
     "instagramLink": "Instagram",
     "blogLink": "Blog",
-    "tags": ["Schema Therapy", "ACT", "RO DBT", "ADHD/ASD", "ED"],
+    "tags": [
+      "Schema Therapy",
+      "ACT",
+      "RO DBT",
+      "ADHD/ASD",
+      "ED"
+    ],
     "nav": {
       "about": "About me",
       "services": "How I can help",
@@ -275,7 +281,8 @@
       "profile": "Profile",
       "settings": "Settings",
       "backToSite": "Back to Site",
-      "goToMy": "My Account"
+      "goToMy": "My Account",
+      "clients": "Clients"
     },
     "blog": {
       "title": "Blog Management",
@@ -415,6 +422,41 @@
           "darkTheme": "Dark theme",
           "textLanguage": "Text",
           "placeholder": "Start writing the article..."
+        }
+      }
+    },
+    "clients": {
+      "title": "Clients Database",
+      "description": "Manage clients, intakes, and notes",
+      "table": {
+        "name": "Name",
+        "email": "Email",
+        "role": "Role",
+        "intakesCount": "Intakes",
+        "registeredAt": "Registered",
+        "actions": "Actions",
+        "delete": "Delete",
+        "schedule": "Schedule Session",
+        "searchPlaceholder": "Search by name or email..."
+      },
+      "dashboard": {
+        "tabs": {
+          "intakes": "Intakes",
+          "notes": "Therapist Notes",
+          "tests": "Tests",
+          "data": "Basic Data"
+        },
+        "intakes": {
+          "title": "Completed Intakes",
+          "description": "Intake form history",
+          "empty": "No intakes completed",
+          "version": "Form version"
+        },
+        "notes": {
+          "title": "Internal Notes",
+          "description": "Notes are visible to admins only. Data is safely encrypted in the DB.",
+          "save": "Save Notes",
+          "saved": "Notes saved"
         }
       }
     }
@@ -791,5 +833,41 @@
       "COMPLETED": "Completed",
       "PENDING_CONFIRMATION": "Pending Confirmation"
     }
+  },
+  "IntakeWizard": {
+    "trigger": "Fill out Intake",
+    "title": "Intake Questionnaire",
+    "description": "Please answer a few questions before our first session.",
+    "step": "Step {current} of {total}",
+    "next": "Next",
+    "prev": "Back",
+    "submit": "Complete and Submit",
+    "submitting": "Submitting...",
+    "fields": {
+      "nameLabel": "How should I address you?",
+      "namePlaceholder": "Name / Nickname",
+      "ageLabel": "Your age",
+      "agePlaceholder": "18",
+      "mainRequestLabel": "What brought you to me?",
+      "mainRequestPlaceholder": "Describe in your own words the main difficulty...",
+      "checklistLabel": "Check what resonates (optional)",
+      "checklistDesc": "Select statements that describe your state.",
+      "commentLabel": "Anything else important I should know?",
+      "commentPlaceholder": "Eg: past therapy experience, diagnoses, special requests...",
+      "consentLabel": "I consent to the processing of personal data and agree to the privacy policy. I understand this data will be encrypted and only accessible to the specialist."
+    },
+    "checklist": {
+      "stuck": "I feel stuck",
+      "panic": "Frequent anxiety / panic",
+      "adhd_traits": "Suspect/have ADHD or ASD",
+      "procrastination": "Severe procrastination and burnout",
+      "ed": "Eating difficulties / ED",
+      "relationships": "Relationship problems"
+    },
+    "success": "Intake successfully submitted!",
+    "error": "An error occurred. Please try again.",
+    "fillAgain": "Fill Out Again",
+    "historyTitle": "Intakes History",
+    "completedAt": "Completed"
   }
 }
