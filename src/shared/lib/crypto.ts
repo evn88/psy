@@ -86,6 +86,43 @@ export function createHmacSignature(payload: string): string {
 }
 
 /**
+ * Шифрует бинарный буфер (файл) с помощью AES-256-GCM.
+ * Формат результата: [12 байт IV][16 байт authTag][зашифрованные данные]
+ */
+export function encryptBuffer(data: Buffer): Buffer {
+  try {
+    const key = getEncryptionKey();
+    const iv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+    const encrypted = Buffer.concat([cipher.update(data), cipher.final()]);
+    const authTag = cipher.getAuthTag();
+    return Buffer.concat([iv, authTag, encrypted]);
+  } catch (error) {
+    console.error('Failed to encrypt buffer:', error);
+    throw new Error('Buffer encryption failed');
+  }
+}
+
+/**
+ * Расшифровывает буфер, зашифрованный функцией encryptBuffer().
+ * Ожидаемый формат: [12 байт IV][16 байт authTag][зашифрованные данные]
+ */
+export function decryptBuffer(data: Buffer): Buffer {
+  try {
+    const key = getEncryptionKey();
+    const iv = data.subarray(0, 12);
+    const authTag = data.subarray(12, 28);
+    const encrypted = data.subarray(28);
+    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+    decipher.setAuthTag(authTag);
+    return Buffer.concat([decipher.update(encrypted), decipher.final()]);
+  } catch (error) {
+    console.error('Failed to decrypt buffer:', error);
+    throw new Error('Buffer decryption failed');
+  }
+}
+
+/**
  * Verifies if an HMAC signature is fully valid against the payload.
  */
 export function verifyHmacSignature(payload: string, signature: string): boolean {
