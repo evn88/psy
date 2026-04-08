@@ -31,10 +31,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ShieldCheck, PenTool } from 'lucide-react';
 import { submitIntake, recordConsent } from '../_actions/intake.actions';
+import { Progress } from '@/components/ui/progress';
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 5;
 
 export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
   const t = useTranslations('IntakeWizard');
@@ -91,12 +92,29 @@ export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
   const isConsentChecked = form.watch('consent');
 
   const checklistOptions = [
-    { id: 'stuck', label: t('checklist.stuck') },
-    { id: 'panic', label: t('checklist.panic') },
-    { id: 'adhd_traits', label: t('checklist.adhd_traits') },
+    { id: 'masking_identity', label: t('checklist.masking_identity') },
+    { id: 'self_comparison', label: t('checklist.self_comparison') },
+    { id: 'self_acceptance', label: t('checklist.self_acceptance') },
+    { id: 'self_esteem', label: t('checklist.self_esteem') },
+    { id: 'loneliness', label: t('checklist.loneliness') },
+    { id: 'anxiety', label: t('checklist.anxiety') },
+    { id: 'sleep_issues', label: t('checklist.sleep_issues') },
+    { id: 'emigration', label: t('checklist.emigration') },
+    { id: 'career_lost', label: t('checklist.career_lost') },
+    { id: 'work_cycle', label: t('checklist.work_cycle') },
     { id: 'procrastination', label: t('checklist.procrastination') },
-    { id: 'ed', label: t('checklist.ed') },
-    { id: 'relationships', label: t('checklist.relationships') }
+    { id: 'loneliness_people', label: t('checklist.loneliness_people') },
+    { id: 'emotional_outbursts', label: t('checklist.emotional_outbursts') },
+    { id: 'negative_loop', label: t('checklist.negative_loop') },
+    { id: 'burnout', label: t('checklist.burnout') },
+    { id: 'motivation', label: t('checklist.motivation') },
+    { id: 'goals', label: t('checklist.goals') },
+    { id: 'daily_load', label: t('checklist.daily_load') },
+    { id: 'asd', label: t('checklist.asd') },
+    { id: 'adhd', label: t('checklist.adhd') },
+    { id: 'binge_eating', label: t('checklist.binge_eating') },
+    { id: 'bulimia', label: t('checklist.bulimia') },
+    { id: 'other', label: t('checklist.other') }
   ];
 
   const handleNext = async () => {
@@ -104,6 +122,7 @@ export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
     if (step === 1) fieldsToValidate = ['consent'];
     if (step === 2) fieldsToValidate = ['name', 'age'];
     if (step === 3) fieldsToValidate = ['mainRequest'];
+    if (step === 4) fieldsToValidate = ['requestChecklist'];
 
     const isValid = await form.trigger(fieldsToValidate as any);
     if (isValid) {
@@ -157,241 +176,293 @@ export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
     setOpen(newOpen);
   };
 
-  const progressPercent = (step / TOTAL_STEPS) * 100;
+  const progressPercent = ((step - 1) / (TOTAL_STEPS - 1)) * 100;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="default">{triggerText || t('trigger')}</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>{t('title')}</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="sm:max-w-[700px] h-[90vh] sm:h-auto max-h-[90vh] gap-0 p-0 flex flex-col overflow-hidden">
+        <DialogHeader className="p-6 pb-4 border-b border-border/50 shrink-0">
+          <DialogTitle className="text-xl">{t('title')}</DialogTitle>
+          <DialogDescription className="text-balance pt-2 leading-relaxed">
             {step === 1 ? t('description') : t('step', { current: step, total: TOTAL_STEPS })}
           </DialogDescription>
 
-          {/* Кастомный Progress bar */}
-          <div className="w-full bg-secondary h-2 rounded-full overflow-hidden mt-4">
-            <div
-              className="bg-primary h-full transition-all duration-300 ease-in-out"
-              style={{ width: `${progressPercent}%` }}
-            />
+          <div className="mt-6">
+            <Progress value={progressPercent} className="h-1.5" />
           </div>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
-            {step === 1 && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-                <div className="rounded-lg bg-muted p-4 space-y-2 text-sm text-muted-foreground">
-                  <p>Перед началом просим ознакомиться с нашими юридическими документами:</p>
-                  <ul className="list-disc list-inside space-y-1 my-2">
-                    <li>
-                      <a
-                        href="/documents/personal-data-consent.pdf"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        Политика обработки персональных данных
-                      </a>
-                    </li>
-                    <li>
-                      <a
-                        href="/documents/user-agreement.pdf"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        Пользовательское соглашение
-                      </a>
-                    </li>
-                  </ul>
-                  <p>
-                    Все ваши ответы защищены сквозным (AES-GCM) шифрованием и недоступны третьим
-                    лицам.
-                  </p>
-                  <p>Нажимая галочку и продолжая, вы создаете цифровую подпись своего согласия.</p>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="contents">
+            <div className="flex-1 overflow-y-auto p-6 space-y-8">
+              {step === 1 && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                  <div className="rounded-xl bg-muted/50 p-6 space-y-4 text-sm text-muted-foreground border border-border/50">
+                    <p className="font-medium text-foreground">
+                      Перед началом просим ознакомиться с нашими юридическими документами:
+                    </p>
+                    <ul className="space-y-2">
+                      <li>
+                        <a
+                          href="/documents/personal-data-consent.pdf"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline inline-flex items-center"
+                        >
+                          Политика обработки персональных данных
+                        </a>
+                      </li>
+                      <li>
+                        <a
+                          href="/documents/user-agreement.pdf"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline inline-flex items-center"
+                        >
+                          Пользовательское соглашение
+                        </a>
+                      </li>
+                    </ul>
+                    <div className="pt-4 space-y-3 border-t border-border/50 text-muted-foreground">
+                      <div className="flex items-start gap-3 text-sm">
+                        <ShieldCheck className="h-4 w-4 mt-0.5 shrink-0" />
+                        <p>
+                          Все ваши ответы защищены сквозным (AES-GCM) шифрованием и недоступны
+                          третьим лицам.
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-3 text-sm">
+                        <PenTool className="h-4 w-4 mt-0.5 shrink-0" />
+                        <p>
+                          Нажимая галочку и продолжая, вы создаете цифровую подпись своего согласия.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="consent"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-4 space-y-0 rounded-xl border p-5 shadow-sm bg-card transition-colors hover:bg-accent/5">
+                        <FormControl>
+                          <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                        </FormControl>
+                        <div className="space-y-1.5 leading-none">
+                          <FormLabel className="text-sm font-semibold cursor-pointer">
+                            Согласие на обработку данных
+                          </FormLabel>
+                          <FormDescription className="text-xs leading-normal">
+                            {t('fields.consentLabel')}
+                          </FormDescription>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
+              )}
 
-                <FormField
-                  control={form.control}
-                  name="consent"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
-                      <FormControl>
-                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel className="text-sm font-medium">
-                          Согласие на обработку данных
+              {step === 2 && (
+                <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormLabel className="text-base font-semibold">
+                          {t('fields.nameLabel')}
                         </FormLabel>
-                        <FormDescription>{t('fields.consentLabel')}</FormDescription>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            )}
-
-            {step === 2 && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('fields.nameLabel')}</FormLabel>
-                      <FormControl>
-                        <Input placeholder={t('fields.namePlaceholder')} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="age"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('fields.ageLabel')}</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          placeholder={t('fields.agePlaceholder')}
-                          {...field}
-                          value={field.value || ''}
-                          onChange={e =>
-                            field.onChange(e.target.value === '' ? '' : Number(e.target.value))
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            )}
-
-            {step === 3 && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-                <FormField
-                  control={form.control}
-                  name="mainRequest"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('fields.mainRequestLabel')}</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder={t('fields.mainRequestPlaceholder')}
-                          className="min-h-[120px]"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            )}
-
-            {step === 4 && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-                <FormField
-                  control={form.control}
-                  name="requestChecklist"
-                  render={() => (
-                    <FormItem>
-                      <div className="mb-4">
-                        <FormLabel className="text-base">{t('fields.checklistLabel')}</FormLabel>
-                        <FormDescription>{t('fields.checklistDesc')}</FormDescription>
-                      </div>
-                      {checklistOptions.map(item => (
-                        <FormField
-                          key={item.id}
-                          control={form.control}
-                          name="requestChecklist"
-                          render={({ field }) => {
-                            return (
-                              <FormItem
-                                key={item.id}
-                                className="flex flex-row items-start space-x-3 space-y-0"
-                              >
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value?.includes(item.id)}
-                                    onCheckedChange={checked => {
-                                      return checked
-                                        ? field.onChange([...field.value, item.id])
-                                        : field.onChange(
-                                            field.value?.filter(value => value !== item.id)
-                                          );
-                                    }}
-                                  />
-                                </FormControl>
-                                <FormLabel className="font-normal cursor-pointer">
-                                  {item.label}
-                                </FormLabel>
-                              </FormItem>
-                            );
-                          }}
-                        />
-                      ))}
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="comment"
-                  render={({ field }) => (
-                    <FormItem className="pt-4">
-                      <FormLabel>{t('fields.commentLabel')}</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder={t('fields.commentPlaceholder')} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            )}
-
-            <DialogFooter className="flex flex-col sm:flex-row sm:justify-between sm:space-x-2 gap-2">
-              {step > 1 && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handlePrev}
-                  disabled={isPending}
-                  className="sm:mr-auto"
-                >
-                  {t('prev')}
-                </Button>
+                        <FormControl>
+                          <Input
+                            placeholder={t('fields.namePlaceholder')}
+                            className="h-12 text-lg px-4"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription className="text-sm italic">
+                          {t('fields.nameHelper')}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="age"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormLabel className="text-base font-semibold">
+                          {t('fields.ageLabel')}
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder={t('fields.agePlaceholder')}
+                            className="h-12 text-lg px-4"
+                            {...field}
+                            value={field.value || ''}
+                            onChange={e =>
+                              field.onChange(e.target.value === '' ? '' : Number(e.target.value))
+                            }
+                          />
+                        </FormControl>
+                        <FormDescription className="text-sm italic">
+                          {t('fields.ageHelper')}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               )}
 
-              {step < TOTAL_STEPS ? (
-                <Button
-                  type="button"
-                  onClick={handleNext}
-                  disabled={step === 1 && !isConsentChecked}
-                  className={step === 1 ? 'w-full sm:w-auto sm:ml-auto' : 'w-full sm:w-auto'}
-                >
-                  {t('next')}
-                </Button>
-              ) : (
-                <Button
-                  type="submit"
-                  disabled={isPending || !canSubmit}
-                  className="w-full sm:w-auto"
-                >
-                  {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {t('submit')}
-                </Button>
+              {step === 3 && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                  <FormField
+                    control={form.control}
+                    name="mainRequest"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormLabel className="text-base font-semibold">
+                          {t('fields.mainRequestLabel')}
+                        </FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder={t('fields.mainRequestPlaceholder')}
+                            className="min-h-[160px] text-lg p-4 resize-none"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription className="text-sm italic">
+                          {t('fields.mainRequestHelper')}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               )}
+
+              {step === 4 && (
+                <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
+                  <FormField
+                    control={form.control}
+                    name="requestChecklist"
+                    render={() => (
+                      <FormItem className="space-y-4">
+                        <div className="space-y-2">
+                          <FormLabel className="text-lg font-bold">
+                            {t('fields.checklistLabel')}
+                          </FormLabel>
+                          <FormDescription className="text-sm">
+                            {t('fields.checklistHelper')}
+                          </FormDescription>
+                        </div>
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                          {checklistOptions.map(item => (
+                            <FormField
+                              key={item.id}
+                              control={form.control}
+                              name="requestChecklist"
+                              render={({ field }) => {
+                                const isChecked = field.value?.includes(item.id);
+                                return (
+                                  <FormItem
+                                    key={item.id}
+                                    className={`flex flex-row items-center space-x-3 space-y-0 rounded-lg border p-4 transition-all hover:bg-accent/5 cursor-pointer ${isChecked ? 'bg-accent/10 border-primary/50' : 'bg-card'}`}
+                                  >
+                                    <FormControl>
+                                      <Checkbox
+                                        checked={isChecked}
+                                        onCheckedChange={checked => {
+                                          return checked
+                                            ? field.onChange([...field.value, item.id])
+                                            : field.onChange(
+                                                field.value?.filter(value => value !== item.id)
+                                              );
+                                        }}
+                                      />
+                                    </FormControl>
+                                    <FormLabel className="text-sm font-medium cursor-pointer flex-1 py-1">
+                                      {item.label}
+                                    </FormLabel>
+                                  </FormItem>
+                                );
+                              }}
+                            />
+                          ))}
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
+
+              {step === 5 && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                  <FormField
+                    control={form.control}
+                    name="comment"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormLabel className="text-base font-semibold">
+                          {t('fields.commentLabel')}
+                        </FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder={t('fields.commentPlaceholder')}
+                            className="min-h-[200px] text-lg p-4 resize-none"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription className="text-sm italic">
+                          {t('fields.commentHelper')}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
+            </div>
+
+            <DialogFooter className="p-6 bg-muted/30 border-t border-border/50 gap-3 sm:gap-0">
+              <div className="flex w-full items-center justify-between">
+                {step > 1 ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={handlePrev}
+                    disabled={isPending}
+                    className="px-8"
+                  >
+                    {t('prev')}
+                  </Button>
+                ) : (
+                  <div />
+                )}
+
+                {step < TOTAL_STEPS ? (
+                  <Button
+                    type="button"
+                    onClick={handleNext}
+                    disabled={step === 1 && !isConsentChecked}
+                    className="px-8"
+                  >
+                    {t('next')}
+                  </Button>
+                ) : (
+                  <Button type="submit" disabled={isPending || !canSubmit} className="px-8">
+                    {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {t('submit')}
+                  </Button>
+                )}
+              </div>
             </DialogFooter>
           </form>
         </Form>
