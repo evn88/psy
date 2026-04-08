@@ -854,8 +854,8 @@
   },
   "IntakeWizard": {
     "trigger": "Fill out Intake",
-    "title": "Short intake before the first meeting",
-    "description": "This questionnaire is needed so that I can understand your request a bit in advance and better prepare for the first session.\nYou can answer briefly. If you don't feel like filling out a certain question in detail, we can discuss it in person.",
+    "title": "Short intake form before our first session",
+    "description": "This questionnaire helps me understand your needs and better prepare for our first session. You can keep your answers brief. If there are questions you'd prefer not to answer in detail here, we can discuss them in person.",
     "legalNotice": "Before starting, please review our legal documents:",
     "legalPolicy": "Personal Data Processing Policy",
     "legalAgreement": "User Agreement",
@@ -865,6 +865,8 @@
     "submit": "Complete and Submit",
     "submitting": "Submitting...",
     "fields": {
+      "securityTitle": "Data Security",
+      "consentSectionTitle": "Consent",
       "consentTitle": "Consent to data processing",
       "nameLabel": "How should I address you?",
       "namePlaceholder": "Name",
@@ -880,8 +882,9 @@
       "commentLabel": "Comment",
       "commentPlaceholder": "Write here everything you consider important...",
       "commentHelper": "You can mention past therapy experience, psychiatric diagnoses, medications, or any other details here.",
-      "securityNotice": "All your responses are protected by end-to-end (AES-GCM) encryption and are not accessible to third parties.",
-      "consentLabel": "By checking the box and continuing, you are creating a digital signature of your consent."
+      "securityNotice": "Your responses are protected by end-to-end (AES-256-GCM) encryption. This ensures that your data is transmitted and stored in an encrypted format: access is granted only to the psychologist.",
+      "digitalSignatureNote": "I confirm that I have read and agree to the Privacy Policy. I acknowledge that clicking the \"Next\" button constitutes the use of my simple electronic signature (under GDPR and eIDAS regulations). The authenticity of this consent is verified by a unique server-side HMAC signature of my session metadata.",
+      "consentLabel": "I provide my explicit consent to the processing of my personal data, including information regarding my psychological well-being."
     },
     "checklist": {
       "masking_identity": "Masking leading to a loss of identity",

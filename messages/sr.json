@@ -827,8 +827,8 @@
   },
   "IntakeWizard": {
     "trigger": "Popunite upitnik",
-    "title": "Kratka anketa pre prvog sastanka",
-    "description": "Ova anketa je potrebna kako bih mogla unapred malo da razumem vaš upit i bolje se pripremim za prvu sesiju.\nMožete odgovoriti kratko. Ako neko pitanje ne želite da popunjavate detaljno, o tome možemo razgovarati lično.",
+    "title": "Kratka anketa pre prvog susreta",
+    "description": "Ova anketa mi pomaže da unapred malo razumem vaš upit i bolje se pripremim za prvu sesiju. Možete odgovarati kratko. Ako na neko pitanje ne želite da odgovorite detaljno, o tome možemo razgovarati uživo.",
     "legalNotice": "Pre početka, molimo vas da se upoznate sa našim pravnim dokumentima:",
     "legalPolicy": "Politika obrade ličnih podataka",
     "legalAgreement": "Korisnički ugovor",
@@ -838,6 +838,8 @@
     "submit": "Završi i pošalji",
     "submitting": "Slanje...",
     "fields": {
+      "securityTitle": "Bezbednost podataka",
+      "consentSectionTitle": "Saglasnost",
       "consentTitle": "Saglasnost za obradu podataka",
       "nameLabel": "Kako da vam se obraćam?",
       "namePlaceholder": "Ime",
@@ -853,8 +855,9 @@
       "commentLabel": "Komentar",
       "commentPlaceholder": "Napišite ovde sve što smatrate važnim...",
       "commentHelper": "Ovde možete navesti prethodno iskustvo u terapiji, prisustvo psihijatrijskih dijagnoza, uzimanje lekova ili bilo koje druge detalje.",
-      "securityNotice": "Svi vaši odgovori su zaštićeni end-to-end (AES-GCM) enkripcijom i nisu dostupni trećim licima.",
-      "consentLabel": "Klikom na polje i nastavkom, kreirate digitalni potpis svoje saglasnosti."
+      "securityNotice": "Vaši odgovori su zaštićeni \"end-to-end\" (AES-256-GCM) enkripcijom. To osigurava da se podaci prenose i čuvaju u šifrovanom formatu: pristup podacima ima isključivo psiholog.",
+      "digitalSignatureNote": "Potvrđujem da sam upoznat(a) sa Politikom privatnosti. Klik na dugme \"Dalje\" predstavlja moj elektronski potpis u skladu sa Zakonom o elektronskom dokumentu i ZZPL-om Republike Srbije. Autentičnost moje saglasnosti se potvrđuje jedinstvenim serverskim HMAC otiskom moje sesije.",
+      "consentLabel": "Dajem izričitu saglasnost za obradu mojih podataka o ličnosti, uključujući podatke o mom psihološkom stanju."
     },
     "checklist": {
       "masking_identity": "Maskiranje zbog kojeg se gubi osećaj sopstvenog identiteta",

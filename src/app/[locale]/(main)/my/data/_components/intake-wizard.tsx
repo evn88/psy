@@ -200,65 +200,76 @@ export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
             <div className="flex-1 overflow-y-auto p-6 space-y-8">
               {step === 1 && (
                 <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                  <div className="rounded-xl bg-muted/50 p-6 space-y-4 text-sm text-muted-foreground border border-border/50">
-                    <p className="font-medium text-foreground">
-                      {t('legalNotice') ||
-                        'Перед началом просим ознакомиться с нашими юридическими документами:'}
-                    </p>
-                    <ul className="space-y-2">
-                      <li>
-                        <a
-                          href="/documents/personal-data-consent.pdf"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline inline-flex items-center"
-                        >
-                          {t('legalPolicy') || 'Политика обработки персональных данных'}
-                        </a>
-                      </li>
-                      <li>
-                        <a
-                          href="/documents/user-agreement.pdf"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline inline-flex items-center"
-                        >
-                          {t('legalAgreement') || 'Пользовательское соглашение'}
-                        </a>
-                      </li>
-                    </ul>
-                    <div className="pt-4 space-y-3 border-t border-border/50 text-muted-foreground">
-                      <div className="flex items-start gap-3 text-sm">
-                        <ShieldCheck className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
-                        <p>{t('fields.securityNotice')}</p>
+                  <div className="space-y-6">
+                    {/* Security Section */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 text-foreground font-semibold">
+                        <ShieldCheck className="h-5 w-5 text-primary" />
+                        <h3>{t('fields.securityTitle')}</h3>
                       </div>
-                      <div className="flex items-start gap-3 text-sm">
-                        <PenTool className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
-                        <p>{t('fields.consentLabel')}</p>
+                      <div className="rounded-xl bg-muted/30 p-5 border border-border/50">
+                        <p className="text-sm leading-relaxed text-muted-foreground">
+                          {t('fields.securityNotice')}
+                        </p>
                       </div>
                     </div>
-                  </div>
 
-                  <FormField
-                    control={form.control}
-                    name="consent"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-4 space-y-0 rounded-xl border p-5 shadow-sm bg-card transition-colors hover:bg-accent/5">
-                        <FormControl>
-                          <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                        </FormControl>
-                        <div className="space-y-1.5 leading-none">
-                          <FormLabel className="text-sm font-semibold cursor-pointer">
-                            {t('fields.consentTitle') || 'Согласие на обработку данных'}
-                          </FormLabel>
-                          <FormDescription className="text-xs leading-normal">
-                            {t('fields.consentLabel')}
-                          </FormDescription>
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <div className="space-y-3">
+                      <p className="text-sm font-medium text-foreground">{t('legalNotice')}</p>
+                      <ul className="space-y-2">
+                        <li>
+                          <a
+                            href="/documents/personal-data-consent.pdf"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-primary hover:underline inline-flex items-center"
+                          >
+                            {t('legalPolicy')}
+                          </a>
+                        </li>
+                        <li>
+                          <a
+                            href="/documents/user-agreement.pdf"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-primary hover:underline inline-flex items-center"
+                          >
+                            {t('legalAgreement')}
+                          </a>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div className="border-t border-border/50 pt-6 space-y-4">
+                      <div className="flex items-center gap-2 text-foreground font-semibold">
+                        <PenTool className="h-5 w-5 text-primary" />
+                        <h3>{t('fields.consentSectionTitle')}</h3>
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name="consent"
+                        render={({ field }) => (
+                          <FormItem className="space-y-4">
+                            <div className="flex flex-row items-start space-x-3 space-y-0 rounded-xl border p-5 shadow-sm bg-card/50 transition-colors hover:bg-accent/5">
+                              <FormControl>
+                                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                              </FormControl>
+                              <div className="space-y-1.5 leading-none">
+                                <FormLabel className="text-sm font-medium cursor-pointer leading-relaxed">
+                                  {t('fields.consentLabel')}
+                                </FormLabel>
+                              </div>
+                            </div>
+                            <FormDescription className="text-[11px] leading-relaxed text-muted-foreground px-1">
+                              {t('fields.digitalSignatureNote')}
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
 
