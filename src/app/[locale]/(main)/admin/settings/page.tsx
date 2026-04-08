@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { defaultLocale } from '@/i18n/config';
 import { SettingsForm } from './_components/settings-form';
+import { NotificationSettingsForm } from './_components/notification-settings-form';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -15,22 +17,34 @@ export default async function SettingsPage() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { language: true, theme: true }
+    select: { language: true, theme: true, role: true, notificationSettings: true }
   });
 
-  if (!user) {
+  if (!user || user.role !== 'ADMIN') {
     redirect('/auth');
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <h2 className="text-3xl font-bold tracking-tight">{t('title')}</h2>
-      <SettingsForm
-        initialSettings={{
-          language: user.language || defaultLocale,
-          theme: user.theme || 'system'
-        }}
-      />
+
+      <Tabs defaultValue="appearance" className="w-full max-w-2xl">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="appearance">Основные</TabsTrigger>
+          <TabsTrigger value="notifications">Уведомления</TabsTrigger>
+        </TabsList>
+        <TabsContent value="appearance" className="mt-6">
+          <SettingsForm
+            initialSettings={{
+              language: user.language || defaultLocale,
+              theme: user.theme || 'system'
+            }}
+          />
+        </TabsContent>
+        <TabsContent value="notifications" className="mt-6">
+          <NotificationSettingsForm initialSettings={user.notificationSettings || {}} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

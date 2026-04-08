@@ -9,6 +9,9 @@ import { type ReactNode } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import '../../globals.css';
+import '@mdxeditor/editor/style.css';
+import '@/styles/blog-article.css';
+
 import { defaultLocale, isLocale } from '@/i18n/config';
 import { Providers } from '@/shared/Providers';
 import { createBaseMetadata } from '@/shared/lib/seo';

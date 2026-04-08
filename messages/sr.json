@@ -17,7 +17,13 @@
     "telegramLink": "Telegram Kanal",
     "instagramLink": "Instagram",
     "blogLink": "Blog",
-    "tags": ["Šema terapija", "ACT", "RO DBT", "ADHD/ASD", "Poremećaji ishrane"],
+    "tags": [
+      "Šema terapija",
+      "ACT",
+      "RO DBT",
+      "ADHD/ASD",
+      "Poremećaji ishrane"
+    ],
     "nav": {
       "about": "O meni",
       "services": "Kako mogu da pomognem?",
@@ -417,6 +423,59 @@
           "placeholder": "Počnite da pišete članak..."
         }
       }
+    },
+    "clients": {
+      "title": "Upravljanje klijentima",
+      "description": "Upravljajte profilima korisnika i kliničkim podacima",
+      "addUser": "Dodaj klijenta",
+      "columns": {
+        "name": "Klijent",
+        "email": "Email",
+        "status": "Status",
+        "lastIntake": "Poslednji upitnik",
+        "actions": "Akcije"
+      },
+      "filters": {
+        "searchPlaceholder": "Pretraži po imenu ili emailu..."
+      },
+      "dashboard": {
+        "tabs": {
+          "intakes": "Upitnici",
+          "notes": "Beleške terapeuta",
+          "tests": "Testovi",
+          "data": "Osnovni podaci"
+        },
+        "intakes": {
+          "title": "Popunjeni upitnici",
+          "description": "Istorija popunjavanja upitnika",
+          "empty": "Nema popunjenih upitnika",
+          "version": "Verzija",
+          "delete": "Obriši",
+          "deleteConfirmTitle": "Obrisati upitnik?",
+          "deleteConfirmDescription": "Ova radnja se ne može poništiti. Upitnik će biti trajno obrisan.",
+          "deleting": "Brisanje...",
+          "deleteSuccess": "Anketa uspešno obrisana",
+          "cancel": "Otkaži"
+        },
+        "notes": {
+          "title": "Interne beleške",
+          "description": "Beleške su vidljive samo administratorima. Podaci su sigurno šifrovani u bazi podataka.",
+          "save": "Sačuvaj beleške",
+          "saved": "Beleške su sačuvane"
+        },
+        "data": {
+          "title": "Podaci o klijentu",
+          "description": "Osnovne informacije o profilu i pravne saglasnosti",
+          "metadataTitle": "Metapodaci profila",
+          "consentsTitle": "Potpisane saglasnosti",
+          "noConsents": "Nisu pronađeni potpisani dokumenti",
+          "deleteConsent": "Obriši",
+          "deleteConfirmTitle": "Obrisati zapis o saglasnosti?",
+          "deleteConfirmDescription": "Ova radnja se ne može poništiti. Zapis o saglasnosti će biti trajno obrisan.",
+          "deleteSuccess": "Saglasnost obrisana",
+          "cancel": "Otkaži"
+        }
+      }
     }
   },
   "My": {
@@ -765,5 +824,70 @@
       "COMPLETED": "Završeno",
       "PENDING_CONFIRMATION": "Čeka potvrdu"
     }
+  },
+  "IntakeWizard": {
+    "trigger": "Popunite upitnik",
+    "title": "Kratka anketa pre prvog susreta",
+    "description": "Ova anketa mi pomaže da unapred malo razumem vaš upit i bolje se pripremim za prvu sesiju. Možete odgovarati kratko. Ako na neko pitanje ne želite da odgovorite detaljno, o tome možemo razgovarati uživo.",
+    "legalNotice": "Pre početka, molimo vas da se upoznate sa našim pravnim dokumentima:",
+    "legalPolicy": "Politika obrade ličnih podataka",
+    "legalAgreement": "Korisnički ugovor",
+    "step": "Korak {current} od {total}",
+    "next": "Dalje",
+    "prev": "Nazad",
+    "submit": "Završi i pošalji",
+    "submitting": "Slanje...",
+    "fields": {
+      "securityTitle": "Bezbednost podataka",
+      "consentSectionTitle": "Saglasnost",
+      "consentTitle": "Saglasnost za obradu podataka",
+      "nameLabel": "Kako da vam se obraćam?",
+      "namePlaceholder": "Ime",
+      "nameHelper": "Navedite ime kojim vam je prijatno da vam se obraćam.",
+      "ageLabel": "Starost",
+      "agePlaceholder": "Npr: 29",
+      "ageHelper": "Ovo pomaže da se bolje uzme u obzir životni kontekst.",
+      "mainRequestLabel": "Opišite vaš upit za terapiju",
+      "mainRequestPlaceholder": "Šta vas trenutno muči? Kakav rezultat biste želeli da postignete?",
+      "mainRequestHelper": "Opišite, molim vas, glavne teme na kojima želite da radite. Možete koristiti teze.",
+      "checklistLabel": "Koje teme su vam trenutno aktuelne?",
+      "checklistHelper": "Izaberite sa liste ono što vam odjekuje. To će mi pomoći da se bolje pripremim.",
+      "commentLabel": "Komentar",
+      "commentPlaceholder": "Napišite ovde sve što smatrate važnim...",
+      "commentHelper": "Ovde možete navesti prethodno iskustvo u terapiji, prisustvo psihijatrijskih dijagnoza, uzimanje lekova ili bilo koje druge detalje.",
+      "securityNotice": "Vaši odgovori su zaštićeni \"end-to-end\" (AES-256-GCM) enkripcijom. To osigurava da se podaci prenose i čuvaju u šifrovanom formatu: pristup podacima ima isključivo psiholog.",
+      "digitalSignatureNote": "Potvrđujem da sam upoznat(a) sa Politikom privatnosti. Klik na dugme \"Dalje\" predstavlja moj elektronski potpis u skladu sa Zakonom o elektronskom dokumentu i ZZPL-om Republike Srbije. Autentičnost moje saglasnosti se potvrđuje jedinstvenim serverskim HMAC otiskom moje sesije.",
+      "consentLabel": "Dajem izričitu saglasnost za obradu mojih podataka o ličnosti, uključujući podatke o mom psihološkom stanju."
+    },
+    "checklist": {
+      "masking_identity": "Maskiranje zbog kojeg se gubi osećaj sopstvenog identiteta",
+      "self_comparison": "Stalno poređenje sebe sa drugima, misli: „šta nije u redu sa mnom?“",
+      "self_acceptance": "Teškoće sa prihvatanjem sebe",
+      "self_esteem": "Teškoće sa samopoštovanjem",
+      "loneliness": "Usamljenost",
+      "anxiety": "Anksioznost",
+      "sleep_issues": "Problemi sa spavanjem",
+      "emigration": "Emigracija i adaptacija na život u drugoj zemlji",
+      "career_lost": "Osećaj izgubljenosti u izboru puta: „šta želim da budem kad porastem?“",
+      "work_cycle": "Česta promena posla po ciklusu: prekovremeni rad → pregorevanje → otkaz",
+      "procrastination": "Prokrastinacija i osećaj da je nemoguće naterati sebe na rad",
+      "loneliness_people": "Osećaj usamljenosti čak i pored ljudi",
+      "emotional_outbursts": "Snažni emotivni izlivi koji ometaju odnose",
+      "negative_loop": "Zadržavanje na negativnosti, teškoća u prebacivanju misli",
+      "burnout": "Pregorevanje (Burnout)",
+      "motivation": "Potraga za unutrašnjom motivacijom",
+      "goals": "Teškoće sa postavljanjem ciljeva",
+      "daily_load": "Složenost prilagođavanja opterećenju i svakodnevnim zahtevima",
+      "asd": "Teškoće povezane sa autizmom (RSA)",
+      "adhd": "Teškoće povezane sa ADHD-om",
+      "binge_eating": "Kompulzivno prejedanje",
+      "bulimia": "Nervna bulimija",
+      "other": "Drugo"
+    },
+    "success": "Anketa je uspešno poslata!",
+    "error": "Došlo je do greške. Molimo pokušajte ponovo.",
+    "fillAgain": "Popunite ponovo",
+    "historyTitle": "Istorija anketa",
+    "completedAt": "Završeno"
   }
 }

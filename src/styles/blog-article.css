@@ -128,6 +128,124 @@
     margin-bottom: 0;
 }
 
+/* ---- Task List (чеклист) ---- */
+
+/* Список задач: убираем маркер, выравниваем по левому краю */
+.blog-article ul[data-type='taskList'],
+.blog-article ul.contains-task-list,
+.blog-article ul[role='list'] li:has(input[type='checkbox']) {
+    list-style: none;
+    padding-left: 0.25em;
+}
+
+/* li в task list — flex чтобы чекбокс и текст рядом */
+.blog-article li:has(input[type='checkbox']) {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.625em;
+    padding-left: 0;
+    margin-bottom: 0.5em;
+}
+
+/* Кастомный чекбокс вместо браузерного */
+.blog-article input[type='checkbox'],
+.mdx-editor-content input[type='checkbox'] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 1.1em;
+    height: 1.1em;
+    min-width: 1.1em;
+    border: 2px solid hsl(var(--border));
+    border-radius: 4px;
+    background-color: transparent;
+    cursor: pointer;
+    margin-top: 0.25em;
+    flex-shrink: 0;
+    transition: background-color 0.15s, border-color 0.15s;
+    position: relative;
+}
+
+/* Состояние hover */
+.blog-article input[type='checkbox']:hover,
+.mdx-editor-content input[type='checkbox']:hover {
+    border-color: hsl(var(--primary));
+}
+
+/* Состояние checked — заполняем цветом primary */
+.blog-article input[type='checkbox']:checked,
+.mdx-editor-content input[type='checkbox']:checked {
+    background-color: hsl(var(--primary));
+    border-color: hsl(var(--primary));
+}
+
+/* Галочка внутри checked чекбокса через SVG */
+.blog-article input[type='checkbox']:checked::after,
+.mdx-editor-content input[type='checkbox']:checked::after {
+    content: '';
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -55%) rotate(45deg);
+    width: 0.3em;
+    height: 0.55em;
+    border: 0.15em solid hsl(var(--primary-foreground));
+    border-top: none;
+    border-left: none;
+}
+
+/* Зачёркнутый текст у выполненного пункта */
+.blog-article li:has(input[type='checkbox']:checked) > span,
+.blog-article li:has(input[type='checkbox']:checked) > div {
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+/* ---- Lexical Task List (MDXEditor редактор) ----
+   MDXEditor рендерит task list как li[role="checkbox"] с position:relative и padding-left.
+   ::before (рамка) и ::after (галочка) уже рисует MDXEditor через CSS Modules.
+   НЕ добавляем свой ::before — это приводит к двойному перекрытию текста.
+   Только переопределяем CSS-переменные MDXEditor под нашу дизайн-систему:
+     --baseBorder     → цвет рамки unchecked
+     --accentSolid    → фон checked
+     --baseBase       → цвет галочки
+     --accentBorder   → рамка checked
+     --accentBgActive → focus ring */
+.mdx-editor-container {
+    --baseBorder: hsl(var(--border));
+    --accentBorder: hsl(var(--primary));
+    --accentSolid: hsl(var(--primary));
+    --baseBase: hsl(var(--primary-foreground));
+    --accentBgActive: hsl(var(--primary) / 0.3);
+}
+
+/* Вертикальное выравнивание квадрата чекбокса MDXEditor.
+   TextMetrics: визуальный центр кириллического глифа = 14.91px от верха li.
+   Идеальный top для квадрата 16px = 14.91 - 8 = 6.91px ≈ 7px */
+.mdx-editor-container li[role='checkbox']::before {
+    top: calc((1lh - 1em) / 2 + 1px) !important; /* современные браузеры */
+}
+
+@supports not (top: calc(1lh - 1px)) {
+    .mdx-editor-container li[role='checkbox']::before {
+        top: 7px !important; /* fallback для Safari < 17.4 */
+    }
+}
+
+/* Галочка (::after) позиционируется внутри квадрата.
+   Измерено: visualCenter галочки (с учётом rotate45deg, диаг ≈ 8.94px) = 13.47px.
+   Центр квадрата = 15px → смещение -1.53px (выше). Корректируем на +1px.
+   Итог: top = 7px (квадрат) + 3px (отступ с коррекцией) = 10px */
+.mdx-editor-container li[role='checkbox']::after {
+    top: calc((1lh - 1em) / 2 + 4px) !important; /* квадрат(+1px) + 3px отступ */
+}
+
+@supports not (top: calc(1lh - 1px)) {
+    .mdx-editor-container li[role='checkbox']::after {
+        top: 10px !important; /* fallback для Safari < 17.4 */
+    }
+}
+
 /* ---- Цитаты ---- */
 
 .blog-article blockquote {
@@ -270,45 +388,64 @@
     background-color: hsl(var(--muted));
 }
 
-/* Растягиватель для прижатия кнопки вправо */
-.mdx-toolbar-spacer {
-    flex: 1;
-    min-width: 8px;
-}
 
 /* z-index для модальных окон MDXEditor */
 .mdxeditor-popup-container {
     z-index: 9999 !important;
 }
 
-/* Тёмная тема портала MDXEditor */
-.dark .mdxeditor-popup-container {
+html.dark .mdxeditor-popup-container,
+.dark .mdxeditor-popup-container,
+.dark-theme .mdxeditor-popup-container {
     color: hsl(var(--foreground)) !important;
 }
 
+/* Dropdown BlockTypeSelect и другие Radix Select
+   Целимся тремя способами для надёжности:
+   1. html.dark / .dark  — глобальная тема Next.js/next-themes
+   2. .dark-theme        — className который MDXEditor propagates на popup-container
+   Используем официальный публичный класс mdxeditor-select-content из документации. */
+html.dark .mdxeditor-popup-container [class*='_dialogContent'],
+html.dark .mdxeditor-popup-container [class*='_linkDialogPopoverContent'],
+html.dark .mdxeditor-popup-container .mdxeditor-select-content,
 .dark .mdxeditor-popup-container [class*='_dialogContent'],
 .dark .mdxeditor-popup-container [class*='_linkDialogPopoverContent'],
-.dark .mdxeditor-popup-container [class*='_selectContainer'] {
+.dark .mdxeditor-popup-container .mdxeditor-select-content,
+.dark-theme .mdxeditor-popup-container [class*='_dialogContent'],
+.dark-theme .mdxeditor-popup-container [class*='_linkDialogPopoverContent'],
+.dark-theme .mdxeditor-popup-container .mdxeditor-select-content {
     background-color: hsl(var(--card)) !important;
     border: 1px solid hsl(var(--border)) !important;
     color: hsl(var(--foreground)) !important;
 }
 
-.dark .mdxeditor-popup-container input {
+html.dark .mdxeditor-popup-container input,
+.dark .mdxeditor-popup-container input,
+.dark-theme .mdxeditor-popup-container input {
     background-color: hsl(var(--input)) !important;
     color: hsl(var(--foreground)) !important;
     border-color: hsl(var(--border)) !important;
 }
 
-.dark .mdxeditor-popup-container button[type='submit'] {
+html.dark .mdxeditor-popup-container button[type='submit'],
+.dark .mdxeditor-popup-container button[type='submit'],
+.dark-theme .mdxeditor-popup-container button[type='submit'] {
     background-color: hsl(var(--primary)) !important;
     color: hsl(var(--primary-foreground)) !important;
     border: none !important;
 }
 
-.dark .mdxeditor-popup-container [class*='_selectItem']:hover {
+/* Элементы списка в Radix Select — стандартный role="option" */
+html.dark .mdxeditor-popup-container .mdxeditor-select-content [role='option']:hover,
+html.dark .mdxeditor-popup-container .mdxeditor-select-content [role='option'][data-highlighted],
+.dark .mdxeditor-popup-container .mdxeditor-select-content [role='option']:hover,
+.dark .mdxeditor-popup-container .mdxeditor-select-content [role='option'][data-highlighted],
+.dark-theme .mdxeditor-popup-container .mdxeditor-select-content [role='option']:hover,
+.dark-theme .mdxeditor-popup-container .mdxeditor-select-content [role='option'][data-highlighted] {
     background-color: hsl(var(--accent)) !important;
+    color: hsl(var(--accent-foreground)) !important;
 }
+
 
 /* CodeMirror (Source / Diff режим) */
 [data-editor-theme='dark'] .cm-editor,
@@ -330,7 +467,11 @@
     background-color: hsl(var(--card)) !important;
 }
 
-/* Sticky тулбар внутри редактора */
+/* Sticky тулбар внутри редактора.
+   Для надёжности используем оба способа:
+   1. Приватные CSS Module-классы (быстрее, но могут измениться с версией)
+   2. Публичный класс .mdxeditor-toolbar из документации */
+.mdx-editor-container .mdxeditor-toolbar,
 .mdx-editor-container [class*='_editorWrapper'] > [class*='_toolbar'],
 .mdx-editor-container > [class*='_toolbar'] {
     position: sticky !important;
@@ -376,9 +517,11 @@
     color: hsl(var(--primary)) !important;
 }
 
-.mdx-editor-container [class*='_selectTrigger'] {
-    background-color: hsl(var(--background)) !important;
-    border-color: hsl(var(--border)) !important;
+.mdx-editor-container button[role='combobox'],
+.mdx-editor-container select,
+.mdx-editor-container [class*='selectTrigger' i] {
+    background-color: transparent !important;
+    border: 1px solid hsl(var(--border)) !important;
     color: hsl(var(--foreground)) !important;
     height: 28px !important;
     padding: 0 8px !important;
@@ -404,30 +547,27 @@
     opacity: 0.5;
 }
 
-/* Контент редактора */
+/* Контент редактора.
+   min-height берётся из CSS-переменной, заданной inline в InitializedMdxEditor.
+   Если переменная не задана — fallback 300px. */
 .mdx-editor-content {
     padding: 1.5rem !important;
-    min-height: 400px;
+    min-height: var(--mdx-editor-min-height, 300px);
     font-size: 1rem !important;
     line-height: 1.75 !important;
     color: hsl(var(--foreground)) !important;
     background-color: hsl(var(--background)) !important;
     caret-color: hsl(var(--foreground));
+    outline: none;
+    cursor: text;
 }
 
-/* ---- Placeholder и Курсор (Lexical Doms) ---- */
+/* ---- Placeholder и Курсор (Lexical) ---- */
 .mdx-editor-container [class*='_placeholder_'] {
     color: hsl(var(--muted-foreground)) !important;
     opacity: 0.5 !important;
     font-style: italic !important;
     pointer-events: none !important;
-}
-
-/* Ensure the Lexical content area takes full height so clicking anywhere focuses it */
-.mdx-editor-content {
-    min-height: 400px;
-    outline: none;
-    cursor: text;
 }
 
 /* Типографика внутри редактора - наследуется из .blog-article, но здесь можно оставить оверрайды если нужно */
@@ -496,9 +636,11 @@
     color: hsl(var(--primary)) !important;
 }
 
-[data-editor-theme='dark'] [class*='_selectTrigger'] {
-    background-color: hsl(var(--card)) !important;
-    border-color: hsl(var(--border)) !important;
+[data-editor-theme='dark'] button[role='combobox'],
+[data-editor-theme='dark'] select,
+[data-editor-theme='dark'] [class*='selectTrigger' i] {
+    background-color: transparent !important;
+    border: 1px solid hsl(var(--border)) !important;
     color: hsl(var(--foreground)) !important;
     height: 28px !important;
     padding: 0 8px !important;

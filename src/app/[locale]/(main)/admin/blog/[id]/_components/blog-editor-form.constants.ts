@@ -18,6 +18,5 @@ export const BLOG_EDITOR_LOCALE_MESSAGE_KEYS = {
 export const BLOG_EDITOR_META_FIELD_CLASS_NAME =
   'rounded-xl border-input bg-card shadow-sm transition-[border-color,box-shadow] focus-visible:border-[#900A0B]/40 focus-visible:ring-2 focus-visible:ring-[#900A0B]/20 focus-visible:ring-offset-0';
 
-export const BLOG_EDITOR_VIEW_MODE_TARGET_ID = 'mdx-editor-view-mode';
-
+/** Класс иконки пустого состояния превью. */
 export const BLOG_EDITOR_EMPTY_PREVIEW_ICON_CLASS_NAME = 'size-10 opacity-20';

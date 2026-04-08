@@ -17,7 +17,13 @@
     "telegramLink": "Telegram Channel",
     "instagramLink": "Instagram",
     "blogLink": "Blog",
-    "tags": ["Schema Therapy", "ACT", "RO DBT", "ADHD/ASD", "ED"],
+    "tags": [
+      "Schema Therapy",
+      "ACT",
+      "RO DBT",
+      "ADHD/ASD",
+      "ED"
+    ],
     "nav": {
       "about": "About me",
       "services": "How I can help",
@@ -275,7 +281,8 @@
       "profile": "Profile",
       "settings": "Settings",
       "backToSite": "Back to Site",
-      "goToMy": "My Account"
+      "goToMy": "My Account",
+      "clients": "Clients"
     },
     "blog": {
       "title": "Blog Management",
@@ -415,6 +422,59 @@
           "darkTheme": "Dark theme",
           "textLanguage": "Text",
           "placeholder": "Start writing the article..."
+        }
+      }
+    },
+    "clients": {
+      "title": "Clients Database",
+      "description": "Manage clients, intakes, and notes",
+      "table": {
+        "name": "Name",
+        "email": "Email",
+        "role": "Role",
+        "intakesCount": "Intakes",
+        "registeredAt": "Registered",
+        "actions": "Actions",
+        "delete": "Delete",
+        "schedule": "Schedule Session",
+        "searchPlaceholder": "Search by name or email..."
+      },
+      "dashboard": {
+        "tabs": {
+          "intakes": "Intakes",
+          "notes": "Therapist Notes",
+          "tests": "Tests",
+          "data": "Basic Data"
+        },
+        "intakes": {
+          "title": "Completed Intakes",
+          "description": "Intake form history",
+          "empty": "No intakes completed",
+          "version": "Form Version",
+          "delete": "Delete",
+          "deleteConfirmTitle": "Delete intake form?",
+          "deleteConfirmDescription": "This action cannot be undone. The intake form will be permanently deleted.",
+          "deleting": "Deleting...",
+          "deleteSuccess": "Intake form successfully deleted",
+          "cancel": "Cancel"
+        },
+        "notes": {
+          "title": "Internal Notes",
+          "description": "Notes are visible to admins only. Data is safely encrypted in the DB.",
+          "save": "Save Notes",
+          "saved": "Notes saved"
+        },
+        "data": {
+          "title": "Client Metadata",
+          "description": "Basic profile information and legal consents",
+          "metadataTitle": "Profile Metadata",
+          "consentsTitle": "Signed Consents",
+          "noConsents": "No signed documents found",
+          "deleteConsent": "Delete",
+          "deleteConfirmTitle": "Delete consent record?",
+          "deleteConfirmDescription": "This action cannot be undone. The consent record will be permanently deleted.",
+          "deleteSuccess": "Consent deleted",
+          "cancel": "Cancel"
         }
       }
     }
@@ -791,5 +851,70 @@
       "COMPLETED": "Completed",
       "PENDING_CONFIRMATION": "Pending Confirmation"
     }
+  },
+  "IntakeWizard": {
+    "trigger": "Fill out Intake",
+    "title": "Short intake form before our first session",
+    "description": "This questionnaire helps me understand your needs and better prepare for our first session. You can keep your answers brief. If there are questions you'd prefer not to answer in detail here, we can discuss them in person.",
+    "legalNotice": "Before starting, please review our legal documents:",
+    "legalPolicy": "Personal Data Processing Policy",
+    "legalAgreement": "User Agreement",
+    "step": "Step {current} of {total}",
+    "next": "Next",
+    "prev": "Back",
+    "submit": "Complete and Submit",
+    "submitting": "Submitting...",
+    "fields": {
+      "securityTitle": "Data Security",
+      "consentSectionTitle": "Consent",
+      "consentTitle": "Consent to data processing",
+      "nameLabel": "How should I address you?",
+      "namePlaceholder": "Name",
+      "nameHelper": "Indicate the name you're comfortable with me using to address you.",
+      "ageLabel": "Age",
+      "agePlaceholder": "E.g.: 29",
+      "ageHelper": "This helps to better take into account the life context.",
+      "mainRequestLabel": "Describe your request for therapy",
+      "mainRequestPlaceholder": "What is bothering you now? What result would you like to achieve?",
+      "mainRequestHelper": "Please describe the main topics you want to work on. You can use bullet points.",
+      "checklistLabel": "Which topics are relevant to you now?",
+      "checklistHelper": "Select from the list what resonates with you. This will help me prepare better.",
+      "commentLabel": "Comment",
+      "commentPlaceholder": "Write here everything you consider important...",
+      "commentHelper": "You can mention past therapy experience, psychiatric diagnoses, medications, or any other details here.",
+      "securityNotice": "Your responses are protected by end-to-end (AES-256-GCM) encryption. This ensures that your data is transmitted and stored in an encrypted format: access is granted only to the psychologist.",
+      "digitalSignatureNote": "I confirm that I have read and agree to the Privacy Policy. I acknowledge that clicking the \"Next\" button constitutes the use of my simple electronic signature (under GDPR and eIDAS regulations). The authenticity of this consent is verified by a unique server-side HMAC signature of my session metadata.",
+      "consentLabel": "I provide my explicit consent to the processing of my personal data, including information regarding my psychological well-being."
+    },
+    "checklist": {
+      "masking_identity": "Masking leading to a loss of identity",
+      "self_comparison": "Constantly comparing self to others, thinking 'what is wrong with me?'",
+      "self_acceptance": "Difficulties with self-acceptance",
+      "self_esteem": "Self-esteem issues",
+      "loneliness": "Loneliness",
+      "anxiety": "Anxiety",
+      "sleep_issues": "Sleep problems",
+      "emigration": "Emigration and adaptation to another country",
+      "career_lost": "Confusion about career path: 'who do I want to be?'",
+      "work_cycle": "Frequent job changes: overwork → burnout → resignation",
+      "procrastination": "Procrastination and inability to get things done",
+      "loneliness_people": "Feeling lonely even around others",
+      "emotional_outbursts": "Emotional outbursts affecting relationships",
+      "negative_loop": "Stuck in negativity, difficulty switching off",
+      "burnout": "Burnout",
+      "motivation": "Finding inner motivation",
+      "goals": "Difficulty setting goals",
+      "daily_load": "Difficulty managing daily load and demands",
+      "asd": "ASD-related difficulties",
+      "adhd": "ADHD-related difficulties",
+      "binge_eating": "Binge eating",
+      "bulimia": "Bulimia nervosa",
+      "other": "Other"
+    },
+    "success": "Intake successfully submitted!",
+    "error": "An error occurred. Please try again.",
+    "fillAgain": "Fill Out Again",
+    "historyTitle": "Intakes History",
+    "completedAt": "Completed"
   }
 }
