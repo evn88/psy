@@ -422,6 +422,41 @@
           "textLanguage": "Tekst",
           "placeholder": "Počnite da pišete članak..."
         }
+      },
+      "clients": {
+        "title": "Upravljanje klijentima",
+        "description": "Upravljajte profilima korisnika i kliničkim podacima",
+        "addUser": "Dodaj klijenta",
+        "columns": {
+          "name": "Klijent",
+          "email": "Email",
+          "status": "Status",
+          "lastIntake": "Poslednji upitnik",
+          "actions": "Akcije"
+        },
+        "filters": {
+          "searchPlaceholder": "Pretraži po imenu ili emailu..."
+        },
+        "dashboard": {
+          "tabs": {
+            "intakes": "Upitnici",
+            "notes": "Beleške terapeuta",
+            "tests": "Testovi",
+            "data": "Osnovni podaci"
+          },
+          "intakes": {
+            "title": "Popunjeni upitnici",
+            "description": "Istorija popunjavanja upitnika",
+            "empty": "Nema popunjenih upitnika",
+            "version": "Verzija",
+            "delete": "Obriši",
+            "deleteConfirmTitle": "Obrisati upitnik?",
+            "deleteConfirmDescription": "Ova radnja se ne može poništiti. Upitnik će biti trajno obrisan.",
+            "deleting": "Brisanje...",
+            "deleteSuccess": "Anketa uspešno obrisana",
+            "cancel": "Otkaži"
+          }
+        }
       }
     }
   },
@@ -795,8 +830,9 @@
       "checklistHelper": "Izaberite sa liste ono što vam odjekuje. To će mi pomoći da se bolje pripremim.",
       "commentLabel": "Komentar",
       "commentPlaceholder": "Napišite ovde sve što smatrate važnim...",
-      "commentHelper": "Ovde možete navesti prethodno iskustvo sa terapijom, prisustvo psihijatrijskih dijagnoza, uzimanje lekova ili bilo koje druge detalje.",
-      "consentLabel": "Dajem saglasnost za obradu ličnih podataka i slažem se sa politikom privatnosti. Razumem da će ovi podaci biti šifrovani i dostupni samo stručnjaku."
+      "commentHelper": "Ovde možete navesti prethodno iskustvo u terapiji, prisustvo psihijatrijskih dijagnoza, uzimanje lekova ili bilo koje druge detalje.",
+      "securityNotice": "Svi vaši odgovori su zaštićeni end-to-end (AES-GCM) enkripcijom i nisu dostupni trećim licima.",
+      "consentLabel": "Klikom na polje i nastavkom, kreirate digitalni potpis svoje saglasnosti."
     },
     "checklist": {
       "masking_identity": "Maskiranje zbog kojeg se gubi osećaj sopstvenog identiteta",

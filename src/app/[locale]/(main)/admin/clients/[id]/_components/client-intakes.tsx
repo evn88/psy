@@ -7,7 +7,22 @@ import {
   AccordionTrigger
 } from '@/components/ui/accordion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, CheckCircle2 } from 'lucide-react';
+import { FileText, CheckCircle2, Trash2, Loader2 } from 'lucide-react';
+import { useTransition } from 'react';
+import { deleteIntakeResponse } from '../../_actions/clients.actions';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from '@/components/ui/alert-dialog';
 
 interface PlainIntake {
   id: string;
@@ -109,21 +124,28 @@ export function ClientIntakes({ intakes }: { intakes: PlainIntake[] }) {
         <Accordion type="single" collapsible className="w-full">
           {intakes.map((intake, idx) => (
             <AccordionItem key={intake.id} value={intake.id} className="border-b last:border-0">
-              <AccordionTrigger className="hover:no-underline hover:bg-muted/30 px-6 py-4 transition-colors">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-left w-full pr-4">
-                  <div className="font-semibold flex items-center gap-2">
-                    Анкета #{intakes.length - idx}
-                    {intake.status === 'COMPLETED' && (
-                      <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
-                    )}
+              <div className="relative group">
+                <AccordionTrigger className="hover:no-underline hover:bg-muted/30 px-6 py-4 transition-colors">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-left w-full pr-14">
+                    <div className="font-semibold flex items-center gap-2">
+                      Анкета #{intakes.length - idx}
+                      {intake.status === 'COMPLETED' && (
+                        <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                      )}
+                    </div>
+                    <div className="text-sm text-muted-foreground font-normal sm:ml-auto flex items-center gap-4">
+                      <div className="hidden sm:block">
+                        {new Date(intake.createdAt).toLocaleString('ru-RU')}{' '}
+                        <span className="opacity-50 mx-1">|</span> v:{' '}
+                        {intake.formId.replace('intake_', '')}
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-sm text-muted-foreground font-normal sm:ml-auto">
-                    {new Date(intake.createdAt).toLocaleString('ru-RU')}{' '}
-                    <span className="opacity-50 mx-1">|</span> v:{' '}
-                    {intake.formId.replace('intake_', '')}
-                  </div>
+                </AccordionTrigger>
+                <div className="absolute right-12 top-0 bottom-0 z-10 flex items-center">
+                  <IntakeDeleteButton intakeId={intake.id} />
                 </div>
-              </AccordionTrigger>
+              </div>
               <AccordionContent className="px-6 py-4 bg-muted/10 border-t">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
                   {Object.entries(intake.plainAnswers).map(([key, value]) => {
@@ -154,5 +176,60 @@ export function ClientIntakes({ intakes }: { intakes: PlainIntake[] }) {
         </Accordion>
       </CardContent>
     </Card>
+  );
+}
+
+function IntakeDeleteButton({ intakeId }: { intakeId: string }) {
+  const [isPending, startTransition] = useTransition();
+  const t = useTranslations('Admin.clients.dashboard.intakes');
+
+  const handleDelete = () => {
+    startTransition(async () => {
+      const result = await deleteIntakeResponse(intakeId);
+      if (result.success) {
+        toast.success(t('deleteSuccess') || 'Анкета удалена');
+      } else {
+        toast.error(result.error || 'Ошибка удаления');
+      }
+    });
+  };
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+          onClick={e => e.stopPropagation()}
+          disabled={isPending}
+        >
+          {isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Trash2 className="h-4 w-4" />
+          )}
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent onClick={e => e.stopPropagation()}>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t('deleteConfirmTitle')}</AlertDialogTitle>
+          <AlertDialogDescription>{t('deleteConfirmDescription')}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={e => e.stopPropagation()}>{t('cancel')}</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={e => {
+              e.stopPropagation();
+              handleDelete();
+            }}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            disabled={isPending}
+          >
+            {isPending ? t('deleting') : t('delete')}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

@@ -176,7 +176,7 @@ export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
     setOpen(newOpen);
   };
 
-  const progressPercent = ((step - 1) / (TOTAL_STEPS - 1)) * 100;
+  const progressPercent = step === 1 ? 0 : ((step - 1) / (TOTAL_STEPS - 1)) * 100;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -228,17 +228,12 @@ export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
                     </ul>
                     <div className="pt-4 space-y-3 border-t border-border/50 text-muted-foreground">
                       <div className="flex items-start gap-3 text-sm">
-                        <ShieldCheck className="h-4 w-4 mt-0.5 shrink-0" />
-                        <p>
-                          Все ваши ответы защищены сквозным (AES-GCM) шифрованием и недоступны
-                          третьим лицам.
-                        </p>
+                        <ShieldCheck className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+                        <p>{t('securityNotice')}</p>
                       </div>
                       <div className="flex items-start gap-3 text-sm">
-                        <PenTool className="h-4 w-4 mt-0.5 shrink-0" />
-                        <p>
-                          Нажимая галочку и продолжая, вы создаете цифровую подпись своего согласия.
-                        </p>
+                        <PenTool className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+                        <p>{t('consentLabel')}</p>
                       </div>
                     </div>
                   </div>

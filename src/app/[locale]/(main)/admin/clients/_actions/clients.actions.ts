@@ -68,3 +68,25 @@ export async function updateClientNotes(userId: string, markdown: string) {
     return { success: false, error: 'Internal Server Error' };
   }
 }
+
+/**
+ * Удалить конкретную анкету (IntakeResponse)
+ */
+export async function deleteIntakeResponse(responseId: string) {
+  try {
+    const session = await auth();
+    if (session?.user?.role !== 'ADMIN') {
+      throw new Error('Unauthorized');
+    }
+
+    const response = await prisma.intakeResponse.delete({
+      where: { id: responseId }
+    });
+
+    revalidatePath(`/admin/clients/${response.userId}`);
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to delete intake response:', error);
+    return { success: false, error: 'Internal Server Error' };
+  }
+}

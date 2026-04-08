@@ -450,7 +450,13 @@
           "title": "Completed Intakes",
           "description": "Intake form history",
           "empty": "No intakes completed",
-          "version": "Form version"
+          "version": "Form Version",
+          "delete": "Delete",
+          "deleteConfirmTitle": "Delete intake form?",
+          "deleteConfirmDescription": "This action cannot be undone. The intake form will be permanently deleted.",
+          "deleting": "Deleting...",
+          "deleteSuccess": "Intake form successfully deleted",
+          "cancel": "Cancel"
         },
         "notes": {
           "title": "Internal Notes",
@@ -857,8 +863,9 @@
       "checklistHelper": "Select from the list what resonates with you. This will help me prepare better.",
       "commentLabel": "Comment",
       "commentPlaceholder": "Write here everything you consider important...",
-      "commentHelper": "Here you can indicate past therapy experience, presence of psychiatric diagnoses, medication intake, or any other details.",
-      "consentLabel": "I consent to the processing of personal data and agree to the privacy policy. I understand this data will be encrypted and only accessible to the specialist."
+      "commentHelper": "You can mention past therapy experience, psychiatric diagnoses, medications, or any other details here.",
+      "securityNotice": "All your responses are protected by end-to-end (AES-GCM) encryption and are not accessible to third parties.",
+      "consentLabel": "By checking the box and continuing, you are creating a digital signature of your consent."
     },
     "checklist": {
       "masking_identity": "Masking leading to a loss of identity",
