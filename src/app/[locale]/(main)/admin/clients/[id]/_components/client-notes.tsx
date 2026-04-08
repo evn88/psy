@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { MdxEditorWrapper } from '@/components/admin/blog/mdx-editor-wrapper';
+import { ForwardRefEditor } from '@/shared/ui/mdx-editor';
 import { Button } from '@/components/ui/button';
 import { Save, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -32,14 +32,12 @@ export function ClientNotes({
 
   return (
     <div className="space-y-4">
-      {/* Container is styled by MdxEditorWrapper internally but we give it a min-height */}
-      <div className="min-h-[400px] border rounded-md">
-        <MdxEditorWrapper
-          value={markdown}
-          onChange={setMarkdown}
-          placeholder="Напишите заметки о клиенте..."
-        />
-      </div>
+      {/* ForwardRefEditor содержит dynamic(ssr:false) внутри — лишний dynamic() здесь не нужен */}
+      <ForwardRefEditor
+        value={markdown}
+        onChange={setMarkdown}
+        placeholder="Напишите заметки о клиенте..."
+      />
       <div className="flex justify-end">
         <Button onClick={handleSave} disabled={isPending}>
           {isPending ? (

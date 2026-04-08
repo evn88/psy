@@ -10,9 +10,10 @@ import { FormProvider, useForm } from 'react-hook-form';
 import { PreviewSizeSwitcher } from '@/components/admin/blog/preview-size-switcher';
 import { TranslateModal } from '@/components/admin/blog/translate-modal';
 import {
-  BLOG_EDITOR_EMPTY_PREVIEW_ICON_CLASS_NAME,
+  MdxEditorWrapper,
   BLOG_EDITOR_VIEW_MODE_TARGET_ID
-} from './blog-editor-form.constants';
+} from '@/components/admin/blog/mdx-editor-wrapper';
+import { BLOG_EDITOR_EMPTY_PREVIEW_ICON_CLASS_NAME } from './blog-editor-form.constants';
 import { BlogEditorLocaleTabs } from './blog-editor-locale-tabs';
 import { BlogEditorMetadataSection } from './blog-editor-metadata-section';
 import { type BlogEditorFormValues, blogEditorSchema } from './blog-editor.schema';
@@ -24,26 +25,6 @@ import { useBlogEditorLock } from './hooks/use-blog-editor-lock';
 import { useBlogEditorPersistence } from './hooks/use-blog-editor-persistence';
 import { useBlogEditorState } from './hooks/use-blog-editor-state';
 import { useBlogEditorVersions } from './hooks/use-blog-editor-versions';
-import '@/styles/blog-article.css';
-
-const BlogEditorLoadingState = () => {
-  const tEditor = useTranslations('Admin.blog.editor');
-
-  return (
-    <div className="flex h-96 items-center justify-center rounded-md border bg-muted text-sm text-muted-foreground animate-pulse">
-      {tEditor('loadingEditor')}
-    </div>
-  );
-};
-
-const MdxEditorWrapper = dynamic(
-  () =>
-    import('@/components/admin/blog/mdx-editor-wrapper').then(module => module.MdxEditorWrapper),
-  {
-    ssr: false,
-    loading: () => <BlogEditorLoadingState />
-  }
-);
 
 const ArticleContent = dynamic(
   () =>
