@@ -490,7 +490,7 @@
     "nextSessionDesc": "No upcoming sessions",
     "sessionsTitle": "My Sessions",
     "paymentsTitle": "Payments",
-    "dataTitle": "My Data",
+    "dataTitle": "Files & Documents",
     "comingSoon": "Coming soon",
     "sessionsPlaceholder": "Here you will see your session schedule and book appointments.",
     "paymentsPlaceholder": "Here you will see your payment history and make payments.",
@@ -498,10 +498,10 @@
     "sidebarMenu": {
       "title": "My Account",
       "dashboard": "Dashboard",
-      "surveys": "Surveys",
+      "surveys": "Forms & Tests",
       "sessions": "My Sessions",
       "payments": "Payments",
-      "data": "My Data",
+      "data": "Files & Documents",
       "profile": "Profile",
       "settings": "Settings",
       "backToSite": "Back to Site",
@@ -511,10 +511,10 @@
       "home": "My Account",
       "dashboard": "Dashboard",
       "profile": "Profile",
-      "surveys": "Surveys",
+      "surveys": "Forms & Tests",
       "sessions": "My Sessions",
       "payments": "Payments",
-      "data": "My Data",
+      "data": "Files & Documents",
       "settings": "Settings"
     },
     "today": "Today",
@@ -567,7 +567,7 @@
     }
   },
   "Surveys": {
-    "myTitle": "My Surveys",
+    "myTitle": "Forms & Tests",
     "noSurveys": "You don't have any assigned surveys yet.",
     "completed": "Completed",
     "pending": "Pending",

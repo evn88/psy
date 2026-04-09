@@ -1,11 +1,17 @@
 'use server';
 
 import prisma from '@/shared/lib/prisma';
-import { encryptData, createHmacSignature } from '@/shared/lib/crypto';
+import { encryptData, decryptData, createHmacSignature } from '@/shared/lib/crypto';
 import { sendAdminIntakeNotificationToAdmin } from '@/shared/lib/email';
 import { headers } from 'next/headers';
 import { auth } from '@/auth';
 
+/**
+ * Отправка ответов анкеты Intake.
+ * @param formId - Идентификатор формы.
+ * @param answers - Объект с ответами.
+ * @returns Объект с результатом операции.
+ */
 export async function submitIntake(formId: string, answers: any) {
   try {
     const session = await auth();
@@ -57,6 +63,50 @@ export async function submitIntake(formId: string, answers: any) {
   }
 }
 
+/**
+ * Получение и расшифровка ответов конкретной анкеты пользователя.
+ * @param intakeId - ID записи анкеты.
+ * @returns Объект с расшифрованными данными.
+ */
+export async function getIntakeAnswers(intakeId: string) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      throw new Error('Unauthorized');
+    }
+
+    const intake = await prisma.intakeResponse.findUnique({
+      where: { id: intakeId },
+      include: {
+        clientProfile: true
+      }
+    });
+
+    if (!intake) {
+      return { success: false, error: 'Not found' };
+    }
+
+    // Проверка прав (только владелец или админ)
+    const isAdmin = session.user.role === 'ADMIN';
+    if (intake.clientProfile.userId !== session.user.id && !isAdmin) {
+      return { success: false, error: 'Forbidden' };
+    }
+
+    const decryptedJson = decryptData(intake.answers);
+    const answers = JSON.parse(decryptedJson);
+
+    return { success: true, answers };
+  } catch (error) {
+    console.error('Failed to get intake answers:', error);
+    return { success: false, error: 'Internal Server Error' };
+  }
+}
+
+/**
+ * Фиксация цифрового согласия пользователя.
+ * @param type - Тип события согласия.
+ * @returns Объект с результатом.
+ */
 export async function recordConsent(type: string) {
   try {
     const session = await auth();

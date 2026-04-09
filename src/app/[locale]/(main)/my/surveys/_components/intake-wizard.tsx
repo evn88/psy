@@ -37,6 +37,10 @@ import { submitIntake, recordConsent } from '../_actions/intake.actions';
 import { Progress } from '@/components/ui/progress';
 import { INTAKE_TOTAL_STEPS, INTAKE_FORM_ID } from '@/configs/intake';
 
+/**
+ * Модальное окно с многошаговым мастером заполнения первичной анкеты (Intake).
+ * Использует React Hook Form для валидации каждого шага.
+ */
 export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
   const t = useTranslations('IntakeWizard');
   const router = useRouter();
@@ -127,7 +131,6 @@ export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
     const isValid = await form.trigger(fieldsToValidate as any);
     if (isValid) {
       setStep(prev => Math.min(prev + 1, INTAKE_TOTAL_STEPS));
-      // Remove focus to prevent keyup events from triggering the next button accidentally
       if (document.activeElement instanceof HTMLElement) {
         document.activeElement.blur();
       }
@@ -139,21 +142,18 @@ export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
   };
 
   const onSubmit = (data: FormValues) => {
-    // If the user hit 'Enter' in a text field before the last step, act as 'Next'
     if (step !== INTAKE_TOTAL_STEPS) {
       handleNext();
       return;
     }
 
     startTransition(async () => {
-      // Записываем согласие
       const consentRes = await recordConsent('INTAKE_SUBMIT');
       if (!consentRes.success) {
         toast.error(t('error'));
         return;
       }
 
-      // Убираем согласие, оставляем только ответы
       const { consent, ...answers } = data;
       const intakeRes = await submitIntake(INTAKE_FORM_ID, answers);
 
@@ -181,11 +181,13 @@ export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="default">{triggerText || t('trigger')}</Button>
+        <Button variant="default" className="shadow-lg hover:shadow-xl transition-all">
+          {triggerText || t('trigger')}
+        </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[700px] h-[90vh] sm:h-auto max-h-[90vh] gap-0 p-0 flex flex-col overflow-hidden">
-        <DialogHeader className="p-6 pb-4 border-b border-border/50 shrink-0">
-          <DialogTitle className="text-xl">{t('title')}</DialogTitle>
+      <DialogContent className="sm:max-w-[700px] h-[90vh] sm:h-auto max-h-[90vh] gap-0 p-0 flex flex-col overflow-hidden border-border/40 shadow-2xl">
+        <DialogHeader className="p-6 pb-4 border-b border-border/50 shrink-0 bg-muted/20">
+          <DialogTitle className="text-xl font-bold tracking-tight">{t('title')}</DialogTitle>
           <DialogDescription className="text-balance pt-2 leading-relaxed">
             {step === 1
               ? t('description')
@@ -219,7 +221,7 @@ export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
                         <FormControl>
                           <Input
                             placeholder={t('fields.namePlaceholder')}
-                            className="h-12 text-lg px-4"
+                            className="h-12 text-lg px-4 bg-muted/10 border-border/60 focus:bg-background transition-colors"
                             {...field}
                           />
                         </FormControl>
@@ -242,7 +244,7 @@ export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
                           <Input
                             type="number"
                             placeholder={t('fields.agePlaceholder')}
-                            className="h-12 text-lg px-4"
+                            className="h-12 text-lg px-4 bg-muted/10 border-border/60 focus:bg-background transition-colors"
                             {...field}
                             value={field.value || ''}
                             onChange={e =>
@@ -273,7 +275,7 @@ export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
                         <FormControl>
                           <Textarea
                             placeholder={t('fields.mainRequestPlaceholder')}
-                            className="min-h-[160px] text-lg p-4 resize-none"
+                            className="min-h-[160px] text-lg p-4 resize-none bg-muted/10 border-border/60 focus:bg-background transition-colors"
                             {...field}
                           />
                         </FormControl>
@@ -298,7 +300,7 @@ export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
                           <FormLabel className="text-lg font-bold">
                             {t('fields.checklistLabel')}
                           </FormLabel>
-                          <FormDescription className="text-sm">
+                          <FormDescription className="text-sm text-balance">
                             {t('fields.checklistHelper')}
                           </FormDescription>
                         </div>
@@ -313,7 +315,7 @@ export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
                                 return (
                                   <FormItem
                                     key={item.id}
-                                    className={`flex flex-row items-center space-x-3 space-y-0 rounded-lg border p-4 transition-all hover:bg-accent/5 cursor-pointer ${isChecked ? 'bg-accent/10 border-primary/50' : 'bg-card'}`}
+                                    className={`flex flex-row items-center space-x-3 space-y-0 rounded-xl border p-4 transition-all hover:bg-accent/5 cursor-pointer ${isChecked ? 'bg-primary/5 border-primary/40 shadow-sm' : 'bg-card border-border/40'}`}
                                   >
                                     <FormControl>
                                       <Checkbox
@@ -327,7 +329,7 @@ export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
                                         }}
                                       />
                                     </FormControl>
-                                    <FormLabel className="text-sm font-medium cursor-pointer flex-1 py-1">
+                                    <FormLabel className="text-sm font-medium cursor-pointer flex-1 py-1 select-none">
                                       {item.label}
                                     </FormLabel>
                                   </FormItem>
@@ -356,7 +358,7 @@ export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
                         <FormControl>
                           <Textarea
                             placeholder={t('fields.commentPlaceholder')}
-                            className="min-h-[200px] text-lg p-4 resize-none"
+                            className="min-h-[200px] text-lg p-4 resize-none bg-muted/10 border-border/60 focus:bg-background transition-colors"
                             {...field}
                           />
                         </FormControl>
