@@ -31,7 +31,7 @@ export default async function MyDocumentsPage() {
   });
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="w-full max-w-none space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col gap-1">
         <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">{t('dataTitle')}</h2>
         <p className="text-muted-foreground">
@@ -39,7 +39,7 @@ export default async function MyDocumentsPage() {
         </p>
       </div>
 
-      <div className="max-w-4xl">
+      <div className="w-full">
         <MyDocuments userId={session.user.id} documents={documents} />
       </div>
     </div>
