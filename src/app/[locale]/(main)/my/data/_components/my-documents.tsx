@@ -47,7 +47,8 @@ import {
   MoreHorizontal,
   Info,
   Lock,
-  User
+  User,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { deleteUserDocument, renameUserDocument } from '../_actions/documents.actions';
@@ -108,7 +109,37 @@ const FileRow = ({
   const [newName, setNewName] = useState(doc.name);
   const [isPending, startTransition] = useTransition();
 
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadUrl, setDownloadUrl] = useState<string>('');
+  const downloadRef = useRef<HTMLAnchorElement>(null);
+
   const accent = getFileAccent(doc.fileType);
+
+  const handleDownload = async (e: React.MouseEvent) => {
+    if (downloadUrl) return;
+    e.preventDefault();
+    if (isDownloading) return;
+
+    setIsDownloading(true);
+    const toastId = toast.loading(`Подготовка файла «${doc.name}»...`);
+
+    try {
+      const response = await fetch(`/api/documents/${doc.id}`);
+      if (!response.ok) throw new Error('Ошибка скачивания');
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      setDownloadUrl(url);
+
+      setTimeout(() => {
+        downloadRef.current?.click();
+        toast.success('Загрузка началась', { id: toastId });
+        setIsDownloading(false);
+      }, 50);
+    } catch {
+      toast.error('Не удалось скачать файл', { id: toastId });
+      setIsDownloading(false);
+    }
+  };
 
   const handleDelete = () => {
     startTransition(async () => {
@@ -151,18 +182,29 @@ const FileRow = ({
             'group-hover:border-current/20 group-hover:shadow-md'
           )}
         >
-          {getFileIconElement(doc.fileType)}
+          {isDownloading ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            getFileIconElement(doc.fileType)
+          )}
         </div>
 
         {/* Информация */}
         <div className="flex-1 min-w-0 space-y-0.5">
           <a
-            href={`/api/documents/${doc.id}`}
+            href={downloadUrl || `/api/documents/${doc.id}`}
             download={doc.name}
-            className="block text-sm font-bold leading-tight tracking-tight text-foreground/90 group-hover:text-primary hover:underline transition-colors line-clamp-2 word-break-break-all cursor-pointer"
+            onClick={handleDownload}
+            className={cn(
+              'block text-sm font-bold leading-tight tracking-tight text-foreground/90 transition-colors line-clamp-2 word-break-break-all cursor-pointer',
+              isDownloading
+                ? 'opacity-50 pointer-events-none'
+                : 'group-hover:text-primary hover:underline'
+            )}
           >
             {doc.name}
           </a>
+          <a ref={downloadRef} href={downloadUrl} download={doc.name} className="hidden" />
           <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-black uppercase tracking-[0.1em]">
             <span className="bg-muted/50 px-1.5 py-0.5 rounded-md">{formatSize(doc.size)}</span>
             <span className="h-1 w-1 rounded-full bg-border" />
