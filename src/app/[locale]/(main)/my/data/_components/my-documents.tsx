@@ -156,9 +156,13 @@ const FileRow = ({
 
         {/* Информация */}
         <div className="flex-1 min-w-0 space-y-0.5">
-          <p className="text-sm font-bold leading-tight tracking-tight text-foreground/90 group-hover:text-primary transition-colors line-clamp-2 word-break-break-all">
+          <a
+            href={`/api/documents/${doc.id}`}
+            download={doc.name}
+            className="block text-sm font-bold leading-tight tracking-tight text-foreground/90 group-hover:text-primary hover:underline transition-colors line-clamp-2 word-break-break-all cursor-pointer"
+          >
             {doc.name}
-          </p>
+          </a>
           <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-black uppercase tracking-[0.1em]">
             <span className="bg-muted/50 px-1.5 py-0.5 rounded-md">{formatSize(doc.size)}</span>
             <span className="h-1 w-1 rounded-full bg-border" />
@@ -168,20 +172,6 @@ const FileRow = ({
 
         {/* Действия */}
         <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-all duration-300">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors"
-                onClick={() => window.open(`/api/documents/${doc.id}`, '_blank')}
-              >
-                <Download className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top">Скачать</TooltipContent>
-          </Tooltip>
-
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
