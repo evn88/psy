@@ -489,7 +489,7 @@
     "nextSessionDesc": "Nema zakazanih termina",
     "sessionsTitle": "Moje sesije",
     "paymentsTitle": "Plaćanja",
-    "dataTitle": "Moji podaci",
+    "dataTitle": "Fajlovi i dokumenti",
     "comingSoon": "Odeljak u razvoju",
     "sessionsPlaceholder": "Ovde ćete videti raspored vaših sesija i moći da zakazujete termine.",
     "paymentsPlaceholder": "Ovde ćete videti istoriju plaćanja i moći da vršite uplate.",
@@ -497,10 +497,10 @@
     "sidebarMenu": {
       "title": "Lični nalog",
       "dashboard": "Kontrolna tabla",
-      "surveys": "Ankete",
+      "surveys": "Ankete i testovi",
       "sessions": "Moje sesije",
       "payments": "Plaćanja",
-      "data": "Moji podaci",
+      "data": "Fajlovi i dokumenti",
       "profile": "Profil",
       "settings": "Podešavanja",
       "backToSite": "Nazad na sajt",
@@ -510,10 +510,10 @@
       "home": "Lični nalog",
       "dashboard": "Kontrolna tabla",
       "profile": "Profil",
-      "surveys": "Ankete",
+      "surveys": "Ankete i testovi",
       "sessions": "Moje sesije",
       "payments": "Plaćanja",
-      "data": "Moji podaci",
+      "data": "Fajlovi i dokumenti",
       "settings": "Podešavanja"
     },
     "today": "Danas",
@@ -566,7 +566,7 @@
     }
   },
   "Surveys": {
-    "myTitle": "Moje ankete",
+    "myTitle": "Ankete i testovi",
     "noSurveys": "Trenutno nemate dodeljenih anketa.",
     "completed": "Završeno",
     "pending": "Čeka",
