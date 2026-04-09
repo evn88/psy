@@ -117,19 +117,8 @@ export default async function AdminClientProfilePage({
           </Card>
         </TabsContent>
 
-        <TabsContent value="documents">
-          <Card>
-            <CardHeader className="pb-4 border-b">
-              <CardTitle className="text-xl">Документы клиента</CardTitle>
-              <CardDescription>
-                Все файлы шифруются по алгоритму AES-256-GCM. Загружайте документы для клиента или
-                просматривайте файлы, загруженные им самим.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <ClientDocuments clientId={user.id} documents={documents} />
-            </CardContent>
-          </Card>
+        <TabsContent value="documents" className="mt-4">
+          <ClientDocuments clientId={user.id} documents={documents} />
         </TabsContent>
 
         <TabsContent value="data">
