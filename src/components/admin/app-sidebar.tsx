@@ -12,6 +12,7 @@ import {
   LogOut,
   Send,
   Settings,
+  ShieldEllipsis,
   User,
   UserCircle,
   Users
@@ -108,6 +109,12 @@ export function AppSidebar({ user, unreadSurveysCount = 0, ...props }: AppSideba
       url: '/admin/send-email',
       icon: Send,
       isActive: pathname.startsWith('/admin/send-email')
+    },
+    {
+      title: tItems('backups'),
+      url: '/admin/backups',
+      icon: ShieldEllipsis,
+      isActive: pathname.startsWith('/admin/backups')
     },
     {
       title: tItems('profile'),
