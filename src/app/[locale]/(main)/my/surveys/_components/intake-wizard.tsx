@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useState, useTransition } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useTranslations } from 'next-intl';
@@ -33,9 +33,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
-import { submitIntake, recordConsent } from '../_actions/intake.actions';
+import { recordConsent, submitIntake } from '../_actions/intake.actions';
 import { Progress } from '@/components/ui/progress';
-import { INTAKE_TOTAL_STEPS, INTAKE_FORM_ID } from '@/configs/intake';
+import { INTAKE_FORM_ID, INTAKE_TOTAL_STEPS } from '@/configs/intake';
 
 /**
  * Модальное окно с многошаговым мастером заполнения первичной анкеты (Intake).
@@ -93,7 +93,10 @@ export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
     mode: 'onChange'
   });
 
-  const isConsentChecked = form.watch('consent');
+  const isConsentChecked = useWatch({
+    control: form.control,
+    name: 'consent'
+  });
 
   const checklistOptions = [
     { id: 'masking_identity', label: t('checklist.masking_identity') },
