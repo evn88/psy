@@ -630,6 +630,7 @@
     "addCommentPlaceholder": "Napišite odgovor...",
     "sendReply": "Pošalji",
     "noComments": "Još nema komentara.",
+    "loading": "Učitavanje...",
     "clearDraft": "Obriši nacrt"
   },
   "AdminEventBooking": {

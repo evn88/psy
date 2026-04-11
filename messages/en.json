@@ -631,6 +631,7 @@
     "addCommentPlaceholder": "Write a reply...",
     "sendReply": "Send",
     "noComments": "No comments yet.",
+    "loading": "Loading...",
     "clearDraft": "Clear Draft"
   },
   "AdminEventBooking": {

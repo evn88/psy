@@ -633,6 +633,7 @@
     "addCommentPlaceholder": "Напишите ответ...",
     "sendReply": "Отправить",
     "noComments": "Комментариев пока нет.",
+    "loading": "Загрузка...",
     "clearDraft": "Очистить черновик"
   },
   "AdminEventBooking": {
