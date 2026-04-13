@@ -1,5 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import prisma from '@/shared/lib/prisma';
+import {
+  formatPaymentAmount,
+  getCurrentMonthPaymentsTotal,
+  getYearlyPaymentsSeries
+} from '@/shared/lib/payments';
+import { getPayPalDefaultCurrency } from '@/shared/lib/paypal/config';
 import { getWorkflowBudgetSnapshot } from '@/shared/lib/workflow-budget';
 import {
   Activity,
@@ -8,12 +14,14 @@ import {
   CalendarCheck,
   CalendarClock,
   Clock,
+  CreditCard,
   Gauge,
   UserCheck,
   Users
 } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
-import { endOfMonth, endOfWeek, startOfMonth, startOfWeek } from 'date-fns';
+import { endOfMonth, endOfWeek, startOfMonth, startOfWeek, startOfYear } from 'date-fns';
+import { AdminPaymentsLineChart } from './_components/admin-payments-line-chart';
 
 /**
  * Получает статистику пользователей и расписания для дашборда.
@@ -37,6 +45,7 @@ const getStats = async () => {
   const currentMonthEnd = endOfMonth(now);
   const currentWeekStart = startOfWeek(now, { weekStartsOn: 1 });
   const currentWeekEnd = endOfWeek(now, { weekStartsOn: 1 });
+  const currentYearStart = startOfYear(now);
 
   // Users waiting for a session this month
   const waitingUsers = await prisma.event.findMany({
@@ -111,6 +120,34 @@ const getStats = async () => {
     }
   });
 
+  const paymentsThisYear = await prisma.payment.findMany({
+    where: {
+      OR: [
+        {
+          capturedAt: {
+            gte: currentYearStart
+          }
+        },
+        {
+          createdAt: {
+            gte: currentYearStart
+          }
+        }
+      ]
+    },
+    select: {
+      amount: true,
+      currency: true,
+      status: true,
+      createdAt: true,
+      capturedAt: true
+    }
+  });
+
+  const currentMonthPaymentsTotal = getCurrentMonthPaymentsTotal(paymentsThisYear, now);
+  const paymentsYearlySeries = getYearlyPaymentsSeries(paymentsThisYear, now.getFullYear());
+  const paymentsCurrency = paymentsThisYear[0]?.currency || getPayPalDefaultCurrency();
+
   const workflowBudgetSnapshot = await getWorkflowBudgetSnapshot();
 
   return {
@@ -122,6 +159,9 @@ const getStats = async () => {
     bookedUsersCount,
     freeHours,
     cancelledEventsCount,
+    currentMonthPaymentsTotal,
+    paymentsYearlySeries,
+    paymentsCurrency,
     workflowBudgetSnapshot
   };
 };
@@ -197,6 +237,21 @@ export default async function AdminDashboardPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Платежи за месяц</CardTitle>
+            <CreditCard className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatPaymentAmount(stats.currentMonthPaymentsTotal, stats.paymentsCurrency)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Сумма подтверждённых оплат от всех клиентов
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{t('cancelledStatsTitle')}</CardTitle>
             <Ban className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -228,6 +283,18 @@ export default async function AdminDashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle>Оплаты по месяцам</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AdminPaymentsLineChart
+            currency={stats.paymentsCurrency}
+            data={stats.paymentsYearlySeries}
+          />
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 md:grid-cols-2 mt-4">
         <Card>

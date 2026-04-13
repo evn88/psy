@@ -8,6 +8,7 @@ import { ClientNotes } from './_components/client-notes';
 import { ClientIntakes } from './_components/client-intakes';
 import { ClientDocuments } from './_components/client-documents';
 import { ClientData } from './_components/client-data';
+import { ClientPayments } from './_components/client-payments';
 
 export default async function AdminClientProfilePage({
   params
@@ -98,6 +99,7 @@ export default async function AdminClientProfilePage({
           <TabsTrigger value="intakes">{t('tabs.intakes')}</TabsTrigger>
           <TabsTrigger value="notes">{t('tabs.notes')}</TabsTrigger>
           <TabsTrigger value="documents">Документы</TabsTrigger>
+          <TabsTrigger value="payments">Платежи</TabsTrigger>
           <TabsTrigger value="data">{t('tabs.data')}</TabsTrigger>
         </TabsList>
 
@@ -119,6 +121,10 @@ export default async function AdminClientProfilePage({
 
         <TabsContent value="documents" className="mt-4">
           <ClientDocuments clientId={user.id} documents={documents} />
+        </TabsContent>
+
+        <TabsContent value="payments" className="mt-4">
+          <ClientPayments clientId={user.id} />
         </TabsContent>
 
         <TabsContent value="data">

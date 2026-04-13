@@ -13,6 +13,18 @@ enum Role {
   GUEST
 }
 
+enum PaymentProvider {
+  PAYPAL
+}
+
+enum PaymentKind {
+  CHECKOUT
+  SUBSCRIPTION
+  SUBSCRIPTION_RENEWAL
+  REFUND
+  DISPUTE
+}
+
 /// Статус бронирования события
 enum EventStatus {
   SCHEDULED
@@ -98,6 +110,7 @@ model User {
   consents      ClientConsent[]
   documents     ClientDocument[] @relation("UserDocuments")
   uploadedDocs  ClientDocument[] @relation("UploadedDocuments")
+  payments      Payment[]
 }
 
 /// Подписка на Web Push уведомления (PWA)
@@ -465,4 +478,95 @@ model ClientDocument {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Payment {
+  id       String          @id @default(cuid())
+  provider PaymentProvider @default(PAYPAL)
+  kind     PaymentKind     @default(CHECKOUT)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  orderId        String  @unique
+  captureId      String? @unique
+  subscriptionId String?
+  invoiceId      String?
+
+  amount   Decimal @db.Decimal(12, 2)
+  currency String
+  status   String
+
+  description  String?
+  payerEmail   String?
+  rawOrder     Json?
+  rawCapture   Json?
+  capturedAt   DateTime?
+  lastSyncedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events   PaymentEvent[]
+  disputes PaymentDispute[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status])
+  @@index([subscriptionId])
+}
+
+model PaymentEvent {
+  id       String          @id @default(cuid())
+  provider PaymentProvider @default(PAYPAL)
+
+  paymentId String?
+  payment   Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  providerEventId String @unique
+  eventType       String
+  resourceType    String?
+  resourceId      String?
+  orderId         String?
+  captureId       String?
+  subscriptionId  String?
+  disputeId       String?
+  status          String?
+
+  amount   Decimal? @db.Decimal(12, 2)
+  currency String?
+
+  occurredAt  DateTime?
+  payload     Json
+  isProcessed Boolean  @default(false)
+  processedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([paymentId, createdAt(sort: Desc)])
+  @@index([orderId])
+  @@index([captureId])
+  @@index([subscriptionId])
+  @@index([disputeId])
+}
+
+model PaymentDispute {
+  id String @id @default(cuid())
+
+  paymentId String?
+  payment   Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  disputeId String @unique
+  stage     String?
+  status    String
+  reason    String?
+
+  amount   Decimal? @db.Decimal(12, 2)
+  currency String?
+
+  responseDueAt DateTime?
+  payload        Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([paymentId])
 }

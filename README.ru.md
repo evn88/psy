@@ -152,6 +152,16 @@ npm run dev
 | `WORKFLOW_ALERT_THRESHOLD_PERCENT`      | Опциональный порог предупреждения в процентах (по умолчанию: `80`)                  |
 | `WORKFLOW_ESTIMATED_STEPS_PER_REMINDER` | Опциональная оценка steps на один запуск workflow-напоминания (по умолчанию: `3`)   |
 
+#### PayPal платежи
+
+| Переменная                      | Описание                                                                                         |
+|---------------------------------|--------------------------------------------------------------------------------------------------|
+| `NEXT_PUBLIC_PAYPAL_CLIENT_ID`  | Client ID PayPal REST приложения для JavaScript SDK и серверных вызовов Orders API               |
+| `PAYPAL_CLIENT_SECRET`          | Client Secret PayPal REST приложения для серверного получения OAuth token                         |
+| `PAYPAL_WEBHOOK_ID`             | ID webhook в PayPal, используемый для проверки подписи входящих событий                           |
+| `PAYPAL_ENVIRONMENT`            | Окружение PayPal: `sandbox` или `live` (по умолчанию: `sandbox`)                                 |
+| `NEXT_PUBLIC_PAYPAL_CURRENCY`   | Валюта checkout по умолчанию на странице оплат пользователя (необязательно, по умолчанию: `EUR`) |
+
 #### ИИ и хранилище
 
 | Переменная              | Описание                                                                                               |

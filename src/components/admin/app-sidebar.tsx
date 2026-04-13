@@ -7,6 +7,7 @@ import {
   Calendar,
   ChevronsUpDown,
   ClipboardList,
+  CreditCard,
   Home,
   LayoutDashboard,
   LogOut,
@@ -97,6 +98,12 @@ export function AppSidebar({ user, unreadSurveysCount = 0, ...props }: AppSideba
       url: '/admin/schedule',
       icon: Calendar,
       isActive: pathname.startsWith('/admin/schedule')
+    },
+    {
+      title: tItems('payments'),
+      url: '/admin/payments',
+      icon: CreditCard,
+      isActive: pathname.startsWith('/admin/payments')
     },
     {
       title: tItems('blog'),

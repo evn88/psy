@@ -275,15 +275,16 @@
       "dashboard": "Dashboard",
       "users": "Users",
       "surveys": "Surveys",
+      "clients": "Clients",
       "schedule": "Schedule",
+      "payments": "Payments",
       "blog": "Blog",
       "sendEmail": "Send Email",
       "backups": "Backups",
       "profile": "Profile",
       "settings": "Settings",
       "backToSite": "Back to Site",
-      "goToMy": "My Account",
-      "clients": "Clients"
+      "goToMy": "My Account"
     },
     "backups": {
       "title": "Backups",
