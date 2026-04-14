@@ -1,124 +1,96 @@
 import { auth } from '@/auth';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, CreditCard, Wallet } from 'lucide-react';
-import { getTranslations } from 'next-intl/server';
+import { type AppLocale, defaultLocale, isLocale } from '@/i18n/config';
+import { redirect } from '@/i18n/navigation';
 import prisma from '@/shared/lib/prisma';
-import {
-  formatPaymentAmount,
-  getCurrentMonthPaymentsTotal,
-  isSuccessfulPaymentStatus
-} from '@/shared/lib/payments';
 import { getPayPalClientId, getPayPalDefaultCurrency } from '@/shared/lib/paypal/config';
-import { PayPalCheckoutCard } from './_components/paypal-checkout-card';
+import { formatPaymentAmount } from '@/shared/lib/payments';
+import { getTranslations } from 'next-intl/server';
+
 import { MyPaymentsHistory } from './_components/my-payments-history';
+import { PayPalCheckoutCard } from './_components/paypal-checkout-card';
+
+interface MyPaymentsPageProps {
+  params: Promise<{ locale: string }>;
+}
 
 /**
- * Страница оплаты в личном кабинете.
- * Показывает checkout через PayPal и локальную историю транзакций пользователя.
+ * Возвращает авторизованного пользователя или выполняет locale-aware redirect на вход.
+ * Дополнительный `throw` нужен только для корректного сужения типов после redirect.
+ * @param user - пользователь из сессии.
+ * @param locale - активная locale.
+ * @returns Авторизованный пользователь.
  */
-export default async function MyPaymentsPage() {
+const requireAuthenticatedUser = <TUser,>(
+  user: TUser | null | undefined,
+  locale: AppLocale
+): TUser => {
+  if (!user) {
+    redirect({ href: '/auth', locale });
+    throw new Error('UNREACHABLE_AUTH_REDIRECT');
+  }
+
+  return user;
+};
+
+/**
+ * Страница оплаты услуг для клиента.
+ * Сначала показывает checkout PayPal, затем историю операций.
+ * @param props - locale из маршрута.
+ * @returns Серверная страница оплаты.
+ */
+export default async function MyPaymentsPage({ params }: Readonly<MyPaymentsPageProps>) {
+  const { locale } = await params;
+  const currentLocale: AppLocale = isLocale(locale) ? locale : defaultLocale;
   const session = await auth();
   const t = await getTranslations('My');
+  const user = requireAuthenticatedUser(session?.user, currentLocale);
 
-  if (!session?.user?.id) {
-    return null;
+  if (user.role === 'GUEST') {
+    redirect({ href: '/my/profile', locale: currentLocale });
   }
 
   const payments = await prisma.payment.findMany({
-    where: { userId: session.user.id },
+    where: { userId: user.id },
+    select: {
+      id: true,
+      amount: true,
+      capturedAt: true,
+      createdAt: true,
+      currency: true,
+      orderId: true,
+      status: true
+    },
     orderBy: { createdAt: 'desc' }
   });
-  type MyPaymentRecord = (typeof payments)[number];
+  type PaymentRecord = (typeof payments)[number];
 
-  const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID?.trim() || null;
-  const currency = getPayPalDefaultCurrency();
-  const currentMonthTotal = getCurrentMonthPaymentsTotal(payments);
-  const successfulPaymentsCount = payments.filter((payment: MyPaymentRecord) =>
-    isSuccessfulPaymentStatus(payment.status)
-  ).length;
-  const lastSuccessfulPayment = payments.find((payment: MyPaymentRecord) =>
-    isSuccessfulPaymentStatus(payment.status)
-  );
-
-  const paymentHistoryItems = payments.map((payment: MyPaymentRecord) => ({
+  const displayCurrency = payments[0]?.currency || getPayPalDefaultCurrency();
+  const paymentLocale =
+    currentLocale === 'en' ? 'en-US' : currentLocale === 'sr' ? 'sr-RS' : 'ru-RU';
+  const paymentHistory = payments.map((payment: PaymentRecord) => ({
     id: payment.id,
-    amountLabel: formatPaymentAmount(payment.amount, payment.currency),
-    status: payment.status,
+    amountLabel: formatPaymentAmount(payment.amount, payment.currency, paymentLocale),
+    capturedAtLabel: payment.capturedAt ? payment.capturedAt.toLocaleString(paymentLocale) : '—',
+    createdAtLabel: payment.createdAt.toLocaleString(paymentLocale),
     orderId: payment.orderId,
-    createdAtLabel: payment.createdAt.toLocaleString('ru-RU'),
-    capturedAtLabel: payment.capturedAt ? payment.capturedAt.toLocaleString('ru-RU') : '—'
+    status: payment.status
   }));
 
+  const clientId = getPayPalClientId();
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">{t('paymentsTitle')}</h2>
-        <p className="text-muted-foreground mt-1">
-          Оплата выполняется через PayPal Checkout, а история операций хранится в вашем кабинете.
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 pb-10">
+      <section className="space-y-2">
+        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t('paymentsTitle')}</h1>
+        <p className="max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
+          Укажите сумму, выберите PayPal или оплату картой и завершите платёж. После подтверждения
+          операция появится в истории ниже.
         </p>
-      </div>
+      </section>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-sm font-medium">
-              <Wallet className="h-4 w-4 text-muted-foreground" />
-              Оплачено за месяц
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatPaymentAmount(currentMonthTotal, currency)}
-            </div>
-          </CardContent>
-        </Card>
+      <PayPalCheckoutCard clientId={clientId} currency={displayCurrency} />
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-sm font-medium">
-              <CreditCard className="h-4 w-4 text-muted-foreground" />
-              Успешные платежи
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{successfulPaymentsCount}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Последняя успешная оплата</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {lastSuccessfulPayment
-                ? formatPaymentAmount(lastSuccessfulPayment.amount, lastSuccessfulPayment.currency)
-                : '—'}
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {lastSuccessfulPayment?.capturedAt
-                ? lastSuccessfulPayment.capturedAt.toLocaleString('ru-RU')
-                : 'Пока нет завершённых оплат'}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {clientId ? (
-        <PayPalCheckoutCard clientId={getPayPalClientId()} currency={currency} />
-      ) : (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>PayPal не настроен</AlertTitle>
-          <AlertDescription>
-            Добавьте `NEXT_PUBLIC_PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` и `PAYPAL_WEBHOOK_ID` в
-            env, чтобы включить checkout и синхронизацию webhook.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <MyPaymentsHistory payments={paymentHistoryItems} />
+      <MyPaymentsHistory payments={paymentHistory} />
     </div>
   );
 }
