@@ -11,7 +11,12 @@ export const getActivePaymentProviderConfig = (): PaymentProvider => {
   const provider =
     process.env.ACTIVE_PAYMENT_PROVIDER || process.env.NEXT_PUBLIC_ACTIVE_PAYMENT_PROVIDER;
 
-  return PaymentProvider.PAYPAL;
+  switch (provider) {
+    case PaymentProvider.PAYPAL:
+      return PaymentProvider.PAYPAL;
+    default:
+      return PaymentProvider.PAYPAL;
+  }
 };
 
 let activeServiceInstance: IPaymentService | null = null;
