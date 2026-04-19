@@ -149,10 +149,12 @@ npm run dev
 | `WORKFLOW_ALERT_THRESHOLD_PERCENT`      | Optional warning threshold in percent (default: `80`)                                  |
 | `WORKFLOW_ESTIMATED_STEPS_PER_REMINDER` | Optional estimated steps per one reminder workflow run (default: `3`)                  |
 
-#### PayPal Payments
+#### Payments Configuration
 
 | Variable                        | Description                                                                                     |
 |---------------------------------|-------------------------------------------------------------------------------------------------|
+| `ACTIVE_PAYMENT_PROVIDER`       | Определяет активного провайдера. Возможные значения: `PAYPAL` (по умолчанию)                  |
+| `NEXT_PUBLIC_ACTIVE_PAYMENT_PROVIDER` | Публичная переменная для UI (например, `PAYPAL`)                                         |
 | `NEXT_PUBLIC_PAYPAL_CLIENT_ID`  | PayPal REST app client ID for JavaScript SDK and server-side Orders API calls                   |
 | `PAYPAL_CLIENT_SECRET`          | PayPal REST app client secret for server-side OAuth token exchange                              |
 | `PAYPAL_WEBHOOK_ID`             | PayPal webhook ID used to verify incoming webhook signatures                                    |

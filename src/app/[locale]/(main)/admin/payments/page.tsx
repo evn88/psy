@@ -45,6 +45,7 @@ export default async function AdminPaymentsPage() {
     clientId: payment.user.id,
     clientName: payment.user.name || 'Без имени',
     clientEmail: payment.user.email,
+    provider: payment.provider,
     orderId: payment.orderId,
     captureId: payment.captureId,
     amountLabel: formatPaymentAmount(payment.amount, payment.currency),

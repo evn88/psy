@@ -7,7 +7,7 @@ import { formatPaymentAmount } from '@/shared/lib/payments';
 import { getTranslations } from 'next-intl/server';
 
 import { MyPaymentsHistory } from './_components/my-payments-history';
-import { PayPalCheckoutCard } from './_components/paypal-checkout-card';
+import { PaymentCheckoutCard } from './_components/payment-checkout-card';
 
 interface MyPaymentsPageProps {
   params: Promise<{ locale: string }>;
@@ -88,7 +88,7 @@ export default async function MyPaymentsPage({ params }: Readonly<MyPaymentsPage
         </p>
       </section>
 
-      <PayPalCheckoutCard clientId={clientId} currency={displayCurrency} />
+      <PaymentCheckoutCard clientId={clientId} currency={displayCurrency} />
 
       <MyPaymentsHistory payments={paymentHistory} />
     </div>

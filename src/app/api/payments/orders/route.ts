@@ -1,12 +1,9 @@
-import { randomUUID } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { auth } from '@/auth';
-import { createPayPalOrder } from '@/shared/lib/paypal/client';
-import { getPayPalDefaultCurrency } from '@/shared/lib/paypal/config';
-import { syncPaymentFromPayPal } from '@/shared/lib/paypal/service';
+import { getPaymentService, getActivePaymentCurrency } from '@/shared/lib/payments/factory';
 
-const createPayPalOrderSchema = z.object({
+const createOrderSchema = z.object({
   amount: z
     .string()
     .trim()
@@ -17,13 +14,13 @@ const createPayPalOrderSchema = z.object({
     .trim()
     .toUpperCase()
     .regex(/^[A-Z]{3}$/, 'Currency must be an ISO 4217 code')
-    .default(getPayPalDefaultCurrency()),
+    .optional(),
   description: z.string().trim().max(127).optional()
 });
 
 /**
- * POST /api/paypal/orders
- * Создаёт order в PayPal и сохраняет черновую запись платежа в локальной БД.
+ * POST /api/payments/orders
+ * Создаёт order в активной платежной системе (через фабрику).
  */
 export async function POST(request: Request) {
   try {
@@ -34,7 +31,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const payload = createPayPalOrderSchema.safeParse(body);
+    const payload = createOrderSchema.safeParse(body);
 
     if (!payload.success) {
       return NextResponse.json(
@@ -46,19 +43,15 @@ export async function POST(request: Request) {
       );
     }
 
-    const paymentId = randomUUID();
-    const order = await createPayPalOrder({
-      amount: payload.data.amount,
-      currency: payload.data.currency,
-      description: payload.data.description,
-      invoiceId: paymentId,
-      customId: session.user.id
-    });
+    const paymentService = getPaymentService();
+    // Используем дефолтную валюту провайдера если не передана
+    const currency = payload.data.currency || getActivePaymentCurrency();
 
-    await syncPaymentFromPayPal({
-      order,
-      userId: session.user.id,
-      paymentId
+    const order = await paymentService.createOrder({
+      amount: payload.data.amount,
+      currency: currency,
+      description: payload.data.description,
+      userId: session.user.id
     });
 
     return NextResponse.json({
@@ -66,7 +59,7 @@ export async function POST(request: Request) {
       status: order.status
     });
   } catch (error: unknown) {
-    console.error('Failed to create PayPal order:', error);
+    console.error('Failed to create payment order:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }

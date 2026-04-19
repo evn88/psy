@@ -36,17 +36,17 @@ const paymentCheckoutSchema = z.object({
 
 type PaymentCheckoutValues = z.infer<typeof paymentCheckoutSchema>;
 
-interface PayPalCheckoutCardProps {
-  clientId: string;
+interface PaymentCheckoutCardProps {
+  clientId: string; // PayPal client ID, в будущем можно абстрагировать в конфиг провайдеров
   currency: string;
 }
 
 /**
- * Карточка оплаты через PayPal и банковскую карту для личного кабинета.
- * @param props - Валюта и clientId для PayPal SDK.
- * @returns Компактный checkout-блок без лишнего визуального шума.
+ * Карточка оплаты для личного кабинета.
+ * Поддерживает PayPal, подготовлена к добавлению других систем.
+ * @param props - Валюта и ключи.
  */
-export const PayPalCheckoutCard = ({ clientId, currency }: PayPalCheckoutCardProps) => {
+export const PaymentCheckoutCard = ({ clientId, currency }: PaymentCheckoutCardProps) => {
   const router = useRouter();
   const { resolvedTheme } = useTheme();
   const isDarkTheme = resolvedTheme === 'dark';
@@ -67,6 +67,8 @@ export const PayPalCheckoutCard = ({ clientId, currency }: PayPalCheckoutCardPro
     ? formatPaymentAmount(amountPreviewValue, currency)
     : 'Укажите сумму';
   const descriptionPreviewLabel = descriptionPreviewValue || DEFAULT_DESCRIPTION;
+
+  // Здесь в будущем можно переключаться в зависимости от провайдера на другие UI-секции.
   const paymentMethods = [
     {
       key: 'paypal',
@@ -97,9 +99,6 @@ export const PayPalCheckoutCard = ({ clientId, currency }: PayPalCheckoutCardPro
     }
   ] as const;
 
-  /**
-   * Обновляет страницу после успешного capture и очищает форму.
-   */
   const handleSuccessfulCapture = () => {
     toast.success('Платёж успешно проведён');
     form.reset(DEFAULT_PAYMENT_VALUES);
@@ -109,18 +108,10 @@ export const PayPalCheckoutCard = ({ clientId, currency }: PayPalCheckoutCardPro
     });
   };
 
-  /**
-   * Валидирует форму перед открытием PayPal checkout.
-   * @returns `true`, если форма заполнена корректно.
-   */
   const validateCheckout = async () => {
     return form.trigger();
   };
 
-  /**
-   * Создаёт PayPal order на сервере.
-   * @returns Идентификатор созданного order.
-   */
   const handleCreateOrder = async () => {
     const isValid = await validateCheckout();
 
@@ -128,7 +119,7 @@ export const PayPalCheckoutCard = ({ clientId, currency }: PayPalCheckoutCardPro
       throw new Error('FORM_INVALID');
     }
 
-    const response = await fetch('/api/paypal/orders', {
+    const response = await fetch('/api/payments/orders', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -152,12 +143,8 @@ export const PayPalCheckoutCard = ({ clientId, currency }: PayPalCheckoutCardPro
     return payload.id;
   };
 
-  /**
-   * Выполняет capture созданного order и обновляет историю.
-   * @param orderId - Идентификатор order из PayPal.
-   */
   const handleApprove = async (orderId: string) => {
-    const response = await fetch(`/api/paypal/orders/${orderId}/capture`, {
+    const response = await fetch(`/api/payments/orders/${orderId}/capture`, {
       method: 'POST'
     });
 
@@ -169,16 +156,12 @@ export const PayPalCheckoutCard = ({ clientId, currency }: PayPalCheckoutCardPro
     handleSuccessfulCapture();
   };
 
-  /**
-   * Показывает уведомление только для реальных ошибок checkout.
-   * @param error - Ошибка из PayPal SDK.
-   */
   const handleCheckoutError = (error: unknown) => {
     if (error instanceof Error && error.message === 'FORM_INVALID') {
       return;
     }
 
-    toast.error('PayPal checkout завершился с ошибкой');
+    toast.error('Checkout завершился с ошибкой');
   };
 
   return (
@@ -191,8 +174,7 @@ export const PayPalCheckoutCard = ({ clientId, currency }: PayPalCheckoutCardPro
           <div className="space-y-1">
             <CardTitle className="text-xl">Оплата</CardTitle>
             <CardDescription className="max-w-2xl">
-              Введите сумму и назначение, затем выберите PayPal или банковскую карту. Заказ и
-              capture создаются на сервере.
+              Введите сумму и назначение, затем выберите платежный метод.
             </CardDescription>
           </div>
         </div>
@@ -203,7 +185,7 @@ export const PayPalCheckoutCard = ({ clientId, currency }: PayPalCheckoutCardPro
           <div className="rounded-2xl border border-border/60 bg-muted/10 p-4 shadow-sm">
             <div className="mb-3 flex items-center justify-between gap-3">
               <Label
-                htmlFor="paypal-amount"
+                htmlFor="payment-amount"
                 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground"
               >
                 Сумма
@@ -211,7 +193,7 @@ export const PayPalCheckoutCard = ({ clientId, currency }: PayPalCheckoutCardPro
               <span className="text-xs font-medium text-muted-foreground">{currency}</span>
             </div>
             <Input
-              id="paypal-amount"
+              id="payment-amount"
               inputMode="decimal"
               placeholder="Например, 50.00"
               autoComplete="off"
@@ -232,7 +214,7 @@ export const PayPalCheckoutCard = ({ clientId, currency }: PayPalCheckoutCardPro
           <div className="rounded-2xl border border-border/60 bg-muted/10 p-4 shadow-sm">
             <div className="mb-3 flex items-center justify-between gap-3">
               <Label
-                htmlFor="paypal-description"
+                htmlFor="payment-description"
                 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground"
               >
                 Описание платежа
@@ -240,7 +222,7 @@ export const PayPalCheckoutCard = ({ clientId, currency }: PayPalCheckoutCardPro
               <span className="text-xs text-muted-foreground">До 127 символов</span>
             </div>
             <Textarea
-              id="paypal-description"
+              id="payment-description"
               rows={4}
               placeholder={DEFAULT_DESCRIPTION}
               className="min-h-32 resize-none border-border/60 bg-background/80 text-base shadow-none placeholder:text-muted-foreground/50"
@@ -280,8 +262,7 @@ export const PayPalCheckoutCard = ({ clientId, currency }: PayPalCheckoutCardPro
           <div className="space-y-1">
             <p className="text-sm font-medium">Способ оплаты</p>
             <p className="text-sm text-muted-foreground">
-              Кнопка карты подходит для оплаты без аккаунта PayPal. При успешном подтверждении
-              история обновится автоматически.
+              При успешном подтверждении история обновится автоматически.
             </p>
           </div>
 

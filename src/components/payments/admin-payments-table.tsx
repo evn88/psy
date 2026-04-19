@@ -19,6 +19,7 @@ export interface AdminPaymentTableItem {
   clientId: string;
   clientName: string;
   clientEmail: string;
+  provider: string;
   orderId: string;
   captureId: string | null;
   amountLabel: string;
@@ -77,6 +78,7 @@ export const AdminPaymentsTable = ({
           <TableHeader>
             <TableRow>
               {showClientColumn ? <TableHead>Клиент</TableHead> : null}
+              <TableHead>Провайдер</TableHead>
               <TableHead>Сумма</TableHead>
               <TableHead>Статус</TableHead>
               <TableHead>Order ID</TableHead>
@@ -112,6 +114,11 @@ export const AdminPaymentsTable = ({
                       </div>
                     </TableCell>
                   ) : null}
+                  <TableCell>
+                    <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-primary/10 text-primary">
+                      {payment.provider}
+                    </span>
+                  </TableCell>
                   <TableCell className="font-medium">{payment.amountLabel}</TableCell>
                   <TableCell>
                     <PaymentStatusBadge status={payment.status} />
