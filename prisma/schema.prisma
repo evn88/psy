@@ -19,6 +19,7 @@ enum PaymentProvider {
 
 enum PaymentKind {
   CHECKOUT
+  TOPUP
   SUBSCRIPTION
   SUBSCRIPTION_RENEWAL
   REFUND
@@ -111,6 +112,8 @@ model User {
   documents     ClientDocument[] @relation("UserDocuments")
   uploadedDocs  ClientDocument[] @relation("UploadedDocuments")
   payments      Payment[]
+
+  balance Decimal @db.Decimal(12, 2) @default(0)
 }
 
 /// Подписка на Web Push уведомления (PWA)
@@ -480,6 +483,26 @@ model ClientDocument {
   updatedAt DateTime @updatedAt
 }
 
+// ============================================================
+// Пакеты услуг (Service Packages)
+// ============================================================
+
+model ServicePackage {
+  id          String   @id @default(cuid())
+  title       Json
+  description Json?
+  amount      Decimal  @db.Decimal(12, 2)
+  currency    String   @default("EUR")
+  coverImage  String?
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  payments Payment[]
+}
+
 model Payment {
   id       String          @id @default(cuid())
   provider PaymentProvider @default(PAYPAL)
@@ -492,6 +515,9 @@ model Payment {
   captureId      String? @unique
   subscriptionId String?
   invoiceId      String?
+
+  servicePackageId String?
+  servicePackage   ServicePackage? @relation(fields: [servicePackageId], references: [id], onDelete: SetNull)
 
   amount   Decimal @db.Decimal(12, 2)
   currency String

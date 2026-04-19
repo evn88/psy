@@ -103,7 +103,13 @@ export function AppSidebar({ user, unreadSurveysCount = 0, ...props }: AppSideba
       title: tItems('payments'),
       url: '/admin/payments',
       icon: CreditCard,
-      isActive: pathname.startsWith('/admin/payments')
+      isActive: pathname === '/admin/payments'
+    },
+    {
+      title: tItems('packages'),
+      url: '/admin/payments/packages',
+      icon: CreditCard, // We can reuse icon or use another later
+      isActive: pathname.startsWith('/admin/payments/packages')
     },
     {
       title: tItems('blog'),

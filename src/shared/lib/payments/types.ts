@@ -1,10 +1,12 @@
-import type { PaymentProvider } from '@prisma/client';
+import type { PaymentProvider, PaymentKind } from '@prisma/client';
 
 export interface CreateOrderParams {
   amount: string;
   currency: string;
   description?: string;
   userId: string;
+  kind?: PaymentKind;
+  servicePackageId?: string;
 }
 
 export interface CaptureOrderParams {

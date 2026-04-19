@@ -9,7 +9,10 @@ import type {
   PayPalWebhookEvent
 } from './types';
 
-type PaymentReference = Pick<Payment, 'id' | 'userId' | 'orderId' | 'captureId' | 'kind'>;
+type PaymentReference = Pick<
+  Payment,
+  'id' | 'userId' | 'orderId' | 'captureId' | 'kind' | 'status' | 'servicePackageId'
+>;
 
 /**
  * Проверяет, что значение является объектом.
@@ -101,7 +104,15 @@ const findPaymentByReferences = async (refs: {
   if (refs.paymentId) {
     const payment = await prisma.payment.findUnique({
       where: { id: refs.paymentId },
-      select: { id: true, userId: true, orderId: true, captureId: true, kind: true }
+      select: {
+        id: true,
+        userId: true,
+        orderId: true,
+        captureId: true,
+        kind: true,
+        status: true,
+        servicePackageId: true
+      }
     });
 
     if (payment) {
@@ -112,7 +123,15 @@ const findPaymentByReferences = async (refs: {
   if (refs.captureId) {
     const payment = await prisma.payment.findUnique({
       where: { captureId: refs.captureId },
-      select: { id: true, userId: true, orderId: true, captureId: true, kind: true }
+      select: {
+        id: true,
+        userId: true,
+        orderId: true,
+        captureId: true,
+        kind: true,
+        status: true,
+        servicePackageId: true
+      }
     });
 
     if (payment) {
@@ -123,7 +142,15 @@ const findPaymentByReferences = async (refs: {
   if (refs.orderId) {
     const payment = await prisma.payment.findUnique({
       where: { orderId: refs.orderId },
-      select: { id: true, userId: true, orderId: true, captureId: true, kind: true }
+      select: {
+        id: true,
+        userId: true,
+        orderId: true,
+        captureId: true,
+        kind: true,
+        status: true,
+        servicePackageId: true
+      }
     });
 
     if (payment) {
@@ -135,7 +162,15 @@ const findPaymentByReferences = async (refs: {
     const payment = await prisma.payment.findFirst({
       where: { subscriptionId: refs.subscriptionId },
       orderBy: { createdAt: 'desc' },
-      select: { id: true, userId: true, orderId: true, captureId: true, kind: true }
+      select: {
+        id: true,
+        userId: true,
+        orderId: true,
+        captureId: true,
+        kind: true,
+        status: true,
+        servicePackageId: true
+      }
     });
 
     if (payment) {
@@ -155,6 +190,7 @@ export const syncPaymentFromPayPal = async (params: {
   userId?: string;
   paymentId?: string;
   kind?: PaymentKind;
+  servicePackageId?: string;
 }): Promise<Payment> => {
   const purchaseUnit = getPrimaryPurchaseUnit(params.order);
   const capture = params.capture ?? getPrimaryCaptureFromOrder(params.order);
@@ -179,6 +215,7 @@ export const syncPaymentFromPayPal = async (params: {
   const paymentData = {
     provider: 'PAYPAL' as const,
     kind: params.kind ?? existingPayment?.kind ?? 'CHECKOUT',
+    servicePackageId: params.servicePackageId ?? null,
     userId,
     orderId: params.order.id,
     captureId: capture?.id ?? existingPayment?.captureId ?? null,
@@ -196,6 +233,24 @@ export const syncPaymentFromPayPal = async (params: {
   };
 
   if (existingPayment) {
+    if (
+      existingPayment.status !== 'COMPLETED' &&
+      paymentData.status === 'COMPLETED' &&
+      paymentData.kind === 'TOPUP'
+    ) {
+      const [updatedPayment] = await prisma.$transaction([
+        prisma.payment.update({
+          where: { id: existingPayment.id },
+          data: paymentData
+        }),
+        prisma.user.update({
+          where: { id: userId },
+          data: { balance: { increment: paymentData.amount } }
+        })
+      ]);
+      return updatedPayment;
+    }
+
     return prisma.payment.update({
       where: { id: existingPayment.id },
       data: paymentData
@@ -208,6 +263,17 @@ export const syncPaymentFromPayPal = async (params: {
         ...paymentData
       }
     : paymentData;
+
+  if (paymentData.status === 'COMPLETED' && paymentData.kind === 'TOPUP') {
+    const [createdPayment] = await prisma.$transaction([
+      prisma.payment.create({ data: createData }),
+      prisma.user.update({
+        where: { id: userId },
+        data: { balance: { increment: paymentData.amount } }
+      })
+    ]);
+    return createdPayment;
+  }
 
   return prisma.payment.create({
     data: createData

@@ -43,25 +43,34 @@ export default async function MyPaymentsPage({ params }: Readonly<MyPaymentsPage
   const currentLocale: AppLocale = isLocale(locale) ? locale : defaultLocale;
   const session = await auth();
   const t = await getTranslations('My');
-  const user = requireAuthenticatedUser(session?.user, currentLocale);
+  const user = await prisma.user.findUnique({
+    where: { id: requireAuthenticatedUser(session?.user, currentLocale).id },
+    select: { id: true, balance: true, role: true }
+  });
 
-  if (user.role === 'GUEST') {
+  if (!user || user.role === 'GUEST') {
     redirect({ href: '/my/profile', locale: currentLocale });
   }
 
-  const payments = await prisma.payment.findMany({
-    where: { userId: user.id },
-    select: {
-      id: true,
-      amount: true,
-      capturedAt: true,
-      createdAt: true,
-      currency: true,
-      orderId: true,
-      status: true
-    },
-    orderBy: { createdAt: 'desc' }
-  });
+  const [payments, packages] = await Promise.all([
+    prisma.payment.findMany({
+      where: { userId: user.id },
+      select: {
+        id: true,
+        amount: true,
+        capturedAt: true,
+        createdAt: true,
+        currency: true,
+        orderId: true,
+        status: true
+      },
+      orderBy: { createdAt: 'desc' }
+    }),
+    prisma.servicePackage.findMany({
+      where: { isActive: true },
+      orderBy: { order: 'asc' }
+    })
+  ]);
   type PaymentRecord = (typeof payments)[number];
 
   const displayCurrency = payments[0]?.currency || getPayPalDefaultCurrency();
@@ -88,7 +97,13 @@ export default async function MyPaymentsPage({ params }: Readonly<MyPaymentsPage
         </p>
       </section>
 
-      <PaymentCheckoutCard clientId={clientId} currency={displayCurrency} />
+      <PaymentCheckoutCard
+        clientId={clientId}
+        currency={displayCurrency}
+        balance={user.balance.toString()}
+        packages={packages.map((p: any) => ({ ...p, amount: p.amount.toString() }))}
+        locale={currentLocale}
+      />
 
       <MyPaymentsHistory payments={paymentHistory} />
     </div>

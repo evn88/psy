@@ -15,7 +15,9 @@ const createOrderSchema = z.object({
     .toUpperCase()
     .regex(/^[A-Z]{3}$/, 'Currency must be an ISO 4217 code')
     .optional(),
-  description: z.string().trim().max(127).optional()
+  description: z.string().trim().max(127).optional(),
+  kind: z.enum(['CHECKOUT', 'TOPUP']).optional(),
+  servicePackageId: z.string().optional()
 });
 
 /**
@@ -51,7 +53,9 @@ export async function POST(request: Request) {
       amount: payload.data.amount,
       currency: currency,
       description: payload.data.description,
-      userId: session.user.id
+      userId: session.user.id,
+      kind: payload.data.kind,
+      servicePackageId: payload.data.servicePackageId
     });
 
     return NextResponse.json({

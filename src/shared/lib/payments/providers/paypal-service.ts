@@ -30,7 +30,9 @@ export class PayPalService implements IPaymentService {
     await syncPaymentFromPayPal({
       order,
       userId: params.userId,
-      paymentId
+      paymentId,
+      kind: params.kind,
+      servicePackageId: params.servicePackageId
     });
 
     return {
