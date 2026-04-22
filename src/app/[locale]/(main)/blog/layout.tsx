@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import { BlogHeader } from './_components/blog-header';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 export default function BlogLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -8,6 +9,7 @@ export default function BlogLayout({ children }: { children: React.ReactNode }) 
         <BlogHeader />
       </Suspense>
       {children}
+      <SpeedInsights />
     </>
   );
 }

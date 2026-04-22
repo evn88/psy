@@ -113,8 +113,8 @@ const RootLayout = async ({ children, params }: Readonly<MainLayoutProps>) => {
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Providers defaultTheme={theme}>
             <main>{children}</main>
-            <Analytics />
             <SpeedInsights />
+            <Analytics />
           </Providers>
         </NextIntlClientProvider>
       </body>
