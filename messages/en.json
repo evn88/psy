@@ -275,15 +275,18 @@
       "dashboard": "Dashboard",
       "users": "Users",
       "surveys": "Surveys",
+      "clients": "Clients",
       "schedule": "Schedule",
+      "payments": "Payments",
+      "packages": "Service Packages",
       "blog": "Blog",
       "sendEmail": "Send Email",
       "backups": "Backups",
+      "logs": "System Logs",
       "profile": "Profile",
       "settings": "Settings",
       "backToSite": "Back to Site",
-      "goToMy": "My Account",
-      "clients": "Clients"
+      "goToMy": "My Account"
     },
     "backups": {
       "title": "Backups",
@@ -549,6 +552,7 @@
       "surveys": "Forms & Tests",
       "sessions": "My Sessions",
       "payments": "Payments",
+      "packages": "Service Packages",
       "data": "Files & Documents",
       "profile": "Profile",
       "settings": "Settings",
@@ -562,6 +566,7 @@
       "surveys": "Forms & Tests",
       "sessions": "My Sessions",
       "payments": "Payments",
+      "packages": "Service Packages",
       "data": "Files & Documents",
       "settings": "Settings"
     },

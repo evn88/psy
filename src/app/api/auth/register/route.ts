@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { randomUUID } from 'crypto';
 import { headers } from 'next/headers';
 import { sendVerificationEmail } from '@/shared/lib/email';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 /** Время жизни токена верификации — 24 часа */
 const VERIFICATION_TOKEN_EXPIRY_HOURS = 24;
@@ -23,7 +24,7 @@ const registerSchema = z.object({
  * Регистрирует нового пользователя, сохраняет locale из фронтенда,
  * генерирует verification token и отправляет email для подтверждения.
  */
-export async function POST(req: Request) {
+async function postHandler(req: Request) {
   try {
     const body = await req.json();
     const result = registerSchema.safeParse(body);
@@ -94,3 +95,5 @@ export async function POST(req: Request) {
     );
   }
 }
+
+export const POST = withApiLogging(postHandler);

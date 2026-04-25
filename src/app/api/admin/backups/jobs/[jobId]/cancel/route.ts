@@ -3,6 +3,7 @@ import { getRun } from 'workflow/api';
 import { requireAdminSession } from '@/shared/lib/backup/auth';
 import { normalizeBackupRouteError } from '@/shared/lib/backup/http';
 import { readBackupJobSnapshot, requestBackupJobCancellation } from '@/shared/lib/backup/jobs';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +16,7 @@ type RouteContext = {
 /**
  * Запрашивает остановку активного задания создания резервной копии.
  */
-export async function POST(request: Request, { params }: RouteContext) {
+async function postHandler(request: Request, { params }: RouteContext) {
   try {
     await requireAdminSession({
       route: '/api/admin/backups/jobs/[jobId]/cancel',
@@ -66,3 +67,5 @@ export async function POST(request: Request, { params }: RouteContext) {
     );
   }
 }
+
+export const POST = withApiLogging(postHandler);

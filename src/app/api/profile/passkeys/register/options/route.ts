@@ -4,6 +4,7 @@ import { generateRegistrationOptions } from '@simplewebauthn/server';
 import prisma from '@/shared/lib/prisma';
 import { cookies } from 'next/headers';
 import { Prisma } from '@prisma/client';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 import { rpID, rpName } from '../config';
 
@@ -14,7 +15,7 @@ type UserWithAuthenticators = Prisma.UserGetPayload<{
 /**
  * GET handler для получения опций регистрации Passkey
  */
-export async function GET() {
+async function getHandler() {
   try {
     const session = await auth();
     if (!session?.user?.email) {
@@ -66,3 +67,5 @@ export async function GET() {
     return NextResponse.json({ error: 'Failed to generate options' }, { status: 500 });
   }
 }
+
+export const GET = withApiLogging(getHandler);

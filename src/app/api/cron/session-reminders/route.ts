@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 import { checkAndNotifyWorkflowBudgetThreshold } from '@/shared/lib/workflow-budget';
 
@@ -24,7 +25,7 @@ const isAuthorizedCronRequest = (request: Request): boolean => {
  * GET /api/cron/session-reminders
  * Ежедневно проверяет месячный порог расхода Workflow и отправляет email-алерт ADMIN.
  */
-export async function GET(request: Request) {
+async function getHandler(request: Request) {
   if (!process.env.CRON_SECRET) {
     return NextResponse.json({ message: 'CRON_SECRET is not configured' }, { status: 500 });
   }
@@ -45,3 +46,5 @@ export async function GET(request: Request) {
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const GET = withApiLogging(getHandler);

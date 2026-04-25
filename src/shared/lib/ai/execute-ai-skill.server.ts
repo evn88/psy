@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { generateText } from 'ai';
+import { SystemLogCategory } from '@prisma/client';
 import type { z } from 'zod';
 import { AiSkillNotFoundError, AiSkillPromptOverrideError } from './ai-errors';
 import { assertAiGatewayConfigured, resolveAiLanguageModel } from './ai-registry.server';
@@ -13,6 +14,7 @@ import {
   resolvePromptOverridesForSlot
 } from './ai-skill-factory';
 import { getAiSkill } from './skills';
+import { logExternalServiceError } from '@/shared/lib/system-logs/system-log-service.server';
 
 /**
  * Проверяет, что runtime-override использует только разрешённые slot’ы навыка.
@@ -65,69 +67,87 @@ export const executeAiSkill = async <TResult>(
   skillId: AiSkillId,
   request: AiSkillExecuteRequest
 ) => {
-  const descriptor = AI_SKILL_MANIFEST[skillId];
+  try {
+    const descriptor = AI_SKILL_MANIFEST[skillId];
 
-  if (!descriptor) {
-    throw new AiSkillNotFoundError(`AI-навык "${skillId}" не зарегистрирован.`);
-  }
-
-  const skill = getAiSkill(skillId);
-
-  if (!skill) {
-    throw new AiSkillNotFoundError(`AI-навык "${skillId}" не найден в реестре.`);
-  }
-
-  validatePromptOverrideSlots(skill, request);
-  assertAiGatewayConfigured();
-
-  const input = skill.inputSchema.parse(request.input);
-  const context = parseSkillContext(skill, request);
-
-  const result = await skill.execute({
-    input,
-    context,
-    request,
-    descriptor,
-    generateText: async ({ slot, prompt, system, modelId, ...settings }) => {
-      const slotDescriptor = descriptor.promptSlots[slot];
-
-      if (!slotDescriptor) {
-        throw new AiSkillPromptOverrideError(
-          `Навык "${skillId}" не поддерживает prompt-slot "${slot}".`
-        );
-      }
-
-      const runtimePromptOverride = resolvePromptOverridesForSlot(request.overrides, slot);
-      const resolvedPrompt = composePromptText({
-        baseText: prompt,
-        overrideText: runtimePromptOverride.prompt,
-        appendText: runtimePromptOverride.promptAppend
-      });
-
-      if (!resolvedPrompt) {
-        throw new AiSkillPromptOverrideError(
-          `Для навыка "${skillId}" slot "${slot}" получил пустой prompt после merge.`
-        );
-      }
-
-      const resolvedSystem = composePromptText({
-        baseText: system,
-        overrideText: runtimePromptOverride.system,
-        appendText: runtimePromptOverride.systemAppend
-      });
-      const resolvedModelId =
-        modelId ?? request.modelId ?? slotDescriptor.defaultModelId ?? descriptor.defaultModelId;
-
-      const response = await generateText({
-        model: resolveAiLanguageModel(resolvedModelId),
-        prompt: resolvedPrompt,
-        ...(resolvedSystem ? { system: resolvedSystem } : {}),
-        ...settings
-      });
-
-      return response.text;
+    if (!descriptor) {
+      throw new AiSkillNotFoundError(`AI-навык "${skillId}" не зарегистрирован.`);
     }
-  });
 
-  return skill.outputSchema.parse(result) as TResult;
+    const skill = getAiSkill(skillId);
+
+    if (!skill) {
+      throw new AiSkillNotFoundError(`AI-навык "${skillId}" не найден в реестре.`);
+    }
+
+    validatePromptOverrideSlots(skill, request);
+    assertAiGatewayConfigured();
+
+    const input = skill.inputSchema.parse(request.input);
+    const context = parseSkillContext(skill, request);
+
+    const result = await skill.execute({
+      input,
+      context,
+      request,
+      descriptor,
+      generateText: async ({ slot, prompt, system, modelId, ...settings }) => {
+        const slotDescriptor = descriptor.promptSlots[slot];
+
+        if (!slotDescriptor) {
+          throw new AiSkillPromptOverrideError(
+            `Навык "${skillId}" не поддерживает prompt-slot "${slot}".`
+          );
+        }
+
+        const runtimePromptOverride = resolvePromptOverridesForSlot(request.overrides, slot);
+        const resolvedPrompt = composePromptText({
+          baseText: prompt,
+          overrideText: runtimePromptOverride.prompt,
+          appendText: runtimePromptOverride.promptAppend
+        });
+
+        if (!resolvedPrompt) {
+          throw new AiSkillPromptOverrideError(
+            `Для навыка "${skillId}" slot "${slot}" получил пустой prompt после merge.`
+          );
+        }
+
+        const resolvedSystem = composePromptText({
+          baseText: system,
+          overrideText: runtimePromptOverride.system,
+          appendText: runtimePromptOverride.systemAppend
+        });
+        const resolvedModelId =
+          modelId ?? request.modelId ?? slotDescriptor.defaultModelId ?? descriptor.defaultModelId;
+
+        const response = await generateText({
+          model: resolveAiLanguageModel(resolvedModelId),
+          prompt: resolvedPrompt,
+          ...(resolvedSystem ? { system: resolvedSystem } : {}),
+          ...settings
+        });
+
+        return response.text;
+      }
+    });
+
+    return skill.outputSchema.parse(result) as TResult;
+  } catch (error) {
+    await logExternalServiceError({
+      category: SystemLogCategory.AI,
+      service: 'ai-sdk',
+      operation: `execute-ai-skill:${skillId}`,
+      error,
+      metadata: {
+        skillId,
+        modelId: request.modelId,
+        input: request.input,
+        context: request.context,
+        overrides: request.overrides
+      }
+    });
+
+    throw error;
+  }
 };

@@ -8,6 +8,7 @@ import { AiSkillConfigurationError, AiSkillPromptOverrideError } from '@/shared/
 import { executeAiSkill } from '@/shared/lib/ai/execute-ai-skill.server';
 import type { BlogArticleTranslationResult } from '@/shared/lib/ai/skills/blog-article-translation.contract';
 import prisma from '@/shared/lib/prisma';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 const schema = z.object({
   targetLocale: z.enum(locales).refine(val => val !== defaultLocale, {
@@ -17,7 +18,7 @@ const schema = z.object({
   overrides: aiSkillPromptOverridesSchema.optional()
 });
 
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function postHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
 
@@ -96,3 +97,5 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: 'Не удалось выполнить перевод' }, { status: 500 });
   }
 }
+
+export const POST = withApiLogging(postHandler);

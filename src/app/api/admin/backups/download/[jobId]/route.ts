@@ -7,6 +7,7 @@ import { getBackupBlobStream } from '@/shared/lib/backup/blob';
 import { normalizeBackupRouteError } from '@/shared/lib/backup/http';
 import { readBackupJobSnapshot } from '@/shared/lib/backup/jobs';
 import { consumeBackupDownloadRateLimit } from '@/shared/lib/backup/rate-limit';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +24,7 @@ type RouteContext = {
 /**
  * Отдаёт созданный архив БД на скачивание.
  */
-export async function GET(request: Request, { params }: RouteContext) {
+async function getHandler(request: Request, { params }: RouteContext) {
   try {
     const admin = await requireAdminSession({
       route: '/api/admin/backups/download/[jobId]',
@@ -159,3 +160,5 @@ export async function GET(request: Request, { params }: RouteContext) {
     );
   }
 }
+
+export const GET = withApiLogging(getHandler);

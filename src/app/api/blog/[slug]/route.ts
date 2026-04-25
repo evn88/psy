@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { defaultLocale } from '@/i18n/config';
 import prisma from '@/shared/lib/prisma';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
-export async function GET(req: Request, { params }: { params: Promise<{ slug: string }> }) {
+async function getHandler(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const { searchParams } = new URL(req.url);
   const locale = searchParams.get('locale') ?? defaultLocale;
@@ -28,3 +29,5 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
 
   return NextResponse.json({ ...post, activeTranslation: translation });
 }
+
+export const GET = withApiLogging(getHandler);

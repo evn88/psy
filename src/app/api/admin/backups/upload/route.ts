@@ -11,6 +11,7 @@ import { deleteBackupBlobs } from '@/shared/lib/backup/blob';
 import { getBackupAuditClientContext, logBackupAuditEvent } from '@/shared/lib/backup/audit';
 import { BackupAccessError, requireAdminSession } from '@/shared/lib/backup/auth';
 import { type BackupRouteErrorCode, normalizeBackupRouteError } from '@/shared/lib/backup/http';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 export const dynamic = 'force-dynamic';
 
@@ -176,7 +177,7 @@ const validateUploadRequest = (
 /**
  * Генерирует client token для загрузки архивов восстановления напрямую в private blob.
  */
-export async function POST(request: Request) {
+async function postHandler(request: Request) {
   try {
     const admin = await requireAdminSession({
       route: '/api/admin/backups/upload',
@@ -264,3 +265,5 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export const POST = withApiLogging(postHandler);

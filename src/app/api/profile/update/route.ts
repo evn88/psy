@@ -4,6 +4,7 @@ import prisma from '@/shared/lib/prisma';
 import { optionalGoogleCalendarSyncUrlSchema } from '@/shared/lib/safe-url';
 import { isValidTimeZone } from '@/shared/lib/timezone';
 import { z } from 'zod';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 const updateProfileSchema = z.object({
   name: z.string().trim().min(2).max(50).optional(),
@@ -31,7 +32,7 @@ const profileResponseSelect = {
   blogNotifications: true
 } as const;
 
-export async function PUT(req: Request) {
+async function putHandler(req: Request) {
   try {
     const session = await auth();
     if (!session?.user?.email) {
@@ -98,3 +99,5 @@ export async function PUT(req: Request) {
     );
   }
 }
+
+export const PUT = withApiLogging(putHandler);

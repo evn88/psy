@@ -4,12 +4,13 @@ import { NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
 import prisma from '@/shared/lib/prisma';
 import { sendAccountDeletionRequestEmail } from '@/shared/lib/email';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 /**
  * POST handler — отправляет письмо с подтверждением удаления аккаунта.
  * Запрещено для Admin-аккаунтов и пользователей с публикациями блога.
  */
-export async function POST() {
+async function postHandler() {
   try {
     const session = await auth();
     if (!session?.user?.email) {
@@ -64,3 +65,5 @@ export async function POST() {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const POST = withApiLogging(postHandler);

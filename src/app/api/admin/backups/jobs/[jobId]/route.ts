@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { BackupAccessError, requireAdminSession } from '@/shared/lib/backup/auth';
 import { readBackupJobSnapshot } from '@/shared/lib/backup/jobs';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +14,7 @@ type RouteContext = {
 /**
  * Возвращает текущее состояние backup/restore задания.
  */
-export async function GET(_request: Request, { params }: RouteContext) {
+async function getHandler(_request: Request, { params }: RouteContext) {
   try {
     await requireAdminSession();
 
@@ -33,3 +34,5 @@ export async function GET(_request: Request, { params }: RouteContext) {
     return NextResponse.json({ error: message }, { status });
   }
 }
+
+export const GET = withApiLogging(getHandler);

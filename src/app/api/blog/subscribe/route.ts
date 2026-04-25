@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/shared/lib/prisma';
 import { z } from 'zod';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 const schema = z.object({ email: z.string().email() });
 
-export async function POST(req: Request) {
+async function postHandler(req: Request) {
   const body = await req.json();
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
@@ -22,3 +23,5 @@ export async function POST(req: Request) {
 
   return NextResponse.json({ success: true });
 }
+
+export const POST = withApiLogging(postHandler);

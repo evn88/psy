@@ -3,6 +3,7 @@ import { auth } from '@/auth';
 import prisma from '@/shared/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 const PASSWORD_MIN_LENGTH = 6;
 
@@ -15,7 +16,7 @@ const changePasswordSchema = z.object({
  * API для смены пароля пользователя.
  * Доступен только для пользователей, зарегистрированных через credentials (с паролем).
  */
-export async function POST(request: Request) {
+async function postHandler(request: Request) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -63,3 +64,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const POST = withApiLogging(postHandler);

@@ -12,6 +12,7 @@ import {
   MAX_SESSION_REMINDER_MINUTES,
   MIN_SESSION_REMINDER_MINUTES
 } from '@/shared/lib/session-reminders';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 const eventUserSelect = {
   id: true,
@@ -63,7 +64,7 @@ const normalizeCancelReason = (cancelReason?: string | null): string | null => {
  * PATCH /api/admin/events/[id]
  * Обновление события админом
  */
-export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+async function patchHandler(req: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   try {
     const session = await auth();
@@ -299,7 +300,7 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
  * DELETE /api/admin/events/[id]
  * Удаление события админом
  */
-export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
+async function deleteHandler(req: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   try {
     const session = await auth();
@@ -351,3 +352,6 @@ export async function DELETE(req: Request, props: { params: Promise<{ id: string
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const PATCH = withApiLogging(patchHandler);
+export const DELETE = withApiLogging(deleteHandler);

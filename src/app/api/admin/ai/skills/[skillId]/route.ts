@@ -9,6 +9,7 @@ import {
 } from '@/shared/lib/ai/ai-errors';
 import { executeAiSkill } from '@/shared/lib/ai/execute-ai-skill.server';
 import { aiSkillIdSchema } from '@/shared/lib/ai/ai-skill-manifest';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 /**
  * Проверяет, что текущий пользователь является администратором.
@@ -20,7 +21,7 @@ const isAdminRequest = async () => {
   return Boolean(session?.user && (session.user as { role?: string }).role === 'ADMIN');
 };
 
-export async function POST(req: Request, { params }: { params: Promise<{ skillId: string }> }) {
+async function postHandler(req: Request, { params }: { params: Promise<{ skillId: string }> }) {
   if (!(await isAdminRequest())) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -56,3 +57,5 @@ export async function POST(req: Request, { params }: { params: Promise<{ skillId
     return NextResponse.json({ error: 'Не удалось выполнить AI-навык' }, { status: 500 });
   }
 }
+
+export const POST = withApiLogging(postHandler);

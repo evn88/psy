@@ -7,9 +7,11 @@ import {
   Calendar,
   ChevronsUpDown,
   ClipboardList,
+  CreditCard,
   Home,
   LayoutDashboard,
   LogOut,
+  ScrollText,
   Send,
   Settings,
   ShieldEllipsis,
@@ -99,6 +101,18 @@ export function AppSidebar({ user, unreadSurveysCount = 0, ...props }: AppSideba
       isActive: pathname.startsWith('/admin/schedule')
     },
     {
+      title: tItems('payments'),
+      url: '/admin/payments',
+      icon: CreditCard,
+      isActive: pathname === '/admin/payments'
+    },
+    {
+      title: tItems('packages'),
+      url: '/admin/payments/packages',
+      icon: CreditCard, // We can reuse icon or use another later
+      isActive: pathname.startsWith('/admin/payments/packages')
+    },
+    {
       title: tItems('blog'),
       url: '/admin/blog',
       icon: BookOpen,
@@ -115,6 +129,12 @@ export function AppSidebar({ user, unreadSurveysCount = 0, ...props }: AppSideba
       url: '/admin/backups',
       icon: ShieldEllipsis,
       isActive: pathname.startsWith('/admin/backups')
+    },
+    {
+      title: tItems('logs'),
+      url: '/admin/logs',
+      icon: ScrollText,
+      isActive: pathname.startsWith('/admin/logs')
     },
     {
       title: tItems('profile'),

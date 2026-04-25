@@ -13,6 +13,19 @@ enum Role {
   GUEST
 }
 
+enum PaymentProvider {
+  PAYPAL
+}
+
+enum PaymentKind {
+  CHECKOUT
+  TOPUP
+  SUBSCRIPTION
+  SUBSCRIPTION_RENEWAL
+  REFUND
+  DISPUTE
+}
+
 /// Статус бронирования события
 enum EventStatus {
   SCHEDULED
@@ -92,12 +105,16 @@ model User {
 
   // Настройки пользователя/администратора
   notificationSettings Json?
+  systemLogs           SystemLogEntry[]
 
   // Система клиентов
   clientProfile ClientProfile?
   consents      ClientConsent[]
   documents     ClientDocument[] @relation("UserDocuments")
   uploadedDocs  ClientDocument[] @relation("UploadedDocuments")
+  payments      Payment[]
+
+  balance Decimal @db.Decimal(12, 2) @default(0)
 }
 
 /// Подписка на Web Push уведомления (PWA)
@@ -284,6 +301,18 @@ enum SystemAlertType {
   WORKFLOW_STEPS_THRESHOLD
 }
 
+enum SystemLogCategory {
+  API
+  AI
+  PAYMENT
+}
+
+enum SystemLogLevel {
+  INFO
+  WARN
+  ERROR
+}
+
 /// Статья блога
 model BlogPost {
   id          String         @id @default(cuid())
@@ -407,6 +436,54 @@ model SystemAlert {
   @@unique([type, periodKey])
 }
 
+model SystemLogEntry {
+  id        String            @id @default(cuid())
+  category  SystemLogCategory
+  level     SystemLogLevel
+  source    String
+  operation String?
+  service   String?
+
+  method     String?
+  path       String?
+  statusCode Int?
+  durationMs Int?
+
+  initiatorIp String?
+  userAgent   String?
+  requestId   String?
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  requestBody  Json?
+  responseBody Json?
+  errorName    String?
+  errorMessage String?
+  errorStack   String?
+  errorDetails Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([category, createdAt(sort: Desc)])
+  @@index([level, createdAt(sort: Desc)])
+  @@index([statusCode])
+  @@index([path])
+  @@index([initiatorIp])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+}
+
+model SystemLogSettings {
+  id                    String   @id @default("default")
+  apiRequestsEnabled    Boolean  @default(true)
+  aiErrorsEnabled       Boolean  @default(true)
+  paymentErrorsEnabled  Boolean  @default(true)
+  retentionDays         Int      @default(30)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
 // ============================================================
 // Клиентские данные и опросники (Intake)
 // ============================================================
@@ -465,4 +542,118 @@ model ClientDocument {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ============================================================
+// Пакеты услуг (Service Packages)
+// ============================================================
+
+model ServicePackage {
+  id          String   @id @default(cuid())
+  title       Json
+  description Json?
+  amount      Decimal  @db.Decimal(12, 2)
+  currency    String   @default("EUR")
+  coverImage  String?
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  payments Payment[]
+}
+
+model Payment {
+  id       String          @id @default(cuid())
+  provider PaymentProvider @default(PAYPAL)
+  kind     PaymentKind     @default(CHECKOUT)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  orderId        String  @unique
+  captureId      String? @unique
+  subscriptionId String?
+  invoiceId      String?
+
+  servicePackageId String?
+  servicePackage   ServicePackage? @relation(fields: [servicePackageId], references: [id], onDelete: SetNull)
+
+  amount   Decimal @db.Decimal(12, 2)
+  currency String
+  status   String
+
+  description  String?
+  payerEmail   String?
+  rawOrder     Json?
+  rawCapture   Json?
+  capturedAt   DateTime?
+  lastSyncedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events   PaymentEvent[]
+  disputes PaymentDispute[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status])
+  @@index([subscriptionId])
+}
+
+model PaymentEvent {
+  id       String          @id @default(cuid())
+  provider PaymentProvider @default(PAYPAL)
+
+  paymentId String?
+  payment   Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  providerEventId String @unique
+  eventType       String
+  resourceType    String?
+  resourceId      String?
+  orderId         String?
+  captureId       String?
+  subscriptionId  String?
+  disputeId       String?
+  status          String?
+
+  amount   Decimal? @db.Decimal(12, 2)
+  currency String?
+
+  occurredAt  DateTime?
+  payload     Json
+  isProcessed Boolean  @default(false)
+  processedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([paymentId, createdAt(sort: Desc)])
+  @@index([orderId])
+  @@index([captureId])
+  @@index([subscriptionId])
+  @@index([disputeId])
+}
+
+model PaymentDispute {
+  id String @id @default(cuid())
+
+  paymentId String?
+  payment   Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  disputeId String @unique
+  stage     String?
+  status    String
+  reason    String?
+
+  amount   Decimal? @db.Decimal(12, 2)
+  currency String?
+
+  responseDueAt DateTime?
+  payload        Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([paymentId])
 }

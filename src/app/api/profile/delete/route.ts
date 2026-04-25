@@ -2,6 +2,7 @@ import prisma from '@/shared/lib/prisma';
 import { sendAccountDeletedAdminEmail, sendAccountDeletedUserEmail } from '@/shared/lib/email';
 import { defaultLocale, isLocale } from '@/i18n/config';
 import { NextRequest, NextResponse } from 'next/server';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 const DELETE_ACCOUNT_IDENTIFIER_PREFIX = 'delete-account:';
 
@@ -84,7 +85,7 @@ const getBaseUrl = (): string => {
  * GET /api/profile/delete
  * Не выполняет удаление, а только переводит пользователя на confirm-страницу.
  */
-export async function GET(req: NextRequest) {
+async function getHandler(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const token = searchParams.get('token');
   const baseUrl = getBaseUrl();
@@ -122,7 +123,7 @@ export async function GET(req: NextRequest) {
  * POST /api/profile/delete
  * Удаляет аккаунт только после явного подтверждения на confirm-странице.
  */
-export async function POST(req: NextRequest) {
+async function postHandler(req: NextRequest) {
   const formData = await req.formData();
   const tokenValue = formData.get('token');
   const localeValue = formData.get('locale');
@@ -234,3 +235,6 @@ export async function POST(req: NextRequest) {
   response.cookies.set('__Secure-authjs.session-token', '', cookieOptions);
   return response;
 }
+
+export const GET = withApiLogging(getHandler);
+export const POST = withApiLogging(postHandler);

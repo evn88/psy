@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/shared/lib/prisma';
 import { decryptBuffer } from '@/shared/lib/crypto';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -16,7 +17,7 @@ async function resolveAccess(userId: string) {
 }
 
 /** GET /api/documents/[id] — скачивание и расшифровка файла */
-export async function GET(req: NextRequest, { params }: RouteContext) {
+async function getHandler(req: NextRequest, { params }: RouteContext) {
   try {
     const session = await auth();
     if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -60,7 +61,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
 }
 
 /** DELETE /api/documents/[id] — удаление файла из Blob и БД */
-export async function DELETE(req: NextRequest, { params }: RouteContext) {
+async function deleteHandler(req: NextRequest, { params }: RouteContext) {
   try {
     const session = await auth();
     if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -86,7 +87,7 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
 }
 
 /** PATCH /api/documents/[id] — переименование файла */
-export async function PATCH(req: NextRequest, { params }: RouteContext) {
+async function patchHandler(req: NextRequest, { params }: RouteContext) {
   try {
     const session = await auth();
     if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -120,3 +121,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
+
+export const GET = withApiLogging(getHandler);
+export const PATCH = withApiLogging(patchHandler);
+export const DELETE = withApiLogging(deleteHandler);

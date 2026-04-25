@@ -1,8 +1,9 @@
 import { del } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
-export async function DELETE(req: Request) {
+async function deleteHandler(req: Request) {
   const session = await auth();
   if (!session?.user || (session.user as { role?: string }).role !== 'ADMIN') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -23,3 +24,5 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: 'Не удалось удалить файл' }, { status: 500 });
   }
 }
+
+export const DELETE = withApiLogging(deleteHandler);
