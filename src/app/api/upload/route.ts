@@ -2,8 +2,9 @@ import { put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { MAX_BLOG_IMAGE_SIZE_BYTES } from '@/configs/files';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
-export async function POST(req: Request) {
+async function postHandler(req: Request) {
   const session = await auth();
   if (!session?.user || (session.user as { role?: string }).role !== 'ADMIN') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -31,3 +32,5 @@ export async function POST(req: Request) {
 
   return NextResponse.json({ url: blob.url });
 }
+
+export const POST = withApiLogging(postHandler);

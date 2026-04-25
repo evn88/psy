@@ -6,12 +6,13 @@ import { acquireBlogEditorLock } from '@/shared/lib/blog-editor-lock-store';
 import { sendBlogNotificationEmail } from '@/shared/lib/email';
 import { publishToTelegramChannel, publishToTelegraph } from '@/shared/lib/social-publish';
 import type { BlogPostTranslation } from '@prisma/client';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 const publishSchema = z.object({
   editorInstanceId: z.string().min(1).optional()
 });
 
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function postHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user || (session.user as { role?: string }).role !== 'ADMIN') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -111,3 +112,5 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   return NextResponse.json({ success: true, publishedAt: published.publishedAt });
 }
+
+export const POST = withApiLogging(postHandler);

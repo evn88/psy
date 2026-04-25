@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/shared/lib/prisma';
 import { auth } from '@/auth';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 /**
  * API роут для отвязки Google аккаунта от профиля пользователя.
  */
-export async function DELETE() {
+async function deleteHandler() {
   try {
     const session = await auth();
     if (!session?.user?.email) {
@@ -29,3 +30,5 @@ export async function DELETE() {
     );
   }
 }
+
+export const DELETE = withApiLogging(deleteHandler);

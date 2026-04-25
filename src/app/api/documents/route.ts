@@ -4,8 +4,9 @@ import { auth } from '@/auth';
 import prisma from '@/shared/lib/prisma';
 import { encryptBuffer } from '@/shared/lib/crypto';
 import { ALLOWED_DOCUMENT_TYPES, MAX_DOCUMENT_SIZE_BYTES } from '@/configs/files';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
-export async function POST(req: NextRequest) {
+async function postHandler(req: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -87,3 +88,5 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export const POST = withApiLogging(postHandler);

@@ -5,6 +5,7 @@ import { z } from 'zod';
 import type { Prisma } from '@prisma/client';
 import type { ParsedEvent } from '@/shared/lib/ical-parser';
 import { doesDateRangeOverlap, isValidDateRange } from '@/shared/lib/event-utils';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 const getEventsSchema = z.object({
   start: z.string().datetime().optional(),
@@ -15,7 +16,7 @@ const getEventsSchema = z.object({
  * GET /api/user/events
  * Получение свободных слотов и событий текущего пользователя
  */
-export async function GET(req: Request) {
+async function getHandler(req: Request) {
   try {
     const session = await auth();
     if (!session || !session.user?.id) {
@@ -127,3 +128,5 @@ export async function GET(req: Request) {
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const GET = withApiLogging(getHandler);

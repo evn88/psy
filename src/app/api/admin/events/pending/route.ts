@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 import { auth } from '@/auth';
 import prisma from '@/shared/lib/prisma';
@@ -7,7 +8,7 @@ import prisma from '@/shared/lib/prisma';
  * GET /api/admin/events/pending
  * Возвращает список будущих запросов на подтверждение для боковой панели админа.
  */
-export async function GET() {
+async function getHandler() {
   try {
     const session = await auth();
 
@@ -45,3 +46,5 @@ export async function GET() {
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const GET = withApiLogging(getHandler);

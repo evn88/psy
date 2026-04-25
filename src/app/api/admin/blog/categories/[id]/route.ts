@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/shared/lib/prisma';
 import { z } from 'zod';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 const updateSchema = z.object({
   nameRu: z.string().min(1).optional(),
@@ -15,7 +16,7 @@ async function requireAdmin() {
   return session;
 }
 
-export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function putHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await requireAdmin())) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -47,7 +48,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   return NextResponse.json(updated);
 }
 
-export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function deleteHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await requireAdmin())) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -55,3 +56,6 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   await prisma.blogCategory.delete({ where: { id } });
   return NextResponse.json({ success: true });
 }
+
+export const PUT = withApiLogging(putHandler);
+export const DELETE = withApiLogging(deleteHandler);

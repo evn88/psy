@@ -3,6 +3,7 @@ import { AdminMessageTemplate } from '@/components/email-templates/admin-message
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/shared/lib/prisma';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -26,7 +27,7 @@ type ResendBatchResponseItem = {
 
 type ResendBatchResponse = ResendBatchResponseItem[] | { data?: ResendBatchResponseItem[] };
 
-export async function POST(request: Request) {
+async function postHandler(request: Request) {
   try {
     const session = await auth();
     if (!session || session.user.role !== 'ADMIN') {
@@ -139,3 +140,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
+
+export const POST = withApiLogging(postHandler);

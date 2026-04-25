@@ -4,11 +4,12 @@ import { verifyRegistrationResponse } from '@simplewebauthn/server';
 import prisma from '@/shared/lib/prisma';
 import { cookies } from 'next/headers';
 import { getExpectedOrigin, getRPID } from '../config';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 /**
  * POST handler для проверки и сохранения Passkey
  */
-export async function POST(req: Request) {
+async function postHandler(req: Request) {
   try {
     const session = await auth();
     if (!session?.user?.email) {
@@ -111,3 +112,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const POST = withApiLogging(postHandler);

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getPaymentService } from '@/shared/lib/payments/factory';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 interface CaptureRouteProps {
   params: Promise<{ orderId: string }>;
@@ -10,7 +11,7 @@ interface CaptureRouteProps {
  * POST /api/payments/orders/[orderId]/capture
  * Подтверждает (захватывает средства) заказ на стороне активного платежного провайдера.
  */
-export async function POST(request: Request, { params }: Readonly<CaptureRouteProps>) {
+async function postHandler(request: Request, { params }: Readonly<CaptureRouteProps>) {
   try {
     const session = await auth();
 
@@ -29,3 +30,5 @@ export async function POST(request: Request, { params }: Readonly<CaptureRoutePr
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const POST = withApiLogging(postHandler);

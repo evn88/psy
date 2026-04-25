@@ -105,6 +105,7 @@ model User {
 
   // Настройки пользователя/администратора
   notificationSettings Json?
+  systemLogs           SystemLogEntry[]
 
   // Система клиентов
   clientProfile ClientProfile?
@@ -300,6 +301,18 @@ enum SystemAlertType {
   WORKFLOW_STEPS_THRESHOLD
 }
 
+enum SystemLogCategory {
+  API
+  AI
+  PAYMENT
+}
+
+enum SystemLogLevel {
+  INFO
+  WARN
+  ERROR
+}
+
 /// Статья блога
 model BlogPost {
   id          String         @id @default(cuid())
@@ -421,6 +434,54 @@ model SystemAlert {
   updatedAt DateTime        @updatedAt
 
   @@unique([type, periodKey])
+}
+
+model SystemLogEntry {
+  id        String            @id @default(cuid())
+  category  SystemLogCategory
+  level     SystemLogLevel
+  source    String
+  operation String?
+  service   String?
+
+  method     String?
+  path       String?
+  statusCode Int?
+  durationMs Int?
+
+  initiatorIp String?
+  userAgent   String?
+  requestId   String?
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  requestBody  Json?
+  responseBody Json?
+  errorName    String?
+  errorMessage String?
+  errorStack   String?
+  errorDetails Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([category, createdAt(sort: Desc)])
+  @@index([level, createdAt(sort: Desc)])
+  @@index([statusCode])
+  @@index([path])
+  @@index([initiatorIp])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+}
+
+model SystemLogSettings {
+  id                    String   @id @default("default")
+  apiRequestsEnabled    Boolean  @default(true)
+  aiErrorsEnabled       Boolean  @default(true)
+  paymentErrorsEnabled  Boolean  @default(true)
+  retentionDays         Int      @default(30)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }
 
 // ============================================================

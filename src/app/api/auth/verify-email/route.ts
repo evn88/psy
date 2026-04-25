@@ -1,6 +1,7 @@
 import prisma from '@/shared/lib/prisma';
 import { defaultLocale, isLocale } from '@/i18n/config';
 import { NextResponse } from 'next/server';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 /**
  * Возвращает базовый URL приложения.
@@ -74,7 +75,7 @@ const getTokenFromFormData = async (request: Request): Promise<string | null> =>
  * GET /api/auth/verify-email?token=xxx
  * Не меняет состояние аккаунта, а только перенаправляет на confirm-страницу.
  */
-export async function GET(request: Request) {
+async function getHandler(request: Request) {
   const { searchParams } = new URL(request.url);
   const token = searchParams.get('token');
   const baseUrl = getBaseUrl(request);
@@ -108,7 +109,7 @@ export async function GET(request: Request) {
  * POST /api/auth/verify-email
  * Подтверждает email пользователя по one-time токену из формы.
  */
-export async function POST(request: Request) {
+async function postHandler(request: Request) {
   const baseUrl = getBaseUrl(request);
   const token = await getTokenFromFormData(request);
 
@@ -159,3 +160,6 @@ export async function POST(request: Request) {
     return authRedirect(baseUrl, defaultLocale, 'error=VerificationFailed');
   }
 }
+
+export const GET = withApiLogging(getHandler);
+export const POST = withApiLogging(postHandler);

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/shared/lib/prisma';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 const MAX_VERSIONS = 5;
 
@@ -11,7 +12,7 @@ async function requireAdmin() {
 }
 
 // GET /api/admin/blog/[id]/versions — получить последние 5 версий
-export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function getHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await requireAdmin())) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -27,7 +28,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 // POST /api/admin/blog/[id]/versions — создать снапшот (только при ручном сохранении)
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function postHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await requireAdmin())) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -60,3 +61,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   return NextResponse.json(version, { status: 201 });
 }
+
+export const GET = withApiLogging(getHandler);
+export const POST = withApiLogging(postHandler);

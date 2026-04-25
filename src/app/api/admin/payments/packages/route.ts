@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import prisma from '@/shared/lib/prisma';
 import { z } from 'zod';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 const createSchema = z.object({
   title: z.any(), // Record<string, string> expected
@@ -14,7 +15,7 @@ const createSchema = z.object({
   order: z.number().default(0)
 });
 
-export async function GET(req: Request) {
+async function getHandler(req: Request) {
   const session = await auth();
   if (!session?.user || (session.user as { role?: string }).role !== 'ADMIN') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -27,7 +28,7 @@ export async function GET(req: Request) {
   return NextResponse.json({ packages });
 }
 
-export async function POST(req: Request) {
+async function postHandler(req: Request) {
   const session = await auth();
   if (!session?.user || (session.user as { role?: string }).role !== 'ADMIN') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -61,3 +62,6 @@ export async function POST(req: Request) {
 
   return NextResponse.json(pkg, { status: 201 });
 }
+
+export const GET = withApiLogging(getHandler);
+export const POST = withApiLogging(postHandler);

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { auth } from '@/auth';
 import { getPaymentService, getActivePaymentCurrency } from '@/shared/lib/payments/factory';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 const createOrderSchema = z.object({
   amount: z
@@ -24,7 +25,7 @@ const createOrderSchema = z.object({
  * POST /api/payments/orders
  * Создаёт order в активной платежной системе (через фабрику).
  */
-export async function POST(request: Request) {
+async function postHandler(request: Request) {
   try {
     const session = await auth();
 
@@ -67,3 +68,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const POST = withApiLogging(postHandler);

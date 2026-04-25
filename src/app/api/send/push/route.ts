@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/shared/lib/prisma';
 import { sendPushToMany } from '@/shared/lib/push';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
-export async function POST(request: Request) {
+async function postHandler(request: Request) {
   const session = await auth();
   if (!session?.user || session.user.role !== 'ADMIN') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -56,3 +57,5 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ results: enriched });
 }
+
+export const POST = withApiLogging(postHandler);

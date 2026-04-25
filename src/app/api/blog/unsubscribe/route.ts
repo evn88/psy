@@ -1,6 +1,7 @@
 import prisma from '@/shared/lib/prisma';
 import { defaultLocale, isLocale } from '@/i18n/config';
 import { NextResponse } from 'next/server';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 /**
  * Возвращает базовый URL приложения.
@@ -56,7 +57,7 @@ const unsubscribeConfirmRedirect = (
  * GET /api/blog/unsubscribe
  * Не меняет состояние, а только переводит пользователя на confirm-страницу.
  */
-export async function GET(req: Request) {
+async function getHandler(req: Request) {
   const { searchParams } = new URL(req.url);
   const token = searchParams.get('token');
   const locale = resolveLocale(searchParams.get('locale'));
@@ -81,7 +82,7 @@ export async function GET(req: Request) {
  * POST /api/blog/unsubscribe
  * Подтверждает отписку от уведомлений блога по токену из формы.
  */
-export async function POST(req: Request) {
+async function postHandler(req: Request) {
   const formData = await req.formData();
   const tokenValue = formData.get('token');
   const localeValue = formData.get('locale');
@@ -106,3 +107,6 @@ export async function POST(req: Request) {
 
   return blogRedirect(baseUrl, locale, 'unsubscribed=true');
 }
+
+export const GET = withApiLogging(getHandler);
+export const POST = withApiLogging(postHandler);

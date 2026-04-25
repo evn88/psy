@@ -147,7 +147,7 @@ npm run dev
 | `VAPID_PRIVATE_KEY`                     | Приватный ключ VAPID для push-уведомлений (держать в секрете)                       |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY`          | Публичный ключ VAPID для push-уведомлений (безопасно открыть)                       |
 | `VAPID_SUBJECT`                         | VAPID subject URI (например, `mailto:your@email.com`) для идентификации уведомлений |
-| `CRON_SECRET`                           | Секрет для защиты ежедневного Vercel Cron эндпоинта `/api/cron/session-reminders`   |
+| `CRON_SECRET`                           | Секрет для защиты ежедневных Vercel Cron эндпоинтов `/api/cron/session-reminders` и `/api/cron/system-logs-cleanup` |
 | `WORKFLOW_MONTHLY_STEP_LIMIT`           | Опциональный месячный бюджет Workflow Steps для алертов (по умолчанию: `50000`)     |
 | `WORKFLOW_ALERT_THRESHOLD_PERCENT`      | Опциональный порог предупреждения в процентах (по умолчанию: `80`)                  |
 | `WORKFLOW_ESTIMATED_STEPS_PER_REMINDER` | Опциональная оценка steps на один запуск workflow-напоминания (по умолчанию: `3`)   |

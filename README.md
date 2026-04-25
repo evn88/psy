@@ -144,7 +144,7 @@ npm run dev
 | `VAPID_PRIVATE_KEY`                     | VAPID private key for push notifications (keep secret)                                 |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY`          | VAPID public key for push notifications (safe to expose)                               |
 | `VAPID_SUBJECT`                         | VAPID subject URI (e.g., `mailto:your@email.com`) for push notification identification |
-| `CRON_SECRET`                           | Secret token for securing daily Vercel Cron endpoint `/api/cron/session-reminders`     |
+| `CRON_SECRET`                           | Secret token for securing daily Vercel Cron endpoints `/api/cron/session-reminders` and `/api/cron/system-logs-cleanup` |
 | `WORKFLOW_MONTHLY_STEP_LIMIT`           | Optional monthly workflow steps budget for admin alerts (default: `50000`)             |
 | `WORKFLOW_ALERT_THRESHOLD_PERCENT`      | Optional warning threshold in percent (default: `80`)                                  |
 | `WORKFLOW_ESTIMATED_STEPS_PER_REMINDER` | Optional estimated steps per one reminder workflow run (default: `3`)                  |

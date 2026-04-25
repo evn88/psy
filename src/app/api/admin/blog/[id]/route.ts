@@ -6,6 +6,7 @@ import { acquireBlogEditorLock } from '@/shared/lib/blog-editor-lock-store';
 import { calculateReadingTime } from '@/shared/lib/blog-utils';
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 const updateSchema = z.object({
   slug: z.string().min(1).optional(),
@@ -34,7 +35,7 @@ async function requireAdmin() {
   return session;
 }
 
-export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function getHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await requireAdmin())) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -56,7 +57,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   return NextResponse.json(post);
 }
 
-export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function putHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireAdmin();
 
   if (!session) {
@@ -168,7 +169,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   return NextResponse.json(updated);
 }
 
-export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function deleteHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await requireAdmin())) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -180,3 +181,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
   return NextResponse.json({ success: true });
 }
+
+export const GET = withApiLogging(getHandler);
+export const PUT = withApiLogging(putHandler);
+export const DELETE = withApiLogging(deleteHandler);

@@ -3,6 +3,7 @@ import prisma from '@/shared/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { auth } from '@/auth';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 import { Role } from '@prisma/client';
 
@@ -13,7 +14,7 @@ const createUserSchema = z.object({
   role: z.nativeEnum(Role)
 });
 
-export async function POST(req: Request) {
+async function postHandler(req: Request) {
   try {
     const session = await auth();
     if (!session || session.user.role !== 'ADMIN') {
@@ -64,7 +65,7 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET(req: Request) {
+async function getHandler(req: Request) {
   try {
     const session = await auth();
     if (!session || session.user.role !== 'ADMIN') {
@@ -86,3 +87,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const GET = withApiLogging(getHandler);
+export const POST = withApiLogging(postHandler);

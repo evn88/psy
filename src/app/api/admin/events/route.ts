@@ -13,6 +13,7 @@ import {
   MAX_SESSION_REMINDER_MINUTES,
   MIN_SESSION_REMINDER_MINUTES
 } from '@/shared/lib/session-reminders';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 const getEventsSchema = z.object({
   start: z.string().datetime().optional(),
@@ -41,7 +42,7 @@ type EventConflict = {
  * GET /api/admin/events
  * Получение всех событий для календаря админа с опциональной фильтрацией по датам
  */
-export async function GET(req: Request) {
+async function getHandler(req: Request) {
   try {
     const session = await auth();
     if (!session || session.user?.role !== 'ADMIN') {
@@ -131,7 +132,7 @@ const createEventSchema = z.object({
  * POST /api/admin/events
  * Создание нового события админом
  */
-export async function POST(req: Request) {
+async function postHandler(req: Request) {
   try {
     const session = await auth();
     if (!session || session.user?.role !== 'ADMIN') {
@@ -236,3 +237,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const GET = withApiLogging(getHandler);
+export const POST = withApiLogging(postHandler);

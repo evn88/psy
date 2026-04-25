@@ -2,12 +2,13 @@ import { NextResponse } from 'next/server';
 import { verifyPayPalWebhookSignature } from '@/shared/lib/paypal/client';
 import { processPayPalWebhookEvent } from '@/shared/lib/paypal/service';
 import type { PayPalWebhookEvent } from '@/shared/lib/paypal/types';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 /**
  * POST /api/paypal/webhooks
  * Принимает PayPal webhook, проверяет подпись и синхронизирует локальные сущности.
  */
-export async function POST(request: Request) {
+async function postHandler(request: Request) {
   try {
     const event = (await request.json()) as PayPalWebhookEvent;
     const isVerified = await verifyPayPalWebhookSignature({
@@ -27,3 +28,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const POST = withApiLogging(postHandler);

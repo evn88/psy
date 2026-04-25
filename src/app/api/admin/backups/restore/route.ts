@@ -14,6 +14,7 @@ import {
   writeBackupJobSnapshot
 } from '@/shared/lib/backup/jobs';
 import { startRestoreSiteBackupWorkflow } from '@/shared/lib/backup/workflow';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +39,7 @@ const isAllowedArchivePathname = (pathname: string): boolean => {
 /**
  * Запускает durable workflow восстановления БД из архива.
  */
-export async function POST(request: Request) {
+async function postHandler(request: Request) {
   try {
     await requireAdminSession({
       route: '/api/admin/backups/restore',
@@ -103,3 +104,5 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export const POST = withApiLogging(postHandler);

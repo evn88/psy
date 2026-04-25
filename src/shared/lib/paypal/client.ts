@@ -1,10 +1,12 @@
 import { randomUUID } from 'node:crypto';
+import { SystemLogCategory } from '@prisma/client';
 import {
   getPayPalBaseUrl,
   getPayPalClientId,
   getPayPalClientSecret,
   getPayPalWebhookId
 } from './config';
+import { logExternalServiceError } from '@/shared/lib/system-logs/system-log-service.server';
 import {
   type PayPalCapture,
   PayPalApiError,
@@ -54,17 +56,32 @@ export const getPayPalAccessToken = async (): Promise<string> => {
     'utf8'
   ).toString('base64');
 
-  const response = await fetch(`${getPayPalBaseUrl()}/v1/oauth2/token`, {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Accept-Language': 'en_US',
-      Authorization: `Basic ${credentials}`,
-      'Content-Type': 'application/x-www-form-urlencoded'
-    },
-    body: 'grant_type=client_credentials',
-    cache: 'no-store'
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${getPayPalBaseUrl()}/v1/oauth2/token`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Accept-Language': 'en_US',
+        Authorization: `Basic ${credentials}`,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: 'grant_type=client_credentials',
+      cache: 'no-store'
+    });
+  } catch (error) {
+    await logExternalServiceError({
+      category: SystemLogCategory.PAYMENT,
+      service: 'paypal',
+      operation: 'get-access-token',
+      method: 'POST',
+      path: '/v1/oauth2/token',
+      error
+    });
+
+    throw error;
+  }
 
   const payload = await readJsonResponse<{
     access_token?: string;
@@ -72,7 +89,20 @@ export const getPayPalAccessToken = async (): Promise<string> => {
   }>(response);
 
   if (!response.ok || !payload?.access_token) {
-    throw new PayPalApiError('Failed to get PayPal access token', response.status, payload);
+    const error = new PayPalApiError('Failed to get PayPal access token', response.status, payload);
+
+    await logExternalServiceError({
+      category: SystemLogCategory.PAYMENT,
+      service: 'paypal',
+      operation: 'get-access-token',
+      method: 'POST',
+      path: '/v1/oauth2/token',
+      statusCode: response.status,
+      error,
+      metadata: payload
+    });
+
+    throw error;
   }
 
   payPalAccessTokenCache = {
@@ -107,17 +137,49 @@ export const paypalRequest = async <T>(path: string, init: PayPalRequestInit = {
     body = JSON.stringify(init.body);
   }
 
-  const response = await fetch(url, {
-    ...init,
-    headers,
-    body,
-    cache: 'no-store'
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(url, {
+      ...init,
+      headers,
+      body,
+      cache: 'no-store'
+    });
+  } catch (error) {
+    await logExternalServiceError({
+      category: SystemLogCategory.PAYMENT,
+      service: 'paypal',
+      operation: `paypal-request:${path}`,
+      method: init.method,
+      path,
+      error,
+      metadata: init.body
+    });
+
+    throw error;
+  }
 
   const payload = await readJsonResponse<T>(response);
 
   if (!response.ok) {
-    throw new PayPalApiError(`PayPal request failed: ${path}`, response.status, payload);
+    const error = new PayPalApiError(`PayPal request failed: ${path}`, response.status, payload);
+
+    await logExternalServiceError({
+      category: SystemLogCategory.PAYMENT,
+      service: 'paypal',
+      operation: `paypal-request:${path}`,
+      method: init.method,
+      path,
+      statusCode: response.status,
+      error,
+      metadata: {
+        requestBody: init.body,
+        responseBody: payload
+      }
+    });
+
+    throw error;
   }
 
   return payload as T;

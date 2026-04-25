@@ -19,6 +19,7 @@ const routeNameMap: Record<string, string> = {
   surveys: 'Surveys',
   payments: 'Payments',
   backups: 'Backups',
+  logs: 'System Logs',
   profile: 'Profile',
   create: 'Create'
 };

@@ -1,11 +1,12 @@
 import { auth } from '@/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/shared/lib/prisma';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 /**
  * GET handler для получения списка Passkey пользователя.
  */
-export async function GET() {
+async function getHandler() {
   try {
     const session = await auth();
     if (!session?.user?.email) {
@@ -42,7 +43,7 @@ export async function GET() {
  * Если передан query-параметр ?id=credentialID — удаляет один конкретный passkey.
  * Без параметра — удаляет все passkeys пользователя.
  */
-export async function DELETE(request: Request) {
+async function deleteHandler(request: Request) {
   try {
     const session = await auth();
     if (!session?.user?.email) {
@@ -90,3 +91,6 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const GET = withApiLogging(getHandler);
+export const DELETE = withApiLogging(deleteHandler);

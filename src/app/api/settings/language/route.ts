@@ -2,13 +2,14 @@ import { NextResponse } from 'next/server';
 import { locales } from '@/i18n/config';
 import { auth } from '@/auth';
 import prisma from '@/shared/lib/prisma';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 /**
  * PUT /api/settings/language
  * Сохраняет язык пользователя в базе данных.
  * Вызывается после авторизации или регистрации для установки определённого языка.
  */
-export const PUT = async (request: Request): Promise<NextResponse> => {
+const putHandler = async (request: Request): Promise<NextResponse> => {
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -34,3 +35,5 @@ export const PUT = async (request: Request): Promise<NextResponse> => {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 };
+
+export const PUT = withApiLogging(putHandler);

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { auth } from '@/auth';
 import prisma from '@/shared/lib/prisma';
 import { syncPaymentWithPayPal } from '@/shared/lib/paypal/service';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 const syncPaymentsSchema = z.object({
   paymentIds: z.array(z.string()).max(100).optional(),
@@ -13,7 +14,7 @@ const syncPaymentsSchema = z.object({
  * POST /api/admin/payments/sync
  * Запускает сверку локальных платежей с PayPal API.
  */
-export async function POST(request: Request) {
+async function postHandler(request: Request) {
   try {
     const session = await auth();
 
@@ -71,3 +72,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const POST = withApiLogging(postHandler);

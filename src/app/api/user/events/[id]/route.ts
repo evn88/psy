@@ -14,6 +14,7 @@ import {
   MAX_SESSION_REMINDER_MINUTES,
   MIN_SESSION_REMINDER_MINUTES
 } from '@/shared/lib/session-reminders';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 const reminderMinutesSchema = z.coerce
   .number()
@@ -43,7 +44,7 @@ const updateEventSchema = z.discriminatedUnion('action', [
  * PATCH /api/user/events/[id]
  * User booking or canceling an event
  */
-export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+async function patchHandler(req: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   try {
     const session = await auth();
@@ -343,3 +344,5 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const PATCH = withApiLogging(patchHandler);

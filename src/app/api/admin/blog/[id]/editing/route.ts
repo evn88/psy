@@ -7,6 +7,7 @@ import {
   getBlogEditorLockState,
   releaseBlogEditorLock
 } from '@/shared/lib/blog-editor-lock-store';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 const editorLockSchema = z.object({
   instanceId: z.string().min(1)
@@ -46,7 +47,7 @@ const requireAdmin = async () => {
   return session;
 };
 
-export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function getHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireAdmin();
 
   if (!session) {
@@ -66,7 +67,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   return buildLockResponse(getBlogEditorLockState(id, parsed.data.instanceId));
 }
 
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function postHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireAdmin();
 
   if (!session) {
@@ -91,7 +92,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   return buildLockResponse(state);
 }
 
-export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function deleteHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireAdmin();
 
   if (!session) {
@@ -110,3 +111,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
   return NextResponse.json({ success: true });
 }
+
+export const GET = withApiLogging(getHandler);
+export const POST = withApiLogging(postHandler);
+export const DELETE = withApiLogging(deleteHandler);

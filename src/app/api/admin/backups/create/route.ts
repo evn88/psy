@@ -9,13 +9,14 @@ import {
   writeBackupJobSnapshot
 } from '@/shared/lib/backup/jobs';
 import { startCreateSiteBackupWorkflow } from '@/shared/lib/backup/workflow';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * Запускает создание полного архива резервной копии.
  */
-export async function POST(request: Request) {
+async function postHandler(request: Request) {
   try {
     const admin = await requireAdminSession({
       route: '/api/admin/backups/create',
@@ -74,3 +75,5 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export const POST = withApiLogging(postHandler);

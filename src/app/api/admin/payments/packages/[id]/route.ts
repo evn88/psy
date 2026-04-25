@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import prisma from '@/shared/lib/prisma';
 import { z } from 'zod';
+import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 const updateSchema = z.object({
   title: z.any().optional(),
@@ -14,7 +15,7 @@ const updateSchema = z.object({
   order: z.number().optional()
 });
 
-export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function putHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user || (session.user as { role?: string }).role !== 'ADMIN') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -45,7 +46,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function deleteHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user || (session.user as { role?: string }).role !== 'ADMIN') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -65,3 +66,6 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     return NextResponse.json({ error: 'Ошибка удаления' }, { status: 500 });
   }
 }
+
+export const PUT = withApiLogging(putHandler);
+export const DELETE = withApiLogging(deleteHandler);

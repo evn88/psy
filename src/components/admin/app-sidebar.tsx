@@ -11,6 +11,7 @@ import {
   Home,
   LayoutDashboard,
   LogOut,
+  ScrollText,
   Send,
   Settings,
   ShieldEllipsis,
@@ -128,6 +129,12 @@ export function AppSidebar({ user, unreadSurveysCount = 0, ...props }: AppSideba
       url: '/admin/backups',
       icon: ShieldEllipsis,
       isActive: pathname.startsWith('/admin/backups')
+    },
+    {
+      title: tItems('logs'),
+      url: '/admin/logs',
+      icon: ScrollText,
+      isActive: pathname.startsWith('/admin/logs')
     },
     {
       title: tItems('profile'),
