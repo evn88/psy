@@ -20,6 +20,7 @@ function ensureVapid() {
 export type PushPayload = {
   title?: string;
   body: string;
+  url?: string;
 };
 
 export type PushResult = {
@@ -45,7 +46,8 @@ export async function sendPushToSubscription(
       },
       JSON.stringify({
         title: payload.title ?? '',
-        body: payload.body
+        body: payload.body,
+        url: payload.url
       })
     );
     return { endpoint: sub.endpoint, success: true };

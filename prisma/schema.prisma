@@ -58,6 +58,13 @@ enum AssignmentStatus {
   COMPLETED
 }
 
+enum PilloIntakeStatus {
+  PENDING
+  TAKEN
+  SKIPPED
+  MISSED
+}
+
 model User {
   id            String             @id @default(cuid())
   name          String?
@@ -99,6 +106,13 @@ model User {
   // Push-подписки (PWA)
   pushSubscriptions PushSubscription[]
 
+  // Мини-приложение Pillo
+  pilloMedications   PilloMedication[]
+  pilloScheduleRules PilloScheduleRule[]
+  pilloIntakes       PilloIntake[]
+  pilloActionTokens  PilloIntakeActionToken[]
+  pilloUserSettings  PilloUserSettings?
+
   // Блог
   blogNotifications Boolean    @default(false)
   blogPosts         BlogPost[] @relation("BlogAuthor")
@@ -114,7 +128,7 @@ model User {
   uploadedDocs  ClientDocument[] @relation("UploadedDocuments")
   payments      Payment[]
 
-  balance Decimal @db.Decimal(12, 2) @default(0)
+  balance Decimal @default(0) @db.Decimal(12, 2)
 }
 
 /// Подписка на Web Push уведомления (PWA)
@@ -125,6 +139,121 @@ model PushSubscription {
   endpoint  String   @unique
   p256dh    String
   auth      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PilloMedication {
+  id          String  @id @default(cuid())
+  userId      String
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  photoUrl    String?
+  description String?
+  dosage      String
+  form        String
+
+  packagesCount     Int     @default(0)
+  unitsPerPackage   Int?
+  stockUnits        Decimal @default(0) @db.Decimal(10, 2)
+  minThresholdUnits Decimal @default(0) @db.Decimal(10, 2)
+  isActive          Boolean @default(true)
+
+  scheduleRules PilloScheduleRule[]
+  intakes       PilloIntake[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, isActive])
+  @@index([userId, name])
+}
+
+model PilloScheduleRule {
+  id           String          @id @default(cuid())
+  userId       String
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  medicationId String
+  medication   PilloMedication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+
+  time                    String
+  doseUnits               Decimal   @db.Decimal(10, 2)
+  daysOfWeek              Int[]
+  startDate               DateTime
+  endDate                 DateTime?
+  comment                 String?
+  isActive                Boolean   @default(true)
+  reminderWorkflowVersion Int       @default(1)
+
+  intakes PilloIntake[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, isActive])
+  @@index([medicationId])
+}
+
+model PilloIntake {
+  id             String            @id @default(cuid())
+  userId         String
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  medicationId   String
+  medication     PilloMedication   @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+  scheduleRuleId String
+  scheduleRule   PilloScheduleRule @relation(fields: [scheduleRuleId], references: [id], onDelete: Cascade)
+
+  scheduledFor DateTime
+  localDate    String
+  localTime    String
+  doseUnits    Decimal           @db.Decimal(10, 2)
+  status       PilloIntakeStatus @default(PENDING)
+  note         String?
+
+  takenAt                   DateTime?
+  skippedAt                 DateTime?
+  missedAt                  DateTime?
+  reminderWorkflowStartedAt DateTime?
+  reminderSentAt            DateTime?
+
+  actionTokens PilloIntakeActionToken[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([scheduleRuleId, scheduledFor])
+  @@index([userId, scheduledFor])
+  @@index([userId, status, scheduledFor])
+  @@index([medicationId])
+}
+
+model PilloIntakeActionToken {
+  id       String      @id @default(cuid())
+  userId   String
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  intakeId String
+  intake   PilloIntake @relation(fields: [intakeId], references: [id], onDelete: Cascade)
+
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([intakeId])
+  @@index([userId, expiresAt])
+}
+
+model PilloUserSettings {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  emailRemindersEnabled Boolean @default(true)
+  pushRemindersEnabled  Boolean @default(true)
+  lowStockEmailEnabled  Boolean @default(true)
+  lowStockPushEnabled   Boolean @default(true)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -475,13 +604,13 @@ model SystemLogEntry {
 }
 
 model SystemLogSettings {
-  id                    String   @id @default("default")
-  apiRequestsEnabled    Boolean  @default(true)
-  aiErrorsEnabled       Boolean  @default(true)
-  paymentErrorsEnabled  Boolean  @default(true)
-  retentionDays         Int      @default(30)
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                   String   @id @default("default")
+  apiRequestsEnabled   Boolean  @default(true)
+  aiErrorsEnabled      Boolean  @default(true)
+  paymentErrorsEnabled Boolean  @default(true)
+  retentionDays        Int      @default(30)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 }
 
 // ============================================================
@@ -549,17 +678,17 @@ model ClientDocument {
 // ============================================================
 
 model ServicePackage {
-  id          String   @id @default(cuid())
+  id          String  @id @default(cuid())
   title       Json
   description Json?
-  amount      Decimal  @db.Decimal(12, 2)
-  currency    String   @default("EUR")
+  amount      Decimal @db.Decimal(12, 2)
+  currency    String  @default("EUR")
   coverImage  String?
-  isActive    Boolean  @default(true)
-  order       Int      @default(0)
+  isActive    Boolean @default(true)
+  order       Int     @default(0)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   payments Payment[]
 }
@@ -609,7 +738,7 @@ model PaymentEvent {
   paymentId String?
   payment   Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
 
-  providerEventId String @unique
+  providerEventId String  @unique
   eventType       String
   resourceType    String?
   resourceId      String?
@@ -624,9 +753,9 @@ model PaymentEvent {
 
   occurredAt  DateTime?
   payload     Json
-  isProcessed Boolean  @default(false)
+  isProcessed Boolean   @default(false)
   processedAt DateTime?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
 
   @@index([paymentId, createdAt(sort: Desc)])
   @@index([orderId])
@@ -641,7 +770,7 @@ model PaymentDispute {
   paymentId String?
   payment   Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
 
-  disputeId String @unique
+  disputeId String  @unique
   stage     String?
   status    String
   reason    String?
@@ -650,7 +779,7 @@ model PaymentDispute {
   currency String?
 
   responseDueAt DateTime?
-  payload        Json
+  payload       Json
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

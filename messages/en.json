@@ -283,6 +283,7 @@
       "sendEmail": "Send Email",
       "backups": "Backups",
       "logs": "System Logs",
+      "apps": "Mini Apps",
       "profile": "Profile",
       "settings": "Settings",
       "backToSite": "Back to Site",
@@ -554,6 +555,7 @@
       "payments": "Payments",
       "packages": "Service Packages",
       "data": "Files & Documents",
+      "apps": "Mini Apps",
       "profile": "Profile",
       "settings": "Settings",
       "backToSite": "Back to Site",
@@ -817,6 +819,132 @@
     "langSr": "Srpski",
     "save": "Save preferences",
     "saving": "Saving..."
+  },
+  "MiniApps": {
+    "eyebrow": "PWA",
+    "title": "Mini Apps",
+    "description": "Small apps that can be installed on your phone and opened like native apps will live here.",
+    "pillo": {
+      "title": "Pillo",
+      "description": "Medicine stock, intake schedule, and reminders.",
+      "badge": "Available",
+      "featureToday": "Today doses",
+      "featureStock": "Stock",
+      "featureReminders": "Email and push"
+    },
+    "install": {
+      "title": "How to install it",
+      "iosTitle": "iPhone or iPad",
+      "iosStep1": "Open Pillo in Safari.",
+      "iosStep2": "Tap the Share button at the bottom.",
+      "iosStep3": "Choose Add to Home Screen and tap Add.",
+      "androidTitle": "Android",
+      "androidStep1": "Open Pillo in Chrome.",
+      "androidStep2": "Tap the three-dot menu in the top right.",
+      "androidStep3": "Choose Install app or Add to Home screen."
+    }
+  },
+  "Pillo": {
+    "eyebrow": "PWA app",
+    "title": "Pillo",
+    "pendingCount": "{count} pending",
+    "tabs": {
+      "home": "Home",
+      "medications": "Pills",
+      "schedule": "Schedule",
+      "settings": "Settings"
+    },
+    "common": {
+      "save": "Save",
+      "delete": "Delete"
+    },
+    "today": {
+      "emptyTitle": "Nothing due today",
+      "emptyText": "Add a pill and schedule rule to see today's doses.",
+      "take": "Taken",
+      "skip": "Skip",
+      "lowStockWarning": "Stock may not be enough. Time to buy more."
+    },
+    "medications": {
+      "add": "Add pill",
+      "edit": "Edit pill",
+      "emptyTitle": "No pills yet",
+      "emptyText": "Add the first pill to track stock and schedule.",
+      "formDescription": "Set dosage, form, and current stock.",
+      "gallery": "Gallery",
+      "camera": "Camera",
+      "name": "Name",
+      "dosage": "Dosage",
+      "form": "Form",
+      "packagesCount": "Packages in stock",
+      "unitsPerPackage": "Units per package",
+      "stockUnits": "Stock units",
+      "minThresholdUnits": "Minimum stock",
+      "description": "Description",
+      "isActive": "Pill is active",
+      "stock": "Stock"
+    },
+    "schedule": {
+      "add": "Add rule",
+      "edit": "Edit rule",
+      "emptyTitle": "Schedule is empty",
+      "emptyText": "Create an intake rule for one of your pills.",
+      "formDescription": "Choose a pill, time, dose, and weekdays.",
+      "medication": "Pill",
+      "time": "Time",
+      "dose": "Dose per intake",
+      "days": "Weekdays",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "comment": "Comment",
+      "isActive": "Rule is active"
+    },
+    "settings": {
+      "notifications": "Pillo notifications",
+      "emailReminders": "Email intake reminders",
+      "pushReminders": "Push intake reminders",
+      "lowStockEmail": "Email when stock is low",
+      "lowStockPush": "Push when stock is low",
+      "appearance": "Language and theme",
+      "appearanceDescription": "These settings are synced with the site."
+    },
+    "stockStatus": {
+      "enough": "Enough",
+      "low": "Running low",
+      "empty": "Empty"
+    },
+    "intakeStatus": {
+      "PENDING": "Pending",
+      "TAKEN": "Taken",
+      "SKIPPED": "Skipped",
+      "MISSED": "Missed"
+    },
+    "days": {
+      "1": "Monday",
+      "2": "Tuesday",
+      "3": "Wednesday",
+      "4": "Thursday",
+      "5": "Friday",
+      "6": "Saturday",
+      "7": "Sunday"
+    },
+    "daysShort": {
+      "1": "Mon",
+      "2": "Tue",
+      "3": "Wed",
+      "4": "Thu",
+      "5": "Fri",
+      "6": "Sat",
+      "7": "Sun"
+    },
+    "takeLink": {
+      "title": "Confirm intake",
+      "description": "Tap the button below to mark the medicine as taken.",
+      "button": "Mark as taken",
+      "success": "Intake marked as taken.",
+      "error": "Could not confirm intake.",
+      "backToPillo": "Open Pillo"
+    }
   },
   "Common": {
     "loading": "Loading...",

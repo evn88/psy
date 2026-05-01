@@ -3,7 +3,7 @@
  *
  * Стратегии кеширования:
  *  - /api/**          → Network Only (никогда не кешировать)
- *  - /my/**, /admin/** → Network Only + no-store + без offline fallback
+ *  - /my/**, /admin/**, /app/** → Network Only + no-store + без offline fallback
  *  - /_next/static/** → Cache First  (иммутабельные бандлы с хешем)
  *  - Публичные HTML   → Network First → fallback в кеш
  *  - Остальное        → Network First
@@ -22,7 +22,7 @@ const STATIC_CACHE_NAME = `vershkov-static-${CACHE_VERSION}`;
 const PRE_CACHED_URLS = ['/'];
 
 const SUPPORTED_LOCALES = ['ru', 'en', 'sr'];
-const PRIVATE_ROUTE_PREFIXES = ['/my', '/admin'];
+const PRIVATE_ROUTE_PREFIXES = ['/my', '/admin', '/app'];
 
 const STATIC_ASSETS = [
   '/web-app-manifest-192x192.png',
@@ -211,7 +211,7 @@ async function networkFirst(request) {
 // ─── Push уведомления ─────────────────────────────────────────────────────────
 
 self.addEventListener('push', event => {
-  let data = { title: 'Vershkov.com', body: '' };
+  let data = { title: 'Vershkov.com', body: '', url: '/my' };
 
   try {
     if (event.data) {
@@ -229,13 +229,17 @@ self.addEventListener('push', event => {
       icon: '/web-app-manifest-192x192.png',
       badge: '/web-app-manifest-192x192.png',
       tag: 'vershkov-notification',
-      renotify: true
+      renotify: true,
+      data: {
+        url: data.url || '/my'
+      }
     })
   );
 });
 
 self.addEventListener('notificationclick', event => {
   event.notification.close();
+  const targetUrl = event.notification.data?.url || '/my';
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
       // Если приложение уже открыто — фокусируем
@@ -245,7 +249,7 @@ self.addEventListener('notificationclick', event => {
         }
       }
       // Иначе открываем новую вкладку
-      return clients.openWindow('/my');
+      return clients.openWindow(targetUrl);
     })
   );
 });

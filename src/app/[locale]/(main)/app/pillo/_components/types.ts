@@ -1,0 +1,57 @@
+import type { PilloIntakeStatus } from '@prisma/client';
+
+export type PilloMedicationView = {
+  id: string;
+  name: string;
+  photoUrl: string | null;
+  description: string | null;
+  dosage: string;
+  form: string;
+  packagesCount: number;
+  unitsPerPackage: number | null;
+  stockUnits: number;
+  minThresholdUnits: number;
+  isActive: boolean;
+  stockStatus: 'enough' | 'low' | 'empty';
+};
+
+export type PilloScheduleRuleView = {
+  id: string;
+  medicationId: string;
+  medicationName: string;
+  time: string;
+  doseUnits: number;
+  daysOfWeek: number[];
+  startDate: string;
+  endDate: string | null;
+  comment: string | null;
+  isActive: boolean;
+};
+
+export type PilloIntakeView = {
+  id: string;
+  medicationId: string;
+  medicationName: string;
+  medicationDosage: string;
+  scheduledFor: string;
+  localDate: string;
+  localTime: string;
+  doseUnits: number;
+  status: PilloIntakeStatus;
+  comment: string | null;
+  stockUnits: number;
+  minThresholdUnits: number;
+  stockStatus: 'enough' | 'low' | 'empty';
+};
+
+export type PilloSettingsView = {
+  emailRemindersEnabled: boolean;
+  pushRemindersEnabled: boolean;
+  lowStockEmailEnabled: boolean;
+  lowStockPushEnabled: boolean;
+};
+
+export type PilloAppearanceSettingsView = {
+  language: string;
+  theme: string;
+};

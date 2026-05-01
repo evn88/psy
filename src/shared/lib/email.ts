@@ -20,6 +20,12 @@ import { AccountDeletionRequestTemplate } from '@/components/email-templates/acc
 import { AccountDeletedUserTemplate } from '@/components/email-templates/account-deleted-user-template';
 import { AccountDeletedAdminTemplate } from '@/components/email-templates/account-deleted-admin-template';
 import { AdminIntakeNotificationTemplate } from '@/components/email-templates/admin-intake-notification-template';
+import { PilloNotificationTemplate } from '@/components/email-templates/pillo-notification-template';
+import {
+  formatPilloIntakeDateTime,
+  getPilloNotificationCopy,
+  interpolatePilloCopy
+} from '@/features/pillo/lib/notifications';
 import { formatBlogDate } from '@/shared/lib/blog-utils';
 import {
   formatEmailEventDateTime,
@@ -556,6 +562,114 @@ export const sendSessionReminderEmail = async ({
 
   if (error) {
     console.error('Ошибка отправки session reminder email:', error);
+    return null;
+  }
+
+  return data?.id ?? null;
+};
+
+interface SendPilloIntakeReminderEmailParams {
+  email: string;
+  name: string;
+  medicationName: string;
+  doseText: string;
+  scheduledFor: Date | string;
+  actionUrl: string;
+  locale: string;
+  timezone: string;
+}
+
+/**
+ * Отправляет email-напоминание о приёме лекарства в Pillo.
+ * @param params - получатель, лекарство, доза и ссылка подтверждения.
+ * @returns id письма в Resend или null при ошибке.
+ */
+export const sendPilloIntakeReminderEmail = async ({
+  email,
+  name,
+  medicationName,
+  doseText,
+  scheduledFor,
+  actionUrl,
+  locale,
+  timezone
+}: SendPilloIntakeReminderEmailParams): Promise<string | null> => {
+  const copy = getPilloNotificationCopy(locale);
+  const timeText = formatPilloIntakeDateTime({ scheduledFor, timezone, locale });
+
+  const { data, error } = await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: [email],
+    subject: copy.intakeSubject,
+    react: PilloNotificationTemplate({
+      preview: copy.intakeHeading,
+      heading: copy.intakeHeading,
+      greeting: interpolatePilloCopy(copy.greeting, { name }),
+      message: copy.intakeMessage,
+      details: [
+        { label: copy.medicationLabel, value: medicationName },
+        { label: copy.doseLabel, value: doseText },
+        { label: copy.timeLabel, value: timeText }
+      ],
+      buttonText: copy.takeButton,
+      actionUrl,
+      footer: copy.footer
+    })
+  });
+
+  if (error) {
+    console.error('Ошибка отправки Pillo intake reminder email:', error);
+    return null;
+  }
+
+  return data?.id ?? null;
+};
+
+interface SendPilloLowStockEmailParams {
+  email: string;
+  name: string;
+  medicationName: string;
+  stockText: string;
+  actionUrl: string;
+  locale: string;
+}
+
+/**
+ * Отправляет email о низком остатке лекарства в Pillo.
+ * @param params - получатель, лекарство, остаток и ссылка на приложение.
+ * @returns id письма в Resend или null при ошибке.
+ */
+export const sendPilloLowStockEmail = async ({
+  email,
+  name,
+  medicationName,
+  stockText,
+  actionUrl,
+  locale
+}: SendPilloLowStockEmailParams): Promise<string | null> => {
+  const copy = getPilloNotificationCopy(locale);
+
+  const { data, error } = await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: [email],
+    subject: copy.lowStockSubject,
+    react: PilloNotificationTemplate({
+      preview: copy.lowStockHeading,
+      heading: copy.lowStockHeading,
+      greeting: interpolatePilloCopy(copy.greeting, { name }),
+      message: copy.lowStockMessage,
+      details: [
+        { label: copy.medicationLabel, value: medicationName },
+        { label: copy.stockLabel, value: stockText }
+      ],
+      buttonText: copy.openButton,
+      actionUrl,
+      footer: copy.footer
+    })
+  });
+
+  if (error) {
+    console.error('Ошибка отправки Pillo low stock email:', error);
     return null;
   }
 
