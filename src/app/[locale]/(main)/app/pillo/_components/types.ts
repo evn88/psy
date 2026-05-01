@@ -55,3 +55,5 @@ export type PilloAppearanceSettingsView = {
   language: string;
   theme: string;
 };
+
+export type PilloTab = 'home' | 'medications' | 'schedule' | 'settings';

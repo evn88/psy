@@ -1,7 +1,6 @@
 'use client';
 
-import { type ReactNode, useMemo, useState, useTransition } from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { type ReactNode, useMemo, useTransition } from 'react';
 import Image from 'next/image';
 import {
   Bell,
@@ -20,8 +19,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { type Control, type FieldValues, type Path, useForm, useWatch } from 'react-hook-form';
-import type { z } from 'zod';
+import { type Control, type FieldValues, type Path } from 'react-hook-form';
 
 import { SettingsForm } from '@/app/[locale]/(main)/admin/settings/_components/settings-form';
 import { Badge } from '@/components/ui/badge';
@@ -48,33 +46,21 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import {
-  pilloMedicationSchema,
-  pilloScheduleRuleSchema,
-  pilloSettingsSchema
-} from '@/features/pillo/lib/schemas';
-import {
-  deletePilloMedicationAction,
-  deletePilloScheduleRuleAction,
-  savePilloMedicationAction,
-  savePilloScheduleRuleAction,
-  savePilloSettingsAction,
-  skipPilloIntakeAction,
-  takePilloIntakeAction,
-  uploadPilloMedicationPhotoAction
-} from '../actions';
+import { deletePilloMedicationAction, deletePilloScheduleRuleAction } from '../actions';
+
+import { usePilloTabs } from '../_hooks/use-pillo-tabs';
+import { usePilloIntakeActions } from '../_hooks/use-pillo-intake-actions';
+import { usePilloMedicationForm } from '../_hooks/use-pillo-medication-form';
+import { usePilloScheduleForm } from '../_hooks/use-pillo-schedule-form';
+import { usePilloSettingsForm } from '../_hooks/use-pillo-settings-form';
 import type {
   PilloAppearanceSettingsView,
   PilloIntakeView,
   PilloMedicationView,
   PilloScheduleRuleView,
-  PilloSettingsView
+  PilloSettingsView,
+  PilloTab
 } from './types';
-
-type PilloTab = 'home' | 'medications' | 'schedule' | 'settings';
-type MedicationFormValues = z.input<typeof pilloMedicationSchema>;
-type ScheduleRuleFormValues = z.input<typeof pilloScheduleRuleSchema>;
-type SettingsFormValues = z.input<typeof pilloSettingsSchema>;
 
 interface PilloAppShellProps {
   appearanceSettings: PilloAppearanceSettingsView;
@@ -121,7 +107,7 @@ export const PilloAppShell = ({
   settings
 }: PilloAppShellProps) => {
   const t = useTranslations('Pillo');
-  const [activeTab, setActiveTab] = useState<PilloTab>('home');
+  const { activeTab, setActiveTab } = usePilloTabs('home');
   const todayPendingCount = intakes.filter(item => item.status === 'PENDING').length;
 
   return (
@@ -203,18 +189,8 @@ const TodayView = ({ intakes }: { intakes: PilloIntakeView[] }) => {
  */
 const IntakeCard = ({ intake }: { intake: PilloIntakeView }) => {
   const t = useTranslations('Pillo');
-  const [isPending, startTransition] = useTransition();
+  const { isPending, onSkip, onTake } = usePilloIntakeActions();
   const isDone = intake.status !== 'PENDING';
-
-  /**
-   * Выполняет server action без блокировки интерфейса.
-   * @param action - действие над приёмом.
-   */
-  const runAction = (action: () => Promise<unknown>) => {
-    startTransition(() => {
-      void action();
-    });
-  };
 
   return (
     <Card className="overflow-hidden rounded-[1.5rem] border-white/60 bg-card/90 shadow-sm dark:border-white/10">
@@ -243,7 +219,7 @@ const IntakeCard = ({ intake }: { intake: PilloIntakeView }) => {
           <Button
             disabled={isDone || isPending}
             className="rounded-full"
-            onClick={() => runAction(() => takePilloIntakeAction(intake.id))}
+            onClick={() => onTake(intake.id)}
           >
             <Check className="mr-2 h-4 w-4" />
             {t('today.take')}
@@ -252,7 +228,7 @@ const IntakeCard = ({ intake }: { intake: PilloIntakeView }) => {
             disabled={isDone || isPending}
             variant="outline"
             className="rounded-full"
-            onClick={() => runAction(() => skipPilloIntakeAction(intake.id))}
+            onClick={() => onSkip(intake.id)}
           >
             <SkipForward className="mr-2 h-4 w-4" />
             {t('today.skip')}
@@ -379,58 +355,8 @@ const MedicationDialog = ({
   medication?: PilloMedicationView;
 }) => {
   const t = useTranslations('Pillo');
-  const [open, setOpen] = useState(false);
-  const [isPending, startTransition] = useTransition();
-  const form = useForm<MedicationFormValues>({
-    resolver: zodResolver(pilloMedicationSchema),
-    defaultValues: {
-      id: medication?.id,
-      name: medication?.name ?? '',
-      photoUrl: medication?.photoUrl ?? null,
-      description: medication?.description ?? null,
-      dosage: medication?.dosage ?? '',
-      form: medication?.form ?? 'таблетка',
-      packagesCount: medication?.packagesCount ?? 0,
-      unitsPerPackage: medication?.unitsPerPackage ?? null,
-      stockUnits: medication?.stockUnits ?? 0,
-      minThresholdUnits: medication?.minThresholdUnits ?? 0,
-      isActive: medication?.isActive ?? true
-    }
-  });
-
-  /**
-   * Загружает фото таблетки через server action.
-   * @param file - выбранный файл.
-   */
-  const uploadPhoto = (file: File | null) => {
-    if (!file) {
-      return;
-    }
-
-    startTransition(() => {
-      const formData = new FormData();
-      formData.set('file', file);
-      void uploadPilloMedicationPhotoAction(formData).then(result => {
-        if ('url' in result) {
-          form.setValue('photoUrl', result.url, { shouldDirty: true });
-        }
-      });
-    });
-  };
-
-  /**
-   * Сохраняет таблетку.
-   * @param values - значения формы.
-   */
-  const onSubmit = (values: MedicationFormValues) => {
-    startTransition(() => {
-      void savePilloMedicationAction(values).then(result => {
-        if (result.success) {
-          setOpen(false);
-        }
-      });
-    });
-  };
+  const { form, isPending, onSubmit, onUploadPhoto, open, setOpen } =
+    usePilloMedicationForm(medication);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -441,7 +367,7 @@ const MedicationDialog = ({
           <DialogDescription>{t('medications.formDescription')}</DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={onSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-2">
               <Label className="flex cursor-pointer items-center justify-center rounded-2xl border border-dashed p-4 text-sm">
                 <ImagePlus className="mr-2 h-4 w-4" />
@@ -450,7 +376,7 @@ const MedicationDialog = ({
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={event => uploadPhoto(event.target.files?.[0] ?? null)}
+                  onChange={event => onUploadPhoto(event.target.files?.[0] ?? null)}
                 />
               </Label>
               <Label className="flex cursor-pointer items-center justify-center rounded-2xl border border-dashed p-4 text-sm">
@@ -461,7 +387,7 @@ const MedicationDialog = ({
                   accept="image/*"
                   capture="environment"
                   className="hidden"
-                  onChange={event => uploadPhoto(event.target.files?.[0] ?? null)}
+                  onChange={event => onUploadPhoto(event.target.files?.[0] ?? null)}
                 />
               </Label>
             </div>
@@ -626,48 +552,8 @@ const ScheduleRuleDialog = ({
   rule?: PilloScheduleRuleView;
 }) => {
   const t = useTranslations('Pillo');
-  const [open, setOpen] = useState(false);
-  const [isPending, startTransition] = useTransition();
-  const form = useForm<ScheduleRuleFormValues>({
-    resolver: zodResolver(pilloScheduleRuleSchema),
-    defaultValues: {
-      id: rule?.id,
-      medicationId: rule?.medicationId ?? medications[0]?.id ?? '',
-      time: rule?.time ?? '09:00',
-      doseUnits: rule?.doseUnits ?? 1,
-      daysOfWeek: rule?.daysOfWeek ?? [1, 2, 3, 4, 5, 6, 7],
-      startDate: rule?.startDate ?? new Date().toISOString().slice(0, 10),
-      endDate: rule?.endDate ?? null,
-      comment: rule?.comment ?? null,
-      isActive: rule?.isActive ?? true
-    }
-  });
-  const selectedDays = useWatch({ control: form.control, name: 'daysOfWeek' }) ?? [];
-
-  /**
-   * Переключает день недели в форме.
-   * @param day - ISO-день недели.
-   */
-  const toggleDay = (day: number) => {
-    const nextDays = selectedDays.includes(day)
-      ? selectedDays.filter(item => item !== day)
-      : [...selectedDays, day].sort();
-    form.setValue('daysOfWeek', nextDays, { shouldDirty: true, shouldValidate: true });
-  };
-
-  /**
-   * Сохраняет правило расписания.
-   * @param values - значения формы.
-   */
-  const onSubmit = (values: ScheduleRuleFormValues) => {
-    startTransition(() => {
-      void savePilloScheduleRuleAction(values).then(result => {
-        if (result.success) {
-          setOpen(false);
-        }
-      });
-    });
-  };
+  const { form, isPending, onSubmit, open, selectedDays, setOpen, toggleDay } =
+    usePilloScheduleForm(medications, rule);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -678,7 +564,7 @@ const ScheduleRuleDialog = ({
           <DialogDescription>{t('schedule.formDescription')}</DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={onSubmit} className="space-y-4">
             <FormField
               control={form.control}
               name="medicationId"
@@ -781,13 +667,7 @@ const PilloSettingsView = ({
   settings: PilloSettingsView;
 }) => {
   const t = useTranslations('Pillo');
-  const [isPending, startTransition] = useTransition();
-  const form = useForm<SettingsFormValues>({
-    resolver: zodResolver(pilloSettingsSchema),
-    defaultValues: settings
-  });
-  const watchedValues = useWatch({ control: form.control });
-  const values = { ...settings, ...watchedValues };
+  const { form, isPending, onToggle, values } = usePilloSettingsForm(settings);
 
   const rows = useMemo(
     () =>
@@ -799,16 +679,6 @@ const PilloSettingsView = ({
       ] as const,
     []
   );
-
-  /**
-   * Сохраняет Pillo-настройки уведомлений.
-   * @param nextValues - значения формы.
-   */
-  const saveSettings = (nextValues: SettingsFormValues) => {
-    startTransition(() => {
-      void savePilloSettingsAction(nextValues);
-    });
-  };
 
   return (
     <div className="space-y-4">
@@ -829,11 +699,7 @@ const PilloSettingsView = ({
               <Switch
                 checked={Boolean(values[name])}
                 disabled={isPending}
-                onCheckedChange={checked => {
-                  const nextValues = { ...values, [name]: checked };
-                  form.setValue(name, checked, { shouldDirty: true });
-                  saveSettings(nextValues);
-                }}
+                onCheckedChange={checked => onToggle(name, checked)}
               />
             </div>
           ))}
