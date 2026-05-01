@@ -17,13 +17,7 @@
     "telegramLink": "Telegram Kanal",
     "instagramLink": "Instagram",
     "blogLink": "Blog",
-    "tags": [
-      "Šema terapija",
-      "ACT",
-      "RO DBT",
-      "ADHD/ASD",
-      "Poremećaji ishrane"
-    ],
+    "tags": ["Šema terapija", "ACT", "RO DBT", "ADHD/ASD", "Poremećaji ishrane"],
     "nav": {
       "about": "O meni",
       "services": "Kako mogu da pomognem?",
@@ -817,7 +811,7 @@
     }
   },
   "Pillo": {
-    "eyebrow": "PWA aplikacija",
+    "eyebrow": "Aplikacija",
     "title": "Pillo",
     "pendingCount": "{count} čeka",
     "tabs": {

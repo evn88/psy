@@ -17,13 +17,7 @@
     "telegramLink": "Telegram Канал",
     "instagramLink": "Instagram",
     "blogLink": "Блог",
-    "tags": [
-      "Схема-терапия",
-      "ACT",
-      "RO DBT",
-      "СДВГ/РАС",
-      "РПП"
-    ],
+    "tags": ["Схема-терапия", "ACT", "RO DBT", "СДВГ/РАС", "РПП"],
     "nav": {
       "about": "Обо мне",
       "services": "Как я могу помочь?",
@@ -845,7 +839,7 @@
     }
   },
   "Pillo": {
-    "eyebrow": "PWA приложение",
+    "eyebrow": "Приложение",
     "title": "Pillo",
     "pendingCount": "{count} ждёт",
     "tabs": {

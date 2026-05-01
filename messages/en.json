@@ -17,13 +17,7 @@
     "telegramLink": "Telegram Channel",
     "instagramLink": "Instagram",
     "blogLink": "Blog",
-    "tags": [
-      "Schema Therapy",
-      "ACT",
-      "RO DBT",
-      "ADHD/ASD",
-      "ED"
-    ],
+    "tags": ["Schema Therapy", "ACT", "RO DBT", "ADHD/ASD", "ED"],
     "nav": {
       "about": "About me",
       "services": "How I can help",
@@ -845,7 +839,7 @@
     }
   },
   "Pillo": {
-    "eyebrow": "PWA app",
+    "eyebrow": "Application",
     "title": "Pillo",
     "pendingCount": "{count} pending",
     "tabs": {
