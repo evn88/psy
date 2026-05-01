@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
-import { AppWindow, Download, Pill, Smartphone } from 'lucide-react';
+import { AppWindow, Download, Home, Pill, ShieldCheck, Smartphone, User } from 'lucide-react';
 
 import { requirePilloUser } from '@/features/pillo/lib/access';
 import { Link } from '@/i18n/navigation';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export const metadata: Metadata = {
@@ -58,19 +59,45 @@ const InstallInstructionCard = ({
  * @returns Список PWA-приложений и инструкция установки.
  */
 const MiniAppsPage = async () => {
-  await requirePilloUser();
+  const user = await requirePilloUser();
   const t = await getTranslations('MiniApps');
+  const isAdmin = user.role === 'ADMIN';
 
   return (
     <div className="min-h-[100dvh] bg-[radial-gradient(circle_at_top_left,hsl(var(--accent)),transparent_34%),hsl(var(--background))] px-4 py-6">
       <div className="mx-auto max-w-3xl space-y-6">
-        <header className="space-y-2">
-          <Badge variant="secondary" className="rounded-full">
-            <AppWindow className="mr-2 h-4 w-4" />
-            {t('eyebrow')}
-          </Badge>
-          <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
-          <p className="max-w-xl text-muted-foreground">{t('description')}</p>
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-2">
+            <Badge variant="secondary" className="rounded-full">
+              <AppWindow className="mr-2 h-4 w-4" />
+              {t('eyebrow')}
+            </Badge>
+            <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
+            <p className="max-w-xl text-muted-foreground">{t('description')}</p>
+          </div>
+
+          <nav className="flex items-center gap-2">
+            <Link href="/">
+              <Button variant="ghost" size="sm" className="gap-2 rounded-full">
+                <Home className="h-4 w-4" />
+                <span className="hidden sm:inline">{t('nav.home')}</span>
+              </Button>
+            </Link>
+            <Link href="/my">
+              <Button variant="ghost" size="sm" className="gap-2 rounded-full">
+                <User className="h-4 w-4" />
+                <span className="hidden sm:inline">{t('nav.profile')}</span>
+              </Button>
+            </Link>
+            {isAdmin && (
+              <Link href="/admin">
+                <Button variant="ghost" size="sm" className="gap-2 rounded-full">
+                  <ShieldCheck className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t('nav.admin')}</span>
+                </Button>
+              </Link>
+            )}
+          </nav>
         </header>
 
         <Link href="/app/pillo" className="block">

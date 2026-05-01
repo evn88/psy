@@ -1,9 +1,11 @@
 'use client';
 
-import { CalendarClock, Home, Pill, Settings } from 'lucide-react';
+import { CalendarClock, Home, LayoutGrid, Pill, Settings } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
+import { Link } from '@/i18n/navigation';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { usePilloTabs } from '../_hooks/use-pillo-tabs';
 import type {
@@ -56,11 +58,18 @@ export const PilloAppShell = ({
       <div className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-4 pb-4 pt-3">
         <header className="sticky top-0 z-20 -mx-4 border-b border-white/40 bg-background/80 px-4 py-3 backdrop-blur-2xl dark:border-white/10">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                {t('eyebrow')}
-              </p>
-              <h1 className="text-2xl font-bold tracking-tight">{t('title')}</h1>
+            <div className="flex items-center gap-3">
+              <Link href="/app">
+                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl">
+                  <LayoutGrid className="h-5 w-5" />
+                </Button>
+              </Link>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                  {t('eyebrow')}
+                </p>
+                <h1 className="text-2xl font-bold tracking-tight">{t('title')}</h1>
+              </div>
             </div>
             <Badge variant="secondary" className="rounded-full px-3 py-1">
               {t('pendingCount', { count: todayPendingCount })}

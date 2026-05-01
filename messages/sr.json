@@ -808,6 +808,11 @@
       "androidStep1": "Otvorite Pillo u Chrome pregledaču.",
       "androidStep2": "Dodirnite meni sa tri tačke gore desno.",
       "androidStep3": "Izaberite Install app ili Add to Home screen."
+    },
+    "nav": {
+      "home": "Glavna",
+      "profile": "Kabinet",
+      "admin": "Admin"
     }
   },
   "Pillo": {

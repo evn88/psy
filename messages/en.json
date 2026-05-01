@@ -836,6 +836,11 @@
       "androidStep1": "Open Pillo in Chrome.",
       "androidStep2": "Tap the three-dot menu in the top right.",
       "androidStep3": "Choose Install app or Add to Home screen."
+    },
+    "nav": {
+      "home": "Home",
+      "profile": "Cabinet",
+      "admin": "Admin"
     }
   },
   "Pillo": {
