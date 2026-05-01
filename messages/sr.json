@@ -812,7 +812,8 @@
     "nav": {
       "home": "Glavna",
       "profile": "Kabinet",
-      "admin": "Admin"
+      "admin": "Admin",
+      "menu": "Meni"
     }
   },
   "Pillo": {

@@ -840,7 +840,8 @@
     "nav": {
       "home": "Home",
       "profile": "Cabinet",
-      "admin": "Admin"
+      "admin": "Admin",
+      "menu": "Menu"
     }
   },
   "Pillo": {
