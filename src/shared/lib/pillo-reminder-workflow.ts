@@ -38,17 +38,17 @@ export const startPilloIntakeReminderWorkflow = async (
   }
 
   try {
-    await prisma.pilloIntake.update({
-      where: { id: intake.id },
-      data: { reminderWorkflowStartedAt: new Date() }
-    });
-
     await start(runPilloIntakeReminderWorkflow, [
       {
         intakeId: intake.id,
         scheduleRuleVersion: intake.scheduleRule.reminderWorkflowVersion
       }
     ]);
+
+    await prisma.pilloIntake.update({
+      where: { id: intake.id },
+      data: { reminderWorkflowStartedAt: new Date() }
+    });
 
     return true;
   } catch (error) {

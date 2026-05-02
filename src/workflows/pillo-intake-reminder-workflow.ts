@@ -253,14 +253,14 @@ const dispatchPilloIntakeReminderStep = async (
     }
   }
 
+  if (shouldRetryDelivery) {
+    throw new Error('Pillo reminder delivery failed for at least one channel');
+  }
+
   await prisma.pilloIntake.update({
     where: { id: intake.id },
     data: { reminderSentAt: new Date() }
   });
-
-  if (shouldRetryDelivery) {
-    throw new Error('Pillo reminder delivery failed for at least one channel');
-  }
 
   return {
     status: 'sent',
