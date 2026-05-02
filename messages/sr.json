@@ -840,7 +840,9 @@
       "undoDescription": "Možete otkazati prethodni izbor (Uzeo / Preskočio). Ako otkažete uzimanje leka, količina će biti vraćena u dostupne zalihe.",
       "undoAction": "Otkaži izbor",
       "daysLeft": "Za još ~{count} dana",
-      "buyAtDate": "Kupiti do {date}"
+      "buyAtDate": "Kupiti do {date}",
+      "stockEndsAt": "(nestaje {date})",
+      "stockEndsSoon": "Nestaje {date}"
     },
     "medications": {
       "addPackageBtn": "Dodaj pakovanje",

@@ -425,7 +425,7 @@ const MedicationCard = ({ medication }: { medication: PilloMedicationView }) => 
                   medication.form}
               </p>
 
-              {medication.buyAtDate !== null && (
+              {(medication.buyAtDate !== null || medication.stockEndsAt !== null) && (
                 <p
                   className={cn(
                     'mt-1 truncate text-xs font-bold',
@@ -434,12 +434,36 @@ const MedicationCard = ({ medication }: { medication: PilloMedicationView }) => 
                     medication.stockStatus === 'empty' && 'text-rose-600 dark:text-rose-400'
                   )}
                 >
-                  {t('today.buyAtDate', {
-                    date: new Intl.DateTimeFormat(locale, {
-                      month: 'short',
-                      day: 'numeric'
-                    }).format(new Date(medication.buyAtDate))
-                  })}
+                  {medication.buyAtDate !== null ? (
+                    <>
+                      {t('today.buyAtDate', {
+                        date: new Intl.DateTimeFormat(locale, {
+                          month: 'short',
+                          day: 'numeric'
+                        }).format(new Date(medication.buyAtDate))
+                      })}
+                      {medication.stockEndsAt !== null && (
+                        <>
+                          {' '}
+                          <span className="font-medium opacity-70">
+                            {t('today.stockEndsAt', {
+                              date: new Intl.DateTimeFormat(locale, {
+                                month: 'short',
+                                day: 'numeric'
+                              }).format(new Date(medication.stockEndsAt))
+                            })}
+                          </span>
+                        </>
+                      )}
+                    </>
+                  ) : medication.stockEndsAt !== null ? (
+                    t('today.stockEndsSoon', {
+                      date: new Intl.DateTimeFormat(locale, {
+                        month: 'short',
+                        day: 'numeric'
+                      }).format(new Date(medication.stockEndsAt))
+                    })
+                  ) : null}
                 </p>
               )}
             </div>

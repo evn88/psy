@@ -121,7 +121,9 @@ const PilloPage = async () => {
 
       let daysLeft: number | null = null;
       let buyAtDate: string | null = null;
+      let stockEndsAt: string | null = null;
       if (activeRules.length > 0) {
+        // Считаем суммарное недельное потребление: сколько единиц расходуется за неделю
         let weeklyConsumption = 0;
         for (const rule of activeRules) {
           weeklyConsumption += rule.doseUnits * rule.daysOfWeek.length;
@@ -130,18 +132,24 @@ const PilloPage = async () => {
         if (weeklyConsumption > 0) {
           const dailyConsumption = weeklyConsumption / 7;
           const stock = toNumber(medication.stockUnits);
-          const minStock = toNumber(medication.minThresholdUnits);
 
+          // На сколько дней хватит текущего остатка
           daysLeft = Math.floor(stock / dailyConsumption);
 
-          // Дней до достижения минимального порога; если stock уже ниже — будет ≤ 0
-          const daysUntilMinStock = Math.max(0, (stock - minStock) / dailyConsumption);
-          // Рекомендуем купить за 7 дней до порога, но не раньше «сегодня»
-          const daysToBuy = Math.max(0, Math.floor(daysUntilMinStock - 7));
+          // Точная дата окончания запасов
+          const endsDate = new Date();
+          endsDate.setDate(endsDate.getDate() + daysLeft);
+          stockEndsAt = endsDate.toISOString();
 
-          const targetDate = new Date();
-          targetDate.setDate(targetDate.getDate() + daysToBuy);
-          buyAtDate = targetDate.toISOString();
+          // Рекомендация купить — за 7 дней до окончания, но не раньше сегодня
+          const daysToBuy = Math.max(0, daysLeft - 7);
+
+          // Если осталось ≤1 дня до рекомендации — показываем только дату окончания
+          if (daysToBuy > 1) {
+            const buyDate = new Date();
+            buyDate.setDate(buyDate.getDate() + daysToBuy);
+            buyAtDate = buyDate.toISOString();
+          }
         }
       }
 
@@ -164,7 +172,8 @@ const PilloPage = async () => {
           minThresholdUnits: medication.minThresholdUnits
         }),
         daysLeft,
-        buyAtDate
+        buyAtDate,
+        stockEndsAt
       };
     }
   );
@@ -191,7 +200,8 @@ const PilloPage = async () => {
         nextDoseUnits: intake.doseUnits
       }),
       daysLeft: med?.daysLeft ?? null,
-      buyAtDate: med?.buyAtDate ?? null
+      buyAtDate: med?.buyAtDate ?? null,
+      stockEndsAt: med?.stockEndsAt ?? null
     };
   });
 

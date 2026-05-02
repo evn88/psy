@@ -144,7 +144,7 @@ const IntakeCard = ({ intake }: { intake: PilloIntakeView }) => {
                   {t('today.daysLeft', { count: intake.daysLeft })}
                 </span>
               )}
-              {intake.buyAtDate !== null && (
+              {(intake.buyAtDate !== null || intake.stockEndsAt !== null) && (
                 <span
                   className={cn(
                     'font-bold truncate',
@@ -153,12 +153,36 @@ const IntakeCard = ({ intake }: { intake: PilloIntakeView }) => {
                     intake.stockStatus === 'empty' && 'text-rose-600 dark:text-rose-400'
                   )}
                 >
-                  {t('today.buyAtDate', {
-                    date: new Intl.DateTimeFormat(locale, {
-                      month: 'short',
-                      day: 'numeric'
-                    }).format(new Date(intake.buyAtDate))
-                  })}
+                  {intake.buyAtDate !== null ? (
+                    <>
+                      {t('today.buyAtDate', {
+                        date: new Intl.DateTimeFormat(locale, {
+                          month: 'short',
+                          day: 'numeric'
+                        }).format(new Date(intake.buyAtDate))
+                      })}
+                      {intake.stockEndsAt !== null && (
+                        <>
+                          {' '}
+                          <span className="font-medium opacity-70">
+                            {t('today.stockEndsAt', {
+                              date: new Intl.DateTimeFormat(locale, {
+                                month: 'short',
+                                day: 'numeric'
+                              }).format(new Date(intake.stockEndsAt))
+                            })}
+                          </span>
+                        </>
+                      )}
+                    </>
+                  ) : intake.stockEndsAt !== null ? (
+                    t('today.stockEndsSoon', {
+                      date: new Intl.DateTimeFormat(locale, {
+                        month: 'short',
+                        day: 'numeric'
+                      }).format(new Date(intake.stockEndsAt))
+                    })
+                  ) : null}
                 </span>
               )}
             </div>

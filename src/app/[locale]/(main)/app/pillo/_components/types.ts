@@ -17,6 +17,7 @@ export type PilloMedicationView = {
   stockStatus: 'enough' | 'low' | 'empty';
   daysLeft: number | null;
   buyAtDate: string | null;
+  stockEndsAt: string | null;
 };
 
 export type PilloScheduleRuleView = {
@@ -50,6 +51,7 @@ export type PilloIntakeView = {
   stockStatus: 'enough' | 'low' | 'empty';
   daysLeft: number | null;
   buyAtDate: string | null;
+  stockEndsAt: string | null;
 };
 
 export type PilloSettingsView = {

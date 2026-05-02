@@ -873,7 +873,9 @@
       "undoDescription": "You can undo your previous choice (Taken / Skipped). If you undo taking the medication, the quantity will be returned to the available stock.",
       "undoAction": "Undo choice",
       "daysLeft": "Lasts for ~{count} days",
-      "buyAtDate": "Buy by {date}"
+      "buyAtDate": "Buy by {date}",
+      "stockEndsAt": "(runs out {date})",
+      "stockEndsSoon": "Runs out {date}"
     },
     "medications": {
       "addPackageBtn": "Add package",
