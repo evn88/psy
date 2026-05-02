@@ -859,6 +859,7 @@
       "packagesCount": "Pakovanja na stanju",
       "unitsPerPackage": "Jedinica u pakovanju",
       "stockUnits": "Zaliha u jedinicama",
+      "stockDescription": "Trenutna zaliha. Izračunava se automatski pri kreiranju, ali može se ručno podesiti.",
       "minThresholdUnits": "Minimalna zaliha",
       "minThresholdDescription": "Nivo zaliha pri kom će se aktivirati upozorenje za obnovu zaliha.",
       "description": "Opis",

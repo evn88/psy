@@ -56,12 +56,14 @@ export const usePilloMedicationForm = (medication?: PilloMedicationView) => {
   const packagesCount = form.watch('packagesCount');
   const unitsPerPackage = form.watch('unitsPerPackage');
 
-  // Автоматический расчет остатка в единицах
+  // Автоматический расчет остатка в единицах только при создании
   useEffect(() => {
-    const pCount = Number(packagesCount) || 0;
-    const uCount = Number(unitsPerPackage) || 0;
-    form.setValue('stockUnits', pCount * uCount, { shouldDirty: true, shouldValidate: true });
-  }, [packagesCount, unitsPerPackage, form]);
+    if (!medication?.id) {
+      const pCount = Number(packagesCount) || 0;
+      const uCount = Number(unitsPerPackage) || 0;
+      form.setValue('stockUnits', pCount * uCount, { shouldDirty: true, shouldValidate: true });
+    }
+  }, [packagesCount, unitsPerPackage, form, medication?.id]);
 
   const onUploadPhoto = (file: File | null) => {
     if (!file) return;

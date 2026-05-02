@@ -31,11 +31,15 @@ export const resolveStockUnits = (params: {
   unitsPerPackage?: number | null;
   stockUnits?: number | null;
 }) => {
+  if (typeof params.stockUnits === 'number') {
+    return Math.max(0, params.stockUnits);
+  }
+
   if (params.unitsPerPackage && params.unitsPerPackage > 0) {
     return params.packagesCount * params.unitsPerPackage;
   }
 
-  return Math.max(0, params.stockUnits ?? 0);
+  return 0;
 };
 
 /**

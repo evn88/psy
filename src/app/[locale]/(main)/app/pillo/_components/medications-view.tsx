@@ -252,6 +252,14 @@ const MedicationDialog = ({
             />
             <TextField
               control={form.control}
+              name="stockUnits"
+              label={t('medications.stockUnits')}
+              description={t('medications.stockDescription')}
+              type="number"
+              integer={true}
+            />
+            <TextField
+              control={form.control}
               name="minThresholdUnits"
               label={`${t('medications.minThresholdUnits')} (в единицах)`}
               description={t('medications.minThresholdDescription')}

@@ -7,15 +7,26 @@ describe('Pillo stock helpers', () => {
     vi.clearAllMocks();
   });
 
-  it('считает остаток через упаковки, если указано количество в упаковке', () => {
+  it('считает остаток через упаковки, если не указан явный остаток', () => {
     // Arrange
-    const input = { packagesCount: 3, unitsPerPackage: 20, stockUnits: 4 };
+    const input = { packagesCount: 3, unitsPerPackage: 20 };
 
     // Act
     const result = resolveStockUnits(input);
 
     // Assert
     expect(result).toBe(60);
+  });
+
+  it('использует явно указанный остаток, если он передан', () => {
+    // Arrange
+    const input = { packagesCount: 3, unitsPerPackage: 20, stockUnits: 45 };
+
+    // Act
+    const result = resolveStockUnits(input);
+
+    // Assert
+    expect(result).toBe(45);
   });
 
   it('возвращает красный статус для нулевого остатка', () => {

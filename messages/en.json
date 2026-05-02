@@ -894,6 +894,7 @@
       "packagesCount": "Packages in stock",
       "unitsPerPackage": "Units per package",
       "stockUnits": "Stock units",
+      "stockDescription": "Current stock. Calculated automatically on creation, but can be manually adjusted.",
       "minThresholdUnits": "Minimum stock",
       "minThresholdDescription": "The stock level at which an alert to restock will be triggered.",
       "description": "Description",
