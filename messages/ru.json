@@ -890,6 +890,7 @@
       "unitsPerPackage": "Единиц в упаковке",
       "stockUnits": "Остаток в единицах",
       "minThresholdUnits": "Минимальный остаток",
+      "minThresholdDescription": "Остаток, при котором сработает оповещение о необходимости пополнить запасы.",
       "description": "Описание",
       "isActive": "Таблетка активна",
       "stock": "Остаток"

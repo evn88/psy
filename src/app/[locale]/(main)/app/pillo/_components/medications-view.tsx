@@ -103,8 +103,16 @@ const MedicationDialog = ({
   medication?: PilloMedicationView;
 }) => {
   const t = useTranslations('Pillo');
-  const { form, isPending, onSubmit, onUploadPhoto, open, setOpen } =
-    usePilloMedicationForm(medication);
+  const {
+    form,
+    isPending: isFormPending,
+    onSubmit,
+    onUploadPhoto,
+    open,
+    setOpen
+  } = usePilloMedicationForm(medication);
+  const [isDeleting, startTransition] = useTransition();
+  const isPending = isFormPending || isDeleting;
 
   const photoUrl = form.watch('photoUrl');
 
@@ -246,6 +254,7 @@ const MedicationDialog = ({
               control={form.control}
               name="minThresholdUnits"
               label={`${t('medications.minThresholdUnits')} (в единицах)`}
+              description={t('medications.minThresholdDescription')}
               type="number"
               integer={true}
             />
@@ -266,9 +275,32 @@ const MedicationDialog = ({
                 </FormItem>
               )}
             />
-            <Button type="submit" disabled={isPending} className="h-12 w-full rounded-full">
-              {t('common.save')}
-            </Button>
+            <div className="flex flex-col gap-2 pt-2">
+              <Button type="submit" disabled={isPending} className="h-12 w-full rounded-full">
+                {t('common.save')}
+              </Button>
+              {medication && (
+                <DeleteConfirmDialog
+                  onConfirm={() => {
+                    startTransition(() => {
+                      void deletePilloMedicationAction(medication.id).then(() => {
+                        setOpen(false);
+                      });
+                    });
+                  }}
+                >
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    disabled={isPending}
+                    className="h-12 w-full rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {t('common.delete')}
+                  </Button>
+                </DeleteConfirmDialog>
+              )}
+            </div>
           </form>
         </Form>
       </DialogContent>
@@ -327,92 +359,95 @@ const MedicationCard = ({ medication }: { medication: PilloMedicationView }) => 
       <Card
         role="button"
         tabIndex={0}
-        className="group relative overflow-hidden rounded-[1.75rem] border-white/40 bg-white/60 shadow-sm backdrop-blur-md transition-all hover:bg-white/80 active:scale-[0.98] dark:border-white/10 dark:bg-black/20 dark:hover:bg-black/30"
+        className={cn(
+          'group relative overflow-hidden rounded-[24px] border border-black/5 bg-white/60 shadow-sm backdrop-blur-xl transition-all hover:bg-white/80 hover:shadow-md active:scale-[0.98] dark:border-white/10 dark:bg-black/40 dark:hover:bg-black/60',
+          medication.stockStatus === 'empty' && 'border-rose-200/50 dark:border-rose-900/30',
+          medication.stockStatus === 'low' && 'border-amber-200/50 dark:border-amber-900/30'
+        )}
       >
-        <div
-          className={cn(
-            'absolute inset-x-0 top-0 h-1 bg-gradient-to-r opacity-60',
-            getStockGradientClass(medication.stockStatus)
-          )}
-        />
-        <CardContent className="flex gap-4 p-4">
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-muted/50 backdrop-blur-sm shadow-inner">
-            {medication.photoUrl ? (
-              <Image
-                src={medication.photoUrl}
-                alt={medication.name}
-                width={64}
-                height={64}
-                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-              />
-            ) : (
-              <Pill className="h-8 w-8 text-muted-foreground/30" />
-            )}
-          </div>
-
-          <div className="flex min-w-0 flex-1 flex-col justify-between py-0.5">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <h3 className="truncate text-base font-bold tracking-tight text-foreground">
-                  {medication.name}
-                </h3>
-                <p className="text-xs font-medium text-muted-foreground/70 uppercase tracking-wide">
-                  {medication.dosageValue !== null && medication.dosageUnit ? (
-                    <>
-                      {medication.dosageValue}{' '}
-                      {t(`dosageUnits.${medication.dosageUnit.toLowerCase().replace('.', '')}`)}
-                    </>
-                  ) : (
-                    medication.dosage
-                  )}
-                  {' · '}
-                  {t.raw(`medicationForms`)?.[medication.form.toLowerCase().replace('.', '')] ||
-                    medication.form}
-                </p>
-              </div>
-              <Badge
-                variant="secondary"
-                className={cn(
-                  'shrink-0 rounded-full border-none px-2 py-0.5 text-[10px] font-bold uppercase backdrop-blur-md',
-                  medication.stockStatus === 'enough' && 'bg-emerald-500/15 text-emerald-600',
-                  medication.stockStatus === 'low' && 'bg-amber-500/15 text-amber-600',
-                  medication.stockStatus === 'empty' && 'bg-rose-500/15 text-rose-600'
-                )}
-              >
-                {t(`stockStatus.${medication.stockStatus}`)}
-              </Badge>
+        <CardContent className="p-4 sm:p-5">
+          <div className="flex gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-sm border border-black/5 dark:bg-white/5 dark:border-white/10 backdrop-blur-md">
+              {medication.photoUrl ? (
+                <Image
+                  src={medication.photoUrl}
+                  alt={medication.name}
+                  width={56}
+                  height={56}
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                />
+              ) : (
+                <Pill className="h-7 w-7 text-primary/40" />
+              )}
             </div>
 
-            <div className="mt-3 space-y-2">
-              <div className="flex items-end justify-between text-xs">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-                    {t('medications.stock')}
+            <div className="flex min-w-0 flex-1 flex-col justify-center">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="truncate text-[16px] font-semibold tracking-tight text-foreground/90 transition-colors group-hover:text-foreground">
+                    {medication.name}
+                  </h3>
+                  <p className="mt-0.5 truncate text-[13px] font-medium text-muted-foreground/80">
+                    {medication.dosageValue !== null && medication.dosageUnit ? (
+                      <>
+                        {medication.dosageValue}{' '}
+                        {t(`dosageUnits.${medication.dosageUnit.toLowerCase().replace('.', '')}`)}
+                      </>
+                    ) : (
+                      medication.dosage
+                    )}
+                    <span className="mx-1.5 text-muted-foreground/40">•</span>
+                    {t.raw(`medicationForms`)?.[medication.form.toLowerCase().replace('.', '')] ||
+                      medication.form}
+                  </p>
+                </div>
+
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    'shrink-0 rounded-full border-none px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider backdrop-blur-md',
+                    medication.stockStatus === 'enough' &&
+                      'bg-emerald-100/60 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300',
+                    medication.stockStatus === 'low' &&
+                      'bg-amber-100/60 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300',
+                    medication.stockStatus === 'empty' &&
+                      'bg-rose-100/60 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300'
+                  )}
+                >
+                  {t(`stockStatus.${medication.stockStatus}`)}
+                </Badge>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 flex items-end justify-between gap-4">
+            <div className="flex-1 space-y-2">
+              <div className="flex items-end justify-between">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-xl font-bold tracking-tight text-foreground/90">
+                    {medication.stockUnits}
                   </span>
-                  <span className="text-sm font-bold text-foreground">
-                    {medication.stockUnits}{' '}
-                    <span className="text-[10px] font-medium text-muted-foreground">
-                      {t('schedule.doseUnitsShort')}
-                    </span>
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                    {t('schedule.doseUnitsShort')}
                   </span>
                 </div>
-                {medication.unitsPerPackage && (
-                  <span className="text-[10px] font-bold text-muted-foreground/60">
-                    {Math.round(stockPercentage || 0)}%
+                {medication.unitsPerPackage && stockPercentage !== null && (
+                  <span className="text-[11px] font-bold text-muted-foreground/50">
+                    {Math.round(stockPercentage)}%
                   </span>
                 )}
               </div>
 
               {stockPercentage !== null && (
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted/30">
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-black/5 dark:bg-white/10">
                   <div
                     className={cn(
-                      'h-full transition-all duration-700 ease-out',
+                      'h-full rounded-full transition-all duration-1000 ease-out',
                       medication.stockStatus === 'enough'
-                        ? 'bg-emerald-500'
+                        ? 'bg-emerald-500 dark:bg-emerald-400'
                         : medication.stockStatus === 'low'
-                          ? 'bg-amber-500'
-                          : 'bg-rose-500'
+                          ? 'bg-amber-500 dark:bg-amber-400'
+                          : 'bg-rose-500 dark:bg-rose-400'
                     )}
                     style={{ width: `${stockPercentage}%` }}
                   />
@@ -420,49 +455,28 @@ const MedicationCard = ({ medication }: { medication: PilloMedicationView }) => 
               )}
             </div>
 
-            <div className="mt-3 flex items-center justify-between border-t border-black/[0.03] pt-2 dark:border-white/[0.03]">
-              <div className="flex items-center gap-1.5">
-                {medication.unitsPerPackage ? (
-                  <div onClick={e => e.stopPropagation()}>
-                    <AddPackageConfirmDialog
-                      onConfirm={() => {
-                        startTransition(() => {
-                          void addPilloMedicationPackageAction(medication.id);
-                        });
-                      }}
-                    >
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        disabled={isPending}
-                        className="h-7 rounded-full px-2.5 text-[10px] font-bold"
-                      >
-                        <Plus className="mr-1 h-3 w-3" />
-                        {t('medications.addPackageBtn')}
-                      </Button>
-                    </AddPackageConfirmDialog>
-                  </div>
-                ) : null}
-              </div>
-              <div onClick={e => e.stopPropagation()}>
-                <DeleteConfirmDialog
+            <div
+              className="flex shrink-0 items-center gap-1.5 pb-0.5"
+              onClick={e => e.stopPropagation()}
+            >
+              {medication.unitsPerPackage ? (
+                <AddPackageConfirmDialog
                   onConfirm={() => {
                     startTransition(() => {
-                      void deletePilloMedicationAction(medication.id);
+                      void addPilloMedicationPackageAction(medication.id);
                     });
                   }}
                 >
                   <Button
-                    variant="ghost"
-                    size="sm"
+                    variant="default"
+                    size="icon"
                     disabled={isPending}
-                    className="h-7 rounded-full px-2.5 text-[10px] font-bold text-destructive/80 hover:bg-destructive/10 hover:text-destructive"
+                    className="h-8 w-8 rounded-full shadow-sm transition-all hover:scale-105 active:scale-95"
                   >
-                    <Trash2 className="mr-1 h-3 w-3" />
-                    {t('common.delete')}
+                    <Plus className="h-4 w-4" />
                   </Button>
-                </DeleteConfirmDialog>
-              </div>
+                </AddPackageConfirmDialog>
+              ) : null}
             </div>
           </div>
         </CardContent>

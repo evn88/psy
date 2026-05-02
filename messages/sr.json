@@ -855,6 +855,7 @@
       "unitsPerPackage": "Jedinica u pakovanju",
       "stockUnits": "Zaliha u jedinicama",
       "minThresholdUnits": "Minimalna zaliha",
+      "minThresholdDescription": "Nivo zaliha pri kom će se aktivirati upozorenje za obnovu zaliha.",
       "description": "Opis",
       "isActive": "Lek je aktivan",
       "stock": "Zaliha"

@@ -1,11 +1,18 @@
 import { type Control, type FieldValues, type Path } from 'react-hook-form';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import {
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 
 /**
  * Унифицированное текстовое поле для RHF.
- * @param props - control, имя, label и тип поля.
+ * @param props - control, имя, label, тип поля и опциональное описание.
  * @returns Поле формы.
  */
 export const TextField = <TFieldValues extends FieldValues>({
@@ -13,13 +20,15 @@ export const TextField = <TFieldValues extends FieldValues>({
   label,
   name,
   type = 'text',
-  integer = false
+  integer = false,
+  description
 }: {
   control: Control<TFieldValues>;
   label: string;
   name: Path<TFieldValues>;
   type?: string;
   integer?: boolean;
+  description?: string;
 }) => {
   return (
     <FormField
@@ -47,6 +56,7 @@ export const TextField = <TFieldValues extends FieldValues>({
               className="h-11 rounded-2xl"
             />
           </FormControl>
+          {description && <FormDescription>{description}</FormDescription>}
           <FormMessage />
         </FormItem>
       )}
