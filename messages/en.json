@@ -904,13 +904,15 @@
       "doseUnitsShort": "units"
     },
     "settings": {
-      "notifications": "Pillo notifications",
-      "emailReminders": "Email intake reminders",
-      "pushReminders": "Push intake reminders",
-      "lowStockEmail": "Email when stock is low",
-      "lowStockPush": "Push when stock is low",
-      "appearance": "Language and theme",
-      "appearanceDescription": "These settings are synced with the site."
+      "notifications": "Notifications",
+      "emailReminders": "Email reminders",
+      "pushReminders": "Push notifications",
+      "lowStockEmail": "Email on low stock",
+      "lowStockPush": "Push on low stock",
+      "appearance": "Appearance",
+      "appearanceDescription": "Customize your app theme and language",
+      "about": "About Pillo",
+      "secureDescription": "All data is encrypted and stored securely."
     },
     "stockStatus": {
       "enough": "Enough",

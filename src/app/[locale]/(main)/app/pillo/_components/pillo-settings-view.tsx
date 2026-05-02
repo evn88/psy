@@ -1,12 +1,13 @@
 import { useMemo } from 'react';
-import { Bell, Languages, Moon, PackagePlus } from 'lucide-react';
+import { Bell, Languages, Mail, MessageSquare, Moon, PackagePlus, ShieldCheck } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { SettingsForm } from '@/app/[locale]/(main)/admin/settings/_components/settings-form';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { usePilloSettingsForm } from '../_hooks/use-pillo-settings-form';
 import type { PilloAppearanceSettingsView, PilloSettingsView } from './types';
+import { cn } from '@/lib/utils';
 
 /**
  * Рисует настройки Pillo и общие настройки темы/языка.
@@ -23,58 +24,105 @@ export const SettingsView = ({
   const t = useTranslations('Pillo');
   const { isPending, onToggle, values } = usePilloSettingsForm(settings);
 
-  const rows = useMemo(
+  const notifications = useMemo(
     () =>
       [
-        ['emailRemindersEnabled', 'settings.emailReminders', Bell],
-        ['pushRemindersEnabled', 'settings.pushReminders', Bell],
-        ['lowStockEmailEnabled', 'settings.lowStockEmail', PackagePlus],
-        ['lowStockPushEnabled', 'settings.lowStockPush', PackagePlus]
+        {
+          name: 'emailRemindersEnabled',
+          labelKey: 'settings.emailReminders',
+          icon: Mail,
+          color: 'bg-blue-500'
+        },
+        {
+          name: 'pushRemindersEnabled',
+          labelKey: 'settings.pushReminders',
+          icon: MessageSquare,
+          color: 'bg-emerald-500'
+        },
+        {
+          name: 'lowStockEmailEnabled',
+          labelKey: 'settings.lowStockEmail',
+          icon: Mail,
+          color: 'bg-blue-500'
+        },
+        {
+          name: 'lowStockPushEnabled',
+          labelKey: 'settings.lowStockPush',
+          icon: PackagePlus,
+          color: 'bg-amber-500'
+        }
       ] as const,
     []
   );
 
   return (
-    <div className="space-y-4">
-      <Card className="rounded-[1.5rem] border-white/60 bg-card/90 shadow-sm dark:border-white/10">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5" />
-            {t('settings.notifications')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {rows.map(([name, labelKey, Icon]) => (
-            <div key={name} className="flex items-center justify-between gap-4">
-              <Label className="flex items-center gap-2 text-sm">
-                <Icon className="h-4 w-4" />
-                {t(labelKey)}
-              </Label>
-              <Switch
-                checked={Boolean(values[name])}
-                disabled={isPending}
-                onCheckedChange={checked => onToggle(name, checked)}
-              />
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+    <div className="space-y-6 pb-8">
+      {/* Секция Уведомлений */}
+      <section className="space-y-2.5">
+        <h2 className="px-4 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+          {t('settings.notifications')}
+        </h2>
+        <Card className="overflow-hidden rounded-[1.75rem] border-white/40 bg-white/60 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-black/20">
+          <CardContent className="divide-y divide-black/[0.03] p-0 dark:divide-white/[0.03]">
+            {notifications.map(({ name, labelKey, icon: Icon, color }, index) => (
+              <div
+                key={name}
+                className={cn(
+                  'flex items-center justify-between gap-4 px-4 py-3.5 transition-colors active:bg-black/[0.02] dark:active:bg-white/[0.02]',
+                  index === 0 && 'pt-4',
+                  index === notifications.length - 1 && 'pb-4'
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={cn(
+                      'flex h-8 w-8 items-center justify-center rounded-lg text-white shadow-sm',
+                      color
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <Label className="text-[15px] font-medium tracking-tight">{t(labelKey)}</Label>
+                </div>
+                <Switch
+                  checked={Boolean(values[name as keyof PilloSettingsView])}
+                  disabled={isPending}
+                  onCheckedChange={checked => onToggle(name, checked)}
+                  className="data-[state=checked]:bg-emerald-500"
+                />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </section>
 
-      <Card className="rounded-[1.5rem] border-white/60 bg-card/90 shadow-sm dark:border-white/10">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Languages className="h-5 w-5" />
-            {t('settings.appearance')}
-          </CardTitle>
-          <CardDescription className="flex items-center gap-2">
-            <Moon className="h-4 w-4" />
-            {t('settings.appearanceDescription')}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <SettingsForm initialSettings={appearanceSettings} />
-        </CardContent>
-      </Card>
+      {/* Секция Внешнего вида */}
+      <section className="space-y-2.5">
+        <h2 className="px-4 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+          {t('settings.appearance')}
+        </h2>
+        <Card className="rounded-[1.75rem] border-white/40 bg-white/60 p-4 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-black/20">
+          <SettingsForm initialSettings={appearanceSettings} variant="ghost" />
+        </Card>
+      </section>
+
+      {/* Секция О приложении */}
+      <section className="space-y-2.5">
+        <h2 className="px-4 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+          {t('settings.about')}
+        </h2>
+        <Card className="rounded-[1.75rem] border-white/40 bg-white/60 p-4 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-black/20">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-inner">
+              <ShieldCheck className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-sm font-bold tracking-tight">Pillo v2.0</p>
+              <p className="text-xs text-muted-foreground/70">{t('settings.secureDescription')}</p>
+            </div>
+          </div>
+        </Card>
+      </section>
     </div>
   );
 };

@@ -104,6 +104,7 @@ interface SettingsFormProps {
     language: string;
     theme: string;
   };
+  variant?: 'card' | 'ghost';
 }
 
 /**
@@ -111,7 +112,7 @@ interface SettingsFormProps {
  * При сохранении языка немедленно обновляет cookie NEXT_LOCALE
  * для применения смены языка без задержки.
  */
-export const SettingsForm = ({ initialSettings }: SettingsFormProps) => {
+export const SettingsForm = ({ initialSettings, variant = 'card' }: SettingsFormProps) => {
   const t = useTranslations('Settings');
   const locale = useLocale();
   const { setTheme } = useTheme();
@@ -161,70 +162,76 @@ export const SettingsForm = ({ initialSettings }: SettingsFormProps) => {
     }
   };
 
+  const formContent = (
+    <div className="space-y-4">
+      <FormField
+        control={form.control}
+        name="language"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>{t('languageLabel')}</FormLabel>
+            <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('languagePlaceholder')} />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {locales.map(locale => (
+                  <SelectItem key={locale} value={locale}>
+                    {t(LOCALE_I18N_KEYS[locale])}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormDescription>{t('languageDescription')}</FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={form.control}
+        name="theme"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>{t('themeLabel')}</FormLabel>
+            <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('themePlaceholder')} />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value="light">{t('themeLight')}</SelectItem>
+                <SelectItem value="dark">{t('themeDark')}</SelectItem>
+                <SelectItem value="system">{t('themeSystem')}</SelectItem>
+              </SelectContent>
+            </Select>
+            <FormDescription>{t('themeDescription')}</FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <Button type="submit" disabled={loading} className="w-full">
+        {loading ? t('saving') : t('save')}
+      </Button>
+    </div>
+  );
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('appearanceTitle')}</CardTitle>
-            <CardDescription>{t('appearanceDescription')}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <FormField
-              control={form.control}
-              name="language"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('languageLabel')}</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t('languagePlaceholder')} />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {locales.map(locale => (
-                        <SelectItem key={locale} value={locale}>
-                          {t(LOCALE_I18N_KEYS[locale])}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>{t('languageDescription')}</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="theme"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('themeLabel')}</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t('themePlaceholder')} />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="light">{t('themeLight')}</SelectItem>
-                      <SelectItem value="dark">{t('themeDark')}</SelectItem>
-                      <SelectItem value="system">{t('themeSystem')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>{t('themeDescription')}</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-          <CardFooter>
-            <Button type="submit" disabled={loading}>
-              {loading ? t('saving') : t('save')}
-            </Button>
-          </CardFooter>
-        </Card>
+        {variant === 'card' ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('appearanceTitle')}</CardTitle>
+              <CardDescription>{t('appearanceDescription')}</CardDescription>
+            </CardHeader>
+            <CardContent>{formContent}</CardContent>
+          </Card>
+        ) : (
+          formContent
+        )}
       </form>
     </Form>
   );

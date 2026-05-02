@@ -904,13 +904,15 @@
       "doseUnitsShort": "ед."
     },
     "settings": {
-      "notifications": "Уведомления Pillo",
-      "emailReminders": "Email-напоминания о приёме",
-      "pushReminders": "Push-напоминания о приёме",
-      "lowStockEmail": "Email, когда пора купить",
-      "lowStockPush": "Push, когда пора купить",
-      "appearance": "Язык и тема",
-      "appearanceDescription": "Эти настройки синхронны с сайтом."
+      "notifications": "Уведомления",
+      "emailReminders": "Email напоминания",
+      "pushReminders": "Push уведомления",
+      "lowStockEmail": "Email при малом запасе",
+      "lowStockPush": "Push при малом запасе",
+      "appearance": "Внешний вид",
+      "appearanceDescription": "Настройте тему и язык приложения",
+      "about": "О приложении",
+      "secureDescription": "Все данные защищены и хранятся локально."
     },
     "stockStatus": {
       "enough": "Достаточно",
