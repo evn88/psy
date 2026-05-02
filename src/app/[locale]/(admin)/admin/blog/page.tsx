@@ -6,9 +6,9 @@ import prisma from '@/lib/prisma';
 import { Clock, Tag, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatBlogDate } from '@/lib/blog-utils';
-import { CreateArticleButton } from './_components/create-article-button';
-import { DeleteArticleButton } from './_components/delete-article-button';
-import { GoToCategoriesButton } from './_components/go-to-categories-button';
+import { CreateArticleButton } from './_components/CreateArticleButton';
+import { DeleteArticleButton } from './_components/DeleteArticleButton';
+import { GoToCategoriesButton } from './_components/GoToCategoriesButton';
 
 export const dynamic = 'force-dynamic';
 

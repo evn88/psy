@@ -1,5 +1,5 @@
-import { ScheduleDashboard } from './_components/schedule-dashboard';
-import { SyncSettingsDialog } from './_components/sync-settings-dialog';
+import { ScheduleDashboard } from './_components/ScheduleDashboard';
+import { SyncSettingsDialog } from './_components/SyncSettingsDialog';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 

@@ -1,5 +1,5 @@
 import { getTranslations } from 'next-intl/server';
-import { CreateSurveyForm } from '../_components/create-survey-form';
+import { CreateSurveyForm } from '../_components/CreateSurveyForm';
 
 /**
  * Страница создания нового опроса в админке.

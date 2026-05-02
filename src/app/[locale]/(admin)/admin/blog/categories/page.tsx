@@ -1,7 +1,7 @@
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
-import { CategoriesManager } from './_components/categories-manager';
+import { CategoriesManager } from './_components/CategoriesManager';
 
 export const dynamic = 'force-dynamic';
 

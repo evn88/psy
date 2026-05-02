@@ -6,8 +6,8 @@ import { getPayPalClientId, getPayPalDefaultCurrency } from '@/modules/payments/
 import { formatPaymentAmount } from '@/modules/payments';
 import { getTranslations } from 'next-intl/server';
 
-import { MyPaymentsHistory } from './_components/my-payments-history';
-import { PaymentCheckoutCard } from './_components/payment-checkout-card';
+import { MyPaymentsHistory } from './_components/MyPaymentsHistory';
+import { PaymentCheckoutCard } from './_components/PaymentCheckoutCard';
 
 interface MyPaymentsPageProps {
   params: Promise<{ locale: string }>;

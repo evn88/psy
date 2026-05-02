@@ -1,5 +1,5 @@
 import { getTranslations } from 'next-intl/server';
-import { UserScheduleDashboard } from './_components/user-schedule-dashboard';
+import { UserScheduleDashboard } from './_components/UserScheduleDashboard';
 
 export default async function MySessionsPage() {
   const t = await getTranslations('My');

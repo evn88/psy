@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import styles from '@/styles/landing/landing.module.css';
-import { DevBanner } from './_components/landing/dev-banner';
+import { DevBanner } from './_components/landing/DevBanner';
 import { Footer } from './_components/landing/footer';
 import { Hero } from './_components/landing/hero';
 import { defaultLocale, isLocale } from '@/i18n/config';
-import { JsonLd } from '@/components/json-ld';
+import { JsonLd } from '@/components/JsonLd';
 import {
   createCanonicalAlternates,
   createOpenGraphMetadata,
@@ -15,7 +15,7 @@ import {
   resolveMetadataImage
 } from '@/lib/seo';
 
-// import { ThemeToggle } from './_components/landing/theme-toggle';
+// import { ThemeToggle } from './_components/landing/ThemeToggle';
 
 interface HomePageProps {
   params: Promise<{ locale: string }>;

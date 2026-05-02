@@ -2,9 +2,9 @@ import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
-import { PushNotificationSettings } from '@/components/pwa/push-notification-settings';
-import { BlogNotificationsToggle } from './_components/blog-notifications-toggle';
-import { SettingsForm } from '@/components/settings-form';
+import { PushNotificationSettings } from '@/components/pwa/PushNotificationSettings';
+import { BlogNotificationsToggle } from './_components/BlogNotificationsToggle';
+import { SettingsForm } from '@/components/SettingsForm';
 import { defaultLocale } from '@/i18n/config';
 
 /**

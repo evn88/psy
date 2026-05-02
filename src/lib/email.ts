@@ -2,25 +2,25 @@ import * as React from 'react';
 import { Resend } from 'resend';
 import { render } from '@react-email/render';
 import type { BlogPost, BlogPostTranslation } from '@prisma/client';
-import { VerificationEmailTemplate } from '@/emails/verification-email-template';
-import { WelcomeGoogleEmailTemplate } from '@/emails/welcome-google-email-template';
-import { EventNotificationTemplate } from '@/emails/event-notification-template';
-import { EventCancellationTemplate } from '@/emails/event-cancellation-template';
+import { VerificationEmailTemplate } from '@/emails/VerificationEmailTemplate';
+import { WelcomeGoogleEmailTemplate } from '@/emails/WelcomeGoogleEmailTemplate';
+import { EventNotificationTemplate } from '@/emails/EventNotificationTemplate';
+import { EventCancellationTemplate } from '@/emails/EventCancellationTemplate';
 import {
   AdminEventBookingTemplate,
   type AdminEventBookingTranslationData
-} from '@/emails/admin-event-booking-template';
+} from '@/emails/AdminEventBookingTemplate';
 import {
   AdminEventCancellationTemplate,
   type AdminEventCancellationTranslationData
-} from '@/emails/admin-event-cancellation-template';
-import { AdminMessageTemplate } from '@/emails/admin-message-template';
-import { BlogNotificationEmail } from '@/emails/blog-notification-template';
-import { AccountDeletionRequestTemplate } from '@/emails/account-deletion-request-template';
-import { AccountDeletedUserTemplate } from '@/emails/account-deleted-user-template';
-import { AccountDeletedAdminTemplate } from '@/emails/account-deleted-admin-template';
-import { AdminIntakeNotificationTemplate } from '@/emails/admin-intake-notification-template';
-import { PilloNotificationTemplate } from '@/emails/pillo-notification-template';
+} from '@/emails/AdminEventCancellationTemplate';
+import { AdminMessageTemplate } from '@/emails/AdminMessageTemplate';
+import { BlogNotificationEmail } from '@/emails/BlogNotificationTemplate';
+import { AccountDeletionRequestTemplate } from '@/emails/AccountDeletionRequestTemplate';
+import { AccountDeletedUserTemplate } from '@/emails/AccountDeletedUserTemplate';
+import { AccountDeletedAdminTemplate } from '@/emails/AccountDeletedAdminTemplate';
+import { AdminIntakeNotificationTemplate } from '@/emails/AdminIntakeNotificationTemplate';
+import { PilloNotificationTemplate } from '@/emails/PilloNotificationTemplate';
 import {
   formatPilloIntakeDateTime,
   getPilloNotificationCopy,

@@ -1,6 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 
-import { PilloLoader } from './_components/pillo-loader';
+import { PilloLoader } from './_components/PilloLoader';
 
 /**
  * Loader сегмента Pillo во время загрузки маршрута.

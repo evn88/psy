@@ -4,11 +4,11 @@ import { getTranslations } from 'next-intl/server';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { decryptData } from '@/lib/crypto';
-import { ClientNotes } from './_components/client-notes';
-import { ClientIntakes } from './_components/client-intakes';
-import { ClientDocuments } from './_components/client-documents';
-import { ClientData } from './_components/client-data';
-import { ClientPayments } from './_components/client-payments';
+import { ClientNotes } from './_components/ClientNotes';
+import { ClientIntakes } from './_components/ClientIntakes';
+import { ClientDocuments } from './_components/ClientDocuments';
+import { ClientData } from './_components/ClientData';
+import { ClientPayments } from './_components/ClientPayments';
 
 export default async function AdminClientProfilePage({
   params

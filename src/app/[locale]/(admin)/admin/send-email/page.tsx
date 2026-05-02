@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { SendEmailForm } from './send-email-form';
+import { SendEmailForm } from './SendEmailForm';
 import { getUsersForEmail } from './actions';
 
 export const dynamic = 'force-dynamic';

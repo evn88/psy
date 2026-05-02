@@ -11,8 +11,8 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
-import { PilloMiniAppCard } from './_components/pillo-mini-app-card';
+} from '@/components/ui/DropdownMenu';
+import { PilloMiniAppCard } from './_components/PilloMiniAppCard';
 
 export const metadata: Metadata = {
   title: 'Mini Apps',

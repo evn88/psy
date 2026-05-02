@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import type { Prisma } from '@prisma/client';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
-import { BlogEditorForm } from './_components/blog-editor-form';
+import { BlogEditorForm } from './_components/BlogEditorForm';
 import type {
   BlogEditorCategory,
   BlogEditorInitialData,

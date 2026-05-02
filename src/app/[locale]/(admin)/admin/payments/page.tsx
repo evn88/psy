@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AdminPaymentsTable } from '@/modules/payments/components/admin-payments-table';
-import { PaymentsSyncButton } from '@/modules/payments/components/payments-sync-button';
+import { AdminPaymentsTable } from '@/modules/payments/components/AdminPaymentsTable';
+import { PaymentsSyncButton } from '@/modules/payments/components/PaymentsSyncButton';
 import prisma from '@/lib/prisma';
 import {
   formatPaymentAmount,

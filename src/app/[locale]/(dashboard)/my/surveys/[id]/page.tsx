@@ -1,9 +1,9 @@
 import { auth } from '@/auth';
 import { notFound, redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
-import { SurveyForm } from '../_components/survey-form';
-import { SurveyResultDetail } from '../_components/survey-result-detail';
-import { BreadcrumbSetter } from '@/components/breadcrumb-setter';
+import { SurveyForm } from '../_components/SurveyForm';
+import { SurveyResultDetail } from '../_components/SurveyResultDetail';
+import { BreadcrumbSetter } from '@/components/BreadcrumbSetter';
 import type { QuestionType } from '@prisma/client';
 
 interface SurveyPageProps {
