@@ -848,6 +848,10 @@
     "eyebrow": "Приложение",
     "title": "Pillo",
     "pendingCount": "{count} ждёт",
+    "loading": {
+      "title": "Открываю Pillo",
+      "description": "Подготавливаю таблетки, расписание и историю приёмов."
+    },
     "tabs": {
       "home": "Главная",
       "medications": "Таблетки",

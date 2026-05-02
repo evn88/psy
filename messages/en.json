@@ -848,6 +848,10 @@
     "eyebrow": "Application",
     "title": "Pillo",
     "pendingCount": "{count} pending",
+    "loading": {
+      "title": "Opening Pillo",
+      "description": "Preparing medications, schedule, and intake history."
+    },
     "tabs": {
       "home": "Home",
       "medications": "Pills",

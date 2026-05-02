@@ -820,6 +820,10 @@
     "eyebrow": "Aplikacija",
     "title": "Pillo",
     "pendingCount": "{count} čeka",
+    "loading": {
+      "title": "Otvaram Pillo",
+      "description": "Pripremam lekove, raspored i istoriju uzimanja."
+    },
     "tabs": {
       "home": "Glavna",
       "medications": "Lekovi",

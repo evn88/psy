@@ -8,15 +8,15 @@ import {
   materializePilloIntakesForUser
 } from '@/features/pillo/lib/service';
 import { getPilloLocalDateKey } from '@/features/pillo/lib/schedule';
-import { getPilloStockStatus, toNumber } from '@/features/pillo/lib/stock';
+import { toNumber } from '@/features/pillo/lib/stock';
 import prisma from '@/shared/lib/prisma';
-import { PilloAppShell } from './_components/pillo-app-shell';
+import { PilloPageClient } from './_components/pillo-page-client';
 import type {
   PilloAppearanceSettingsView,
   PilloHistoryEntryView,
-  PilloIntakeView,
-  PilloMedicationView,
-  PilloMonthlyMedicationStatView,
+  PilloIntakeRecord,
+  PilloMedicationRecord,
+  PilloPagePayload,
   PilloScheduleRuleView
 } from './_components/types';
 
@@ -215,97 +215,39 @@ const PilloPage = async () => {
     isActive: rule.isActive
   }));
 
-  const medications: PilloMedicationView[] = (dbUser.pilloMedications as DbPilloMedication[]).map(
-    medication => {
-      const activeRules = scheduleRules.filter(
-        rule => rule.medicationId === medication.id && rule.isActive
-      );
-
-      let daysLeft: number | null = null;
-      let buyAtDate: string | null = null;
-      let stockEndsAt: string | null = null;
-      if (activeRules.length > 0) {
-        // Считаем суммарное недельное потребление: сколько единиц расходуется за неделю
-        let weeklyConsumption = 0;
-        for (const rule of activeRules) {
-          weeklyConsumption += rule.doseUnits * rule.daysOfWeek.length;
-        }
-
-        if (weeklyConsumption > 0) {
-          const dailyConsumption = weeklyConsumption / 7;
-          const stock = toNumber(medication.stockUnits);
-
-          // На сколько дней хватит текущего остатка
-          daysLeft = Math.floor(stock / dailyConsumption);
-
-          // Точная дата окончания запасов
-          const endsDate = new Date();
-          endsDate.setDate(endsDate.getDate() + daysLeft);
-          stockEndsAt = endsDate.toISOString();
-
-          // Рекомендация купить — за пользовательское количество дней до окончания.
-          const daysToBuy = Math.max(0, daysLeft - settings.lowStockWarningDays);
-
-          // Если осталось ≤1 дня до рекомендации — показываем только дату окончания
-          if (daysToBuy > 1) {
-            const buyDate = new Date();
-            buyDate.setDate(buyDate.getDate() + daysToBuy);
-            buyAtDate = buyDate.toISOString();
-          }
-        }
-      }
-
-      return {
-        id: medication.id,
-        name: medication.name,
-        photoUrl: medication.photoUrl,
-        description: medication.description,
-        dosage: medication.dosage,
-        dosageValue: medication.dosageValue ? toNumber(medication.dosageValue) : null,
-        dosageUnit: medication.dosageUnit,
-        form: medication.form,
-        packagesCount: medication.packagesCount,
-        unitsPerPackage: medication.unitsPerPackage,
-        stockUnits: toNumber(medication.stockUnits),
-        minThresholdUnits: toNumber(medication.minThresholdUnits),
-        isActive: medication.isActive,
-        stockStatus: getPilloStockStatus({
-          stockUnits: medication.stockUnits,
-          minThresholdUnits: medication.minThresholdUnits
-        }),
-        daysLeft,
-        buyAtDate,
-        stockEndsAt
-      };
-    }
+  const medications: PilloMedicationRecord[] = (dbUser.pilloMedications as DbPilloMedication[]).map(
+    medication => ({
+      id: medication.id,
+      name: medication.name,
+      photoUrl: medication.photoUrl,
+      description: medication.description,
+      dosage: medication.dosage,
+      dosageValue: medication.dosageValue ? toNumber(medication.dosageValue) : null,
+      dosageUnit: medication.dosageUnit,
+      form: medication.form,
+      packagesCount: medication.packagesCount,
+      unitsPerPackage: medication.unitsPerPackage,
+      stockUnits: toNumber(medication.stockUnits),
+      minThresholdUnits: toNumber(medication.minThresholdUnits),
+      isActive: medication.isActive
+    })
   );
 
-  const intakes: PilloIntakeView[] = (todayIntakes as DbPilloIntake[]).map(intake => {
-    const med = medications.find(m => m.id === intake.medicationId);
-    return {
-      id: intake.id,
-      medicationId: intake.medicationId,
-      medicationName: intake.medication.name,
-      medicationDosage: intake.medication.dosage ?? '',
-      medicationPhotoUrl: intake.medication.photoUrl,
-      scheduledFor: intake.scheduledFor.toISOString(),
-      localDate: intake.localDate,
-      localTime: intake.localTime,
-      doseUnits: toNumber(intake.doseUnits),
-      status: intake.status,
-      comment: intake.scheduleRule.comment,
-      stockUnits: toNumber(intake.medication.stockUnits),
-      minThresholdUnits: toNumber(intake.medication.minThresholdUnits),
-      stockStatus: getPilloStockStatus({
-        stockUnits: intake.medication.stockUnits,
-        minThresholdUnits: intake.medication.minThresholdUnits,
-        nextDoseUnits: intake.doseUnits
-      }),
-      daysLeft: med?.daysLeft ?? null,
-      buyAtDate: med?.buyAtDate ?? null,
-      stockEndsAt: med?.stockEndsAt ?? null
-    };
-  });
+  const intakeRecords: PilloIntakeRecord[] = (todayIntakes as DbPilloIntake[]).map(intake => ({
+    id: intake.id,
+    medicationId: intake.medicationId,
+    medicationName: intake.medication.name,
+    medicationDosage: intake.medication.dosage ?? '',
+    medicationPhotoUrl: intake.medication.photoUrl,
+    scheduledFor: intake.scheduledFor.toISOString(),
+    localDate: intake.localDate,
+    localTime: intake.localTime,
+    doseUnits: toNumber(intake.doseUnits),
+    status: intake.status,
+    comment: intake.scheduleRule.comment,
+    medicationStockUnits: toNumber(intake.medication.stockUnits),
+    medicationMinThresholdUnits: toNumber(intake.medication.minThresholdUnits)
+  }));
 
   const historyEntries: PilloHistoryEntryView[] = [
     ...(takenHistoryIntakes as DbTakenHistoryIntake[]).flatMap(intake => {
@@ -344,8 +286,7 @@ const PilloPage = async () => {
     return new Date(right.takenAt).getTime() - new Date(left.takenAt).getTime();
   });
 
-  const monthlyStatsMap = new Map<string, PilloMonthlyMedicationStatView>();
-  const monthHistoryEntries: PilloHistoryEntryView[] = [
+  const monthlyHistoryEntries: PilloHistoryEntryView[] = [
     ...(monthlyTakenIntakes as DbTakenHistoryIntake[]).flatMap(intake => {
       if (!intake.takenAt) {
         return [];
@@ -380,50 +321,29 @@ const PilloPage = async () => {
     }))
   ];
 
-  for (const entry of monthHistoryEntries) {
-    const current = monthlyStatsMap.get(entry.medicationId);
-
-    if (current) {
-      current.totalUnits += entry.doseUnits;
-      current.intakesCount += 1;
-      continue;
-    }
-
-    monthlyStatsMap.set(entry.medicationId, {
-      medicationId: entry.medicationId,
-      medicationName: entry.medicationName,
-      medicationPhotoUrl: entry.medicationPhotoUrl,
-      totalUnits: entry.doseUnits,
-      intakesCount: 1
-    });
-  }
-
-  const monthlyIntakeStats = [...monthlyStatsMap.values()].sort((left, right) => {
-    return right.totalUnits - left.totalUnits;
-  });
-
   const appearanceSettings: PilloAppearanceSettingsView = {
     language: dbUser.language,
     theme: dbUser.theme
   };
 
-  return (
-    <PilloAppShell
-      appearanceSettings={appearanceSettings}
-      historyEntries={historyEntries}
-      intakes={intakes}
-      medications={medications}
-      monthlyIntakeStats={monthlyIntakeStats}
-      scheduleRules={scheduleRules}
-      settings={{
-        emailRemindersEnabled: settings.emailRemindersEnabled,
-        pushRemindersEnabled: settings.pushRemindersEnabled,
-        lowStockEmailEnabled: settings.lowStockEmailEnabled,
-        lowStockPushEnabled: settings.lowStockPushEnabled,
-        lowStockWarningDays: settings.lowStockWarningDays
-      }}
-    />
-  );
+  const payload: PilloPagePayload = {
+    appearanceSettings,
+    historyEntries,
+    monthlyHistoryEntries,
+    medications,
+    referenceDateIso: new Date().toISOString(),
+    scheduleRules,
+    settings: {
+      emailRemindersEnabled: settings.emailRemindersEnabled,
+      pushRemindersEnabled: settings.pushRemindersEnabled,
+      lowStockEmailEnabled: settings.lowStockEmailEnabled,
+      lowStockPushEnabled: settings.lowStockPushEnabled,
+      lowStockWarningDays: settings.lowStockWarningDays
+    },
+    todayIntakes: intakeRecords
+  };
+
+  return <PilloPageClient payload={payload} />;
 };
 
 export default PilloPage;
