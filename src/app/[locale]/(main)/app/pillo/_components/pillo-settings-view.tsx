@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { Mail, MessageSquare, PackagePlus, ShieldCheck, ShoppingBasket } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { SettingsForm } from '@/app/[locale]/(main)/admin/settings/_components/settings-form';
@@ -13,10 +12,37 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { usePilloSettingsForm } from '../_hooks/use-pillo-settings-form';
+import { PilloSwitchControl } from './pillo-switch-control';
 import type { PilloAppearanceSettingsView, PilloSettingsView } from './types';
+
+const NOTIFICATIONS = [
+  {
+    name: 'emailRemindersEnabled',
+    labelKey: 'settings.emailReminders',
+    icon: Mail,
+    color: 'bg-blue-500'
+  },
+  {
+    name: 'pushRemindersEnabled',
+    labelKey: 'settings.pushReminders',
+    icon: MessageSquare,
+    color: 'bg-emerald-500'
+  },
+  {
+    name: 'lowStockEmailEnabled',
+    labelKey: 'settings.lowStockEmail',
+    icon: Mail,
+    color: 'bg-blue-500'
+  },
+  {
+    name: 'lowStockPushEnabled',
+    labelKey: 'settings.lowStockPush',
+    icon: PackagePlus,
+    color: 'bg-amber-500'
+  }
+] as const;
 
 /**
  * Рисует настройки Pillo и общие настройки темы/языка.
@@ -40,37 +66,6 @@ export const SettingsView = ({
     values
   } = usePilloSettingsForm(settings);
 
-  const notifications = useMemo(
-    () =>
-      [
-        {
-          name: 'emailRemindersEnabled',
-          labelKey: 'settings.emailReminders',
-          icon: Mail,
-          color: 'bg-blue-500'
-        },
-        {
-          name: 'pushRemindersEnabled',
-          labelKey: 'settings.pushReminders',
-          icon: MessageSquare,
-          color: 'bg-emerald-500'
-        },
-        {
-          name: 'lowStockEmailEnabled',
-          labelKey: 'settings.lowStockEmail',
-          icon: Mail,
-          color: 'bg-blue-500'
-        },
-        {
-          name: 'lowStockPushEnabled',
-          labelKey: 'settings.lowStockPush',
-          icon: PackagePlus,
-          color: 'bg-amber-500'
-        }
-      ] as const,
-    []
-  );
-
   return (
     <div className="space-y-6 pb-8">
       {/* Секция Уведомлений */}
@@ -80,13 +75,13 @@ export const SettingsView = ({
         </h2>
         <Card className="overflow-hidden rounded-[1.75rem] border-white/40 bg-white/60 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-black/20">
           <CardContent className="divide-y divide-black/[0.03] p-0 dark:divide-white/[0.03]">
-            {notifications.map(({ name, labelKey, icon: Icon, color }, index) => (
+            {NOTIFICATIONS.map(({ name, labelKey, icon: Icon, color }, index) => (
               <div
                 key={name}
                 className={cn(
                   'flex items-center justify-between gap-4 px-4 py-3.5 transition-colors active:bg-black/[0.02] dark:active:bg-white/[0.02]',
                   index === 0 && 'pt-4',
-                  index === notifications.length - 1 && 'pb-4'
+                  index === NOTIFICATIONS.length - 1 && 'pb-4'
                 )}
               >
                 <div className="flex items-center gap-3">
@@ -100,11 +95,10 @@ export const SettingsView = ({
                   </div>
                   <Label className="text-[15px] font-medium tracking-tight">{t(labelKey)}</Label>
                 </div>
-                <Switch
+                <PilloSwitchControl
                   checked={Boolean(values[name as keyof PilloSettingsView])}
                   disabled={isPending}
                   onCheckedChange={checked => onToggle(name, checked)}
-                  className="data-[state=checked]:bg-emerald-500"
                 />
               </div>
             ))}

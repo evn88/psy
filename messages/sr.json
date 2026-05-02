@@ -828,7 +828,8 @@
     },
     "common": {
       "save": "Sačuvaj",
-      "delete": "Obriši"
+      "delete": "Obriši",
+      "clear": "Resetuj"
     },
     "today": {
       "emptyTitle": "Danas je sve mirno",

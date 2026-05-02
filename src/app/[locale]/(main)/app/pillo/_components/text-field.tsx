@@ -8,10 +8,9 @@ import {
   FormMessage
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
 
 /**
- * Унифицированное текстовое поле для RHF.
+ * Рисует унифицированное текстовое поле для RHF.
  * @param props - control, имя, label, тип поля и опциональное описание.
  * @returns Поле формы.
  */
@@ -45,49 +44,19 @@ export const TextField = <TFieldValues extends FieldValues>({
               step={type === 'number' ? (integer ? '1' : '0.01') : undefined}
               inputMode={integer ? 'numeric' : undefined}
               min={type === 'number' ? '0' : undefined}
-              onKeyDown={e => {
-                if (type === 'number' && e.key === '-') {
-                  e.preventDefault();
+              onKeyDown={event => {
+                if (type === 'number' && event.key === '-') {
+                  event.preventDefault();
                 }
-                if (integer && ['.', ',', 'e', 'E', '+'].includes(e.key)) {
-                  e.preventDefault();
+                if (integer && ['.', ',', 'e', 'E', '+'].includes(event.key)) {
+                  event.preventDefault();
                 }
               }}
-              className="h-11 rounded-2xl"
+              className="h-11 rounded-2xl bg-white/70 text-base dark:bg-white/5"
             />
           </FormControl>
           {description && <FormDescription>{description}</FormDescription>}
           <FormMessage />
-        </FormItem>
-      )}
-    />
-  );
-};
-
-/**
- * Унифицированный переключатель для RHF.
- * @param props - control, имя поля и подпись.
- * @returns Поле-переключатель.
- */
-export const SwitchField = <TFieldValues extends FieldValues>({
-  control,
-  label,
-  name
-}: {
-  control: Control<TFieldValues>;
-  label: string;
-  name: Path<TFieldValues>;
-}) => {
-  return (
-    <FormField
-      control={control}
-      name={name}
-      render={({ field }) => (
-        <FormItem className="flex items-center justify-between rounded-2xl border p-3">
-          <FormLabel>{label}</FormLabel>
-          <FormControl>
-            <Switch checked={Boolean(field.value)} onCheckedChange={field.onChange} />
-          </FormControl>
         </FormItem>
       )}
     />
