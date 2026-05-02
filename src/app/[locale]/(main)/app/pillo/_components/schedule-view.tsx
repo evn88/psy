@@ -23,6 +23,13 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { deletePilloScheduleRuleAction } from '../actions';
 import { usePilloScheduleForm } from '../_hooks/use-pillo-schedule-form';
@@ -46,8 +53,17 @@ const ScheduleRuleDialog = ({
   rule?: PilloScheduleRuleView;
 }) => {
   const t = useTranslations('Pillo');
-  const { form, isPending, onSubmit, open, selectedDays, setOpen, toggleDay } =
-    usePilloScheduleForm(medications, rule);
+  const {
+    form,
+    isPending: isFormPending,
+    onSubmit,
+    open,
+    selectedDays,
+    setOpen,
+    toggleDay
+  } = usePilloScheduleForm(medications, rule);
+  const [isDeleting, startTransition] = useTransition();
+  const isPending = isFormPending || isDeleting;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -65,18 +81,24 @@ const ScheduleRuleDialog = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('schedule.medication')}</FormLabel>
-                  <FormControl>
-                    <select
-                      {...field}
-                      className="h-11 w-full rounded-2xl border bg-background px-3 text-sm"
-                    >
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="h-11 w-full rounded-2xl border bg-background px-3 text-sm">
+                        <SelectValue placeholder={t('schedule.medication')} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="max-h-[300px] rounded-[1.25rem]">
                       {medications.map(medication => (
-                        <option key={medication.id} value={medication.id}>
+                        <SelectItem
+                          key={medication.id}
+                          value={medication.id}
+                          className="rounded-xl"
+                        >
                           {medication.name}
-                        </option>
+                        </SelectItem>
                       ))}
-                    </select>
-                  </FormControl>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -138,9 +160,32 @@ const ScheduleRuleDialog = ({
               )}
             />
             <SwitchField control={form.control} name="isActive" label={t('schedule.isActive')} />
-            <Button type="submit" disabled={isPending} className="h-12 w-full rounded-full">
-              {t('common.save')}
-            </Button>
+            <div className="flex flex-col gap-2 pt-2">
+              <Button type="submit" disabled={isPending} className="h-12 w-full rounded-full">
+                {t('common.save')}
+              </Button>
+              {rule && (
+                <DeleteConfirmDialog
+                  onConfirm={() => {
+                    startTransition(() => {
+                      void deletePilloScheduleRuleAction(rule.id).then(() => {
+                        setOpen(false);
+                      });
+                    });
+                  }}
+                >
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    disabled={isPending}
+                    className="h-12 w-full rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {t('common.delete')}
+                  </Button>
+                </DeleteConfirmDialog>
+              )}
+            </div>
           </form>
         </Form>
       </DialogContent>
@@ -161,47 +206,64 @@ const ScheduleRuleCard = ({
   rule: PilloScheduleRuleView;
 }) => {
   const t = useTranslations('Pillo');
-  const [isPending, startTransition] = useTransition();
 
   return (
     <ScheduleRuleDialog rule={rule} medications={medications}>
       <Card
         role="button"
         tabIndex={0}
-        className="group relative overflow-hidden rounded-[1.75rem] border-white/40 bg-white/60 shadow-sm backdrop-blur-md transition-all hover:bg-white/80 active:scale-[0.98] dark:border-white/10 dark:bg-black/20 dark:hover:bg-black/30"
+        className={cn(
+          'group relative overflow-hidden rounded-[24px] border border-black/5 bg-white/60 shadow-sm backdrop-blur-xl transition-all hover:bg-white/80 hover:shadow-md active:scale-[0.98] dark:border-white/10 dark:bg-black/40 dark:hover:bg-black/60',
+          !rule.isActive && 'opacity-60 grayscale-[0.3]'
+        )}
       >
-        <CardContent className="flex gap-4 p-4">
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-muted/50 backdrop-blur-sm">
-            {rule.medicationPhotoUrl ? (
-              <Image
-                src={rule.medicationPhotoUrl}
-                alt={rule.medicationName}
-                width={64}
-                height={64}
-                className="h-full w-full object-cover transition-transform group-hover:scale-110"
-              />
-            ) : (
-              <Pill className="h-8 w-8 text-muted-foreground/40" />
-            )}
-          </div>
-          <div className="flex min-w-0 flex-1 flex-col gap-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <h3 className="truncate text-base font-semibold tracking-tight">
-                  {rule.medicationName}
-                </h3>
-                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground/80">
-                  <span className="font-medium text-foreground">{rule.time}</span>
-                  <span>·</span>
-                  <span>
-                    {rule.doseUnits} {t('schedule.doseUnitsShort')}
-                  </span>
+        <CardContent className="p-4 sm:p-5">
+          <div className="flex gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-sm border border-black/5 dark:bg-white/5 dark:border-white/10 backdrop-blur-md">
+              {rule.medicationPhotoUrl ? (
+                <Image
+                  src={rule.medicationPhotoUrl}
+                  alt={rule.medicationName}
+                  width={56}
+                  height={56}
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                />
+              ) : (
+                <Pill className="h-7 w-7 text-primary/40" />
+              )}
+            </div>
+
+            <div className="flex min-w-0 flex-1 flex-col justify-center">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <h3 className="truncate text-[16px] font-semibold tracking-tight text-foreground/90 transition-colors group-hover:text-foreground">
+                    {rule.medicationName}
+                  </h3>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] font-medium text-muted-foreground/80">
+                    <span className="text-foreground">{rule.time}</span>
+                    <span className="text-muted-foreground/40">•</span>
+                    <span>
+                      {rule.doseUnits} {t('schedule.doseUnitsShort')}
+                    </span>
+                  </div>
                 </div>
-              </div>
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted/40 text-xs font-bold backdrop-blur-sm">
-                {rule.time.split(':')[0]}
+
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    'shrink-0 rounded-full border-none px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider backdrop-blur-md',
+                    rule.isActive
+                      ? 'bg-emerald-100/60 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
+                      : 'bg-muted/50 text-muted-foreground/70'
+                  )}
+                >
+                  {rule.isActive ? t('common.active') : t('common.inactive')}
+                </Badge>
               </div>
             </div>
+          </div>
+
+          <div className="mt-4 flex flex-col gap-3">
             <div className="flex flex-wrap gap-1.5">
               {[1, 2, 3, 4, 5, 6, 7].map(day => (
                 <span
@@ -209,51 +271,20 @@ const ScheduleRuleCard = ({
                   className={cn(
                     'flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold transition-colors',
                     rule.daysOfWeek.includes(day)
-                      ? 'bg-foreground text-background'
-                      : 'bg-muted/30 text-muted-foreground/50'
+                      ? 'bg-foreground text-background shadow-sm'
+                      : 'bg-black/5 text-muted-foreground/50 dark:bg-white/5'
                   )}
                 >
                   {t(`daysShort.${day}`)}
                 </span>
               ))}
             </div>
+
             {rule.comment && (
-              <p className="rounded-2xl bg-muted/30 p-3 text-sm italic text-muted-foreground/80">
+              <p className="rounded-xl bg-black/5 dark:bg-white/5 p-3 text-[13px] italic text-muted-foreground/80">
                 {rule.comment}
               </p>
             )}
-            <div className="flex items-center justify-between pt-1">
-              <Badge
-                variant="outline"
-                className={cn(
-                  'rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
-                  rule.isActive
-                    ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600'
-                    : 'border-muted-foreground/20 bg-muted/20 text-muted-foreground/60'
-                )}
-              >
-                {rule.isActive ? t('common.active') : t('common.inactive')}
-              </Badge>
-              <div onClick={e => e.stopPropagation()}>
-                <DeleteConfirmDialog
-                  onConfirm={() => {
-                    startTransition(() => {
-                      void deletePilloScheduleRuleAction(rule.id);
-                    });
-                  }}
-                >
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={isPending}
-                    className="h-8 rounded-full px-3 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  >
-                    <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                    {t('common.delete')}
-                  </Button>
-                </DeleteConfirmDialog>
-              </div>
-            </div>
           </div>
         </CardContent>
       </Card>
