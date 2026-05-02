@@ -868,7 +868,10 @@
       "emptyText": "Add a pill and schedule rule to see today's doses.",
       "take": "Taken",
       "skip": "Skip",
-      "lowStockWarning": "Stock may not be enough. Time to buy more."
+      "lowStockWarning": "Stock may not be enough. Time to buy more.",
+      "undoTitle": "Change choice?",
+      "undoDescription": "You can undo your previous choice (Taken / Skipped). If you undo taking the medication, the quantity will be returned to the available stock.",
+      "undoAction": "Undo choice"
     },
     "medications": {
       "addPackageBtn": "Add package",

@@ -835,7 +835,10 @@
       "emptyText": "Dodajte lek i pravilo rasporeda da biste videli današnje doze.",
       "take": "Uzeo sam",
       "skip": "Preskoči",
-      "lowStockWarning": "Zaliha možda neće biti dovoljna. Vreme je za kupovinu."
+      "lowStockWarning": "Zaliha možda neće biti dovoljna. Vreme je za kupovinu.",
+      "undoTitle": "Promeniti izbor?",
+      "undoDescription": "Možete otkazati prethodni izbor (Uzeo / Preskočio). Ako otkažete uzimanje leka, količina će biti vraćena u dostupne zalihe.",
+      "undoAction": "Otkaži izbor"
     },
     "medications": {
       "addPackageBtn": "Dodaj pakovanje",

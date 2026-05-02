@@ -10,7 +10,8 @@ import {
   materializePilloIntakesForRule,
   materializePilloIntakesForUser,
   skipPilloIntake,
-  takePilloIntake
+  takePilloIntake,
+  undoPilloIntake
 } from '@/features/pillo/lib/service';
 import {
   parsePilloDateInput,
@@ -294,6 +295,23 @@ export const skipPilloIntakeAction = async (intakeId: string): Promise<PilloActi
 
   if (!isUpdated) {
     return { error: 'Приём не найден или уже обработан' };
+  }
+
+  revalidatePilloPaths();
+  return { success: true };
+};
+
+/**
+ * Отменяет последний выбор по приёму.
+ * @param intakeId - идентификатор приёма.
+ * @returns Результат отмены.
+ */
+export const undoPilloIntakeAction = async (intakeId: string): Promise<PilloActionResult> => {
+  const userId = await requirePilloUserId();
+  const result = await undoPilloIntake(userId, intakeId);
+
+  if (!result || !result.wasChanged) {
+    return { error: 'Приём не найден или отмена невозможна' };
   }
 
   revalidatePilloPaths();

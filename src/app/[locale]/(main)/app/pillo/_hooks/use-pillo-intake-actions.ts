@@ -1,7 +1,7 @@
 'use client';
 
 import { useTransition } from 'react';
-import { skipPilloIntakeAction, takePilloIntakeAction } from '../actions';
+import { skipPilloIntakeAction, takePilloIntakeAction, undoPilloIntakeAction } from '../actions';
 
 /**
  * Хук для выполнения действий над приёмами (принять/пропустить).
@@ -21,10 +21,12 @@ export const usePilloIntakeActions = () => {
 
   const onTake = (id: string) => runAction(() => takePilloIntakeAction(id));
   const onSkip = (id: string) => runAction(() => skipPilloIntakeAction(id));
+  const onUndo = (id: string) => runAction(() => undoPilloIntakeAction(id));
 
   return {
     isPending,
     onTake,
-    onSkip
+    onSkip,
+    onUndo
   };
 };

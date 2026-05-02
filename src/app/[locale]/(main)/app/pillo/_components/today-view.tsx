@@ -1,14 +1,76 @@
 import { Check, Home, Pill, SkipForward } from 'lucide-react';
 import Image from 'next/image';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { usePilloIntakeActions } from '../_hooks/use-pillo-intake-actions';
 import type { PilloIntakeView } from './types';
 import { EmptyState } from './empty-state';
 import { getStockGradientClass } from './utils';
+
+/**
+ * Диалог отмены выбора (Принял/Пропустил).
+ * @param props - пропсы.
+ */
+const IntakeUndoDialog = ({
+  children,
+  intake,
+  isPending,
+  onUndo
+}: {
+  children: React.ReactNode;
+  intake: PilloIntakeView;
+  isPending: boolean;
+  onUndo: (id: string) => void;
+}) => {
+  const t = useTranslations('Pillo');
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent className="rounded-[1.75rem] sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{t('today.undoTitle')}</DialogTitle>
+          <DialogDescription>{t('today.undoDescription')}</DialogDescription>
+        </DialogHeader>
+        <div className="flex gap-3 pt-4">
+          <Button
+            type="button"
+            variant="outline"
+            className="flex-1 rounded-full font-bold"
+            onClick={() => setOpen(false)}
+          >
+            {t('common.cancel')}
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            className="flex-1 rounded-full font-bold"
+            disabled={isPending}
+            onClick={() => {
+              onUndo(intake.id);
+              setOpen(false);
+            }}
+          >
+            {t('today.undoAction')}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 /**
  * Отображает карточку одного приёма.
@@ -17,11 +79,17 @@ import { getStockGradientClass } from './utils';
  */
 const IntakeCard = ({ intake }: { intake: PilloIntakeView }) => {
   const t = useTranslations('Pillo');
-  const { isPending, onSkip, onTake } = usePilloIntakeActions();
+  const { isPending, onSkip, onTake, onUndo } = usePilloIntakeActions();
   const isDone = intake.status !== 'PENDING';
 
-  return (
-    <Card className="group relative overflow-hidden rounded-[1.75rem] border-white/40 bg-white/60 shadow-sm backdrop-blur-md transition-all dark:border-white/10 dark:bg-black/20">
+  const cardContent = (
+    <Card
+      className={cn(
+        'group relative overflow-hidden rounded-[1.75rem] border-white/40 bg-white/60 shadow-sm backdrop-blur-md transition-all dark:border-white/10 dark:bg-black/20',
+        isDone &&
+          'cursor-pointer grayscale-[0.2] hover:bg-white/80 hover:shadow-md active:scale-[0.98] dark:hover:bg-black/40'
+      )}
+    >
       <div
         className={cn(
           'absolute inset-x-0 top-0 h-1 bg-gradient-to-r opacity-60',
@@ -86,28 +154,46 @@ const IntakeCard = ({ intake }: { intake: PilloIntakeView }) => {
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-3 pt-1">
-          <Button
-            disabled={isDone || isPending}
-            className="h-11 rounded-full font-bold shadow-md shadow-primary/20 transition-all active:scale-95"
-            onClick={() => onTake(intake.id)}
-          >
-            <Check className="mr-2 h-4 w-4 stroke-[3px]" />
-            {t('today.take')}
-          </Button>
-          <Button
-            disabled={isDone || isPending}
-            variant="outline"
-            className="h-11 rounded-full border-white/40 bg-white/40 font-bold backdrop-blur-sm transition-all active:scale-95 dark:border-white/10 dark:bg-white/5"
-            onClick={() => onSkip(intake.id)}
-          >
-            <SkipForward className="mr-2 h-4 w-4" />
-            {t('today.skip')}
-          </Button>
-        </div>
+        {!isDone && (
+          <div className="grid grid-cols-2 gap-3 pt-1">
+            <Button
+              disabled={isDone || isPending}
+              className="h-11 rounded-full font-bold shadow-md shadow-primary/20 transition-all active:scale-95"
+              onClick={() => onTake(intake.id)}
+            >
+              <Check className="mr-2 h-4 w-4 stroke-[3px]" />
+              {t('today.take')}
+            </Button>
+            <Button
+              disabled={isDone || isPending}
+              variant="outline"
+              className="h-11 rounded-full border-white/40 bg-white/40 font-bold backdrop-blur-sm transition-all active:scale-95 dark:border-white/10 dark:bg-white/5"
+              onClick={() => onSkip(intake.id)}
+            >
+              <SkipForward className="mr-2 h-4 w-4" />
+              {t('today.skip')}
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
+
+  if (isDone) {
+    return (
+      <IntakeUndoDialog intake={intake} isPending={isPending} onUndo={onUndo}>
+        <div
+          role="button"
+          tabIndex={0}
+          className="rounded-[1.75rem] outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+        >
+          {cardContent}
+        </div>
+      </IntakeUndoDialog>
+    );
+  }
+
+  return cardContent;
 };
 
 /**

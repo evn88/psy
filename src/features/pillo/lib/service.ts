@@ -376,3 +376,50 @@ export const skipPilloIntake = async (userId: string, intakeId: string): Promise
 
   return updated.count > 0;
 };
+
+/**
+ * Отменяет предыдущий выбор по приёму.
+ * Возвращает статус обратно в PENDING и восстанавливает остаток (если приём был отмечен как TAKEN).
+ * @param userId - идентификатор пользователя.
+ * @param intakeId - идентификатор приёма.
+ * @returns Результат операции.
+ */
+export const undoPilloIntake = async (userId: string, intakeId: string) => {
+  const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    const intake = await tx.pilloIntake.findFirst({
+      where: { id: intakeId, userId },
+      include: { medication: true }
+    });
+
+    if (!intake) {
+      return null;
+    }
+
+    if (intake.status === PilloIntakeStatus.PENDING) {
+      return { intake, wasChanged: false };
+    }
+
+    // Если был TAKEN, возвращаем остаток на место
+    let nextStock = toNumber(intake.medication.stockUnits);
+    if (intake.status === PilloIntakeStatus.TAKEN) {
+      nextStock = nextStock + toNumber(intake.doseUnits);
+      await tx.pilloMedication.update({
+        where: { id: intake.medicationId },
+        data: { stockUnits: nextStock }
+      });
+    }
+
+    const updatedIntake = await tx.pilloIntake.update({
+      where: { id: intake.id },
+      data: {
+        status: PilloIntakeStatus.PENDING,
+        takenAt: null,
+        skippedAt: null
+      }
+    });
+
+    return { intake: updatedIntake, wasChanged: true };
+  });
+
+  return result;
+};
