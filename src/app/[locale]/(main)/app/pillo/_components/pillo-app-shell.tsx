@@ -84,7 +84,7 @@ export const PilloAppShell = ({
         </header>
 
         <main className="flex-1 overflow-y-auto px-4 py-4 pb-32">
-          {activeTab === 'home' && <TodayView intakes={intakes} />}
+          {activeTab === 'home' && <TodayView intakes={intakes} medications={medications} />}
           {activeTab === 'medications' && <MedicationsView medications={medications} />}
           {activeTab === 'schedule' && (
             <ScheduleView medications={medications} scheduleRules={scheduleRules} />

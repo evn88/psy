@@ -1,4 +1,4 @@
-import { Check, Home, Pill, SkipForward } from 'lucide-react';
+import { Check, Clock3, Home, Pill, SkipForward } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
@@ -15,8 +15,9 @@ import {
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { usePilloIntakeActions } from '../_hooks/use-pillo-intake-actions';
-import type { PilloIntakeView } from './types';
+import type { PilloIntakeView, PilloMedicationView } from './types';
 import { EmptyState } from './empty-state';
+import { ManualIntakeDialog } from './manual-intake-dialog';
 import { getStockGradientClass } from './utils';
 
 /**
@@ -258,19 +259,114 @@ const IntakeCard = ({ intake }: { intake: PilloIntakeView }) => {
 };
 
 /**
+ * Рисует компактный блок быстрого подтверждения ближайшего приёма.
+ * @param props - ближайший pending-приём.
+ * @returns Карточка с основным действием для главного экрана.
+ */
+const QuickTakeCard = ({ intake }: { intake: PilloIntakeView }) => {
+  const t = useTranslations('Pillo');
+  const { isPending, onTake } = usePilloIntakeActions();
+
+  return (
+    <Card className="overflow-hidden rounded-[1.75rem] border-primary/15 bg-[linear-gradient(135deg,hsl(var(--primary)/0.16),hsl(var(--background)/0.92)_58%,hsl(var(--accent)/0.16))] shadow-lg shadow-primary/10 backdrop-blur-xl dark:border-primary/10">
+      <CardContent className="space-y-4 p-4">
+        <div className="flex items-start gap-3">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-primary shadow-sm">
+            <Clock3 className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-primary/80">
+              {t('today.quickTakeEyebrow')}
+            </p>
+            <div className="mt-1 flex items-center gap-2">
+              <span className="text-2xl font-black tracking-tight text-foreground">
+                {intake.localTime}
+              </span>
+              <Badge className="rounded-full bg-background/70 px-2 py-0.5 text-[10px] font-bold text-foreground shadow-sm">
+                {intake.doseUnits} x {intake.medicationDosage}
+              </Badge>
+            </div>
+            <p className="mt-1 truncate text-sm font-semibold text-foreground/85">
+              {intake.medicationName}
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">{t('today.quickTakeDescription')}</p>
+          </div>
+        </div>
+
+        <Button
+          disabled={isPending}
+          className="h-12 w-full rounded-full font-bold shadow-md shadow-primary/20 transition-all active:scale-95"
+          onClick={() => onTake(intake.id)}
+        >
+          <Check className="mr-2 h-4 w-4 stroke-[3px]" />
+          {t('today.quickTakeAction')}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+};
+
+/**
  * Рисует главный экран сегодняшних приёмов.
  * @param props - приёмы текущего дня.
  * @returns Экран «Сегодня».
  */
-export const TodayView = ({ intakes }: { intakes: PilloIntakeView[] }) => {
+export const TodayView = ({
+  intakes,
+  medications
+}: {
+  intakes: PilloIntakeView[];
+  medications: PilloMedicationView[];
+}) => {
   const t = useTranslations('Pillo');
+  const nextPendingIntake = intakes.find(intake => intake.status === 'PENDING') ?? null;
+  const pendingCount = intakes.filter(intake => intake.status === 'PENDING').length;
+  const hasMedications = medications.length > 0;
 
   if (intakes.length === 0) {
-    return <EmptyState icon={Home} title={t('today.emptyTitle')} text={t('today.emptyText')} />;
+    return (
+      <div className="space-y-4 pb-4">
+        <EmptyState icon={Home} title={t('today.emptyTitle')} text={t('today.emptyText')} />
+        {hasMedications ? (
+          <ManualIntakeDialog medications={medications}>
+            <Button className="h-12 w-full rounded-full font-bold">
+              <Check className="mr-2 h-4 w-4 stroke-[3px]" />
+              {t('today.manualTakeAction')}
+            </Button>
+          </ManualIntakeDialog>
+        ) : null}
+      </div>
+    );
   }
 
   return (
     <div className="space-y-4 pb-4">
+      {hasMedications ? (
+        <ManualIntakeDialog medications={medications}>
+          <Button
+            variant="outline"
+            className="h-11 w-full rounded-full border-white/40 bg-white/40 font-bold backdrop-blur-sm dark:border-white/10 dark:bg-white/5"
+          >
+            <Check className="mr-2 h-4 w-4 stroke-[3px]" />
+            {t('today.manualTakeAction')}
+          </Button>
+        </ManualIntakeDialog>
+      ) : null}
+
+      {nextPendingIntake && <QuickTakeCard intake={nextPendingIntake} />}
+
+      <div className="flex items-center justify-between px-1 pt-1">
+        <h2 className="text-sm font-bold uppercase tracking-[0.22em] text-muted-foreground/60">
+          {t('today.listTitle')}
+        </h2>
+        <Badge
+          variant="secondary"
+          className="rounded-full bg-muted/50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide"
+        >
+          {t('pendingCount', { count: pendingCount })}
+        </Badge>
+      </div>
+
       {intakes.map(intake => (
         <IntakeCard key={intake.id} intake={intake} />
       ))}

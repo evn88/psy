@@ -367,6 +367,58 @@ export const takePilloIntake = async (userId: string, intakeId: string) => {
 };
 
 /**
+ * Уменьшает остаток лекарства при ручной отметке приёма вне расписания.
+ * @param userId - идентификатор пользователя.
+ * @param medicationId - идентификатор таблетки.
+ * @param doseUnits - сколько единиц было принято.
+ * @returns Результат операции и актуальный остаток.
+ */
+export const takePilloMedicationNow = async (
+  userId: string,
+  medicationId: string,
+  doseUnits: number
+) => {
+  const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    const medication = await tx.pilloMedication.findFirst({
+      where: { id: medicationId, userId }
+    });
+
+    if (!medication) {
+      return null;
+    }
+
+    const nextStock = Math.max(0, toNumber(medication.stockUnits) - doseUnits);
+    const updatedMedication = await tx.pilloMedication.update({
+      where: { id: medication.id },
+      data: { stockUnits: nextStock }
+    });
+
+    return { medication: updatedMedication };
+  });
+
+  if (!result) {
+    return null;
+  }
+
+  const status = getPilloStockStatus({
+    stockUnits: result.medication.stockUnits,
+    minThresholdUnits: result.medication.minThresholdUnits,
+    nextDoseUnits: doseUnits
+  });
+
+  if (status !== 'enough') {
+    await dispatchPilloLowStockNotifications({
+      userId,
+      medicationName: result.medication.name,
+      stockText: result.medication.stockUnits.toString(),
+      stockStatus: status
+    });
+  }
+
+  return { ...result, stockStatus: status };
+};
+
+/**
  * Отмечает приём как пропущенный пользователем.
  * @param userId - идентификатор пользователя.
  * @param intakeId - идентификатор приёма.
