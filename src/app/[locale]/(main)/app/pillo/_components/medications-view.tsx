@@ -1,6 +1,20 @@
 import { type ReactNode, useTransition } from 'react';
 import Image from 'next/image';
-import { ImagePlus, MoreHorizontal, Pill, Plus, Trash2, X } from 'lucide-react';
+import {
+  Boxes,
+  Droplet,
+  Droplets,
+  FlaskConical,
+  GlassWater,
+  ImagePlus,
+  MoreHorizontal,
+  Pill,
+  Plus,
+  Syringe,
+  Trash2,
+  Wind,
+  X
+} from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -32,6 +46,25 @@ import { EmptyState } from './empty-state';
 import { getStockGradientClass } from './utils';
 import { SwitchField, TextField } from './form-fields';
 import { DeleteConfirmDialog } from './delete-confirm-dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
+
+const MEDICATION_FORMS = [
+  { id: 'tablet', icon: Pill },
+  { id: 'capsule', icon: Pill },
+  { id: 'syrup', icon: GlassWater },
+  { id: 'drops', icon: Droplets },
+  { id: 'injection', icon: Syringe },
+  { id: 'powder', icon: Boxes },
+  { id: 'ointment', icon: FlaskConical },
+  { id: 'spray', icon: Wind },
+  { id: 'other', icon: MoreHorizontal }
+] as const;
 
 /**
  * Рисует форму добавления или редактирования таблетки.
@@ -113,7 +146,33 @@ const MedicationDialog = ({
             </div>
             <TextField control={form.control} name="name" label={t('medications.name')} />
             <TextField control={form.control} name="dosage" label={t('medications.dosage')} />
-            <TextField control={form.control} name="form" label={t('medications.form')} />
+            <FormField
+              control={form.control}
+              name="form"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('medications.form')}</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="h-11 rounded-2xl">
+                        <SelectValue placeholder={t('medications.form')} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="rounded-2xl">
+                      {MEDICATION_FORMS.map(({ id, icon: Icon }) => (
+                        <SelectItem key={id} value={id} className="rounded-xl">
+                          <div className="flex items-center gap-2">
+                            <Icon className="h-4 w-4 text-muted-foreground" />
+                            <span>{t(`medicationForms.${id}`)}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <TextField
               control={form.control}
               name="packagesCount"
@@ -213,7 +272,7 @@ const MedicationCard = ({ medication }: { medication: PilloMedicationView }) => 
                   {medication.name}
                 </h3>
                 <p className="text-xs font-medium text-muted-foreground/70 uppercase tracking-wide">
-                  {medication.dosage} · {medication.form}
+                  {medication.dosage} · {t(`medicationForms.${medication.form}`)}
                 </p>
               </div>
               <Badge

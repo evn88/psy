@@ -946,6 +946,17 @@
       "6": "Sat",
       "7": "Sun"
     },
+    "medicationForms": {
+      "tablet": "Tablet",
+      "capsule": "Capsule",
+      "syrup": "Syrup",
+      "drops": "Drops",
+      "injection": "Injection",
+      "powder": "Powder",
+      "ointment": "Ointment",
+      "spray": "Spray",
+      "other": "Other"
+    },
     "takeLink": {
       "title": "Confirm intake",
       "description": "Tap the button below to mark the medicine as taken.",
