@@ -64,16 +64,15 @@ const PilloPage = async () => {
     include: {
       pilloUserSettings: true,
       pilloMedications: {
-        orderBy: [{ isActive: 'desc' }, { name: 'asc' }]
+        orderBy: [{ name: 'asc' }]
       },
       pilloScheduleRules: {
-        where: { isActive: true },
         include: {
           medication: {
             select: { name: true, photoUrl: true }
           }
         },
-        orderBy: [{ time: 'asc' }]
+        orderBy: [{ isActive: 'desc' }, { time: 'asc' }]
       }
     }
   });

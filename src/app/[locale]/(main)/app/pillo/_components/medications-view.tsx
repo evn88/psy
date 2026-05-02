@@ -31,6 +31,7 @@ import type { PilloMedicationView } from './types';
 import { EmptyState } from './empty-state';
 import { getStockGradientClass } from './utils';
 import { SwitchField, TextField } from './form-fields';
+import { DeleteConfirmDialog } from './delete-confirm-dialog';
 
 /**
  * Рисует форму добавления или редактирования таблетки.
@@ -154,7 +155,6 @@ const MedicationDialog = ({
                 </FormItem>
               )}
             />
-            <SwitchField control={form.control} name="isActive" label={t('medications.isActive')} />
             <Button type="submit" disabled={isPending} className="h-12 w-full rounded-full">
               {t('common.save')}
             </Button>
@@ -267,31 +267,26 @@ const MedicationCard = ({ medication }: { medication: PilloMedicationView }) => 
             </div>
 
             <div className="mt-3 flex items-center justify-between border-t border-black/[0.03] pt-2 dark:border-white/[0.03]">
-              <div className="flex items-center gap-1.5">
-                {!medication.isActive && (
-                  <Badge
-                    variant="outline"
-                    className="rounded-full border-muted-foreground/20 text-[9px] font-bold uppercase text-muted-foreground/60"
+              <div className="flex items-center gap-1.5" />
+              <div onClick={e => e.stopPropagation()}>
+                <DeleteConfirmDialog
+                  onConfirm={() => {
+                    startTransition(() => {
+                      void deletePilloMedicationAction(medication.id);
+                    });
+                  }}
+                >
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={isPending}
+                    className="h-7 rounded-full px-2.5 text-[10px] font-bold text-destructive/80 hover:bg-destructive/10 hover:text-destructive"
                   >
-                    {t('common.inactive')}
-                  </Badge>
-                )}
+                    <Trash2 className="mr-1 h-3 w-3" />
+                    {t('common.delete')}
+                  </Button>
+                </DeleteConfirmDialog>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={isPending}
-                className="h-7 rounded-full px-2.5 text-[10px] font-bold text-destructive/80 hover:bg-destructive/10 hover:text-destructive"
-                onClick={e => {
-                  e.stopPropagation();
-                  startTransition(() => {
-                    void deletePilloMedicationAction(medication.id);
-                  });
-                }}
-              >
-                <Trash2 className="mr-1 h-3 w-3" />
-                {t('common.delete')}
-              </Button>
             </div>
           </div>
         </CardContent>

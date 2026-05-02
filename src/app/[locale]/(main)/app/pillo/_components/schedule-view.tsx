@@ -29,6 +29,7 @@ import { usePilloScheduleForm } from '../_hooks/use-pillo-schedule-form';
 import type { PilloMedicationView, PilloScheduleRuleView } from './types';
 import { EmptyState } from './empty-state';
 import { SwitchField, TextField } from './form-fields';
+import { DeleteConfirmDialog } from './delete-confirm-dialog';
 
 /**
  * Рисует форму правила расписания.
@@ -233,21 +234,25 @@ const ScheduleRuleCard = ({
               >
                 {rule.isActive ? t('common.active') : t('common.inactive')}
               </Badge>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={isPending}
-                className="h-8 rounded-full px-3 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
-                onClick={e => {
-                  e.stopPropagation();
-                  startTransition(() => {
-                    void deletePilloScheduleRuleAction(rule.id);
-                  });
-                }}
-              >
-                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                {t('common.delete')}
-              </Button>
+              <div onClick={e => e.stopPropagation()}>
+                <DeleteConfirmDialog
+                  onConfirm={() => {
+                    startTransition(() => {
+                      void deletePilloScheduleRuleAction(rule.id);
+                    });
+                  }}
+                >
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={isPending}
+                    className="h-8 rounded-full px-3 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                    {t('common.delete')}
+                  </Button>
+                </DeleteConfirmDialog>
+              </div>
             </div>
           </div>
         </CardContent>
