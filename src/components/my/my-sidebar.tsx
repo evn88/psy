@@ -9,6 +9,7 @@ import {
   CreditCard,
   FileText,
   Home,
+  AppWindow,
   LayoutDashboard,
   LogOut,
   Settings,
@@ -99,6 +100,12 @@ export const MySidebar = ({ user, unreadSurveysCount = 0, ...props }: MySidebarP
       url: '/my/data',
       icon: FileText,
       isActive: pathname.startsWith('/my/data')
+    },
+    {
+      title: t('apps'),
+      url: '/app',
+      icon: AppWindow,
+      isActive: pathname.startsWith('/app')
     },
     {
       title: t('profile'),

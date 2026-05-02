@@ -115,6 +115,7 @@ export default async function proxy(req: NextRequest) {
   const isAuthPage = pathname === '/auth' || pathname.startsWith('/auth/');
   const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/');
   const isMyRoute = pathname === '/my' || pathname.startsWith('/my/');
+  const isMiniAppRoute = pathname === '/app' || pathname.startsWith('/app/');
 
   if (isAuthPage) {
     if (isLoggedIn) {
@@ -149,6 +150,16 @@ export default async function proxy(req: NextRequest) {
       if (!isAllowed) {
         return redirectToLocalePath(req, locale, '/my/profile');
       }
+    }
+  }
+
+  if (isMiniAppRoute) {
+    if (!isLoggedIn) {
+      return redirectToLocalePath(req, locale, '/auth');
+    }
+
+    if (userRole !== 'ADMIN' && userRole !== 'USER') {
+      return redirectToLocalePath(req, locale, '/my/profile');
     }
   }
 

@@ -17,13 +17,7 @@
     "telegramLink": "Telegram Channel",
     "instagramLink": "Instagram",
     "blogLink": "Blog",
-    "tags": [
-      "Schema Therapy",
-      "ACT",
-      "RO DBT",
-      "ADHD/ASD",
-      "ED"
-    ],
+    "tags": ["Schema Therapy", "ACT", "RO DBT", "ADHD/ASD", "ED"],
     "nav": {
       "about": "About me",
       "services": "How I can help",
@@ -283,6 +277,7 @@
       "sendEmail": "Send Email",
       "backups": "Backups",
       "logs": "System Logs",
+      "apps": "Mini Apps",
       "profile": "Profile",
       "settings": "Settings",
       "backToSite": "Back to Site",
@@ -554,6 +549,7 @@
       "payments": "Payments",
       "packages": "Service Packages",
       "data": "Files & Documents",
+      "apps": "Mini Apps",
       "profile": "Profile",
       "settings": "Settings",
       "backToSite": "Back to Site",
@@ -817,6 +813,193 @@
     "langSr": "Srpski",
     "save": "Save preferences",
     "saving": "Saving..."
+  },
+  "MiniApps": {
+    "eyebrow": "PWA",
+    "title": "Mini Apps",
+    "description": "Small apps that can be installed on your phone and opened like native apps will live here.",
+    "pillo": {
+      "title": "Pillo",
+      "description": "Medicine stock, intake schedule, and reminders.",
+      "badge": "Available",
+      "featureToday": "Today doses",
+      "featureStock": "Stock",
+      "featureReminders": "Email and push"
+    },
+    "install": {
+      "title": "How to install it",
+      "iosTitle": "iPhone or iPad",
+      "iosStep1": "Open Pillo in Safari.",
+      "iosStep2": "Tap the Share button at the bottom.",
+      "iosStep3": "Choose Add to Home Screen and tap Add.",
+      "androidTitle": "Android",
+      "androidStep1": "Open Pillo in Chrome.",
+      "androidStep2": "Tap the three-dot menu in the top right.",
+      "androidStep3": "Choose Install app or Add to Home screen."
+    },
+    "nav": {
+      "home": "Home",
+      "profile": "Cabinet",
+      "admin": "Admin",
+      "menu": "Menu"
+    }
+  },
+  "Pillo": {
+    "eyebrow": "Application",
+    "title": "Pillo",
+    "pendingCount": "{count} pending",
+    "tabs": {
+      "home": "Home",
+      "medications": "Pills",
+      "schedule": "Schedule",
+      "settings": "Settings"
+    },
+    "common": {
+      "save": "Save",
+      "delete": "Delete",
+      "active": "Active",
+      "inactive": "Inactive",
+      "cancel": "Cancel",
+      "deleteConfirmTitle": "Confirm deletion",
+      "deleteConfirmDescription": "Are you sure you want to delete this item? This action cannot be undone."
+    },
+    "today": {
+      "emptyTitle": "Nothing due today",
+      "emptyText": "Add a pill and schedule rule to see today's doses.",
+      "take": "Taken",
+      "skip": "Skip",
+      "lowStockWarning": "Stock may not be enough. Time to buy more.",
+      "undoTitle": "Change choice?",
+      "undoDescription": "You can undo your previous choice (Taken / Skipped). If you undo taking the medication, the quantity will be returned to the available stock.",
+      "undoAction": "Undo choice",
+      "daysLeft": "Lasts for ~{count} days",
+      "buyAtDate": "Buy by {date}",
+      "stockEndsAt": "(runs out {date})",
+      "stockEndsSoon": "Runs out {date}"
+    },
+    "medications": {
+      "addPackageBtn": "Add package",
+      "addPackageConfirmTitle": "Add package?",
+      "addPackageConfirmDescription": "One package will be added to the stock. Continue?",
+      "add": "Add pill",
+      "edit": "Edit pill",
+      "emptyTitle": "No pills yet",
+      "emptyText": "Add the first pill to track stock and schedule.",
+      "formDescription": "Set dosage, form, and current stock.",
+      "gallery": "Gallery",
+      "camera": "Camera",
+      "name": "Name",
+      "dosage": "Dosage",
+      "dosageValue": "Value",
+      "dosageUnit": "Unit",
+      "form": "Dosage Form",
+      "packagesCount": "Packages in stock",
+      "unitsPerPackage": "Units per package",
+      "stockUnits": "Stock units",
+      "stockDescription": "Current stock. Calculated automatically on creation, but can be manually adjusted.",
+      "minThresholdUnits": "Minimum stock",
+      "minThresholdDescription": "The stock level at which an alert to restock will be triggered.",
+      "description": "Description",
+      "isActive": "Pill is active",
+      "stock": "Stock"
+    },
+    "schedule": {
+      "add": "Add rule",
+      "edit": "Edit rule",
+      "emptyTitle": "Schedule is empty",
+      "emptyText": "Create an intake rule for one of your pills.",
+      "formDescription": "Choose a pill, time, dose, and weekdays.",
+      "medication": "Pill",
+      "time": "Time",
+      "dose": "Dose per intake",
+      "days": "Weekdays",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "comment": "Comment",
+      "isActive": "Rule is active",
+      "inactive": "Inactive",
+      "doseUnitsShort": "units"
+    },
+    "settings": {
+      "notifications": "Notifications",
+      "emailReminders": "Email reminders",
+      "pushReminders": "Push notifications",
+      "lowStockEmail": "Email on low stock",
+      "lowStockPush": "Push on low stock",
+      "stock": "Stock",
+      "lowStockWarningDays": "Days before running out to recommend buying",
+      "lowStockWarningDaysDescription": "Pillo calculates how many days the current stock will last and shows the buying date this many days before the stock runs out. The default is 7 days.",
+      "appearance": "Appearance",
+      "appearanceDescription": "Customize your app theme and language",
+      "about": "About Pillo",
+      "secureDescription": "All data is encrypted and stored securely."
+    },
+    "stockStatus": {
+      "enough": "Enough",
+      "low": "Running low",
+      "empty": "Empty"
+    },
+    "intakeStatus": {
+      "PENDING": "Pending",
+      "TAKEN": "Taken",
+      "SKIPPED": "Skipped",
+      "MISSED": "Missed"
+    },
+    "days": {
+      "1": "Monday",
+      "2": "Tuesday",
+      "3": "Wednesday",
+      "4": "Thursday",
+      "5": "Friday",
+      "6": "Saturday",
+      "7": "Sunday"
+    },
+    "daysShort": {
+      "1": "Mon",
+      "2": "Tue",
+      "3": "Wed",
+      "4": "Thu",
+      "5": "Fri",
+      "6": "Sat",
+      "7": "Sun"
+    },
+    "medicationForms": {
+      "tablet": "Tablet",
+      "capsule": "Capsule",
+      "syrup": "Syrup",
+      "drops": "Drops",
+      "injection": "Injection",
+      "powder": "Powder",
+      "ointment": "Ointment",
+      "spray": "Spray",
+      "other": "Other",
+      "tablet": "Tablet",
+      "capsule": "Capsule"
+    },
+    "dosageUnits": {
+      "mg": "mg",
+      "ml": "ml",
+      "mcg": "mcg",
+      "g": "g",
+      "drops": "drops",
+      "puffs": "puffs",
+      "units": "units",
+      "tablets": "tablets",
+      "capsules": "capsules",
+      "other": "other"
+    },
+    "takeLink": {
+      "title": "Confirm intake",
+      "description": "Tap the button below to mark the medicine as taken.",
+      "button": "Mark as taken",
+      "skipTitle": "Skip intake",
+      "skipDescription": "Tap the button below to skip this dose.",
+      "skipButton": "Skip",
+      "success": "Intake marked as taken.",
+      "skipSuccess": "Intake skipped.",
+      "error": "Could not confirm intake.",
+      "backToPillo": "Open Pillo"
+    }
   },
   "Common": {
     "loading": "Loading...",

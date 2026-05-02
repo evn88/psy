@@ -32,7 +32,7 @@ const securityHeaders = [
   },
   {
     key: 'Permissions-Policy',
-    value: 'camera=(), microphone=(), geolocation=(), browsing-topics=()'
+    value: 'camera=(self), microphone=(), geolocation=(), browsing-topics=()'
   },
   {
     key: 'X-Content-Type-Options',
@@ -73,11 +73,19 @@ const nextConfig = {
         headers: privatePageHeaders
       },
       {
+        source: '/app/:path*',
+        headers: privatePageHeaders
+      },
+      {
         source: '/:locale(ru|en|sr)/my/:path*',
         headers: privatePageHeaders
       },
       {
         source: '/:locale(ru|en|sr)/admin/:path*',
+        headers: privatePageHeaders
+      },
+      {
+        source: '/:locale(ru|en|sr)/app/:path*',
         headers: privatePageHeaders
       }
     ];

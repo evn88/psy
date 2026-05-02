@@ -17,13 +17,7 @@
     "telegramLink": "Telegram Kanal",
     "instagramLink": "Instagram",
     "blogLink": "Blog",
-    "tags": [
-      "Šema terapija",
-      "ACT",
-      "RO DBT",
-      "ADHD/ASD",
-      "Poremećaji ishrane"
-    ],
+    "tags": ["Šema terapija", "ACT", "RO DBT", "ADHD/ASD", "Poremećaji ishrane"],
     "nav": {
       "about": "O meni",
       "services": "Kako mogu da pomognem?",
@@ -283,6 +277,7 @@
       "sendEmail": "Slanje emaila",
       "backups": "Rezervne kopije",
       "logs": "Sistemski dnevnik",
+      "apps": "Mini aplikacije",
       "profile": "Profil",
       "settings": "Podešavanja",
       "backToSite": "Nazad na sajt",
@@ -553,6 +548,7 @@
       "sessions": "Moje sesije",
       "payments": "Plaćanja",
       "data": "Fajlovi i dokumenti",
+      "apps": "Mini aplikacije",
       "profile": "Profil",
       "settings": "Podešavanja",
       "backToSite": "Nazad na sajt",
@@ -789,6 +785,157 @@
     "langSr": "Srpski",
     "save": "Sačuvaj podešavanja",
     "saving": "Čuvam..."
+  },
+  "MiniApps": {
+    "eyebrow": "PWA",
+    "title": "Mini aplikacije",
+    "description": "Ovde će biti male aplikacije koje možete instalirati na telefon i otvarati kao obične aplikacije.",
+    "pillo": {
+      "title": "Pillo",
+      "description": "Lekovi, raspored uzimanja i podsetnici.",
+      "badge": "Dostupno",
+      "featureToday": "Današnje doze",
+      "featureStock": "Zalihe",
+      "featureReminders": "Email i push"
+    },
+    "install": {
+      "title": "Kako instalirati na telefon",
+      "iosTitle": "iPhone ili iPad",
+      "iosStep1": "Otvorite Pillo u Safari pregledaču.",
+      "iosStep2": "Dodirnite dugme za deljenje na dnu ekrana.",
+      "iosStep3": "Izaberite Add to Home Screen i dodirnite Add.",
+      "androidTitle": "Android",
+      "androidStep1": "Otvorite Pillo u Chrome pregledaču.",
+      "androidStep2": "Dodirnite meni sa tri tačke gore desno.",
+      "androidStep3": "Izaberite Install app ili Add to Home screen."
+    },
+    "nav": {
+      "home": "Glavna",
+      "profile": "Kabinet",
+      "admin": "Admin",
+      "menu": "Meni"
+    }
+  },
+  "Pillo": {
+    "eyebrow": "Aplikacija",
+    "title": "Pillo",
+    "pendingCount": "{count} čeka",
+    "tabs": {
+      "home": "Glavna",
+      "medications": "Lekovi",
+      "schedule": "Raspored",
+      "settings": "Podešavanja"
+    },
+    "common": {
+      "save": "Sačuvaj",
+      "delete": "Obriši"
+    },
+    "today": {
+      "emptyTitle": "Danas je sve mirno",
+      "emptyText": "Dodajte lek i pravilo rasporeda da biste videli današnje doze.",
+      "take": "Uzeo sam",
+      "skip": "Preskoči",
+      "lowStockWarning": "Zaliha možda neće biti dovoljna. Vreme je za kupovinu.",
+      "undoTitle": "Promeniti izbor?",
+      "undoDescription": "Možete otkazati prethodni izbor (Uzeo / Preskočio). Ako otkažete uzimanje leka, količina će biti vraćena u dostupne zalihe.",
+      "undoAction": "Otkaži izbor",
+      "daysLeft": "Za još ~{count} dana",
+      "buyAtDate": "Kupiti do {date}",
+      "stockEndsAt": "(nestaje {date})",
+      "stockEndsSoon": "Nestaje {date}"
+    },
+    "medications": {
+      "addPackageBtn": "Dodaj pakovanje",
+      "addPackageConfirmTitle": "Dodati pakovanje?",
+      "addPackageConfirmDescription": "Jedno pakovanje će biti dodato zalihama. Nastaviti?",
+      "add": "Dodaj lek",
+      "edit": "Uredi lek",
+      "emptyTitle": "Još nema lekova",
+      "emptyText": "Dodajte prvi lek da pratite zalihe i raspored.",
+      "formDescription": "Unesite dozu, oblik i trenutnu zalihu.",
+      "gallery": "Galerija",
+      "camera": "Kamera",
+      "name": "Naziv",
+      "dosage": "Doza",
+      "form": "Oblik",
+      "packagesCount": "Pakovanja na stanju",
+      "unitsPerPackage": "Jedinica u pakovanju",
+      "stockUnits": "Zaliha u jedinicama",
+      "stockDescription": "Trenutna zaliha. Izračunava se automatski pri kreiranju, ali može se ručno podesiti.",
+      "minThresholdUnits": "Minimalna zaliha",
+      "minThresholdDescription": "Nivo zaliha pri kom će se aktivirati upozorenje za obnovu zaliha.",
+      "description": "Opis",
+      "isActive": "Lek je aktivan",
+      "stock": "Zaliha"
+    },
+    "schedule": {
+      "add": "Dodaj pravilo",
+      "edit": "Uredi pravilo",
+      "emptyTitle": "Raspored je prazan",
+      "emptyText": "Napravite pravilo uzimanja za jedan od lekova.",
+      "formDescription": "Izaberite lek, vreme, dozu i dane u nedelji.",
+      "medication": "Lek",
+      "time": "Vreme",
+      "dose": "Količina po uzimanju",
+      "days": "Dani u nedelji",
+      "startDate": "Datum početka",
+      "endDate": "Datum završetka",
+      "comment": "Komentar",
+      "isActive": "Pravilo je aktivno"
+    },
+    "settings": {
+      "notifications": "Pillo obaveštenja",
+      "emailReminders": "Email podsetnici za uzimanje",
+      "pushReminders": "Push podsetnici za uzimanje",
+      "lowStockEmail": "Email kada je zaliha niska",
+      "lowStockPush": "Push kada je zaliha niska",
+      "stock": "Zalihe",
+      "lowStockWarningDays": "Koliko dana ranije preporučiti kupovinu",
+      "lowStockWarningDaysDescription": "Pillo računa za koliko dana je dovoljna trenutna zaliha i prikazuje datum kupovine toliko dana pre nego što zaliha nestane. Podrazumevano je 7 dana.",
+      "appearance": "Jezik i tema",
+      "appearanceDescription": "Ova podešavanja su sinhronizovana sa sajtom."
+    },
+    "stockStatus": {
+      "enough": "Dovoljno",
+      "low": "Uskoro nestaje",
+      "empty": "Nema više"
+    },
+    "intakeStatus": {
+      "PENDING": "Čeka",
+      "TAKEN": "Uzeto",
+      "SKIPPED": "Preskočeno",
+      "MISSED": "Propušteno"
+    },
+    "days": {
+      "1": "ponedeljak",
+      "2": "utorak",
+      "3": "sreda",
+      "4": "četvrtak",
+      "5": "petak",
+      "6": "subota",
+      "7": "nedelja"
+    },
+    "daysShort": {
+      "1": "Pon",
+      "2": "Uto",
+      "3": "Sre",
+      "4": "Čet",
+      "5": "Pet",
+      "6": "Sub",
+      "7": "Ned"
+    },
+    "takeLink": {
+      "title": "Potvrdite uzimanje",
+      "description": "Dodirnite dugme ispod da označite lek kao uzet.",
+      "button": "Označi kao uzeto",
+      "skipTitle": "Preskoči uzimanje",
+      "skipDescription": "Dodirnite dugme ispod da preskočite ovu dozu.",
+      "skipButton": "Preskoči",
+      "success": "Uzimanje je zabeleženo.",
+      "skipSuccess": "Uzimanje je preskočeno.",
+      "error": "Nije moguće potvrditi uzimanje.",
+      "backToPillo": "Otvori Pillo"
+    }
   },
   "Common": {
     "loading": "Učitavanje...",

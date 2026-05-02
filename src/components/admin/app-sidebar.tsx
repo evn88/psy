@@ -8,6 +8,7 @@ import {
   ChevronsUpDown,
   ClipboardList,
   CreditCard,
+  AppWindow,
   Home,
   LayoutDashboard,
   LogOut,
@@ -135,6 +136,12 @@ export function AppSidebar({ user, unreadSurveysCount = 0, ...props }: AppSideba
       url: '/admin/logs',
       icon: ScrollText,
       isActive: pathname.startsWith('/admin/logs')
+    },
+    {
+      title: tItems('apps'),
+      url: '/app',
+      icon: AppWindow,
+      isActive: pathname.startsWith('/app')
     },
     {
       title: tItems('profile'),
