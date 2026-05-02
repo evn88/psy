@@ -134,8 +134,10 @@ const PilloPage = async () => {
 
           daysLeft = Math.floor(stock / dailyConsumption);
 
-          const daysUntilMinStock = (stock - minStock) / dailyConsumption;
-          const daysToBuy = Math.floor(daysUntilMinStock - 7);
+          // Дней до достижения минимального порога; если stock уже ниже — будет ≤ 0
+          const daysUntilMinStock = Math.max(0, (stock - minStock) / dailyConsumption);
+          // Рекомендуем купить за 7 дней до порога, но не раньше «сегодня»
+          const daysToBuy = Math.max(0, Math.floor(daysUntilMinStock - 7));
 
           const targetDate = new Date();
           targetDate.setDate(targetDate.getDate() + daysToBuy);
