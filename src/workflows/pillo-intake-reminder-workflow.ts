@@ -3,6 +3,7 @@ import { sleep } from 'workflow';
 
 import {
   getPilloNotificationCopy,
+  getPilloSkipUrl,
   getPilloTakeUrl,
   interpolatePilloCopy
 } from '@/features/pillo/lib/notifications';
@@ -211,6 +212,7 @@ const dispatchPilloIntakeReminderStep = async (
   const isPushEnabled = settings?.pushRemindersEnabled !== false;
   const token = await createPilloActionTokenStep(intake);
   const actionUrl = getPilloTakeUrl({ locale: intake.user.language, token });
+  const skipUrl = getPilloSkipUrl({ locale: intake.user.language, token });
   const copy = getPilloNotificationCopy(intake.user.language);
   const doseText = getPilloDoseText(intake);
   let isEmailSent = false;
@@ -225,6 +227,7 @@ const dispatchPilloIntakeReminderStep = async (
       doseText,
       scheduledFor: intake.scheduledFor,
       actionUrl,
+      skipUrl,
       locale: intake.user.language,
       timezone: intake.user.timezone || 'UTC'
     });

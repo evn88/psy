@@ -9,18 +9,30 @@ type PilloNotificationCopy = {
   lowStockSubject: string;
   lowStockHeading: string;
   lowStockMessage: string;
+  emptyStockSubject: string;
+  emptyStockHeading: string;
+  emptyStockMessage: string;
+  courseEndSubject: string;
+  courseEndHeading: string;
+  courseEndMessage: string;
   greeting: string;
   medicationLabel: string;
   doseLabel: string;
   timeLabel: string;
   stockLabel: string;
+  courseLabel: string;
   takeButton: string;
+  skipButton: string;
   openButton: string;
   footer: string;
   pushIntakeTitle: string;
   pushIntakeBody: string;
   pushLowStockTitle: string;
   pushLowStockBody: string;
+  pushEmptyStockTitle: string;
+  pushEmptyStockBody: string;
+  pushCourseEndTitle: string;
+  pushCourseEndBody: string;
 };
 
 const COPY: Record<AppLocale, PilloNotificationCopy> = {
@@ -31,18 +43,31 @@ const COPY: Record<AppLocale, PilloNotificationCopy> = {
     lowStockSubject: 'Пора купить лекарство - Pillo',
     lowStockHeading: 'Пора пополнить запас',
     lowStockMessage: 'Остаток лекарства достиг минимального порога.',
+    emptyStockSubject: 'Лекарство закончилось - Pillo',
+    emptyStockHeading: 'Лекарство закончилось',
+    emptyStockMessage: 'Запас лекарства практически исчерпан. Необходимо срочно пополнить.',
+    courseEndSubject: 'Курс приёма завершён - Pillo',
+    courseEndHeading: 'Курс приёма завершён',
+    courseEndMessage:
+      'Расписание приёма подошло к концу. Не забудьте проконсультироваться с врачом при необходимости.',
     greeting: 'Здравствуйте, {name}!',
     medicationLabel: 'Лекарство',
     doseLabel: 'Доза',
     timeLabel: 'Время',
     stockLabel: 'Остаток',
+    courseLabel: 'Расписание',
     takeButton: 'Отметить как принято',
+    skipButton: 'Пропустить',
     openButton: 'Открыть Pillo',
     footer: 'Это автоматическое уведомление Pillo. Пожалуйста, не отвечайте на него.',
     pushIntakeTitle: 'Пора принять лекарство',
     pushIntakeBody: '{name}: {dose}',
     pushLowStockTitle: 'Пора купить',
-    pushLowStockBody: '{name}: осталось {stock}'
+    pushLowStockBody: '{name}: осталось {stock}',
+    pushEmptyStockTitle: 'Лекарство закончилось',
+    pushEmptyStockBody: '{name}: осталось {stock}, срочно пополните',
+    pushCourseEndTitle: 'Курс завершён',
+    pushCourseEndBody: '{name}: расписание приёма окончено'
   },
   en: {
     intakeSubject: 'Time to take your medicine - Pillo',
@@ -51,18 +76,30 @@ const COPY: Record<AppLocale, PilloNotificationCopy> = {
     lowStockSubject: 'Time to buy medicine - Pillo',
     lowStockHeading: 'Time to refill your stock',
     lowStockMessage: 'The medicine stock reached the minimum threshold.',
+    emptyStockSubject: 'Medicine is out of stock - Pillo',
+    emptyStockHeading: 'Medicine is out of stock',
+    emptyStockMessage: 'Your medicine stock is critically low. Please refill immediately.',
+    courseEndSubject: 'Course completed - Pillo',
+    courseEndHeading: 'Course completed',
+    courseEndMessage: 'Your medication schedule has ended. Please consult your doctor if needed.',
     greeting: 'Hello, {name}!',
     medicationLabel: 'Medicine',
     doseLabel: 'Dose',
     timeLabel: 'Time',
     stockLabel: 'Stock',
+    courseLabel: 'Schedule',
     takeButton: 'Mark as taken',
+    skipButton: 'Skip',
     openButton: 'Open Pillo',
     footer: 'This is an automated Pillo notification. Please do not reply.',
     pushIntakeTitle: 'Time to take medicine',
     pushIntakeBody: '{name}: {dose}',
     pushLowStockTitle: 'Time to buy',
-    pushLowStockBody: '{name}: {stock} left'
+    pushLowStockBody: '{name}: {stock} left',
+    pushEmptyStockTitle: 'Out of stock',
+    pushEmptyStockBody: '{name}: {stock} left, refill urgently',
+    pushCourseEndTitle: 'Course completed',
+    pushCourseEndBody: '{name}: medication schedule ended'
   },
   sr: {
     intakeSubject: 'Vreme je za lek - Pillo',
@@ -71,18 +108,30 @@ const COPY: Record<AppLocale, PilloNotificationCopy> = {
     lowStockSubject: 'Vreme je za kupovinu leka - Pillo',
     lowStockHeading: 'Vreme je da dopunite zalihe',
     lowStockMessage: 'Zaliha leka je dostigla minimalni prag.',
+    emptyStockSubject: 'Leka više nema - Pillo',
+    emptyStockHeading: 'Leka više nema',
+    emptyStockMessage: 'Zaliha leka je kritično niska. Hitno dopunite zalihe.',
+    courseEndSubject: 'Kurs je završen - Pillo',
+    courseEndHeading: 'Kurs je završen',
+    courseEndMessage: 'Raspored uzimanja leka je završen. Konsultujte se sa lekarom po potrebi.',
     greeting: 'Zdravo, {name}!',
     medicationLabel: 'Lek',
     doseLabel: 'Doza',
     timeLabel: 'Vreme',
     stockLabel: 'Zaliha',
+    courseLabel: 'Raspored',
     takeButton: 'Označi kao uzeto',
+    skipButton: 'Preskoči',
     openButton: 'Otvori Pillo',
     footer: 'Ovo je automatsko Pillo obaveštenje. Molimo ne odgovarajte na njega.',
     pushIntakeTitle: 'Vreme je za lek',
     pushIntakeBody: '{name}: {dose}',
     pushLowStockTitle: 'Vreme je za kupovinu',
-    pushLowStockBody: '{name}: ostalo {stock}'
+    pushLowStockBody: '{name}: ostalo {stock}',
+    pushEmptyStockTitle: 'Leka više nema',
+    pushEmptyStockBody: '{name}: ostalo {stock}, hitno dopunite',
+    pushCourseEndTitle: 'Kurs je završen',
+    pushCourseEndBody: '{name}: raspored uzimanja je završen'
   }
 };
 
@@ -132,6 +181,16 @@ export const getPilloNotificationCopy = (locale?: string | null): PilloNotificat
 export const getPilloTakeUrl = (params: { locale?: string | null; token: string }): string => {
   const locale = normalizePilloLocale(params.locale);
   return `${getPilloBaseUrl()}/${locale}/app/pillo/take/${encodeURIComponent(params.token)}`;
+};
+
+/**
+ * Формирует ссылку на экран пропуска приёма.
+ * @param params - locale и одноразовый токен.
+ * @returns Абсолютная ссылка с query-параметром action=skip.
+ */
+export const getPilloSkipUrl = (params: { locale?: string | null; token: string }): string => {
+  const locale = normalizePilloLocale(params.locale);
+  return `${getPilloBaseUrl()}/${locale}/app/pillo/take/${encodeURIComponent(params.token)}?action=skip`;
 };
 
 /**

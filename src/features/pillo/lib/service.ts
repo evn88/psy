@@ -6,8 +6,12 @@ import {
   type PilloGeneratedIntake
 } from '@/features/pillo/lib/schedule';
 import { getPilloAppUrl, getPilloNotificationCopy, interpolatePilloCopy } from './notifications';
-import { getPilloStockStatus, toNumber } from './stock';
-import { sendPilloLowStockEmail } from '@/shared/lib/email';
+import { getPilloStockStatus, toNumber, type PilloStockStatus } from './stock';
+import {
+  sendPilloCourseEndEmail,
+  sendPilloEmptyStockEmail,
+  sendPilloLowStockEmail
+} from '@/shared/lib/email';
 import { startPilloIntakeReminderWorkflow } from '@/shared/lib/pillo-reminder-workflow';
 import prisma from '@/shared/lib/prisma';
 import { sendPushToMany } from '@/shared/lib/push';
@@ -235,13 +239,14 @@ export const recoverPilloReminderWindow = async (now = new Date()) => {
 };
 
 /**
- * Отправляет уведомления о низком остатке после принятия лекарства.
- * @param params - данные пользователя и лекарства.
+ * Отправляет уведомления о низком или критически низком остатке после принятия лекарства.
+ * @param params - данные пользователя, лекарства и статус остатка.
  */
 const dispatchPilloLowStockNotifications = async (params: {
   userId: string;
   medicationName: string;
   stockText: string;
+  stockStatus: PilloStockStatus;
 }) => {
   const user = await prisma.user.findUnique({
     where: { id: params.userId },
@@ -263,9 +268,11 @@ const dispatchPilloLowStockNotifications = async (params: {
 
   const copy = getPilloNotificationCopy(user.language);
   const actionUrl = getPilloAppUrl(user.language);
+  const isEmptyStock = params.stockStatus === 'empty';
 
   if (user.pilloUserSettings?.lowStockEmailEnabled !== false && user.email) {
-    await sendPilloLowStockEmail({
+    const sendEmail = isEmptyStock ? sendPilloEmptyStockEmail : sendPilloLowStockEmail;
+    await sendEmail({
       email: user.email,
       name: user.name || 'User',
       medicationName: params.medicationName,
@@ -276,9 +283,12 @@ const dispatchPilloLowStockNotifications = async (params: {
   }
 
   if (user.pilloUserSettings?.lowStockPushEnabled !== false && user.pushSubscriptions.length > 0) {
+    const pushTitle = isEmptyStock ? copy.pushEmptyStockTitle : copy.pushLowStockTitle;
+    const pushBody = isEmptyStock ? copy.pushEmptyStockBody : copy.pushLowStockBody;
+
     await sendPushToMany(user.pushSubscriptions, {
-      title: copy.pushLowStockTitle,
-      body: interpolatePilloCopy(copy.pushLowStockBody, {
+      title: pushTitle,
+      body: interpolatePilloCopy(pushBody, {
         name: params.medicationName,
         stock: params.stockText
       }),
@@ -348,7 +358,8 @@ export const takePilloIntake = async (userId: string, intakeId: string) => {
     await dispatchPilloLowStockNotifications({
       userId,
       medicationName: result.medication.name,
-      stockText: result.medication.stockUnits.toString()
+      stockText: result.medication.stockUnits.toString(),
+      stockStatus: status
     });
   }
 
@@ -422,4 +433,99 @@ export const undoPilloIntake = async (userId: string, intakeId: string) => {
   });
 
   return result;
+};
+
+/**
+ * Проверяет и отправляет уведомления о завершении курсов приёма.
+ * Находит все активные правила с endDate, которое уже наступило,
+ * и отправляет уведомления тем, кому они ещё не отправлялись.
+ * @returns Количество отправленных уведомлений.
+ */
+export const checkPilloCourseEndNotifications = async (): Promise<{ notified: number }> => {
+  const now = new Date();
+
+  // Правила с endDate ≤ сейчас, активные, ещё не нотифицированные
+  const expiredRules = await prisma.pilloScheduleRule.findMany({
+    where: {
+      isActive: true,
+      endDate: { lte: now },
+      courseEndNotifiedAt: null
+    },
+    include: {
+      medication: true,
+      user: {
+        include: {
+          pilloUserSettings: true,
+          pushSubscriptions: {
+            select: {
+              endpoint: true,
+              p256dh: true,
+              auth: true
+            }
+          }
+        }
+      }
+    }
+  });
+
+  let notifiedCount = 0;
+
+  for (const rule of expiredRules) {
+    const { user } = rule;
+
+    if (user.isDisabled || !isPilloAllowedRole(user.role)) {
+      // Помечаем как обработанное, чтобы не проверять повторно
+      await prisma.pilloScheduleRule.update({
+        where: { id: rule.id },
+        data: { courseEndNotifiedAt: now }
+      });
+      continue;
+    }
+
+    const copy = getPilloNotificationCopy(user.language);
+    const actionUrl = getPilloAppUrl(user.language);
+    const endDateText = rule.endDate
+      ? rule.endDate.toLocaleDateString('ru-RU', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        })
+      : '';
+
+    // Email-уведомление
+    if (user.pilloUserSettings?.emailRemindersEnabled !== false && user.email) {
+      await sendPilloCourseEndEmail({
+        email: user.email,
+        name: user.name || 'User',
+        medicationName: rule.medication.name,
+        endDateText,
+        actionUrl,
+        locale: user.language
+      });
+    }
+
+    // Push-уведомление
+    if (
+      user.pilloUserSettings?.pushRemindersEnabled !== false &&
+      user.pushSubscriptions.length > 0
+    ) {
+      await sendPushToMany(user.pushSubscriptions, {
+        title: copy.pushCourseEndTitle,
+        body: interpolatePilloCopy(copy.pushCourseEndBody, {
+          name: rule.medication.name
+        }),
+        url: actionUrl
+      });
+    }
+
+    // Помечаем правило как нотифицированное
+    await prisma.pilloScheduleRule.update({
+      where: { id: rule.id },
+      data: { courseEndNotifiedAt: now }
+    });
+
+    notifiedCount++;
+  }
+
+  return { notified: notifiedCount };
 };

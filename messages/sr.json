@@ -923,7 +923,11 @@
       "title": "Potvrdite uzimanje",
       "description": "Dodirnite dugme ispod da označite lek kao uzet.",
       "button": "Označi kao uzeto",
+      "skipTitle": "Preskoči uzimanje",
+      "skipDescription": "Dodirnite dugme ispod da preskočite ovu dozu.",
+      "skipButton": "Preskoči",
       "success": "Uzimanje je zabeleženo.",
+      "skipSuccess": "Uzimanje je preskočeno.",
       "error": "Nije moguće potvrditi uzimanje.",
       "backToPillo": "Otvori Pillo"
     }

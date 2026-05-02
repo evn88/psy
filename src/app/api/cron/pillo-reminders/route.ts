@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 
-import { recoverPilloReminderWindow } from '@/features/pillo/lib/service';
+import {
+  checkPilloCourseEndNotifications,
+  recoverPilloReminderWindow
+} from '@/features/pillo/lib/service';
 import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
 
 export const runtime = 'nodejs';
@@ -22,10 +25,10 @@ const isAuthorizedCronRequest = (request: Request): boolean => {
 };
 
 /**
- * Ежедневно восстанавливает rolling window Pillo.
+ * Ежедневно восстанавливает rolling window Pillo и проверяет завершённые курсы.
  * Cron не является точным планировщиком: точное время обеспечивают Workflow `sleep`.
  * @param request - cron-запрос Vercel.
- * @returns Сводка восстановленных приёмов и workflow.
+ * @returns Сводка восстановленных приёмов, workflow и уведомлений о курсах.
  */
 async function getHandler(request: Request) {
   if (!process.env.CRON_SECRET) {
@@ -36,11 +39,15 @@ async function getHandler(request: Request) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  const summary = await recoverPilloReminderWindow();
+  const [summary, courseEndResult] = await Promise.all([
+    recoverPilloReminderWindow(),
+    checkPilloCourseEndNotifications()
+  ]);
 
   return NextResponse.json({
     success: true,
-    summary
+    summary,
+    courseEnd: courseEndResult
   });
 }
 

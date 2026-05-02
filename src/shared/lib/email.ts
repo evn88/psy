@@ -575,13 +575,14 @@ interface SendPilloIntakeReminderEmailParams {
   doseText: string;
   scheduledFor: Date | string;
   actionUrl: string;
+  skipUrl: string;
   locale: string;
   timezone: string;
 }
 
 /**
  * Отправляет email-напоминание о приёме лекарства в Pillo.
- * @param params - получатель, лекарство, доза и ссылка подтверждения.
+ * @param params - получатель, лекарство, доза, ссылка подтверждения и ссылка пропуска.
  * @returns id письма в Resend или null при ошибке.
  */
 export const sendPilloIntakeReminderEmail = async ({
@@ -591,6 +592,7 @@ export const sendPilloIntakeReminderEmail = async ({
   doseText,
   scheduledFor,
   actionUrl,
+  skipUrl,
   locale,
   timezone
 }: SendPilloIntakeReminderEmailParams): Promise<string | null> => {
@@ -613,6 +615,8 @@ export const sendPilloIntakeReminderEmail = async ({
       ],
       buttonText: copy.takeButton,
       actionUrl,
+      secondaryButtonText: copy.skipButton,
+      secondaryActionUrl: skipUrl,
       footer: copy.footer
     })
   });
@@ -670,6 +674,99 @@ export const sendPilloLowStockEmail = async ({
 
   if (error) {
     console.error('Ошибка отправки Pillo low stock email:', error);
+    return null;
+  }
+
+  return data?.id ?? null;
+};
+
+/**
+ * Отправляет email о критически низком (пустом) остатке лекарства в Pillo.
+ * @param params - получатель, лекарство, остаток и ссылка на приложение.
+ * @returns id письма в Resend или null при ошибке.
+ */
+export const sendPilloEmptyStockEmail = async ({
+  email,
+  name,
+  medicationName,
+  stockText,
+  actionUrl,
+  locale
+}: SendPilloLowStockEmailParams): Promise<string | null> => {
+  const copy = getPilloNotificationCopy(locale);
+
+  const { data, error } = await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: [email],
+    subject: copy.emptyStockSubject,
+    react: PilloNotificationTemplate({
+      preview: copy.emptyStockHeading,
+      heading: copy.emptyStockHeading,
+      greeting: interpolatePilloCopy(copy.greeting, { name }),
+      message: copy.emptyStockMessage,
+      details: [
+        { label: copy.medicationLabel, value: medicationName },
+        { label: copy.stockLabel, value: stockText }
+      ],
+      buttonText: copy.openButton,
+      actionUrl,
+      footer: copy.footer
+    })
+  });
+
+  if (error) {
+    console.error('Ошибка отправки Pillo empty stock email:', error);
+    return null;
+  }
+
+  return data?.id ?? null;
+};
+
+interface SendPilloCourseEndEmailParams {
+  email: string;
+  name: string;
+  medicationName: string;
+  endDateText: string;
+  actionUrl: string;
+  locale: string;
+}
+
+/**
+ * Отправляет email об окончании курса приёма в Pillo.
+ * @param params - получатель, лекарство, дата окончания и ссылка на приложение.
+ * @returns id письма в Resend или null при ошибке.
+ */
+export const sendPilloCourseEndEmail = async ({
+  email,
+  name,
+  medicationName,
+  endDateText,
+  actionUrl,
+  locale
+}: SendPilloCourseEndEmailParams): Promise<string | null> => {
+  const copy = getPilloNotificationCopy(locale);
+
+  const { data, error } = await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: [email],
+    subject: copy.courseEndSubject,
+    react: PilloNotificationTemplate({
+      preview: copy.courseEndHeading,
+      heading: copy.courseEndHeading,
+      greeting: interpolatePilloCopy(copy.greeting, { name }),
+      message: copy.courseEndMessage,
+      details: [
+        { label: copy.medicationLabel, value: medicationName },
+        { label: copy.courseLabel, value: endDateText }
+      ],
+      buttonText: copy.openButton,
+      actionUrl,
+      footer: copy.footer
+    })
+  });
+
+  if (error) {
+    console.error('Ошибка отправки Pillo course end email:', error);
     return null;
   }
 

@@ -102,6 +102,7 @@ model PilloScheduleRule {
   comment                 String?
   isActive                Boolean         @default(true)
   reminderWorkflowVersion Int             @default(1)
+  courseEndNotifiedAt      DateTime?
   createdAt               DateTime        @default(now())
   updatedAt               DateTime        @updatedAt
   intakes                 PilloIntake[]

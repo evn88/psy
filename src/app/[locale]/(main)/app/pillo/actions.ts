@@ -383,6 +383,47 @@ export const confirmPilloIntakeTokenAction = async (token: string): Promise<Pill
 };
 
 /**
+ * Пропускает приём по одноразовому токену из email или push.
+ * @param token - открытый токен из ссылки.
+ * @returns Результат пропуска.
+ */
+export const skipPilloIntakeTokenAction = async (token: string): Promise<PilloActionResult> => {
+  const currentUserId = await requirePilloUserId();
+  const tokenHash = hashPilloActionToken(token);
+  const actionToken = await prisma.pilloIntakeActionToken.findUnique({
+    where: { tokenHash },
+    include: { intake: true }
+  });
+
+  if (!actionToken || actionToken.usedAt || actionToken.expiresAt <= new Date()) {
+    return { error: 'Ссылка недействительна или уже использована' };
+  }
+
+  if (actionToken.userId !== currentUserId) {
+    return { error: 'Эта ссылка принадлежит другому пользователю' };
+  }
+
+  const isAllowed = await canUsePillo(actionToken.userId);
+  if (!isAllowed) {
+    return { error: 'Нет доступа к Pillo' };
+  }
+
+  const result = await skipPilloIntake(actionToken.userId, actionToken.intakeId);
+
+  if (!result) {
+    return { error: 'Приём не найден' };
+  }
+
+  await prisma.pilloIntakeActionToken.update({
+    where: { id: actionToken.id },
+    data: { usedAt: new Date() }
+  });
+
+  revalidatePilloPaths();
+  return { success: true };
+};
+
+/**
  * Материализует ближайшее расписание текущего пользователя.
  * @returns Сводка материализации.
  */

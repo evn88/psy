@@ -987,7 +987,11 @@
       "title": "Confirm intake",
       "description": "Tap the button below to mark the medicine as taken.",
       "button": "Mark as taken",
+      "skipTitle": "Skip intake",
+      "skipDescription": "Tap the button below to skip this dose.",
+      "skipButton": "Skip",
       "success": "Intake marked as taken.",
+      "skipSuccess": "Intake skipped.",
       "error": "Could not confirm intake.",
       "backToPillo": "Open Pillo"
     }

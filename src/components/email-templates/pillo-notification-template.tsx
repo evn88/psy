@@ -19,6 +19,8 @@ interface PilloNotificationTemplateProps {
   details: Array<{ label: string; value: string }>;
   buttonText: string;
   actionUrl: string;
+  secondaryButtonText?: string;
+  secondaryActionUrl?: string;
   footer: string;
 }
 
@@ -35,6 +37,8 @@ export const PilloNotificationTemplate = ({
   details,
   buttonText,
   actionUrl,
+  secondaryButtonText,
+  secondaryActionUrl,
   footer
 }: PilloNotificationTemplateProps) => {
   return (
@@ -61,6 +65,14 @@ export const PilloNotificationTemplate = ({
               {buttonText}
             </Button>
           </Section>
+
+          {secondaryButtonText && secondaryActionUrl && (
+            <Section style={secondaryButtonSection}>
+              <Button style={secondaryButton} href={secondaryActionUrl}>
+                {secondaryButtonText}
+              </Button>
+            </Section>
+          )}
 
           <Text style={footerText}>{footer}</Text>
         </Container>
@@ -123,7 +135,12 @@ const detailRow: React.CSSProperties = {
 };
 
 const buttonSection: React.CSSProperties = {
-  margin: '28px 0',
+  margin: '28px 0 8px',
+  textAlign: 'center'
+};
+
+const secondaryButtonSection: React.CSSProperties = {
+  margin: '0 0 20px',
   textAlign: 'center'
 };
 
@@ -135,6 +152,18 @@ const button: React.CSSProperties = {
   fontSize: '15px',
   fontWeight: 700,
   padding: '12px 28px',
+  textDecoration: 'none'
+};
+
+const secondaryButton: React.CSSProperties = {
+  backgroundColor: 'transparent',
+  border: '1px solid #d1d5db',
+  borderRadius: '999px',
+  color: '#374151',
+  display: 'inline-block',
+  fontSize: '14px',
+  fontWeight: 600,
+  padding: '10px 24px',
   textDecoration: 'none'
 };
 
