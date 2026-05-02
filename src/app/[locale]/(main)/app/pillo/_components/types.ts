@@ -5,7 +5,9 @@ export type PilloMedicationView = {
   name: string;
   photoUrl: string | null;
   description: string | null;
-  dosage: string;
+  dosage: string | null;
+  dosageValue: number | null;
+  dosageUnit: string | null;
   form: string;
   packagesCount: number;
   unitsPerPackage: number | null;

@@ -54,6 +54,19 @@ import {
   SelectValue
 } from '@/components/ui/select';
 
+const DOSAGE_UNITS = [
+  'mg',
+  'ml',
+  'mcg',
+  'g',
+  'drops',
+  'puffs',
+  'units',
+  'tablets',
+  'capsules',
+  'other'
+] as const;
+
 const MEDICATION_FORMS = [
   { id: 'tablet', icon: Pill },
   { id: 'capsule', icon: Pill },
@@ -145,14 +158,45 @@ const MedicationDialog = ({
               </Label>
             </div>
             <TextField control={form.control} name="name" label={t('medications.name')} />
-            <TextField control={form.control} name="dosage" label={t('medications.dosage')} />
+            <div className="grid grid-cols-2 gap-3">
+              <TextField
+                control={form.control}
+                name="dosageValue"
+                label={t('medications.dosageValue')}
+                type="number"
+              />
+              <FormField
+                control={form.control}
+                name="dosageUnit"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('medications.dosageUnit')}</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="h-11 rounded-2xl">
+                          <SelectValue placeholder={t('medications.dosageUnit')} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="rounded-2xl">
+                        {DOSAGE_UNITS.map(unit => (
+                          <SelectItem key={unit} value={unit} className="rounded-xl">
+                            {t(`dosageUnits.${unit}`)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <FormField
               control={form.control}
               name="form"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('medications.form')}</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger className="h-11 rounded-2xl">
                         <SelectValue placeholder={t('medications.form')} />
@@ -272,7 +316,17 @@ const MedicationCard = ({ medication }: { medication: PilloMedicationView }) => 
                   {medication.name}
                 </h3>
                 <p className="text-xs font-medium text-muted-foreground/70 uppercase tracking-wide">
-                  {medication.dosage} · {t(`medicationForms.${medication.form}`)}
+                  {medication.dosageValue !== null && medication.dosageUnit ? (
+                    <>
+                      {medication.dosageValue}{' '}
+                      {t(`dosageUnits.${medication.dosageUnit.toLowerCase().replace('.', '')}`)}
+                    </>
+                  ) : (
+                    medication.dosage
+                  )}
+                  {' · '}
+                  {t.raw(`medicationForms`)?.[medication.form.toLowerCase().replace('.', '')] ||
+                    medication.form}
                 </p>
               </div>
               <Badge

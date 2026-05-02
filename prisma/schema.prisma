@@ -1,10 +1,603 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
 }
 
-// Определение пути вывода для сгенерированного Prisma Client
-generator client {
-  provider = "prisma-client-js"
+model User {
+  id                        String                   @id @default(cuid())
+  name                      String?
+  email                     String                   @unique
+  emailVerified             DateTime?
+  image                     String?
+  password                  String?
+  role                      Role                     @default(GUEST)
+  language                  String                   @default("ru")
+  theme                     String                   @default("system")
+  lastSeen                  DateTime?                @default(now())
+  createdAt                 DateTime                 @default(now())
+  updatedAt                 DateTime                 @updatedAt
+  isDisabled                Boolean                  @default(false)
+  registrationIp            String?
+  timezone                  String?                  @default("UTC")
+  googleCalendarSyncEnabled Boolean                  @default(false)
+  googleCalendarSyncUrl     String?
+  workHourEnd               Int                      @default(20)
+  workHourStart             Int                      @default(9)
+  blogNotifications         Boolean                  @default(false)
+  notificationSettings      Json?
+  balance                   Decimal                  @default(0) @db.Decimal(12, 2)
+  accounts                  Account[]
+  Authenticator             Authenticator[]
+  blogPosts                 BlogPost[]               @relation("BlogAuthor")
+  consents                  ClientConsent[]
+  uploadedDocs              ClientDocument[]         @relation("UploadedDocuments")
+  documents                 ClientDocument[]         @relation("UserDocuments")
+  clientProfile             ClientProfile?
+  createdEvents             Event[]                  @relation("EventCreator")
+  clientEvents              Event[]                  @relation("EventClient")
+  payments                  Payment[]
+  pilloIntakes              PilloIntake[]
+  pilloActionTokens         PilloIntakeActionToken[]
+  pilloMedications          PilloMedication[]
+  pilloScheduleRules        PilloScheduleRule[]
+  pilloUserSettings         PilloUserSettings?
+  pushSubscriptions         PushSubscription[]
+  sessions                  Session[]
+  createdSurveys            Survey[]                 @relation("SurveyCreator")
+  surveyAssignments         SurveyAssignment[]
+  surveyComments            SurveyComment[]
+  systemLogs                SystemLogEntry[]
+  loginHistory              UserLoginHistory[]
+}
+
+/// Подписка на Web Push уведомления (PWA)
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PilloMedication {
+  id                String              @id @default(cuid())
+  userId            String
+  name              String
+  photoUrl          String?
+  description       String?
+  dosage            String?
+  form              String
+  packagesCount     Int                 @default(0)
+  unitsPerPackage   Int?
+  stockUnits        Decimal             @default(0) @db.Decimal(10, 2)
+  minThresholdUnits Decimal             @default(0) @db.Decimal(10, 2)
+  isActive          Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  dosageUnit        String?
+  dosageValue       Decimal?            @db.Decimal(10, 2)
+  intakes           PilloIntake[]
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scheduleRules     PilloScheduleRule[]
+
+  @@index([userId, isActive])
+  @@index([userId, name])
+}
+
+model PilloScheduleRule {
+  id                      String          @id @default(cuid())
+  userId                  String
+  medicationId            String
+  time                    String
+  doseUnits               Decimal         @db.Decimal(10, 2)
+  daysOfWeek              Int[]
+  startDate               DateTime
+  endDate                 DateTime?
+  comment                 String?
+  isActive                Boolean         @default(true)
+  reminderWorkflowVersion Int             @default(1)
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+  intakes                 PilloIntake[]
+  medication              PilloMedication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+  user                    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isActive])
+  @@index([medicationId])
+}
+
+model PilloIntake {
+  id                        String                   @id @default(cuid())
+  userId                    String
+  medicationId              String
+  scheduleRuleId            String
+  scheduledFor              DateTime
+  localDate                 String
+  localTime                 String
+  doseUnits                 Decimal                  @db.Decimal(10, 2)
+  status                    PilloIntakeStatus        @default(PENDING)
+  note                      String?
+  takenAt                   DateTime?
+  skippedAt                 DateTime?
+  missedAt                  DateTime?
+  reminderWorkflowStartedAt DateTime?
+  reminderSentAt            DateTime?
+  createdAt                 DateTime                 @default(now())
+  updatedAt                 DateTime                 @updatedAt
+  medication                PilloMedication          @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+  scheduleRule              PilloScheduleRule        @relation(fields: [scheduleRuleId], references: [id], onDelete: Cascade)
+  user                      User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actionTokens              PilloIntakeActionToken[]
+
+  @@unique([scheduleRuleId, scheduledFor])
+  @@index([userId, scheduledFor])
+  @@index([userId, status, scheduledFor])
+  @@index([medicationId])
+}
+
+model PilloIntakeActionToken {
+  id        String      @id @default(cuid())
+  userId    String
+  intakeId  String
+  tokenHash String      @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime    @default(now())
+  intake    PilloIntake @relation(fields: [intakeId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([intakeId])
+  @@index([userId, expiresAt])
+}
+
+model PilloUserSettings {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  emailRemindersEnabled Boolean  @default(true)
+  pushRemindersEnabled  Boolean  @default(true)
+  lowStockEmailEnabled  Boolean  @default(true)
+  lowStockPushEnabled   Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+model Authenticator {
+  credentialID         String  @unique
+  userId               String
+  providerAccountId    String
+  credentialPublicKey  String
+  counter              Int
+  credentialDeviceType String
+  credentialBackedUp   Boolean
+  transports           String?
+  user                 User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, credentialID])
+}
+
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  email     String
+  ip        String?
+  createdAt DateTime @default(now())
+}
+
+/// Опрос, созданный администратором
+model Survey {
+  id          String             @id @default(cuid())
+  title       String
+  description String?
+  createdById String
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  createdBy   User               @relation("SurveyCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  assignments SurveyAssignment[]
+  questions   SurveyQuestion[]
+}
+
+/// Вопрос опроса
+model SurveyQuestion {
+  id        String       @id @default(cuid())
+  surveyId  String
+  text      String
+  type      QuestionType
+  options   Json?
+  order     Int          @default(0)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  isDeleted Boolean      @default(false)
+  survey    Survey       @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+}
+
+/// Назначение опроса пользователю
+model SurveyAssignment {
+  id         String           @id @default(cuid())
+  surveyId   String
+  userId     String
+  status     AssignmentStatus @default(PENDING)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  isArchived Boolean          @default(false)
+  survey     Survey           @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  result     SurveyResult?
+
+  @@unique([surveyId, userId])
+}
+
+/// Результат прохождения опроса
+model SurveyResult {
+  id           String           @id @default(cuid())
+  assignmentId String           @unique
+  answers      Json
+  completedAt  DateTime         @default(now())
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  comments     SurveyComment[]
+  assignment   SurveyAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+}
+
+/// Комментарий администратора к результату опроса
+model SurveyComment {
+  id            String       @id @default(cuid())
+  resultId      String
+  authorId      String
+  text          String
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  isReadByAdmin Boolean      @default(false)
+  isReadByUser  Boolean      @default(false)
+  author        User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  result        SurveyResult @relation(fields: [resultId], references: [id], onDelete: Cascade)
+}
+
+/// История входов пользователя (хранится не более 3 записей на пользователя)
+model UserLoginHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  ip        String?
+  provider  String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// Статья блога
+model BlogPost {
+  id           String                @id @default(cuid())
+  slug         String                @unique
+  status       BlogPostStatus        @default(DRAFT)
+  coverImage   String?
+  readingTime  Int                   @default(0)
+  publishedAt  DateTime?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  authorId     String
+  author       User                  @relation("BlogAuthor", fields: [authorId], references: [id])
+  categories   BlogPostCategory[]
+  translations BlogPostTranslation[]
+  versions     BlogPostVersion[]
+
+  @@index([status, publishedAt])
+}
+
+/// Версия статьи (снапшот при ручном сохранении, хранится последние 5)
+model BlogPostVersion {
+  id           String   @id @default(cuid())
+  postId       String
+  translations Json
+  categoryIds  String[]
+  coverImage   String?
+  savedAt      DateTime @default(now())
+  post         BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId, savedAt])
+}
+
+/// Перевод статьи на конкретный язык
+model BlogPostTranslation {
+  id          String   @id @default(cuid())
+  postId      String
+  locale      String
+  title       String
+  description String
+  content     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  post        BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, locale])
+  @@index([postId])
+}
+
+/// Категория статей блога
+model BlogCategory {
+  id        String             @id @default(cuid())
+  slug      String             @unique
+  name      Json
+  createdAt DateTime           @default(now())
+  posts     BlogPostCategory[]
+}
+
+/// Связь статьи с категорией
+model BlogPostCategory {
+  postId     String
+  categoryId String
+  category   BlogCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  post       BlogPost     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([postId, categoryId])
+}
+
+/// Подписка на уведомления о новых статьях блога (для незарегистрированных)
+model BlogSubscription {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  token     String   @default(cuid())
+  createdAt DateTime @default(now())
+}
+
+model Event {
+  id                                String      @id @default(cuid())
+  title                             String?
+  type                              EventType
+  status                            EventStatus @default(SCHEDULED)
+  start                             DateTime
+  end                               DateTime
+  meetLink                          String?
+  cancelReason                      String?
+  isGoogleSynced                    Boolean     @default(false)
+  googleEventId                     String?
+  authorId                          String
+  userId                            String?
+  groupId                           String?
+  createdAt                         DateTime    @default(now())
+  updatedAt                         DateTime    @updatedAt
+  bookingReminderMinutesBeforeStart Int?
+  reminderEmailSentAt               DateTime?
+  reminderMinutesBeforeStart        Int         @default(30)
+  reminderPushSentAt                DateTime?
+  reminderWorkflowVersion           Int         @default(1)
+  author                            User        @relation("EventCreator", fields: [authorId], references: [id], onDelete: Cascade)
+  user                              User?       @relation("EventClient", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status, start])
+  @@index([start, reminderEmailSentAt, reminderPushSentAt])
+}
+
+model SystemAlert {
+  id        String          @id @default(cuid())
+  type      SystemAlertType
+  periodKey String
+  payload   Json?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@unique([type, periodKey])
+}
+
+model SystemLogEntry {
+  id           String            @id @default(cuid())
+  category     SystemLogCategory
+  level        SystemLogLevel
+  source       String
+  operation    String?
+  service      String?
+  method       String?
+  path         String?
+  statusCode   Int?
+  durationMs   Int?
+  initiatorIp  String?
+  userAgent    String?
+  requestId    String?
+  userId       String?
+  requestBody  Json?
+  responseBody Json?
+  errorName    String?
+  errorMessage String?
+  errorStack   String?
+  errorDetails Json?
+  createdAt    DateTime          @default(now())
+  user         User?             @relation(fields: [userId], references: [id])
+
+  @@index([category, createdAt(sort: Desc)])
+  @@index([level, createdAt(sort: Desc)])
+  @@index([statusCode])
+  @@index([path])
+  @@index([initiatorIp])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+}
+
+model SystemLogSettings {
+  id                   String   @id @default("default")
+  apiRequestsEnabled   Boolean  @default(true)
+  aiErrorsEnabled      Boolean  @default(true)
+  paymentErrorsEnabled Boolean  @default(true)
+  retentionDays        Int      @default(30)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model ClientProfile {
+  id        String           @id @default(cuid())
+  userId    String           @unique
+  metadata  Json?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  intakes   IntakeResponse[]
+}
+
+model IntakeResponse {
+  id              String        @id @default(cuid())
+  clientProfileId String
+  formId          String
+  status          String        @default("COMPLETED")
+  answers         String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  clientProfile   ClientProfile @relation(fields: [clientProfileId], references: [id], onDelete: Cascade)
+}
+
+model ClientConsent {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  ip        String?
+  userAgent String?
+  signature String
+  agreedAt  DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ClientDocument {
+  id           String   @id @default(cuid())
+  userId       String
+  url          String
+  name         String
+  size         Int?
+  uploadedById String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  fileType     String   @default("application/octet-stream")
+  uploadedBy   User     @relation("UploadedDocuments", fields: [uploadedById], references: [id])
+  user         User     @relation("UserDocuments", fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ServicePackage {
+  id          String    @id @default(cuid())
+  title       Json
+  description Json?
+  amount      Decimal   @db.Decimal(12, 2)
+  currency    String    @default("EUR")
+  coverImage  String?
+  isActive    Boolean   @default(true)
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  payments    Payment[]
+}
+
+model Payment {
+  id               String           @id @default(cuid())
+  provider         PaymentProvider  @default(PAYPAL)
+  kind             PaymentKind      @default(CHECKOUT)
+  userId           String
+  orderId          String           @unique
+  captureId        String?          @unique
+  subscriptionId   String?
+  invoiceId        String?
+  amount           Decimal          @db.Decimal(12, 2)
+  currency         String
+  status           String
+  description      String?
+  payerEmail       String?
+  rawOrder         Json?
+  rawCapture       Json?
+  capturedAt       DateTime?
+  lastSyncedAt     DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  servicePackageId String?
+  servicePackage   ServicePackage?  @relation(fields: [servicePackageId], references: [id])
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  disputes         PaymentDispute[]
+  events           PaymentEvent[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status])
+  @@index([subscriptionId])
+}
+
+model PaymentEvent {
+  id              String          @id @default(cuid())
+  provider        PaymentProvider @default(PAYPAL)
+  paymentId       String?
+  providerEventId String          @unique
+  eventType       String
+  resourceType    String?
+  resourceId      String?
+  orderId         String?
+  captureId       String?
+  subscriptionId  String?
+  disputeId       String?
+  status          String?
+  amount          Decimal?        @db.Decimal(12, 2)
+  currency        String?
+  occurredAt      DateTime?
+  payload         Json
+  isProcessed     Boolean         @default(false)
+  processedAt     DateTime?
+  createdAt       DateTime        @default(now())
+  payment         Payment?        @relation(fields: [paymentId], references: [id])
+
+  @@index([paymentId, createdAt(sort: Desc)])
+  @@index([orderId])
+  @@index([captureId])
+  @@index([subscriptionId])
+  @@index([disputeId])
+}
+
+model PaymentDispute {
+  id            String    @id @default(cuid())
+  paymentId     String?
+  disputeId     String    @unique
+  stage         String?
+  status        String
+  reason        String?
+  amount        Decimal?  @db.Decimal(12, 2)
+  currency      String?
+  responseDueAt DateTime?
+  payload       Json
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  payment       Payment?  @relation(fields: [paymentId], references: [id])
+
+  @@index([paymentId])
 }
 
 enum Role {
@@ -19,11 +612,11 @@ enum PaymentProvider {
 
 enum PaymentKind {
   CHECKOUT
-  TOPUP
   SUBSCRIPTION
   SUBSCRIPTION_RENEWAL
   REFUND
   DISPUTE
+  TOPUP
 }
 
 /// Статус бронирования события
@@ -65,362 +658,6 @@ enum PilloIntakeStatus {
   MISSED
 }
 
-model User {
-  id            String             @id @default(cuid())
-  name          String?
-  email         String             @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  role          Role               @default(GUEST)
-  isDisabled    Boolean            @default(false)
-  timezone      String?            @default("UTC")
-  accounts      Account[]
-  sessions      Session[]
-  // Опционально для поддержки WebAuthn
-  Authenticator Authenticator[]
-  loginHistory  UserLoginHistory[]
-
-  language       String    @default("ru")
-  theme          String    @default("system")
-  lastSeen       DateTime? @default(now())
-  registrationIp String?
-
-  googleCalendarSyncUrl     String?
-  googleCalendarSyncEnabled Boolean @default(false)
-  workHourStart             Int     @default(9)
-  workHourEnd               Int     @default(20)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Связи с системой опросов
-  createdSurveys    Survey[]           @relation("SurveyCreator")
-  surveyAssignments SurveyAssignment[]
-  surveyComments    SurveyComment[]
-
-  // Связи с расписанием
-  createdEvents Event[] @relation("EventCreator")
-  clientEvents  Event[] @relation("EventClient")
-
-  // Push-подписки (PWA)
-  pushSubscriptions PushSubscription[]
-
-  // Мини-приложение Pillo
-  pilloMedications   PilloMedication[]
-  pilloScheduleRules PilloScheduleRule[]
-  pilloIntakes       PilloIntake[]
-  pilloActionTokens  PilloIntakeActionToken[]
-  pilloUserSettings  PilloUserSettings?
-
-  // Блог
-  blogNotifications Boolean    @default(false)
-  blogPosts         BlogPost[] @relation("BlogAuthor")
-
-  // Настройки пользователя/администратора
-  notificationSettings Json?
-  systemLogs           SystemLogEntry[]
-
-  // Система клиентов
-  clientProfile ClientProfile?
-  consents      ClientConsent[]
-  documents     ClientDocument[] @relation("UserDocuments")
-  uploadedDocs  ClientDocument[] @relation("UploadedDocuments")
-  payments      Payment[]
-
-  balance Decimal @default(0) @db.Decimal(12, 2)
-}
-
-/// Подписка на Web Push уведомления (PWA)
-model PushSubscription {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  endpoint  String   @unique
-  p256dh    String
-  auth      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model PilloMedication {
-  id          String  @id @default(cuid())
-  userId      String
-  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name        String
-  photoUrl    String?
-  description String?
-  dosage      String
-  form        String
-
-  packagesCount     Int     @default(0)
-  unitsPerPackage   Int?
-  stockUnits        Decimal @default(0) @db.Decimal(10, 2)
-  minThresholdUnits Decimal @default(0) @db.Decimal(10, 2)
-  isActive          Boolean @default(true)
-
-  scheduleRules PilloScheduleRule[]
-  intakes       PilloIntake[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId, isActive])
-  @@index([userId, name])
-}
-
-model PilloScheduleRule {
-  id           String          @id @default(cuid())
-  userId       String
-  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  medicationId String
-  medication   PilloMedication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
-
-  time                    String
-  doseUnits               Decimal   @db.Decimal(10, 2)
-  daysOfWeek              Int[]
-  startDate               DateTime
-  endDate                 DateTime?
-  comment                 String?
-  isActive                Boolean   @default(true)
-  reminderWorkflowVersion Int       @default(1)
-
-  intakes PilloIntake[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId, isActive])
-  @@index([medicationId])
-}
-
-model PilloIntake {
-  id             String            @id @default(cuid())
-  userId         String
-  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  medicationId   String
-  medication     PilloMedication   @relation(fields: [medicationId], references: [id], onDelete: Cascade)
-  scheduleRuleId String
-  scheduleRule   PilloScheduleRule @relation(fields: [scheduleRuleId], references: [id], onDelete: Cascade)
-
-  scheduledFor DateTime
-  localDate    String
-  localTime    String
-  doseUnits    Decimal           @db.Decimal(10, 2)
-  status       PilloIntakeStatus @default(PENDING)
-  note         String?
-
-  takenAt                   DateTime?
-  skippedAt                 DateTime?
-  missedAt                  DateTime?
-  reminderWorkflowStartedAt DateTime?
-  reminderSentAt            DateTime?
-
-  actionTokens PilloIntakeActionToken[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([scheduleRuleId, scheduledFor])
-  @@index([userId, scheduledFor])
-  @@index([userId, status, scheduledFor])
-  @@index([medicationId])
-}
-
-model PilloIntakeActionToken {
-  id       String      @id @default(cuid())
-  userId   String
-  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  intakeId String
-  intake   PilloIntake @relation(fields: [intakeId], references: [id], onDelete: Cascade)
-
-  tokenHash String    @unique
-  expiresAt DateTime
-  usedAt    DateTime?
-
-  createdAt DateTime @default(now())
-
-  @@index([intakeId])
-  @@index([userId, expiresAt])
-}
-
-model PilloUserSettings {
-  id     String @id @default(cuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  emailRemindersEnabled Boolean @default(true)
-  pushRemindersEnabled  Boolean @default(true)
-  lowStockEmailEnabled  Boolean @default(true)
-  lowStockPushEnabled   Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Account {
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String?
-  access_token      String?
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@id([provider, providerAccountId])
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model VerificationToken {
-  identifier String
-  token      String
-  expires    DateTime
-
-  @@id([identifier, token])
-}
-
-// Опционально для поддержки WebAuthn
-model Authenticator {
-  credentialID         String  @unique
-  userId               String
-  providerAccountId    String
-  credentialPublicKey  String
-  counter              Int
-  credentialDeviceType String
-  credentialBackedUp   Boolean
-  transports           String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@id([userId, credentialID])
-}
-
-model LoginAttempt {
-  id        String   @id @default(cuid())
-  email     String
-  ip        String?
-  createdAt DateTime @default(now())
-}
-
-// ============================================================
-// Система опросов
-// ============================================================
-
-/// Опрос, созданный администратором
-model Survey {
-  id          String  @id @default(cuid())
-  title       String
-  description String?
-  createdById String
-  createdBy   User    @relation("SurveyCreator", fields: [createdById], references: [id], onDelete: Cascade)
-
-  questions   SurveyQuestion[]
-  assignments SurveyAssignment[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-/// Вопрос опроса
-model SurveyQuestion {
-  id        String       @id @default(cuid())
-  surveyId  String
-  survey    Survey       @relation(fields: [surveyId], references: [id], onDelete: Cascade)
-  text      String
-  type      QuestionType
-  options   Json? // Варианты ответа для SINGLE_CHOICE / MULTI_CHOICE / SCALE
-  order     Int          @default(0)
-  isDeleted Boolean      @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-/// Назначение опроса пользователю
-model SurveyAssignment {
-  id         String           @id @default(cuid())
-  surveyId   String
-  survey     Survey           @relation(fields: [surveyId], references: [id], onDelete: Cascade)
-  userId     String
-  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  status     AssignmentStatus @default(PENDING)
-  isArchived Boolean          @default(false)
-
-  result SurveyResult?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([surveyId, userId])
-}
-
-/// Результат прохождения опроса
-model SurveyResult {
-  id           String           @id @default(cuid())
-  assignmentId String           @unique
-  assignment   SurveyAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  answers      Json // { questionId: answer }
-  completedAt  DateTime         @default(now())
-
-  comments SurveyComment[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-/// Комментарий администратора к результату опроса
-model SurveyComment {
-  id       String       @id @default(cuid())
-  resultId String
-  result   SurveyResult @relation(fields: [resultId], references: [id], onDelete: Cascade)
-  authorId String
-  author   User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  text     String
-
-  isReadByAdmin Boolean @default(false)
-  isReadByUser  Boolean @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-/// История входов пользователя (хранится не более 3 записей на пользователя)
-model UserLoginHistory {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  ip        String?
-  provider  String // "credentials", "google", "webauthn"
-  createdAt DateTime @default(now())
-}
-
-// ============================================================
-// Система расписания и записи (Календарь)
-// ============================================================
-
-// ============================================================
-// Блог
-// ============================================================
-
 enum BlogPostStatus {
   DRAFT
   PUBLISHED
@@ -440,349 +677,4 @@ enum SystemLogLevel {
   INFO
   WARN
   ERROR
-}
-
-/// Статья блога
-model BlogPost {
-  id          String         @id @default(cuid())
-  slug        String         @unique
-  status      BlogPostStatus @default(DRAFT)
-  coverImage  String?
-  readingTime Int            @default(0)
-  publishedAt DateTime?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-
-  authorId     String
-  author       User                  @relation("BlogAuthor", fields: [authorId], references: [id], onDelete: Restrict)
-  translations BlogPostTranslation[]
-  categories   BlogPostCategory[]
-  versions     BlogPostVersion[]
-
-  @@index([status, publishedAt])
-}
-
-/// Версия статьи (снапшот при ручном сохранении, хранится последние 5)
-model BlogPostVersion {
-  id           String   @id @default(cuid())
-  postId       String
-  post         BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  translations Json // снапшот переводов [{ locale, title, description, content }]
-  categoryIds  String[] // снапшот категорий
-  coverImage   String?
-  savedAt      DateTime @default(now())
-
-  @@index([postId, savedAt])
-}
-
-/// Перевод статьи на конкретный язык
-model BlogPostTranslation {
-  id          String   @id @default(cuid())
-  postId      String
-  locale      String
-  title       String
-  description String
-  content     String   @db.Text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  post BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-
-  @@unique([postId, locale])
-  @@index([postId])
-}
-
-/// Категория статей блога
-model BlogCategory {
-  id        String   @id @default(cuid())
-  slug      String   @unique
-  name      Json // { ru: "...", en: "...", sr: "..." }
-  createdAt DateTime @default(now())
-
-  posts BlogPostCategory[]
-}
-
-/// Связь статьи с категорией
-model BlogPostCategory {
-  postId     String
-  categoryId String
-
-  post     BlogPost     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  category BlogCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-
-  @@id([postId, categoryId])
-}
-
-/// Подписка на уведомления о новых статьях блога (для незарегистрированных)
-model BlogSubscription {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  token     String   @default(cuid())
-  createdAt DateTime @default(now())
-}
-
-model Event {
-  id                                String      @id @default(cuid())
-  title                             String?
-  type                              EventType
-  status                            EventStatus @default(SCHEDULED)
-  start                             DateTime
-  end                               DateTime
-  meetLink                          String?
-  cancelReason                      String?
-  isGoogleSynced                    Boolean     @default(false)
-  googleEventId                     String?
-  reminderMinutesBeforeStart        Int         @default(30)
-  bookingReminderMinutesBeforeStart Int?
-  reminderEmailSentAt               DateTime?
-  reminderPushSentAt                DateTime?
-  reminderWorkflowVersion           Int         @default(1)
-
-  authorId String
-  author   User   @relation("EventCreator", fields: [authorId], references: [id], onDelete: Cascade)
-
-  // Юзер, забронировавший слот
-  userId String?
-  user   User?   @relation("EventClient", fields: [userId], references: [id], onDelete: Cascade)
-
-  groupId String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId, status, start])
-  @@index([start, reminderEmailSentAt, reminderPushSentAt])
-}
-
-model SystemAlert {
-  id        String          @id @default(cuid())
-  type      SystemAlertType
-  periodKey String
-  payload   Json?
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-
-  @@unique([type, periodKey])
-}
-
-model SystemLogEntry {
-  id        String            @id @default(cuid())
-  category  SystemLogCategory
-  level     SystemLogLevel
-  source    String
-  operation String?
-  service   String?
-
-  method     String?
-  path       String?
-  statusCode Int?
-  durationMs Int?
-
-  initiatorIp String?
-  userAgent   String?
-  requestId   String?
-
-  userId String?
-  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  requestBody  Json?
-  responseBody Json?
-  errorName    String?
-  errorMessage String?
-  errorStack   String?
-  errorDetails Json?
-
-  createdAt DateTime @default(now())
-
-  @@index([category, createdAt(sort: Desc)])
-  @@index([level, createdAt(sort: Desc)])
-  @@index([statusCode])
-  @@index([path])
-  @@index([initiatorIp])
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([createdAt(sort: Desc)])
-}
-
-model SystemLogSettings {
-  id                   String   @id @default("default")
-  apiRequestsEnabled   Boolean  @default(true)
-  aiErrorsEnabled      Boolean  @default(true)
-  paymentErrorsEnabled Boolean  @default(true)
-  retentionDays        Int      @default(30)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-}
-
-// ============================================================
-// Клиентские данные и опросники (Intake)
-// ============================================================
-
-model ClientProfile {
-  id     String @id @default(cuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  metadata Json? // Гибкие данные и внутренние заметки психолога
-
-  intakes IntakeResponse[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model IntakeResponse {
-  id              String        @id @default(cuid())
-  clientProfileId String
-  clientProfile   ClientProfile @relation(fields: [clientProfileId], references: [id], onDelete: Cascade)
-
-  formId  String // Идентификатор анкеты, например "short_intake_v1"
-  status  String @default("COMPLETED")
-  answers String // Зашифрованная строка с JSON данными ответов
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model ClientConsent {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  type      String // Тип документа, например "INTAKE_V1", "TERMS"
-  ip        String?
-  userAgent String?
-
-  signature String // HMAC отпечаток безопасности
-  agreedAt  DateTime @default(now())
-}
-
-model ClientDocument {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation("UserDocuments", fields: [userId], references: [id], onDelete: Cascade)
-
-  url      String // Ссылка в Vercel Blob (private, зашифрованный файл)
-  name     String // Отображаемое имя файла
-  fileType String @default("application/octet-stream") // MIME-тип оригинального файла
-  size     Int? // Размер оригинала в байтах (до шифрования)
-
-  uploadedById String
-  uploadedBy   User   @relation("UploadedDocuments", fields: [uploadedById], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-// ============================================================
-// Пакеты услуг (Service Packages)
-// ============================================================
-
-model ServicePackage {
-  id          String  @id @default(cuid())
-  title       Json
-  description Json?
-  amount      Decimal @db.Decimal(12, 2)
-  currency    String  @default("EUR")
-  coverImage  String?
-  isActive    Boolean @default(true)
-  order       Int     @default(0)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  payments Payment[]
-}
-
-model Payment {
-  id       String          @id @default(cuid())
-  provider PaymentProvider @default(PAYPAL)
-  kind     PaymentKind     @default(CHECKOUT)
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  orderId        String  @unique
-  captureId      String? @unique
-  subscriptionId String?
-  invoiceId      String?
-
-  servicePackageId String?
-  servicePackage   ServicePackage? @relation(fields: [servicePackageId], references: [id], onDelete: SetNull)
-
-  amount   Decimal @db.Decimal(12, 2)
-  currency String
-  status   String
-
-  description  String?
-  payerEmail   String?
-  rawOrder     Json?
-  rawCapture   Json?
-  capturedAt   DateTime?
-  lastSyncedAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  events   PaymentEvent[]
-  disputes PaymentDispute[]
-
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([status])
-  @@index([subscriptionId])
-}
-
-model PaymentEvent {
-  id       String          @id @default(cuid())
-  provider PaymentProvider @default(PAYPAL)
-
-  paymentId String?
-  payment   Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
-
-  providerEventId String  @unique
-  eventType       String
-  resourceType    String?
-  resourceId      String?
-  orderId         String?
-  captureId       String?
-  subscriptionId  String?
-  disputeId       String?
-  status          String?
-
-  amount   Decimal? @db.Decimal(12, 2)
-  currency String?
-
-  occurredAt  DateTime?
-  payload     Json
-  isProcessed Boolean   @default(false)
-  processedAt DateTime?
-  createdAt   DateTime  @default(now())
-
-  @@index([paymentId, createdAt(sort: Desc)])
-  @@index([orderId])
-  @@index([captureId])
-  @@index([subscriptionId])
-  @@index([disputeId])
-}
-
-model PaymentDispute {
-  id String @id @default(cuid())
-
-  paymentId String?
-  payment   Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
-
-  disputeId String  @unique
-  stage     String?
-  status    String
-  reason    String?
-
-  amount   Decimal? @db.Decimal(12, 2)
-  currency String?
-
-  responseDueAt DateTime?
-  payload       Json
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([paymentId])
 }

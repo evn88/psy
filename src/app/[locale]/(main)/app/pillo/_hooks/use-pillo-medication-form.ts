@@ -26,8 +26,25 @@ export const usePilloMedicationForm = (medication?: PilloMedicationView) => {
       name: medication?.name ?? '',
       photoUrl: medication?.photoUrl ?? null,
       description: medication?.description ?? null,
-      dosage: medication?.dosage ?? '',
-      form: medication?.form ?? 'таблетка',
+      dosageValue: medication?.dosageValue ?? 1,
+      dosageUnit: (medication?.dosageUnit?.replace('.', '') || 'mg') as any,
+      form: medication?.form
+        ? [
+            'tablet',
+            'capsule',
+            'syrup',
+            'drops',
+            'injection',
+            'powder',
+            'ointment',
+            'spray',
+            'other'
+          ].includes(medication.form.toLowerCase().replace('.', ''))
+          ? medication.form.toLowerCase().replace('.', '')
+          : medication.form.toLowerCase().includes('табл')
+            ? 'tablet'
+            : 'other'
+        : 'tablet',
       packagesCount: medication?.packagesCount ?? 0,
       unitsPerPackage: medication?.unitsPerPackage ?? null,
       stockUnits: medication?.stockUnits ?? 0,

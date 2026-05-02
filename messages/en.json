@@ -880,7 +880,9 @@
       "camera": "Camera",
       "name": "Name",
       "dosage": "Dosage",
-      "form": "Form",
+      "dosageValue": "Value",
+      "dosageUnit": "Unit",
+      "form": "Dosage Form",
       "packagesCount": "Packages in stock",
       "unitsPerPackage": "Units per package",
       "stockUnits": "Stock units",
@@ -955,7 +957,21 @@
       "powder": "Powder",
       "ointment": "Ointment",
       "spray": "Spray",
-      "other": "Other"
+      "other": "Other",
+      "tablet": "Tablet",
+      "capsule": "Capsule"
+    },
+    "dosageUnits": {
+      "mg": "mg",
+      "ml": "ml",
+      "mcg": "mcg",
+      "g": "g",
+      "drops": "drops",
+      "puffs": "puffs",
+      "units": "units",
+      "tablets": "tablets",
+      "capsules": "capsules",
+      "other": "other"
     },
     "takeLink": {
       "title": "Confirm intake",

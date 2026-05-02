@@ -58,14 +58,24 @@ export const savePilloMedicationAction = async (input: unknown): Promise<PilloAc
   });
 
   if (data.id) {
-    await prisma.pilloMedication.updateMany({
-      where: { id: data.id, userId },
+    const existing = await prisma.pilloMedication.findFirst({
+      where: { id: data.id, userId }
+    });
+
+    if (!existing) {
+      return { error: 'Таблетка не найдена или доступ запрещен' };
+    }
+
+    await prisma.pilloMedication.update({
+      where: { id: data.id },
       data: {
         name: data.name,
         photoUrl: data.photoUrl,
         description: data.description,
-        dosage: data.dosage,
-        form: data.form,
+        dosage: `${data.dosageValue} ${data.dosageUnit}`,
+        dosageValue: data.dosageValue,
+        dosageUnit: data.dosageUnit.replace('.', ''),
+        form: data.form.replace('.', ''),
         packagesCount: data.packagesCount,
         unitsPerPackage: data.unitsPerPackage,
         stockUnits,
@@ -80,8 +90,10 @@ export const savePilloMedicationAction = async (input: unknown): Promise<PilloAc
         name: data.name,
         photoUrl: data.photoUrl,
         description: data.description,
-        dosage: data.dosage,
-        form: data.form,
+        dosage: `${data.dosageValue} ${data.dosageUnit}`,
+        dosageValue: data.dosageValue,
+        dosageUnit: data.dosageUnit.replace('.', ''),
+        form: data.form.replace('.', ''),
         packagesCount: data.packagesCount,
         unitsPerPackage: data.unitsPerPackage,
         stockUnits,
