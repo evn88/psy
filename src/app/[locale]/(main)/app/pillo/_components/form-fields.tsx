@@ -12,12 +12,14 @@ export const TextField = <TFieldValues extends FieldValues>({
   control,
   label,
   name,
-  type = 'text'
+  type = 'text',
+  integer = false
 }: {
   control: Control<TFieldValues>;
   label: string;
   name: Path<TFieldValues>;
   type?: string;
+  integer?: boolean;
 }) => {
   return (
     <FormField
@@ -31,7 +33,17 @@ export const TextField = <TFieldValues extends FieldValues>({
               {...field}
               value={(field.value as string | number | null | undefined) ?? ''}
               type={type}
-              step={type === 'number' ? '0.01' : undefined}
+              step={type === 'number' ? (integer ? '1' : '0.01') : undefined}
+              inputMode={integer ? 'numeric' : undefined}
+              min={type === 'number' ? '0' : undefined}
+              onKeyDown={e => {
+                if (type === 'number' && e.key === '-') {
+                  e.preventDefault();
+                }
+                if (integer && ['.', ',', 'e', 'E', '+'].includes(e.key)) {
+                  e.preventDefault();
+                }
+              }}
               className="h-11 rounded-2xl"
             />
           </FormControl>

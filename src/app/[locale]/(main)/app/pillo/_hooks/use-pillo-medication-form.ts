@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
@@ -46,12 +46,22 @@ export const usePilloMedicationForm = (medication?: PilloMedicationView) => {
             : 'other'
         : 'tablet',
       packagesCount: medication?.packagesCount ?? 0,
-      unitsPerPackage: medication?.unitsPerPackage ?? null,
+      unitsPerPackage: medication?.unitsPerPackage ?? 20,
       stockUnits: medication?.stockUnits ?? 0,
-      minThresholdUnits: medication?.minThresholdUnits ?? 0,
+      minThresholdUnits: medication?.minThresholdUnits ?? 15,
       isActive: medication?.isActive ?? true
     }
   });
+
+  const packagesCount = form.watch('packagesCount');
+  const unitsPerPackage = form.watch('unitsPerPackage');
+
+  // Автоматический расчет остатка в единицах
+  useEffect(() => {
+    const pCount = Number(packagesCount) || 0;
+    const uCount = Number(unitsPerPackage) || 0;
+    form.setValue('stockUnits', pCount * uCount, { shouldDirty: true, shouldValidate: true });
+  }, [packagesCount, unitsPerPackage, form]);
 
   const onUploadPhoto = (file: File | null) => {
     if (!file) return;

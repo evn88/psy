@@ -838,6 +838,9 @@
       "lowStockWarning": "Zaliha možda neće biti dovoljna. Vreme je za kupovinu."
     },
     "medications": {
+      "addPackageBtn": "Dodaj pakovanje",
+      "addPackageConfirmTitle": "Dodati pakovanje?",
+      "addPackageConfirmDescription": "Jedno pakovanje će biti dodato zalihama. Nastaviti?",
       "add": "Dodaj lek",
       "edit": "Uredi lek",
       "emptyTitle": "Još nema lekova",

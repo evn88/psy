@@ -39,13 +39,24 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { deletePilloMedicationAction } from '../actions';
+import { deletePilloMedicationAction, addPilloMedicationPackageAction } from '../actions';
 import { usePilloMedicationForm } from '../_hooks/use-pillo-medication-form';
 import type { PilloMedicationView } from './types';
 import { EmptyState } from './empty-state';
 import { getStockGradientClass } from './utils';
 import { SwitchField, TextField } from './form-fields';
 import { DeleteConfirmDialog } from './delete-confirm-dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from '@/components/ui/alert-dialog';
 import {
   Select,
   SelectContent,
@@ -222,24 +233,21 @@ const MedicationDialog = ({
               name="packagesCount"
               label={t('medications.packagesCount')}
               type="number"
+              integer={true}
             />
             <TextField
               control={form.control}
               name="unitsPerPackage"
               label={t('medications.unitsPerPackage')}
               type="number"
-            />
-            <TextField
-              control={form.control}
-              name="stockUnits"
-              label={t('medications.stockUnits')}
-              type="number"
+              integer={true}
             />
             <TextField
               control={form.control}
               name="minThresholdUnits"
-              label={t('medications.minThresholdUnits')}
+              label={`${t('medications.minThresholdUnits')} (в единицах)`}
               type="number"
+              integer={true}
             />
             <FormField
               control={form.control}
@@ -265,6 +273,39 @@ const MedicationDialog = ({
         </Form>
       </DialogContent>
     </Dialog>
+  );
+};
+
+const AddPackageConfirmDialog = ({
+  children,
+  onConfirm
+}: {
+  children: ReactNode;
+  onConfirm: () => void;
+}) => {
+  const t = useTranslations('Pillo');
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
+      <AlertDialogContent className="rounded-[1.5rem]">
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t('medications.addPackageConfirmTitle')}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {t('medications.addPackageConfirmDescription')}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel className="rounded-full">{t('common.cancel')}</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={onConfirm}
+            className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            {t('medications.addPackageBtn')}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 };
 
@@ -380,7 +421,29 @@ const MedicationCard = ({ medication }: { medication: PilloMedicationView }) => 
             </div>
 
             <div className="mt-3 flex items-center justify-between border-t border-black/[0.03] pt-2 dark:border-white/[0.03]">
-              <div className="flex items-center gap-1.5" />
+              <div className="flex items-center gap-1.5">
+                {medication.unitsPerPackage ? (
+                  <div onClick={e => e.stopPropagation()}>
+                    <AddPackageConfirmDialog
+                      onConfirm={() => {
+                        startTransition(() => {
+                          void addPilloMedicationPackageAction(medication.id);
+                        });
+                      }}
+                    >
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        disabled={isPending}
+                        className="h-7 rounded-full px-2.5 text-[10px] font-bold"
+                      >
+                        <Plus className="mr-1 h-3 w-3" />
+                        {t('medications.addPackageBtn')}
+                      </Button>
+                    </AddPackageConfirmDialog>
+                  </div>
+                ) : null}
+              </div>
               <div onClick={e => e.stopPropagation()}>
                 <DeleteConfirmDialog
                   onConfirm={() => {

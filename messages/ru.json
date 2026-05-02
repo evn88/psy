@@ -871,6 +871,9 @@
       "lowStockWarning": "Остатка может не хватить. Пора купить."
     },
     "medications": {
+      "addPackageBtn": "Добавить упаковку",
+      "addPackageConfirmTitle": "Добавить упаковку?",
+      "addPackageConfirmDescription": "К остатку будет добавлена одна упаковка. Продолжить?",
       "add": "Добавить таблетку",
       "edit": "Редактировать таблетку",
       "emptyTitle": "Таблеток пока нет",

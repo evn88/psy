@@ -871,6 +871,9 @@
       "lowStockWarning": "Stock may not be enough. Time to buy more."
     },
     "medications": {
+      "addPackageBtn": "Add package",
+      "addPackageConfirmTitle": "Add package?",
+      "addPackageConfirmDescription": "One package will be added to the stock. Continue?",
       "add": "Add pill",
       "edit": "Edit pill",
       "emptyTitle": "No pills yet",

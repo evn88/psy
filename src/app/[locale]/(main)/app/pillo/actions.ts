@@ -126,6 +126,38 @@ export const deletePilloMedicationAction = async (
 };
 
 /**
+ * Добавляет одну упаковку таблеток к остатку.
+ * @param medicationId - идентификатор таблетки.
+ * @returns Результат обновления.
+ */
+export const addPilloMedicationPackageAction = async (
+  medicationId: string
+): Promise<PilloActionResult> => {
+  const userId = await requirePilloUserId();
+
+  const medication = await prisma.pilloMedication.findFirst({
+    where: { id: medicationId, userId }
+  });
+
+  if (!medication) {
+    return { error: 'Таблетка не найдена' };
+  }
+
+  const unitsToAdd = medication.unitsPerPackage || 0;
+
+  await prisma.pilloMedication.update({
+    where: { id: medicationId },
+    data: {
+      packagesCount: { increment: 1 },
+      stockUnits: { increment: unitsToAdd }
+    }
+  });
+
+  revalidatePilloPaths();
+  return { success: true };
+};
+
+/**
  * Сохраняет правило расписания и запускает rolling window workflow.
  * @param input - данные формы правила.
  * @returns Результат сохранения.
