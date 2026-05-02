@@ -6,15 +6,15 @@ import {
   getPilloSkipUrl,
   getPilloTakeUrl,
   interpolatePilloCopy
-} from '@/features/pillo/lib/notifications';
+} from '@/modules/pillo/notifications';
 import {
   createPilloActionToken,
   getPilloActionTokenExpiresAt,
   hashPilloActionToken
-} from '@/features/pillo/lib/tokens';
-import { sendPilloIntakeReminderEmail } from '@/shared/lib/email';
-import prisma from '@/shared/lib/prisma';
-import { sendPushToMany } from '@/shared/lib/push';
+} from '@/modules/pillo/tokens';
+import { sendPilloIntakeReminderEmail } from '@/lib/email';
+import prisma from '@/lib/prisma';
+import { sendPushToMany } from '@/lib/push';
 
 type PilloIntakeReminderWorkflowParams = {
   intakeId: string;

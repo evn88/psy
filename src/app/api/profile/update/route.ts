@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import prisma from '@/shared/lib/prisma';
-import { optionalGoogleCalendarSyncUrlSchema } from '@/shared/lib/safe-url';
-import { isValidTimeZone } from '@/shared/lib/timezone';
+import prisma from '@/lib/prisma';
+import { optionalGoogleCalendarSyncUrlSchema } from '@/lib/safe-url';
+import { isValidTimeZone } from '@/lib/timezone';
 import { z } from 'zod';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 const updateProfileSchema = z.object({
   name: z.string().trim().min(2).max(50).optional(),

@@ -1,5 +1,5 @@
-import { BackupJobCancelledError } from '@/shared/lib/backup/errors';
-import type { BackupArchiveResult, DatabaseBackupArchiveManifest } from '@/shared/lib/backup/types';
+import { BackupJobCancelledError } from '@/modules/backup/errors';
+import type { BackupArchiveResult, DatabaseBackupArchiveManifest } from '@/modules/backup/types';
 
 type CreateSiteBackupWorkflowParams = {
   jobId: string;
@@ -19,7 +19,7 @@ type CreateSiteBackupWorkflowResult = {
 const markCreateBackupStartStep = async (params: CreateSiteBackupWorkflowParams): Promise<void> => {
   'use step';
 
-  const { reportBackupJobProgress } = await import('@/shared/lib/backup/jobs');
+  const { reportBackupJobProgress } = await import('@/modules/backup/jobs');
 
   await reportBackupJobProgress(
     params.jobId,
@@ -40,7 +40,7 @@ const createDatabaseBackupStep = async (
   'use step';
 
   const [{ createDatabaseBackupArchive }, { assertBackupJobCanContinue, reportBackupJobProgress }] =
-    await Promise.all([import('@/shared/lib/backup/service'), import('@/shared/lib/backup/jobs')]);
+    await Promise.all([import('@/modules/backup/service'), import('@/modules/backup/jobs')]);
 
   return createDatabaseBackupArchive(
     'manual',
@@ -71,7 +71,7 @@ const storeDatabaseArchiveStep = async (
 ): Promise<void> => {
   'use step';
 
-  const { updateBackupJobSnapshot } = await import('@/shared/lib/backup/jobs');
+  const { updateBackupJobSnapshot } = await import('@/modules/backup/jobs');
 
   await updateBackupJobSnapshot(params.jobId, current => ({
     ...current,
@@ -88,9 +88,7 @@ const storeDatabaseArchiveStep = async (
 const completeCreateBackupStep = async (params: CreateSiteBackupWorkflowParams): Promise<void> => {
   'use step';
 
-  const { assertBackupJobCanContinue, completeBackupJob } = await import(
-    '@/shared/lib/backup/jobs'
-  );
+  const { assertBackupJobCanContinue, completeBackupJob } = await import('@/modules/backup/jobs');
 
   await assertBackupJobCanContinue(params.jobId);
   await completeBackupJob(params.jobId, 'Архив БД готов к скачиванию.');
@@ -107,7 +105,7 @@ const failCreateBackupStep = async (
 ): Promise<void> => {
   'use step';
 
-  const { failBackupJob } = await import('@/shared/lib/backup/jobs');
+  const { failBackupJob } = await import('@/modules/backup/jobs');
   await failBackupJob(params.jobId, message);
 };
 
@@ -122,7 +120,7 @@ const cancelCreateBackupStep = async (
 ): Promise<void> => {
   'use step';
 
-  const { cancelBackupJob } = await import('@/shared/lib/backup/jobs');
+  const { cancelBackupJob } = await import('@/modules/backup/jobs');
   await cancelBackupJob(params.jobId, message);
 };
 

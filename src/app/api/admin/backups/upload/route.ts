@@ -6,12 +6,12 @@ import {
   BACKUP_UPLOAD_PREFIX,
   BACKUP_UPLOAD_TOKEN_TTL_MS,
   MAX_BACKUP_ARCHIVE_SIZE_BYTES
-} from '@/configs/backup';
-import { deleteBackupBlobs } from '@/shared/lib/backup/blob';
-import { getBackupAuditClientContext, logBackupAuditEvent } from '@/shared/lib/backup/audit';
-import { BackupAccessError, requireAdminSession } from '@/shared/lib/backup/auth';
-import { type BackupRouteErrorCode, normalizeBackupRouteError } from '@/shared/lib/backup/http';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+} from '@/lib/config/backup';
+import { deleteBackupBlobs } from '@/modules/backup/blob';
+import { getBackupAuditClientContext, logBackupAuditEvent } from '@/modules/backup/audit';
+import { BackupAccessError, requireAdminSession } from '@/modules/backup/auth';
+import { type BackupRouteErrorCode, normalizeBackupRouteError } from '@/modules/backup/http';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 export const dynamic = 'force-dynamic';
 

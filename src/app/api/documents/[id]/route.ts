@@ -1,9 +1,9 @@
 import { del } from '@vercel/blob';
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import prisma from '@/shared/lib/prisma';
-import { decryptBuffer } from '@/shared/lib/crypto';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import prisma from '@/lib/prisma';
+import { decryptBuffer } from '@/lib/crypto';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 type RouteContext = { params: Promise<{ id: string }> };
 

@@ -6,8 +6,8 @@ import {
   BLOG_EDITOR_LOCK_TTL_MS,
   getBlogEditorLockState,
   releaseBlogEditorLock
-} from '@/shared/lib/blog-editor-lock-store';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+} from '@/lib/blog-editor-lock-store';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 const editorLockSchema = z.object({
   instanceId: z.string().min(1)

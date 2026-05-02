@@ -1,14 +1,14 @@
 import type { Prisma } from '@prisma/client';
 import { sleep } from 'workflow';
 
-import { sendSessionReminderEmail } from '@/shared/lib/email';
-import prisma from '@/shared/lib/prisma';
-import { sendPushToMany } from '@/shared/lib/push';
+import { sendSessionReminderEmail } from '@/lib/email';
+import prisma from '@/lib/prisma';
+import { sendPushToMany } from '@/lib/push';
 import {
   getEffectiveReminderMinutes,
   getReminderTriggerAt,
   getSessionReminderPushContent
-} from '@/shared/lib/session-reminders';
+} from '@/lib/session-reminders';
 
 const REMINDER_ELIGIBLE_STATUSES = new Set<string>(['SCHEDULED']);
 

@@ -1,7 +1,7 @@
-import prisma from '@/shared/lib/prisma';
+import prisma from '@/lib/prisma';
 import { defaultLocale, isLocale } from '@/i18n/config';
 import { NextResponse } from 'next/server';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 /**
  * Возвращает базовый URL приложения.

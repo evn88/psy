@@ -1,10 +1,10 @@
 import { put } from '@vercel/blob';
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import prisma from '@/shared/lib/prisma';
-import { encryptBuffer } from '@/shared/lib/crypto';
-import { ALLOWED_DOCUMENT_TYPES, MAX_DOCUMENT_SIZE_BYTES } from '@/configs/files';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import prisma from '@/lib/prisma';
+import { encryptBuffer } from '@/lib/crypto';
+import { ALLOWED_DOCUMENT_TYPES, MAX_DOCUMENT_SIZE_BYTES } from '@/lib/config/files';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 async function postHandler(req: NextRequest) {
   try {

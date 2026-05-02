@@ -1,8 +1,8 @@
 import { put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { MAX_BLOG_IMAGE_SIZE_BYTES } from '@/configs/files';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import { MAX_BLOG_IMAGE_SIZE_BYTES } from '@/lib/config/files';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 async function postHandler(req: Request) {
   const session = await auth();

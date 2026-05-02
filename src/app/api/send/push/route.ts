@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import prisma from '@/shared/lib/prisma';
-import { sendPushToMany } from '@/shared/lib/push';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import prisma from '@/lib/prisma';
+import { sendPushToMany } from '@/lib/push';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 async function postHandler(request: Request) {
   const session = await auth();

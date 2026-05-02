@@ -2,9 +2,9 @@ import { auth } from '@/auth';
 import { defaultLocale } from '@/i18n/config';
 import { NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
-import prisma from '@/shared/lib/prisma';
-import { sendAccountDeletionRequestEmail } from '@/shared/lib/email';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import prisma from '@/lib/prisma';
+import { sendAccountDeletionRequestEmail } from '@/lib/email';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 /**
  * POST handler — отправляет письмо с подтверждением удаления аккаунта.

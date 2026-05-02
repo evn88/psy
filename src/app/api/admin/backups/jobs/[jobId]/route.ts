@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { BackupAccessError, requireAdminSession } from '@/shared/lib/backup/auth';
-import { readBackupJobSnapshot } from '@/shared/lib/backup/jobs';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import { BackupAccessError, requireAdminSession } from '@/modules/backup/auth';
+import { readBackupJobSnapshot } from '@/modules/backup/jobs';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 export const dynamic = 'force-dynamic';
 

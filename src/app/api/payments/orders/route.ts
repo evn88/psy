@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { auth } from '@/auth';
-import { getPaymentService, getActivePaymentCurrency } from '@/shared/lib/payments/factory';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import { getPaymentService, getActivePaymentCurrency } from '@/modules/payments/factory';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 const createOrderSchema = z.object({
   amount: z

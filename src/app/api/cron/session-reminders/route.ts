@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
-import { checkAndNotifyWorkflowBudgetThreshold } from '@/shared/lib/workflow-budget';
+import { checkAndNotifyWorkflowBudgetThreshold } from '@/lib/workflow-budget';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

@@ -1,8 +1,8 @@
-import prisma from '@/shared/lib/prisma';
-import { sendAccountDeletedAdminEmail, sendAccountDeletedUserEmail } from '@/shared/lib/email';
+import prisma from '@/lib/prisma';
+import { sendAccountDeletedAdminEmail, sendAccountDeletedUserEmail } from '@/lib/email';
 import { defaultLocale, isLocale } from '@/i18n/config';
 import { NextRequest, NextResponse } from 'next/server';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 const DELETE_ACCOUNT_IDENTIFIER_PREFIX = 'delete-account:';
 

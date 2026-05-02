@@ -1,12 +1,12 @@
 import { z } from 'zod';
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import prisma from '@/shared/lib/prisma';
-import { acquireBlogEditorLock } from '@/shared/lib/blog-editor-lock-store';
-import { sendBlogNotificationEmail } from '@/shared/lib/email';
-import { publishToTelegramChannel, publishToTelegraph } from '@/shared/lib/social-publish';
+import prisma from '@/lib/prisma';
+import { acquireBlogEditorLock } from '@/lib/blog-editor-lock-store';
+import { sendBlogNotificationEmail } from '@/lib/email';
+import { publishToTelegramChannel, publishToTelegraph } from '@/lib/social-publish';
 import type { BlogPostTranslation } from '@prisma/client';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 const publishSchema = z.object({
   editorInstanceId: z.string().min(1).optional()

@@ -1,13 +1,13 @@
 import { Readable } from 'node:stream';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getBackupAuditClientContext, logBackupAuditEvent } from '@/shared/lib/backup/audit';
-import { BackupAccessError, requireAdminSession } from '@/shared/lib/backup/auth';
-import { getBackupBlobStream } from '@/shared/lib/backup/blob';
-import { normalizeBackupRouteError } from '@/shared/lib/backup/http';
-import { readBackupJobSnapshot } from '@/shared/lib/backup/jobs';
-import { consumeBackupDownloadRateLimit } from '@/shared/lib/backup/rate-limit';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import { getBackupAuditClientContext, logBackupAuditEvent } from '@/modules/backup/audit';
+import { BackupAccessError, requireAdminSession } from '@/modules/backup/auth';
+import { getBackupBlobStream } from '@/modules/backup/blob';
+import { normalizeBackupRouteError } from '@/modules/backup/http';
+import { readBackupJobSnapshot } from '@/modules/backup/jobs';
+import { consumeBackupDownloadRateLimit } from '@/modules/backup/rate-limit';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 export const dynamic = 'force-dynamic';
 

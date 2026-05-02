@@ -13,9 +13,9 @@ import {
   type Theme,
   THEME_COOKIE_NAME,
   THEME_STORAGE_KEY
-} from '@/shared/lib/theme';
+} from '@/lib/theme';
 
-export type { ResolvedTheme, Theme } from '@/shared/lib/theme';
+export type { ResolvedTheme, Theme } from '@/lib/theme';
 
 if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
   const orig = console.error;

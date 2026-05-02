@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 import { auth } from '@/auth';
-import prisma from '@/shared/lib/prisma';
+import prisma from '@/lib/prisma';
 
 /**
  * GET /api/admin/events/pending

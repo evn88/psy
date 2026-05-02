@@ -1,4 +1,4 @@
-import type { BackupArchiveResult, DatabaseBackupArchiveManifest } from '@/shared/lib/backup/types';
+import type { BackupArchiveResult, DatabaseBackupArchiveManifest } from '@/modules/backup/types';
 
 type RestoreSiteBackupWorkflowParams = {
   jobId: string;
@@ -22,7 +22,7 @@ const markRestoreBackupStartStep = async (
 ): Promise<void> => {
   'use step';
 
-  const { reportBackupJobProgress } = await import('@/shared/lib/backup/jobs');
+  const { reportBackupJobProgress } = await import('@/modules/backup/jobs');
 
   await reportBackupJobProgress(
     params.jobId,
@@ -50,8 +50,8 @@ const restoreSiteBackupStep = async (
   'use step';
 
   const [{ restoreSiteBackupArchives }, { reportBackupJobProgress }] = await Promise.all([
-    import('@/shared/lib/backup/service'),
-    import('@/shared/lib/backup/jobs')
+    import('@/modules/backup/service'),
+    import('@/modules/backup/jobs')
   ]);
 
   return restoreSiteBackupArchives(
@@ -101,7 +101,7 @@ const completeRestoreBackupStep = async (
 ): Promise<void> => {
   'use step';
 
-  const { completeBackupJob } = await import('@/shared/lib/backup/jobs');
+  const { completeBackupJob } = await import('@/modules/backup/jobs');
 
   await completeBackupJob(
     params.jobId,
@@ -124,7 +124,7 @@ const failRestoreBackupStep = async (
 ): Promise<void> => {
   'use step';
 
-  const { failBackupJob } = await import('@/shared/lib/backup/jobs');
+  const { failBackupJob } = await import('@/modules/backup/jobs');
   await failBackupJob(params.jobId, message);
 };
 

@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
-import prisma from '@/shared/lib/prisma';
+import prisma from '@/lib/prisma';
 import { z } from 'zod';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 const updateSchema = z.object({
   title: z.any().optional(),
@@ -39,7 +39,7 @@ async function putHandler(req: Request, { params }: { params: Promise<{ id: stri
       data: parsed.data
     });
     revalidatePath('/my/payments', 'page');
-    revalidatePath('/[locale]/(main)/my/payments', 'page');
+    revalidatePath('/[locale]/(dashboard)/my/payments', 'page');
     return NextResponse.json(updated);
   } catch (error) {
     return NextResponse.json({ error: 'Ошибка обновления' }, { status: 500 });
@@ -60,7 +60,7 @@ async function deleteHandler(req: Request, { params }: { params: Promise<{ id: s
       where: { id }
     });
     revalidatePath('/my/payments', 'page');
-    revalidatePath('/[locale]/(main)/my/payments', 'page');
+    revalidatePath('/[locale]/(dashboard)/my/payments', 'page');
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: 'Ошибка удаления' }, { status: 500 });

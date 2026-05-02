@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { defaultLocale } from '@/i18n/config';
-import prisma from '@/shared/lib/prisma';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import prisma from '@/lib/prisma';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 async function getHandler(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

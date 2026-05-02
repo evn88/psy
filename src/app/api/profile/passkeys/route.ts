@@ -1,7 +1,7 @@
 import { auth } from '@/auth';
 import { NextResponse } from 'next/server';
-import prisma from '@/shared/lib/prisma';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import prisma from '@/lib/prisma';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 /**
  * GET handler для получения списка Passkey пользователя.

@@ -10,15 +10,15 @@ import type { Adapter } from 'next-auth/adapters';
 import { z } from 'zod';
 import { getRPID } from '@/app/api/profile/passkeys/register/config';
 import { defaultLocale, isLocale } from '@/i18n/config';
-import prisma from '@/shared/lib/prisma';
-import { sendWelcomeGoogleEmail } from '@/shared/lib/email';
+import prisma from '@/lib/prisma';
+import { sendWelcomeGoogleEmail } from '@/lib/email';
 import { authConfig } from './auth.config';
 import {
   MAX_LOGIN_HISTORY,
   MAX_LOGIN_ATTEMPTS_PER_EMAIL_AND_IP,
   MAX_LOGIN_ATTEMPTS_PER_IP,
   LOGIN_ATTEMPT_WINDOW_MS
-} from '@/configs/auth';
+} from '@/lib/config/auth';
 
 class EmailNotVerifiedError extends AuthError {
   static type = 'EmailNotVerified';

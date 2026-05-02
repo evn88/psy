@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { defaultLocale, isLocale, locales, type AppLocale } from '@/i18n/config';
-import prisma from '@/shared/lib/prisma';
-import { getLanguageAlternates, getLocalizedUrl } from '@/shared/lib/seo';
+import prisma from '@/lib/prisma';
+import { getLanguageAlternates, getLocalizedUrl } from '@/lib/seo';
 
 export const revalidate = 3600;
 
