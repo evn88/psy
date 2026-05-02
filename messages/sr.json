@@ -838,7 +838,9 @@
       "lowStockWarning": "Zaliha možda neće biti dovoljna. Vreme je za kupovinu.",
       "undoTitle": "Promeniti izbor?",
       "undoDescription": "Možete otkazati prethodni izbor (Uzeo / Preskočio). Ako otkažete uzimanje leka, količina će biti vraćena u dostupne zalihe.",
-      "undoAction": "Otkaži izbor"
+      "undoAction": "Otkaži izbor",
+      "daysLeft": "Za još ~{count} dana",
+      "buyAtDate": "Kupiti do {date}"
     },
     "medications": {
       "addPackageBtn": "Dodaj pakovanje",

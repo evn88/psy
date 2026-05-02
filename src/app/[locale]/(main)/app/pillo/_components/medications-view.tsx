@@ -15,7 +15,7 @@ import {
   Wind,
   X
 } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -348,6 +348,7 @@ const AddPackageConfirmDialog = ({
  */
 const MedicationCard = ({ medication }: { medication: PilloMedicationView }) => {
   const t = useTranslations('Pillo');
+  const locale = useLocale();
   const [isPending, startTransition] = useTransition();
 
   const stockPercentage = medication.unitsPerPackage
@@ -400,6 +401,24 @@ const MedicationCard = ({ medication }: { medication: PilloMedicationView }) => 
                     {t.raw(`medicationForms`)?.[medication.form.toLowerCase().replace('.', '')] ||
                       medication.form}
                   </p>
+                  {medication.buyAtDate !== null && (
+                    <p
+                      className={cn(
+                        'mt-1 truncate text-xs font-bold',
+                        medication.stockStatus === 'enough' &&
+                          'text-emerald-600 dark:text-emerald-400',
+                        medication.stockStatus === 'low' && 'text-amber-600 dark:text-amber-400',
+                        medication.stockStatus === 'empty' && 'text-rose-600 dark:text-rose-400'
+                      )}
+                    >
+                      {t('today.buyAtDate', {
+                        date: new Intl.DateTimeFormat(locale, {
+                          month: 'short',
+                          day: 'numeric'
+                        }).format(new Date(medication.buyAtDate))
+                      })}
+                    </p>
+                  )}
                 </div>
 
                 <Badge
@@ -430,6 +449,11 @@ const MedicationCard = ({ medication }: { medication: PilloMedicationView }) => 
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
                     {t('schedule.doseUnitsShort')}
                   </span>
+                  {medication.daysLeft !== null && (
+                    <span className="ml-1.5 text-xs font-semibold text-muted-foreground/70">
+                      ({t('today.daysLeft', { count: medication.daysLeft })})
+                    </span>
+                  )}
                 </div>
                 {medication.unitsPerPackage && stockPercentage !== null && (
                   <span className="text-[11px] font-bold text-muted-foreground/50">

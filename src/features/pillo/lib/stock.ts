@@ -52,7 +52,7 @@ export const getPilloStockStatus = (params: {
   const minThresholdUnits = toNumber(params.minThresholdUnits);
   const nextDoseUnits = toNumber(params.nextDoseUnits);
 
-  if (stockUnits <= 0) {
+  if (stockUnits <= 2) {
     return 'empty';
   }
 

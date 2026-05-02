@@ -97,28 +97,6 @@ const PilloPage = async () => {
     orderBy: [{ scheduledFor: 'asc' }]
   });
 
-  const medications: PilloMedicationView[] = (dbUser.pilloMedications as DbPilloMedication[]).map(
-    medication => ({
-      id: medication.id,
-      name: medication.name,
-      photoUrl: medication.photoUrl,
-      description: medication.description,
-      dosage: medication.dosage,
-      dosageValue: medication.dosageValue ? toNumber(medication.dosageValue) : null,
-      dosageUnit: medication.dosageUnit,
-      form: medication.form,
-      packagesCount: medication.packagesCount,
-      unitsPerPackage: medication.unitsPerPackage,
-      stockUnits: toNumber(medication.stockUnits),
-      minThresholdUnits: toNumber(medication.minThresholdUnits),
-      isActive: medication.isActive,
-      stockStatus: getPilloStockStatus({
-        stockUnits: medication.stockUnits,
-        minThresholdUnits: medication.minThresholdUnits
-      })
-    })
-  );
-
   const scheduleRules: PilloScheduleRuleView[] = (
     dbUser.pilloScheduleRules as DbPilloScheduleRule[]
   ).map(rule => ({
@@ -135,26 +113,85 @@ const PilloPage = async () => {
     isActive: rule.isActive
   }));
 
-  const intakes: PilloIntakeView[] = (todayIntakes as DbPilloIntake[]).map(intake => ({
-    id: intake.id,
-    medicationId: intake.medicationId,
-    medicationName: intake.medication.name,
-    medicationDosage: intake.medication.dosage ?? '',
-    medicationPhotoUrl: intake.medication.photoUrl,
-    scheduledFor: intake.scheduledFor.toISOString(),
-    localDate: intake.localDate,
-    localTime: intake.localTime,
-    doseUnits: toNumber(intake.doseUnits),
-    status: intake.status,
-    comment: intake.scheduleRule.comment,
-    stockUnits: toNumber(intake.medication.stockUnits),
-    minThresholdUnits: toNumber(intake.medication.minThresholdUnits),
-    stockStatus: getPilloStockStatus({
-      stockUnits: intake.medication.stockUnits,
-      minThresholdUnits: intake.medication.minThresholdUnits,
-      nextDoseUnits: intake.doseUnits
-    })
-  }));
+  const medications: PilloMedicationView[] = (dbUser.pilloMedications as DbPilloMedication[]).map(
+    medication => {
+      const activeRules = scheduleRules.filter(
+        rule => rule.medicationId === medication.id && rule.isActive
+      );
+
+      let daysLeft: number | null = null;
+      let buyAtDate: string | null = null;
+      if (activeRules.length > 0) {
+        let weeklyConsumption = 0;
+        for (const rule of activeRules) {
+          weeklyConsumption += rule.doseUnits * rule.daysOfWeek.length;
+        }
+
+        if (weeklyConsumption > 0) {
+          const dailyConsumption = weeklyConsumption / 7;
+          const stock = toNumber(medication.stockUnits);
+          const minStock = toNumber(medication.minThresholdUnits);
+
+          daysLeft = Math.floor(stock / dailyConsumption);
+
+          const daysUntilMinStock = (stock - minStock) / dailyConsumption;
+          const daysToBuy = Math.floor(daysUntilMinStock - 7);
+
+          const targetDate = new Date();
+          targetDate.setDate(targetDate.getDate() + daysToBuy);
+          buyAtDate = targetDate.toISOString();
+        }
+      }
+
+      return {
+        id: medication.id,
+        name: medication.name,
+        photoUrl: medication.photoUrl,
+        description: medication.description,
+        dosage: medication.dosage,
+        dosageValue: medication.dosageValue ? toNumber(medication.dosageValue) : null,
+        dosageUnit: medication.dosageUnit,
+        form: medication.form,
+        packagesCount: medication.packagesCount,
+        unitsPerPackage: medication.unitsPerPackage,
+        stockUnits: toNumber(medication.stockUnits),
+        minThresholdUnits: toNumber(medication.minThresholdUnits),
+        isActive: medication.isActive,
+        stockStatus: getPilloStockStatus({
+          stockUnits: medication.stockUnits,
+          minThresholdUnits: medication.minThresholdUnits
+        }),
+        daysLeft,
+        buyAtDate
+      };
+    }
+  );
+
+  const intakes: PilloIntakeView[] = (todayIntakes as DbPilloIntake[]).map(intake => {
+    const med = medications.find(m => m.id === intake.medicationId);
+    return {
+      id: intake.id,
+      medicationId: intake.medicationId,
+      medicationName: intake.medication.name,
+      medicationDosage: intake.medication.dosage ?? '',
+      medicationPhotoUrl: intake.medication.photoUrl,
+      scheduledFor: intake.scheduledFor.toISOString(),
+      localDate: intake.localDate,
+      localTime: intake.localTime,
+      doseUnits: toNumber(intake.doseUnits),
+      status: intake.status,
+      comment: intake.scheduleRule.comment,
+      stockUnits: toNumber(intake.medication.stockUnits),
+      minThresholdUnits: toNumber(intake.medication.minThresholdUnits),
+      stockStatus: getPilloStockStatus({
+        stockUnits: intake.medication.stockUnits,
+        minThresholdUnits: intake.medication.minThresholdUnits,
+        nextDoseUnits: intake.doseUnits
+      }),
+      daysLeft: med?.daysLeft ?? null,
+      buyAtDate: med?.buyAtDate ?? null
+    };
+  });
 
   const settings = dbUser.pilloUserSettings ?? {
     emailRemindersEnabled: true,

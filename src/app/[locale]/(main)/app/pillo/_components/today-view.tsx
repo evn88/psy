@@ -1,7 +1,7 @@
 import { Check, Home, Pill, SkipForward } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -79,6 +79,7 @@ const IntakeUndoDialog = ({
  */
 const IntakeCard = ({ intake }: { intake: PilloIntakeView }) => {
   const t = useTranslations('Pillo');
+  const locale = useLocale();
   const { isPending, onSkip, onTake, onUndo } = usePilloIntakeActions();
   const isDone = intake.status !== 'PENDING';
 
@@ -119,12 +120,36 @@ const IntakeCard = ({ intake }: { intake: PilloIntakeView }) => {
                 <h3 className="truncate text-base font-bold tracking-tight text-foreground">
                   {intake.medicationName}
                 </h3>
-                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium text-muted-foreground/70">
-                  <span className="text-foreground font-bold">{intake.localTime}</span>
-                  <span>·</span>
-                  <span>
-                    {intake.doseUnits} x {intake.medicationDosage}
-                  </span>
+                <div className="mt-0.5 flex flex-col gap-0.5 text-xs font-medium text-muted-foreground/70">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-foreground font-bold">{intake.localTime}</span>
+                    <span className="text-muted-foreground/40">•</span>
+                    <span>
+                      {intake.doseUnits} x {intake.medicationDosage}
+                    </span>
+                  </div>
+                  {intake.daysLeft !== null && (
+                    <span className="text-foreground/80">
+                      {t('today.daysLeft', { count: intake.daysLeft })}
+                    </span>
+                  )}
+                  {intake.buyAtDate !== null && (
+                    <span
+                      className={cn(
+                        'font-bold',
+                        intake.stockStatus === 'enough' && 'text-emerald-600 dark:text-emerald-400',
+                        intake.stockStatus === 'low' && 'text-amber-600 dark:text-amber-400',
+                        intake.stockStatus === 'empty' && 'text-rose-600 dark:text-rose-400'
+                      )}
+                    >
+                      {t('today.buyAtDate', {
+                        date: new Intl.DateTimeFormat(locale, {
+                          month: 'short',
+                          day: 'numeric'
+                        }).format(new Date(intake.buyAtDate))
+                      })}
+                    </span>
+                  )}
                 </div>
               </div>
               <Badge
@@ -149,8 +174,22 @@ const IntakeCard = ({ intake }: { intake: PilloIntakeView }) => {
         )}
 
         {intake.stockStatus !== 'enough' && !isDone && (
-          <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-700 dark:text-amber-400">
-            {t('today.lowStockWarning')}
+          <div
+            className={cn(
+              'rounded-2xl border px-3 py-2 text-xs font-medium',
+              intake.stockStatus === 'empty'
+                ? 'border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-400'
+                : 'border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-400'
+            )}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span>{t('today.lowStockWarning')}</span>
+              {intake.daysLeft !== null && (
+                <span className="shrink-0 font-bold opacity-80">
+                  {t('today.daysLeft', { count: intake.daysLeft })}
+                </span>
+              )}
+            </div>
           </div>
         )}
 

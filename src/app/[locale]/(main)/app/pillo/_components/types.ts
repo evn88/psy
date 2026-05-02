@@ -15,6 +15,8 @@ export type PilloMedicationView = {
   minThresholdUnits: number;
   isActive: boolean;
   stockStatus: 'enough' | 'low' | 'empty';
+  daysLeft: number | null;
+  buyAtDate: string | null;
 };
 
 export type PilloScheduleRuleView = {
@@ -46,6 +48,8 @@ export type PilloIntakeView = {
   stockUnits: number;
   minThresholdUnits: number;
   stockStatus: 'enough' | 'low' | 'empty';
+  daysLeft: number | null;
+  buyAtDate: string | null;
 };
 
 export type PilloSettingsView = {
