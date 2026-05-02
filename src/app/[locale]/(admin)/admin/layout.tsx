@@ -3,10 +3,10 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { type ReactNode } from 'react';
 import { auth } from '@/auth';
-import { AdminBreadcrumbs } from './_components/AdminBreadcrumbs';
-import { AppSidebar } from './_components/AppSidebar';
+import { AdminBreadcrumbs } from './_components/admin-breadcrumbs';
+import { AppSidebar } from './_components/app-sidebar';
 import { SIDEBAR_COOKIE_NAME } from '@/components/ui/sidebar';
-import { SidebarWorkspaceLayout } from '@/components/SidebarWorkspaceLayout';
+import { SidebarWorkspaceLayout } from '@/components/sidebar-workspace-layout';
 import { getAdminUnreadSurveysCount } from './surveys/actions';
 
 export const metadata: Metadata = {

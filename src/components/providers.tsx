@@ -3,11 +3,11 @@
 import type { ReactNode } from 'react';
 import { SessionProvider } from 'next-auth/react';
 import { Toaster } from 'sonner';
-import { HeartbeatProvider } from '@/components/HeartbeatProvider';
-import { OfflineIndicator } from '@/components/pwa/OfflineIndicator';
-import { PushPermissionBanner } from '@/components/pwa/PushPermissionBanner';
-import { ServiceWorkerRegistration } from '@/components/pwa/ServiceWorkerRegistration';
-import { ThemeProvider } from '@/components/ThemeProvider';
+import { HeartbeatProvider } from '@/components/heartbeat-provider';
+import { OfflineIndicator } from '@/components/pwa/offline-indicator';
+import { PushPermissionBanner } from '@/components/pwa/push-permission-banner';
+import { ServiceWorkerRegistration } from '@/components/pwa/service-worker-registration';
+import { ThemeProvider } from '@/components/theme-provider';
 import type { Theme } from '@/lib/theme';
 
 interface ProvidersProps {

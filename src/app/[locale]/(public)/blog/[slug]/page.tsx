@@ -15,7 +15,7 @@ import {
   resolveMetadataImage
 } from '@/lib/seo';
 import { extractDescription, formatBlogDate, getBlogLocale } from '@/lib/blog-utils';
-import { ArticleContent } from './_components/ArticleContent';
+import { ArticleContent } from './_components/article-content';
 
 interface BlogArticlePageProps {
   params: Promise<{ locale: string; slug: string }>;

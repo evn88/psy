@@ -3,8 +3,8 @@ import prisma from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { defaultLocale } from '@/i18n/config';
-import { SettingsForm } from '@/components/SettingsForm';
-import { NotificationSettingsForm } from './_components/NotificationSettingsForm';
+import { SettingsForm } from '@/components/settings-form';
+import { NotificationSettingsForm } from './_components/notification-settings-form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default async function SettingsPage() {

@@ -1,9 +1,9 @@
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
-import { CreatePackageButton } from './_components/CreatePackageButton';
-import { DeletePackageButton } from './_components/DeletePackageButton';
-import { EditPackageButton } from './_components/EditPackageButton';
+import { CreatePackageButton } from './_components/create-package-button';
+import { DeletePackageButton } from './_components/delete-package-button';
+import { EditPackageButton } from './_components/edit-package-button';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 

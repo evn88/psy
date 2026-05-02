@@ -1,4 +1,4 @@
-export { DateField } from './DateField';
-export { SwitchField } from './SwitchField';
-export { TextField } from './TextField';
-export { TimeField } from './TimeField';
+export { DateField } from './date-field';
+export { SwitchField } from './switch-field';
+export { TextField } from './text-field';
+export { TimeField } from './time-field';

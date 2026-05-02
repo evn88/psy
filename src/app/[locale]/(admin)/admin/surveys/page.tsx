@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
-import { SurveysTable } from './_components/SurveysTable';
+import { SurveysTable } from './_components/surveys-table';
 
 type SurveyWithCounts = Prisma.SurveyGetPayload<{
   include: {

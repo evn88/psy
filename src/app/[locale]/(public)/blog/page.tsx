@@ -10,9 +10,9 @@ import {
   getLocalizedUrl,
   getSeoCopy
 } from '@/lib/seo';
-import { BlogCard } from './_components/BlogCard';
-import { CategoryFilter } from './_components/CategoryFilter';
-import { SubscribeForm } from './_components/SubscribeForm';
+import { BlogCard } from './_components/blog-card';
+import { CategoryFilter } from './_components/category-filter';
+import { SubscribeForm } from './_components/subscribe-form';
 
 const getCachedPosts = unstable_cache(
   async (categorySlug: string | null) =>

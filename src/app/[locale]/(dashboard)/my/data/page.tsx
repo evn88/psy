@@ -1,5 +1,5 @@
 import { getTranslations } from 'next-intl/server';
-import { MyDocuments } from './_components/MyDocuments';
+import { MyDocuments } from './_components/my-documents';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { redirect } from 'next/navigation';

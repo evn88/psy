@@ -7,7 +7,7 @@ import { ensurePilloUserSettings, materializePilloIntakesForUser } from '@/modul
 import { getPilloLocalDateKey } from '@/modules/pillo/schedule';
 import { toNumber } from '@/modules/pillo/stock';
 import prisma from '@/lib/prisma';
-import { PilloPageClient } from './_components/PilloPageClient';
+import { PilloPageClient } from './_components/pillo-page-client';
 import type {
   PilloAppearanceSettingsView,
   PilloHistoryEntryView,

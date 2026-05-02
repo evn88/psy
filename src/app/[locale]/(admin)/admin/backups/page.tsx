@@ -3,7 +3,7 @@ import { forbidden } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { getBackupAuditClientContext, logBackupAuditEvent } from '@/modules/backup/audit';
 import { BackupAccessError, requireAdminSession } from '@/modules/backup/auth';
-import { BackupManagementPanel } from './_components/BackupManagementPanel';
+import { BackupManagementPanel } from './_components/backup-management-panel';
 
 export const dynamic = 'force-dynamic';
 

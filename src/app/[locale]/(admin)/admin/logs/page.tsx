@@ -9,9 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Link } from '@/i18n/navigation';
 import prisma from '@/lib/prisma';
 import { getSystemLogSettings } from '@/modules/system-logs/system-log-settings.server';
-import { LogFilterMultiSelect } from './_components/LogFilterMultiSelect';
-import { SystemLogSettingsForm } from './_components/SystemLogSettingsForm';
-import { SystemLogsTable } from './_components/SystemLogsTable';
+import { LogFilterMultiSelect } from './_components/log-filter-multi-select';
+import { SystemLogSettingsForm } from './_components/system-log-settings-form';
+import { SystemLogsTable } from './_components/system-logs-table';
 
 interface SystemLogsPageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;

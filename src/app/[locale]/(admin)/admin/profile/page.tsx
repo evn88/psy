@@ -2,7 +2,7 @@ import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ProfileForm } from '@/components/ProfileForm';
+import { ProfileForm } from '@/components/profile-form';
 import { getTranslations } from 'next-intl/server';
 
 /**

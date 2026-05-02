@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import prisma from '@/lib/prisma';
-import { SurveyDetail } from '../_components/SurveyDetail';
-import { BreadcrumbSetter } from '@/components/BreadcrumbSetter';
+import { SurveyDetail } from '../_components/survey-detail';
+import { BreadcrumbSetter } from '@/components/breadcrumb-setter';
 import type { AssignmentStatus, QuestionType } from '@prisma/client';
 
 interface SurveyDetailPageProps {

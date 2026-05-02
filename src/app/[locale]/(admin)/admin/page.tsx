@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 import { endOfMonth, endOfWeek, startOfMonth, startOfWeek, startOfYear } from 'date-fns';
-import { AdminPaymentsLineChart } from './_components/AdminPaymentsLineChart';
+import { AdminPaymentsLineChart } from './_components/admin-payments-line-chart';
 
 /**
  * Получает статистику пользователей и расписания для дашборда.

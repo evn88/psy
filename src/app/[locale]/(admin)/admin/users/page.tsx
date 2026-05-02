@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CreateUserDialog } from './_components/CreateUserDialog';
-import { AdminUserList } from './_components/AdminUserList';
+import { CreateUserDialog } from './_components/create-user-dialog';
+import { AdminUserList } from './_components/admin-user-list';
 
 export default async function AdminPage() {
   const users = await prisma.user.findMany({

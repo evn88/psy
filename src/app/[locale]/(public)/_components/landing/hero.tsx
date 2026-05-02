@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
-import HeroNav from './HeroNav';
+import HeroNav from './hero-nav';
 import styles from './hero.module.css';
 
 import blueBgEdge from '@/assets/images/adhd/blue-bg-edge.png';

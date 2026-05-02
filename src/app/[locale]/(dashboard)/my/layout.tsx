@@ -2,13 +2,13 @@ import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { type ReactNode } from 'react';
 import { auth } from '@/auth';
-import { MyBreadcrumbs } from './_components/MyBreadcrumbs';
-import { MySidebar } from './_components/MySidebar';
-import { SurveySync } from '@/components/pwa/SurveySync';
+import { MyBreadcrumbs } from './_components/my-breadcrumbs';
+import { MySidebar } from './_components/my-sidebar';
+import { SurveySync } from '@/components/pwa/survey-sync';
 import { SIDEBAR_COOKIE_NAME } from '@/components/ui/sidebar';
 import { type AppLocale, defaultLocale, isLocale } from '@/i18n/config';
 import { redirect } from '@/i18n/navigation';
-import { SidebarWorkspaceLayout } from '@/components/SidebarWorkspaceLayout';
+import { SidebarWorkspaceLayout } from '@/components/sidebar-workspace-layout';
 import { getUserUnreadSurveysCount } from './surveys/actions';
 
 export const metadata: Metadata = {

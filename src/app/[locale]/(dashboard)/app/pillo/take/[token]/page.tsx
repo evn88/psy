@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 import { requirePilloUser } from '@/modules/pillo/access';
-import { TakeConfirmation } from './_components/TakeConfirmation';
+import { TakeConfirmation } from './_components/take-confirmation';
 
 export const metadata: Metadata = {
   title: 'Pillo',

@@ -17,8 +17,8 @@ import {
   GraduationCap
 } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
-import { IntakeWizardModal } from './_components/IntakeWizard';
-import { IntakeResultsModal } from './_components/IntakeResultsModal';
+import { IntakeWizardModal } from './_components/intake-wizard';
+import { IntakeResultsModal } from './_components/intake-results-modal';
 
 type AssignmentWithSurvey = Prisma.SurveyAssignmentGetPayload<{
   include: {

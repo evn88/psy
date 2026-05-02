@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { getTranslations } from 'next-intl/server';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ClientsTable } from './_components/ClientsTable';
+import { ClientsTable } from './_components/clients-table';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 
