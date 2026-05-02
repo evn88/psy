@@ -116,42 +116,9 @@ const IntakeCard = ({ intake }: { intake: PilloIntakeView }) => {
 
           <div className="flex min-w-0 flex-1 flex-col justify-center py-0.5">
             <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <h3 className="truncate text-base font-bold tracking-tight text-foreground">
-                  {intake.medicationName}
-                </h3>
-                <div className="mt-0.5 flex flex-col gap-0.5 text-xs font-medium text-muted-foreground/70">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-foreground font-bold">{intake.localTime}</span>
-                    <span className="text-muted-foreground/40">•</span>
-                    <span>
-                      {intake.doseUnits} x {intake.medicationDosage}
-                    </span>
-                  </div>
-                  {intake.daysLeft !== null && (
-                    <span className="text-foreground/80">
-                      {t('today.daysLeft', { count: intake.daysLeft })}
-                    </span>
-                  )}
-                  {intake.buyAtDate !== null && (
-                    <span
-                      className={cn(
-                        'font-bold',
-                        intake.stockStatus === 'enough' && 'text-emerald-600 dark:text-emerald-400',
-                        intake.stockStatus === 'low' && 'text-amber-600 dark:text-amber-400',
-                        intake.stockStatus === 'empty' && 'text-rose-600 dark:text-rose-400'
-                      )}
-                    >
-                      {t('today.buyAtDate', {
-                        date: new Intl.DateTimeFormat(locale, {
-                          month: 'short',
-                          day: 'numeric'
-                        }).format(new Date(intake.buyAtDate))
-                      })}
-                    </span>
-                  )}
-                </div>
-              </div>
+              <h3 className="min-w-0 flex-1 truncate text-base font-bold tracking-tight text-foreground">
+                {intake.medicationName}
+              </h3>
               <Badge
                 variant={isDone ? 'secondary' : 'default'}
                 className={cn(
@@ -163,6 +130,37 @@ const IntakeCard = ({ intake }: { intake: PilloIntakeView }) => {
               >
                 {t(`intakeStatus.${intake.status}`)}
               </Badge>
+            </div>
+            <div className="mt-0.5 flex flex-col gap-0.5 text-xs font-medium text-muted-foreground/70">
+              <div className="flex items-center gap-1.5 truncate">
+                <span className="text-foreground font-bold">{intake.localTime}</span>
+                <span className="text-muted-foreground/40">•</span>
+                <span>
+                  {intake.doseUnits} x {intake.medicationDosage}
+                </span>
+              </div>
+              {intake.daysLeft !== null && (
+                <span className="text-foreground/80 truncate">
+                  {t('today.daysLeft', { count: intake.daysLeft })}
+                </span>
+              )}
+              {intake.buyAtDate !== null && (
+                <span
+                  className={cn(
+                    'font-bold truncate',
+                    intake.stockStatus === 'enough' && 'text-emerald-600 dark:text-emerald-400',
+                    intake.stockStatus === 'low' && 'text-amber-600 dark:text-amber-400',
+                    intake.stockStatus === 'empty' && 'text-rose-600 dark:text-rose-400'
+                  )}
+                >
+                  {t('today.buyAtDate', {
+                    date: new Intl.DateTimeFormat(locale, {
+                      month: 'short',
+                      day: 'numeric'
+                    }).format(new Date(intake.buyAtDate))
+                  })}
+                </span>
+              )}
             </div>
           </div>
         </div>

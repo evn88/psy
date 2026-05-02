@@ -392,43 +392,9 @@ const MedicationCard = ({ medication }: { medication: PilloMedicationView }) => 
 
             <div className="flex min-w-0 flex-1 flex-col justify-center">
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h3 className="truncate text-[16px] font-semibold tracking-tight text-foreground/90 transition-colors group-hover:text-foreground">
-                    {medication.name}
-                  </h3>
-                  <p className="mt-0.5 truncate text-[13px] font-medium text-muted-foreground/80">
-                    {medication.dosageValue !== null && medication.dosageUnit ? (
-                      <>
-                        {medication.dosageValue}{' '}
-                        {t(`dosageUnits.${medication.dosageUnit.toLowerCase().replace('.', '')}`)}
-                      </>
-                    ) : (
-                      medication.dosage
-                    )}
-                    <span className="mx-1.5 text-muted-foreground/40">•</span>
-                    {t.raw(`medicationForms`)?.[medication.form.toLowerCase().replace('.', '')] ||
-                      medication.form}
-                  </p>
-                  {medication.buyAtDate !== null && (
-                    <p
-                      className={cn(
-                        'mt-1 truncate text-xs font-bold',
-                        medication.stockStatus === 'enough' &&
-                          'text-emerald-600 dark:text-emerald-400',
-                        medication.stockStatus === 'low' && 'text-amber-600 dark:text-amber-400',
-                        medication.stockStatus === 'empty' && 'text-rose-600 dark:text-rose-400'
-                      )}
-                    >
-                      {t('today.buyAtDate', {
-                        date: new Intl.DateTimeFormat(locale, {
-                          month: 'short',
-                          day: 'numeric'
-                        }).format(new Date(medication.buyAtDate))
-                      })}
-                    </p>
-                  )}
-                </div>
-
+                <h3 className="min-w-0 flex-1 truncate text-[16px] font-semibold tracking-tight text-foreground/90 transition-colors group-hover:text-foreground">
+                  {medication.name}
+                </h3>
                 <Badge
                   variant="secondary"
                   className={cn(
@@ -444,6 +410,38 @@ const MedicationCard = ({ medication }: { medication: PilloMedicationView }) => 
                   {t(`stockStatus.${medication.stockStatus}`)}
                 </Badge>
               </div>
+
+              <p className="mt-0.5 truncate text-[13px] font-medium text-muted-foreground/80">
+                {medication.dosageValue !== null && medication.dosageUnit ? (
+                  <>
+                    {medication.dosageValue}{' '}
+                    {t(`dosageUnits.${medication.dosageUnit.toLowerCase().replace('.', '')}`)}
+                  </>
+                ) : (
+                  medication.dosage
+                )}
+                <span className="mx-1.5 text-muted-foreground/40">•</span>
+                {t.raw(`medicationForms`)?.[medication.form.toLowerCase().replace('.', '')] ||
+                  medication.form}
+              </p>
+
+              {medication.buyAtDate !== null && (
+                <p
+                  className={cn(
+                    'mt-1 truncate text-xs font-bold',
+                    medication.stockStatus === 'enough' && 'text-emerald-600 dark:text-emerald-400',
+                    medication.stockStatus === 'low' && 'text-amber-600 dark:text-amber-400',
+                    medication.stockStatus === 'empty' && 'text-rose-600 dark:text-rose-400'
+                  )}
+                >
+                  {t('today.buyAtDate', {
+                    date: new Intl.DateTimeFormat(locale, {
+                      month: 'short',
+                      day: 'numeric'
+                    }).format(new Date(medication.buyAtDate))
+                  })}
+                </p>
+              )}
             </div>
           </div>
 
