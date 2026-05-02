@@ -1,6 +1,6 @@
 import { type ReactNode, useTransition } from 'react';
 import Image from 'next/image';
-import { ImagePlus, MoreHorizontal, Pill, Plus, Trash2 } from 'lucide-react';
+import { ImagePlus, MoreHorizontal, Pill, Plus, Trash2, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -48,6 +48,8 @@ const MedicationDialog = ({
   const { form, isPending, onSubmit, onUploadPhoto, open, setOpen } =
     usePilloMedicationForm(medication);
 
+  const photoUrl = form.watch('photoUrl');
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
@@ -58,18 +60,44 @@ const MedicationDialog = ({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={onSubmit} className="space-y-4">
+            {photoUrl && (
+              <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-muted/30 border border-black/[0.05] dark:border-white/[0.05]">
+                <Image src={photoUrl} alt="Preview" fill className="object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 transition-opacity hover:opacity-100" />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  className="absolute right-2 top-2 h-8 w-8 rounded-full shadow-xl"
+                  onClick={() => form.setValue('photoUrl', null, { shouldDirty: true })}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-2">
-              <Label className="flex cursor-pointer items-center justify-center rounded-2xl border border-dashed p-4 text-sm">
+              <Label
+                className={cn(
+                  'flex cursor-pointer items-center justify-center rounded-2xl border border-dashed p-4 text-sm transition-colors hover:bg-muted/50',
+                  isPending && 'pointer-events-none opacity-50'
+                )}
+              >
                 <ImagePlus className="mr-2 h-4 w-4" />
                 {t('medications.gallery')}
                 <Input
                   type="file"
                   accept="image/*"
                   className="hidden"
+                  disabled={isPending}
                   onChange={event => onUploadPhoto(event.target.files?.[0] ?? null)}
                 />
               </Label>
-              <Label className="flex cursor-pointer items-center justify-center rounded-2xl border border-dashed p-4 text-sm">
+              <Label
+                className={cn(
+                  'flex cursor-pointer items-center justify-center rounded-2xl border border-dashed p-4 text-sm transition-colors hover:bg-muted/50',
+                  isPending && 'pointer-events-none opacity-50'
+                )}
+              >
                 <ImagePlus className="mr-2 h-4 w-4" />
                 {t('medications.camera')}
                 <Input
@@ -77,6 +105,7 @@ const MedicationDialog = ({
                   accept="image/*"
                   capture="environment"
                   className="hidden"
+                  disabled={isPending}
                   onChange={event => onUploadPhoto(event.target.files?.[0] ?? null)}
                 />
               </Label>
