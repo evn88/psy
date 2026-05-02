@@ -58,7 +58,7 @@
 Примеры из проекта:
 
 - `src/app/[locale]/(dashboard)/app/pillo/page.tsx`
-- `src/app/[locale]/(dashboard)/app/pillo/_components/PilloAppShell.tsx`
+- `src/app/[locale]/(dashboard)/app/pillo/_components/pillo-app-shell.tsx`
 - `src/app/[locale]/(dashboard)/app/pillo/_hooks/use-pillo-tabs.ts`
 - `src/app/[locale]/(dashboard)/my/data/_actions/documents.actions.ts`
 - `src/app/[locale]/(admin)/admin/blog/[id]/_components/blog-editor-form.types.ts`
@@ -80,15 +80,15 @@
 
 ### 3.1 Компоненты React
 
-Для новых продуктовых React-компонентов стандартом проекта считается `PascalCase`.
+Файлы React-компонентов в проекте должны называться в `kebab-case`.
 
 Примеры:
 
-- `ProfileForm.tsx`
-- `ThemeProvider.tsx`
-- `PilloAppShell.tsx`
-- `AdminPaymentsTable.tsx`
-- `TakeConfirmation.tsx`
+- `profile-form.tsx`
+- `theme-provider.tsx`
+- `pillo-app-shell.tsx`
+- `admin-payments-table.tsx`
+- `take-confirmation.tsx`
 
 Это правило действует для:
 
@@ -96,19 +96,15 @@
 - route-level компонентов в `src/app/**/_components`;
 - компонентных файлов в `src/modules/**/components`;
 - email-шаблонов в `src/emails`;
-- большинства route-level компонентов страниц, форм, карточек, диалогов и client shells.
+- route-level компонентов страниц, форм, карточек, диалогов и client shells;
+- shared-компонентов в `src/components`;
+- доменных компонентов в `src/modules/**/components`.
 
-Важно:
-В репозитории уже есть legacy-исключения, которые пока существуют исторически и не должны автоматически переписываться без отдельной задачи:
+Правило:
 
-- low-level primitives в `src/components/ui`, например `button.tsx`, `dialog.tsx`, `form.tsx`;
-- отдельные инфраструктурные entrypoint-файлы, например `src/components/providers.tsx`;
-- часть старых публичных секций, например `src/app/[locale]/(public)/_components/landing/about.tsx`.
-
-Правило для новой разработки:
-
-- если это продуктовый компонент уровня страницы, feature, диалога, карточки, таблицы или формы, используйте `PascalCase`;
-- если это low-level primitive или технический glue-file, сначала следуйте существующему локальному паттерну папки.
+- используем только `kebab-case` для компонентных файлов;
+- имя файла должно быть предсказуемо связано с именем компонента внутри;
+- не смешиваем разные стили именования в одной и той же компонентной зоне.
 
 ### 3.2 Исключения для Next.js file conventions
 
@@ -128,7 +124,7 @@
 - `robots.ts`
 - `sitemap.ts`
 
-Их нельзя переименовывать в `PascalCase`.
+Их нельзя переименовывать под общий стиль компонентов. Для них всегда действуют file conventions Next.js.
 
 ### 3.3 Хуки
 
@@ -159,11 +155,11 @@
 - `blog-editor.schema.ts`
 - `blog-editor-form.types.ts`
 - `blog-editor-form.constants.ts`
-- `providers.tsx` для технического composition entrypoint как осознанное исключение
+- `providers.tsx` для технического composition entrypoint
 
 ### 3.5 CSS и CSS Modules
 
-CSS-файлы не переводятся в `PascalCase`.
+CSS-файлы тоже придерживаются нижнего регистра и не используют отдельный компонентный стиль именования.
 
 Используем:
 
@@ -173,7 +169,7 @@ CSS-файлы не переводятся в `PascalCase`.
 - `dev-banner.module.css`
 
 Правило:
-Имена CSS-файлов должны описывать зону ответственности, а не название JSX-компонента в обязательном `PascalCase`.
+Имена CSS-файлов должны описывать зону ответственности, а не повторять JSX-имя в другом стиле.
 
 ---
 
@@ -189,9 +185,9 @@ CSS-файлы не переводятся в `PascalCase`.
 
 Примеры:
 
-- `src/components/ProfileForm.tsx`
-- `src/components/ThemeProvider.tsx`
-- `src/components/SidebarWorkspaceLayout.tsx`
+- `src/components/profile-form.tsx`
+- `src/components/theme-provider.tsx`
+- `src/components/sidebar-workspace-layout.tsx`
 - `src/components/providers.tsx`
 - `src/components/ui/*`
 - `src/components/pwa/*`
@@ -234,8 +230,8 @@ CSS-файлы не переводятся в `PascalCase`.
 
 Правило именования для `src/components/ui`:
 
-- сохраняем существующий локальный стиль папки;
-- новые примитивы в этой папке называем так же, как уже названы соседние файлы;
+- сохраняем `kebab-case`;
+- новые примитивы называем так же, как уже названы соседние файлы;
 - не вводим внутри `ui` смешанный стиль без причины.
 
 ### 4.3 `src/components/pwa`
@@ -590,15 +586,15 @@ CSS Modules здесь не первый выбор.
 
 Имена файлов:
 
-- в `PascalCase`;
+- в `kebab-case`;
 - с явным смыслом;
 - без route-level привязки.
 
 Примеры:
 
-- `VerificationEmailTemplate.tsx`
-- `AdminMessageTemplate.tsx`
-- `BlogNotificationTemplate.tsx`
+- `verification-email-template.tsx`
+- `admin-message-template.tsx`
+- `blog-notification-template.tsx`
 
 Нельзя хранить email JSX внутри `app`, `components/ui` или `modules`, если это именно письмо, а не кусок общей бизнес-логики.
 
@@ -688,19 +684,19 @@ CSS Modules здесь не первый выбор.
 
 ### Компоненты
 
-- для продуктовых компонентов: `PascalCase.tsx`
+- для продуктовых компонентов: `kebab-case.tsx`
 - имя файла должно совпадать с главным экспортируемым компонентом
-- для low-level primitives и специальных инфраструктурных entrypoints сначала смотрим на локальный паттерн папки
+- для low-level primitives и специальных инфраструктурных entrypoints придерживаемся того же `kebab-case`
 
 Хорошо:
 
-- `ProfileForm.tsx`
-- `BlogHeader.tsx`
+- `profile-form.tsx`
+- `blog-header.tsx`
 - `button.tsx` внутри `src/components/ui`, если это primitive и он следует существующему слою
 
 Плохо:
 
-- `profile-form.tsx`
+- `ProfileForm.tsx`
 - `component.tsx`
 - `index.tsx` для основного компонента без причины
 
@@ -747,9 +743,9 @@ src/app/[locale]/(dashboard)/my/example/
   loading.tsx
   actions.ts
   _components/
-    ExamplePageClient.tsx
-    ExampleTable.tsx
-    ExampleDialog.tsx
+    example-page-client.tsx
+    example-table.tsx
+    example-dialog.tsx
     example-form.schema.ts
     example-form.types.ts
   _hooks/
@@ -760,7 +756,7 @@ src/app/[locale]/(dashboard)/my/example/
 
 Если потом:
 
-- `ExampleDialog` начинает использоваться ещё в двух местах, переносим его в `src/components`;
+- `example-dialog.tsx` начинает использоваться ещё в двух местах, переносим его в `src/components`;
 - `use-example-filters` нужен разным зонам домена, переносим его в `src/modules/<domain>/hooks`;
 - `example.actions.ts` содержит общую бизнес-логику, выносим эту бизнес-логику в `src/modules/<domain>` или `src/lib`, а action оставляем тонким слоем вызова.
 
@@ -776,7 +772,7 @@ src/app/[locale]/(dashboard)/my/example/
 - общие инфраструктурные helper-файлы живут в `src/lib`;
 - доменная бизнес-логика живёт в `src/modules`;
 - глобальные типы живут в `src/types`;
-- компоненты называются в `PascalCase`;
+- компоненты называются в `kebab-case`;
 - хуки и утилиты называются в `kebab-case`;
 - специальные Next.js файлы не переименовываются;
 - сначала используем колокацию, потом выносим в shared только при реальном переиспользовании.
