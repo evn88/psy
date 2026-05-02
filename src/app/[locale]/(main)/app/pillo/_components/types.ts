@@ -59,6 +59,7 @@ export type PilloSettingsView = {
   pushRemindersEnabled: boolean;
   lowStockEmailEnabled: boolean;
   lowStockPushEnabled: boolean;
+  lowStockWarningDays: number;
 };
 
 export type PilloAppearanceSettingsView = {

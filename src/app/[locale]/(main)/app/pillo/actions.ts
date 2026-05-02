@@ -319,8 +319,8 @@ export const undoPilloIntakeAction = async (intakeId: string): Promise<PilloActi
 };
 
 /**
- * Сохраняет настройки уведомлений Pillo.
- * @param input - значения переключателей.
+ * Сохраняет настройки уведомлений и запасов Pillo.
+ * @param input - значения настроек.
  * @returns Результат сохранения.
  */
 export const savePilloSettingsAction = async (input: unknown): Promise<PilloActionResult> => {

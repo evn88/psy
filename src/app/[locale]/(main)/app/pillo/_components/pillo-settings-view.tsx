@@ -1,13 +1,22 @@
 import { useMemo } from 'react';
-import { Bell, Languages, Mail, MessageSquare, Moon, PackagePlus, ShieldCheck } from 'lucide-react';
+import { Mail, MessageSquare, PackagePlus, ShieldCheck, ShoppingBasket } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { SettingsForm } from '@/app/[locale]/(main)/admin/settings/_components/settings-form';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
 import { usePilloSettingsForm } from '../_hooks/use-pillo-settings-form';
 import type { PilloAppearanceSettingsView, PilloSettingsView } from './types';
-import { cn } from '@/lib/utils';
 
 /**
  * Рисует настройки Pillo и общие настройки темы/языка.
@@ -22,7 +31,14 @@ export const SettingsView = ({
   settings: PilloSettingsView;
 }) => {
   const t = useTranslations('Pillo');
-  const { isPending, onToggle, values } = usePilloSettingsForm(settings);
+  const {
+    form,
+    isPending,
+    onLowStockWarningDaysBlur,
+    onLowStockWarningDaysChange,
+    onToggle,
+    values
+  } = usePilloSettingsForm(settings);
 
   const notifications = useMemo(
     () =>
@@ -93,6 +109,60 @@ export const SettingsView = ({
               </div>
             ))}
           </CardContent>
+        </Card>
+      </section>
+
+      {/* Секция Запасов */}
+      <section className="space-y-2.5">
+        <h2 className="px-4 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+          {t('settings.stock')}
+        </h2>
+        <Card className="rounded-[1.75rem] border-white/40 bg-white/60 p-4 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-black/20">
+          <Form {...form}>
+            <FormField
+              control={form.control}
+              name="lowStockWarningDays"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex items-start gap-3">
+                    <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-500 text-white shadow-sm">
+                      <ShoppingBasket className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <FormLabel className="text-[15px] font-medium tracking-tight">
+                        {t('settings.lowStockWarningDays')}
+                      </FormLabel>
+                      <FormDescription className="text-xs leading-relaxed text-muted-foreground/70">
+                        {t('settings.lowStockWarningDaysDescription')}
+                      </FormDescription>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          value={Number(values.lowStockWarningDays)}
+                          type="number"
+                          inputMode="numeric"
+                          min={0}
+                          step={1}
+                          disabled={isPending}
+                          onBlur={() => {
+                            field.onBlur();
+                            onLowStockWarningDaysBlur();
+                          }}
+                          onChange={event => onLowStockWarningDaysChange(event.target.value)}
+                          onKeyDown={event => {
+                            if (['-', '.', ',', 'e', 'E', '+'].includes(event.key)) {
+                              event.preventDefault();
+                            }
+                          }}
+                          className="h-11 rounded-2xl bg-white/70 text-base dark:bg-white/5"
+                        />
+                      </FormControl>
+                    </div>
+                  </div>
+                </FormItem>
+              )}
+            />
+          </Form>
         </Card>
       </section>
 

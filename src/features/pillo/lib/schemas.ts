@@ -52,7 +52,8 @@ export const pilloSettingsSchema = z.object({
   emailRemindersEnabled: z.coerce.boolean(),
   pushRemindersEnabled: z.coerce.boolean(),
   lowStockEmailEnabled: z.coerce.boolean(),
-  lowStockPushEnabled: z.coerce.boolean()
+  lowStockPushEnabled: z.coerce.boolean(),
+  lowStockWarningDays: z.coerce.number().int().min(0)
 });
 
 /**

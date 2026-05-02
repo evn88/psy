@@ -889,6 +889,9 @@
       "pushReminders": "Push podsetnici za uzimanje",
       "lowStockEmail": "Email kada je zaliha niska",
       "lowStockPush": "Push kada je zaliha niska",
+      "stock": "Zalihe",
+      "lowStockWarningDays": "Koliko dana ranije preporučiti kupovinu",
+      "lowStockWarningDaysDescription": "Pillo računa za koliko dana je dovoljna trenutna zaliha i prikazuje datum kupovine toliko dana pre nego što zaliha nestane. Podrazumevano je 7 dana.",
       "appearance": "Jezik i tema",
       "appearanceDescription": "Ova podešavanja su sinhronizovana sa sajtom."
     },

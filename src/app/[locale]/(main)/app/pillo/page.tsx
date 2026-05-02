@@ -81,6 +81,13 @@ const PilloPage = async () => {
     return null;
   }
 
+  const settings = dbUser.pilloUserSettings ?? {
+    emailRemindersEnabled: true,
+    pushRemindersEnabled: true,
+    lowStockEmailEnabled: true,
+    lowStockPushEnabled: true,
+    lowStockWarningDays: 7
+  };
   const timezone = dbUser.timezone || 'UTC';
   const todayKey = getPilloLocalDateKey(new Date(), timezone);
   const todayIntakes = await prisma.pilloIntake.findMany({
@@ -141,8 +148,8 @@ const PilloPage = async () => {
           endsDate.setDate(endsDate.getDate() + daysLeft);
           stockEndsAt = endsDate.toISOString();
 
-          // Рекомендация купить — за 7 дней до окончания, но не раньше сегодня
-          const daysToBuy = Math.max(0, daysLeft - 7);
+          // Рекомендация купить — за пользовательское количество дней до окончания.
+          const daysToBuy = Math.max(0, daysLeft - settings.lowStockWarningDays);
 
           // Если осталось ≤1 дня до рекомендации — показываем только дату окончания
           if (daysToBuy > 1) {
@@ -205,12 +212,6 @@ const PilloPage = async () => {
     };
   });
 
-  const settings = dbUser.pilloUserSettings ?? {
-    emailRemindersEnabled: true,
-    pushRemindersEnabled: true,
-    lowStockEmailEnabled: true,
-    lowStockPushEnabled: true
-  };
   const appearanceSettings: PilloAppearanceSettingsView = {
     language: dbUser.language,
     theme: dbUser.theme
@@ -226,7 +227,8 @@ const PilloPage = async () => {
         emailRemindersEnabled: settings.emailRemindersEnabled,
         pushRemindersEnabled: settings.pushRemindersEnabled,
         lowStockEmailEnabled: settings.lowStockEmailEnabled,
-        lowStockPushEnabled: settings.lowStockPushEnabled
+        lowStockPushEnabled: settings.lowStockPushEnabled,
+        lowStockWarningDays: settings.lowStockWarningDays
       }}
     />
   );

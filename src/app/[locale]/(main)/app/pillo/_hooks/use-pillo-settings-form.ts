@@ -38,10 +38,23 @@ export const usePilloSettingsForm = (settings: PilloSettingsView) => {
     onSave(nextValues);
   };
 
+  const onLowStockWarningDaysChange = (rawValue: string) => {
+    const nextValue = Number(rawValue.replace(/\D/g, '') || 0);
+    form.setValue('lowStockWarningDays', nextValue, { shouldDirty: true, shouldValidate: true });
+  };
+
+  const onLowStockWarningDaysBlur = () => {
+    const nextValue = Number(form.getValues('lowStockWarningDays') ?? 0);
+    const nextValues = { ...values, lowStockWarningDays: nextValue };
+    onSave(nextValues);
+  };
+
   return {
     form,
     values,
     isPending,
+    onLowStockWarningDaysBlur,
+    onLowStockWarningDaysChange,
     onToggle
   };
 };
