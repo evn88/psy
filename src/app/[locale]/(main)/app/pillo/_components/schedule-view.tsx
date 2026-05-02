@@ -1,5 +1,6 @@
 import { type ReactNode, useTransition } from 'react';
-import { CalendarClock, MoreHorizontal, Plus, Trash2 } from 'lucide-react';
+import Image from 'next/image';
+import { CalendarClock, MoreHorizontal, Pill, Plus, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -21,6 +22,7 @@ import {
 } from '@/components/ui/form';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { deletePilloScheduleRuleAction } from '../actions';
 import { usePilloScheduleForm } from '../_hooks/use-pillo-schedule-form';
@@ -161,39 +163,96 @@ const ScheduleRuleCard = ({
   const [isPending, startTransition] = useTransition();
 
   return (
-    <Card className="rounded-[1.5rem] border-white/60 bg-card/90 shadow-sm dark:border-white/10">
-      <CardContent className="space-y-3 p-4">
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <h3 className="font-semibold">{rule.medicationName}</h3>
-            <p className="text-sm text-muted-foreground">
-              {rule.time} · {rule.doseUnits} ·{' '}
-              {rule.daysOfWeek.map(day => t(`days.${day}`)).join(', ')}
-            </p>
+    <ScheduleRuleDialog rule={rule} medications={medications}>
+      <Card
+        role="button"
+        tabIndex={0}
+        className="group relative overflow-hidden rounded-[1.75rem] border-white/40 bg-white/60 shadow-sm backdrop-blur-md transition-all hover:bg-white/80 active:scale-[0.98] dark:border-white/10 dark:bg-black/20 dark:hover:bg-black/30"
+      >
+        <CardContent className="flex gap-4 p-4">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-muted/50 backdrop-blur-sm">
+            {rule.medicationPhotoUrl ? (
+              <Image
+                src={rule.medicationPhotoUrl}
+                alt={rule.medicationName}
+                width={64}
+                height={64}
+                className="h-full w-full object-cover transition-transform group-hover:scale-110"
+              />
+            ) : (
+              <Pill className="h-8 w-8 text-muted-foreground/40" />
+            )}
           </div>
-          <ScheduleRuleDialog rule={rule} medications={medications}>
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </ScheduleRuleDialog>
-        </div>
-        {rule.comment && <p className="text-sm text-muted-foreground">{rule.comment}</p>}
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={isPending}
-          className="rounded-full text-destructive hover:text-destructive"
-          onClick={() =>
-            startTransition(() => {
-              void deletePilloScheduleRuleAction(rule.id);
-            })
-          }
-        >
-          <Trash2 className="mr-2 h-4 w-4" />
-          {t('common.delete')}
-        </Button>
-      </CardContent>
-    </Card>
+          <div className="flex min-w-0 flex-1 flex-col gap-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <h3 className="truncate text-base font-semibold tracking-tight">
+                  {rule.medicationName}
+                </h3>
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground/80">
+                  <span className="font-medium text-foreground">{rule.time}</span>
+                  <span>·</span>
+                  <span>
+                    {rule.doseUnits} {t('schedule.doseUnitsShort')}
+                  </span>
+                </div>
+              </div>
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted/40 text-xs font-bold backdrop-blur-sm">
+                {rule.time.split(':')[0]}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {[1, 2, 3, 4, 5, 6, 7].map(day => (
+                <span
+                  key={day}
+                  className={cn(
+                    'flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold transition-colors',
+                    rule.daysOfWeek.includes(day)
+                      ? 'bg-foreground text-background'
+                      : 'bg-muted/30 text-muted-foreground/50'
+                  )}
+                >
+                  {t(`daysShort.${day}`)}
+                </span>
+              ))}
+            </div>
+            {rule.comment && (
+              <p className="rounded-2xl bg-muted/30 p-3 text-sm italic text-muted-foreground/80">
+                {rule.comment}
+              </p>
+            )}
+            <div className="flex items-center justify-between pt-1">
+              <Badge
+                variant="outline"
+                className={cn(
+                  'rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
+                  rule.isActive
+                    ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600'
+                    : 'border-muted-foreground/20 bg-muted/20 text-muted-foreground/60'
+                )}
+              >
+                {rule.isActive ? t('common.active') : t('common.inactive')}
+              </Badge>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={isPending}
+                className="h-8 rounded-full px-3 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={e => {
+                  e.stopPropagation();
+                  startTransition(() => {
+                    void deletePilloScheduleRuleAction(rule.id);
+                  });
+                }}
+              >
+                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                {t('common.delete')}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </ScheduleRuleDialog>
   );
 };
 

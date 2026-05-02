@@ -856,7 +856,9 @@
     },
     "common": {
       "save": "Save",
-      "delete": "Delete"
+      "delete": "Delete",
+      "active": "Active",
+      "inactive": "Inactive"
     },
     "today": {
       "emptyTitle": "Nothing due today",
@@ -897,7 +899,9 @@
       "startDate": "Start date",
       "endDate": "End date",
       "comment": "Comment",
-      "isActive": "Rule is active"
+      "isActive": "Rule is active",
+      "inactive": "Inactive",
+      "doseUnitsShort": "units"
     },
     "settings": {
       "notifications": "Pillo notifications",

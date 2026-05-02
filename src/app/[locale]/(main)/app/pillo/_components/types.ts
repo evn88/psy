@@ -19,6 +19,7 @@ export type PilloScheduleRuleView = {
   id: string;
   medicationId: string;
   medicationName: string;
+  medicationPhotoUrl: string | null;
   time: string;
   doseUnits: number;
   daysOfWeek: number[];
@@ -33,6 +34,7 @@ export type PilloIntakeView = {
   medicationId: string;
   medicationName: string;
   medicationDosage: string;
+  medicationPhotoUrl: string | null;
   scheduledFor: string;
   localDate: string;
   localTime: string;

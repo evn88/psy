@@ -19,7 +19,7 @@ import type {
 
 type DbPilloMedication = Prisma.PilloMedicationGetPayload<Record<string, never>>;
 type DbPilloScheduleRule = Prisma.PilloScheduleRuleGetPayload<{
-  include: { medication: { select: { name: true } } };
+  include: { medication: { select: { name: true; photoUrl: true } } };
 }>;
 type DbPilloIntake = Prisma.PilloIntakeGetPayload<{
   include: {
@@ -70,7 +70,7 @@ const PilloPage = async () => {
         where: { isActive: true },
         include: {
           medication: {
-            select: { name: true }
+            select: { name: true, photoUrl: true }
           }
         },
         orderBy: [{ time: 'asc' }]
@@ -124,6 +124,7 @@ const PilloPage = async () => {
     id: rule.id,
     medicationId: rule.medicationId,
     medicationName: rule.medication.name,
+    medicationPhotoUrl: rule.medication.photoUrl,
     time: rule.time,
     doseUnits: toNumber(rule.doseUnits),
     daysOfWeek: rule.daysOfWeek,
@@ -138,6 +139,7 @@ const PilloPage = async () => {
     medicationId: intake.medicationId,
     medicationName: intake.medication.name,
     medicationDosage: intake.medication.dosage,
+    medicationPhotoUrl: intake.medication.photoUrl,
     scheduledFor: intake.scheduledFor.toISOString(),
     localDate: intake.localDate,
     localTime: intake.localTime,

@@ -856,7 +856,9 @@
     },
     "common": {
       "save": "Сохранить",
-      "delete": "Удалить"
+      "delete": "Удалить",
+      "active": "Активно",
+      "inactive": "Неактивно"
     },
     "today": {
       "emptyTitle": "Сегодня всё спокойно",
@@ -897,7 +899,9 @@
       "startDate": "Дата начала",
       "endDate": "Дата окончания",
       "comment": "Комментарий",
-      "isActive": "Правило активно"
+      "isActive": "Правило активно",
+      "inactive": "Неактивно",
+      "doseUnitsShort": "ед."
     },
     "settings": {
       "notifications": "Уведомления Pillo",
