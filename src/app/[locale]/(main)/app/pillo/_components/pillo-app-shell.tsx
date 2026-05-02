@@ -10,8 +10,10 @@ import { cn } from '@/lib/utils';
 import { usePilloTabs } from '../_hooks/use-pillo-tabs';
 import type {
   PilloAppearanceSettingsView,
+  PilloHistoryEntryView,
   PilloIntakeView,
   PilloMedicationView,
+  PilloMonthlyMedicationStatView,
   PilloScheduleRuleView,
   PilloSettingsView,
   PilloTab
@@ -24,8 +26,10 @@ import { SettingsView } from './pillo-settings-view';
 
 interface PilloAppShellProps {
   appearanceSettings: PilloAppearanceSettingsView;
+  historyEntries: PilloHistoryEntryView[];
   intakes: PilloIntakeView[];
   medications: PilloMedicationView[];
+  monthlyIntakeStats: PilloMonthlyMedicationStatView[];
   scheduleRules: PilloScheduleRuleView[];
   settings: PilloSettingsView;
 }
@@ -44,8 +48,10 @@ const tabs: Array<{ icon: typeof Home; id: PilloTab; labelKey: string }> = [
  */
 export const PilloAppShell = ({
   appearanceSettings,
+  historyEntries,
   intakes,
   medications,
+  monthlyIntakeStats,
   scheduleRules,
   settings
 }: PilloAppShellProps) => {
@@ -84,7 +90,14 @@ export const PilloAppShell = ({
         </header>
 
         <main className="flex-1 overflow-y-auto px-4 py-4 pb-32">
-          {activeTab === 'home' && <TodayView intakes={intakes} />}
+          {activeTab === 'home' && (
+            <TodayView
+              historyEntries={historyEntries}
+              intakes={intakes}
+              medications={medications}
+              monthlyIntakeStats={monthlyIntakeStats}
+            />
+          )}
           {activeTab === 'medications' && <MedicationsView medications={medications} />}
           {activeTab === 'schedule' && (
             <ScheduleView medications={medications} scheduleRules={scheduleRules} />

@@ -1,20 +1,10 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
-import {
-  ChevronRight,
-  Download,
-  Home,
-  Menu,
-  Pill,
-  ShieldCheck,
-  Smartphone,
-  User
-} from 'lucide-react';
+import { Download, Home, Menu, ShieldCheck, Smartphone, User } from 'lucide-react';
 
 import { requirePilloUser } from '@/features/pillo/lib/access';
 import { Link } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
-import { Card, CardDescription, CardTitle } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import { PilloMiniAppCard } from './_components/pillo-mini-app-card';
 
 export const metadata: Metadata = {
   title: 'Mini Apps',
@@ -71,6 +62,7 @@ const InstallInstructionCard = ({
 const MiniAppsPage = async () => {
   const user = await requirePilloUser();
   const t = await getTranslations('MiniApps');
+  const pilloT = await getTranslations('Pillo');
   const isAdmin = user.role === 'ADMIN';
 
   return (
@@ -134,31 +126,12 @@ const MiniAppsPage = async () => {
         </header>
 
         <section>
-          <Link href="/app/pillo" className="group block outline-none">
-            <div className="relative overflow-hidden rounded-[2.25rem] border border-white/60 bg-white/40 p-6 shadow-2xl shadow-primary/5 transition-all active:scale-[0.97] dark:border-white/10 dark:bg-white/5">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-
-              <div className="relative flex items-center gap-6">
-                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-foreground p-4 text-background shadow-xl ring-4 ring-background/50 transition-transform group-hover:scale-105">
-                  <Pill className="h-full w-full" />
-                </div>
-
-                <div className="flex-1 space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-2xl font-bold tracking-tight">
-                      {t('pillo.title')}
-                    </CardTitle>
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted/50 transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-                      <ChevronRight className="h-5 w-5" />
-                    </div>
-                  </div>
-                  <CardDescription className="text-sm leading-relaxed text-muted-foreground/80 line-clamp-2">
-                    {t('pillo.description')}
-                  </CardDescription>
-                </div>
-              </div>
-            </div>
-          </Link>
+          <PilloMiniAppCard
+            title={t('pillo.title')}
+            description={t('pillo.description')}
+            loadingTitle={pilloT('loading.title')}
+            loadingDescription={pilloT('loading.description')}
+          />
         </section>
 
         <section className="space-y-8">

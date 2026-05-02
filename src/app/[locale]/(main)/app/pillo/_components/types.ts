@@ -20,6 +20,22 @@ export type PilloMedicationView = {
   stockEndsAt: string | null;
 };
 
+export type PilloMedicationRecord = {
+  id: string;
+  name: string;
+  photoUrl: string | null;
+  description: string | null;
+  dosage: string | null;
+  dosageValue: number | null;
+  dosageUnit: string | null;
+  form: string;
+  packagesCount: number;
+  unitsPerPackage: number | null;
+  stockUnits: number;
+  minThresholdUnits: number;
+  isActive: boolean;
+};
+
 export type PilloScheduleRuleView = {
   id: string;
   medicationId: string;
@@ -32,6 +48,22 @@ export type PilloScheduleRuleView = {
   endDate: string | null;
   comment: string | null;
   isActive: boolean;
+};
+
+export type PilloIntakeRecord = {
+  id: string;
+  medicationId: string;
+  medicationName: string;
+  medicationDosage: string;
+  medicationPhotoUrl: string | null;
+  scheduledFor: string;
+  localDate: string;
+  localTime: string;
+  doseUnits: number;
+  status: PilloIntakeStatus;
+  comment: string | null;
+  medicationStockUnits: number;
+  medicationMinThresholdUnits: number;
 };
 
 export type PilloIntakeView = {
@@ -52,6 +84,38 @@ export type PilloIntakeView = {
   daysLeft: number | null;
   buyAtDate: string | null;
   stockEndsAt: string | null;
+};
+
+export type PilloHistoryEntryView = {
+  id: string;
+  medicationId: string;
+  medicationName: string;
+  medicationDosage: string;
+  medicationPhotoUrl: string | null;
+  doseUnits: number;
+  takenAt: string;
+  localDate: string;
+  localTime: string;
+  source: 'manual' | 'scheduled';
+};
+
+export type PilloMonthlyMedicationStatView = {
+  medicationId: string;
+  medicationName: string;
+  medicationPhotoUrl: string | null;
+  totalUnits: number;
+  intakesCount: number;
+};
+
+export type PilloPagePayload = {
+  appearanceSettings: PilloAppearanceSettingsView;
+  historyEntries: PilloHistoryEntryView[];
+  monthlyHistoryEntries: PilloHistoryEntryView[];
+  medications: PilloMedicationRecord[];
+  referenceDateIso: string;
+  scheduleRules: PilloScheduleRuleView[];
+  settings: PilloSettingsView;
+  todayIntakes: PilloIntakeRecord[];
 };
 
 export type PilloSettingsView = {

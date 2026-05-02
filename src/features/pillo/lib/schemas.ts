@@ -56,6 +56,11 @@ export const pilloSettingsSchema = z.object({
   lowStockWarningDays: z.coerce.number().int().min(0)
 });
 
+export const pilloManualIntakeSchema = z.object({
+  medicationId: z.string().min(1),
+  doseUnits: positiveAmount.max(10_000)
+});
+
 /**
  * Преобразует строку даты формы в Date на полдень UTC.
  * @param value - дата в формате `yyyy-MM-dd`.
@@ -68,3 +73,4 @@ export const parsePilloDateInput = (value: string): Date => {
 export type PilloMedicationInput = z.infer<typeof pilloMedicationSchema>;
 export type PilloScheduleRuleInput = z.infer<typeof pilloScheduleRuleSchema>;
 export type PilloSettingsInput = z.infer<typeof pilloSettingsSchema>;
+export type PilloManualIntakeInput = z.infer<typeof pilloManualIntakeSchema>;

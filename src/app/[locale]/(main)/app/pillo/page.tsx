@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import type { Prisma } from '@prisma/client';
+import { formatInTimeZone } from 'date-fns-tz';
 
 import { requirePilloUser } from '@/features/pillo/lib/access';
 import {
@@ -7,13 +8,15 @@ import {
   materializePilloIntakesForUser
 } from '@/features/pillo/lib/service';
 import { getPilloLocalDateKey } from '@/features/pillo/lib/schedule';
-import { getPilloStockStatus, toNumber } from '@/features/pillo/lib/stock';
+import { toNumber } from '@/features/pillo/lib/stock';
 import prisma from '@/shared/lib/prisma';
-import { PilloAppShell } from './_components/pillo-app-shell';
+import { PilloPageClient } from './_components/pillo-page-client';
 import type {
   PilloAppearanceSettingsView,
-  PilloIntakeView,
-  PilloMedicationView,
+  PilloHistoryEntryView,
+  PilloIntakeRecord,
+  PilloMedicationRecord,
+  PilloPagePayload,
   PilloScheduleRuleView
 } from './_components/types';
 
@@ -27,6 +30,38 @@ type DbPilloIntake = Prisma.PilloIntakeGetPayload<{
     scheduleRule: { select: { comment: true } };
   };
 }>;
+type DbTakenHistoryIntake = Prisma.PilloIntakeGetPayload<{
+  include: {
+    medication: true;
+  };
+}>;
+type DbPilloManualIntake = Prisma.PilloManualIntakeGetPayload<{
+  include: {
+    medication: true;
+  };
+}>;
+
+/**
+ * Возвращает delegate ручных приёмов, если текущий runtime уже знает о новой Prisma-модели.
+ * @returns Delegate `findMany` либо `null`.
+ */
+const getPilloManualIntakeDelegate = (): {
+  findMany: (args: Record<string, unknown>) => Promise<DbPilloManualIntake[]>;
+} | null => {
+  const delegate = (prisma as { pilloManualIntake?: unknown }).pilloManualIntake;
+
+  if (!delegate || typeof delegate !== 'object') {
+    return null;
+  }
+
+  if (typeof (delegate as { findMany?: unknown }).findMany !== 'function') {
+    return null;
+  }
+
+  return delegate as {
+    findMany: (args: Record<string, unknown>) => Promise<DbPilloManualIntake[]>;
+  };
+};
 
 export const metadata: Metadata = {
   title: 'Pillo',
@@ -90,19 +125,79 @@ const PilloPage = async () => {
   };
   const timezone = dbUser.timezone || 'UTC';
   const todayKey = getPilloLocalDateKey(new Date(), timezone);
-  const todayIntakes = await prisma.pilloIntake.findMany({
-    where: {
-      userId: user.id,
-      localDate: todayKey
-    },
-    include: {
-      medication: true,
-      scheduleRule: {
-        select: { comment: true }
+  const currentMonthPrefix = formatInTimeZone(new Date(), timezone, 'yyyy-MM');
+  const manualIntakeDelegate = getPilloManualIntakeDelegate();
+  const [
+    todayIntakes,
+    takenHistoryIntakes,
+    manualHistoryIntakes,
+    monthlyTakenIntakes,
+    monthlyManualIntakes
+  ] = await Promise.all([
+    prisma.pilloIntake.findMany({
+      where: {
+        userId: user.id,
+        localDate: todayKey
+      },
+      include: {
+        medication: true,
+        scheduleRule: {
+          select: { comment: true }
+        }
+      },
+      orderBy: [{ scheduledFor: 'asc' }]
+    }),
+    prisma.pilloIntake.findMany({
+      where: {
+        userId: user.id,
+        status: 'TAKEN',
+        takenAt: { not: null }
+      },
+      include: {
+        medication: true
+      },
+      orderBy: [{ takenAt: 'desc' }],
+      take: 120
+    }),
+    manualIntakeDelegate
+      ? manualIntakeDelegate.findMany({
+          where: {
+            userId: user.id
+          },
+          include: {
+            medication: true
+          },
+          orderBy: [{ takenAt: 'desc' }],
+          take: 120
+        })
+      : Promise.resolve([]),
+    prisma.pilloIntake.findMany({
+      where: {
+        userId: user.id,
+        status: 'TAKEN',
+        localDate: {
+          startsWith: currentMonthPrefix
+        },
+        takenAt: { not: null }
+      },
+      include: {
+        medication: true
       }
-    },
-    orderBy: [{ scheduledFor: 'asc' }]
-  });
+    }),
+    manualIntakeDelegate
+      ? manualIntakeDelegate.findMany({
+          where: {
+            userId: user.id,
+            localDate: {
+              startsWith: currentMonthPrefix
+            }
+          },
+          include: {
+            medication: true
+          }
+        })
+      : Promise.resolve([])
+  ]);
 
   const scheduleRules: PilloScheduleRuleView[] = (
     dbUser.pilloScheduleRules as DbPilloScheduleRule[]
@@ -120,118 +215,135 @@ const PilloPage = async () => {
     isActive: rule.isActive
   }));
 
-  const medications: PilloMedicationView[] = (dbUser.pilloMedications as DbPilloMedication[]).map(
-    medication => {
-      const activeRules = scheduleRules.filter(
-        rule => rule.medicationId === medication.id && rule.isActive
-      );
-
-      let daysLeft: number | null = null;
-      let buyAtDate: string | null = null;
-      let stockEndsAt: string | null = null;
-      if (activeRules.length > 0) {
-        // Считаем суммарное недельное потребление: сколько единиц расходуется за неделю
-        let weeklyConsumption = 0;
-        for (const rule of activeRules) {
-          weeklyConsumption += rule.doseUnits * rule.daysOfWeek.length;
-        }
-
-        if (weeklyConsumption > 0) {
-          const dailyConsumption = weeklyConsumption / 7;
-          const stock = toNumber(medication.stockUnits);
-
-          // На сколько дней хватит текущего остатка
-          daysLeft = Math.floor(stock / dailyConsumption);
-
-          // Точная дата окончания запасов
-          const endsDate = new Date();
-          endsDate.setDate(endsDate.getDate() + daysLeft);
-          stockEndsAt = endsDate.toISOString();
-
-          // Рекомендация купить — за пользовательское количество дней до окончания.
-          const daysToBuy = Math.max(0, daysLeft - settings.lowStockWarningDays);
-
-          // Если осталось ≤1 дня до рекомендации — показываем только дату окончания
-          if (daysToBuy > 1) {
-            const buyDate = new Date();
-            buyDate.setDate(buyDate.getDate() + daysToBuy);
-            buyAtDate = buyDate.toISOString();
-          }
-        }
-      }
-
-      return {
-        id: medication.id,
-        name: medication.name,
-        photoUrl: medication.photoUrl,
-        description: medication.description,
-        dosage: medication.dosage,
-        dosageValue: medication.dosageValue ? toNumber(medication.dosageValue) : null,
-        dosageUnit: medication.dosageUnit,
-        form: medication.form,
-        packagesCount: medication.packagesCount,
-        unitsPerPackage: medication.unitsPerPackage,
-        stockUnits: toNumber(medication.stockUnits),
-        minThresholdUnits: toNumber(medication.minThresholdUnits),
-        isActive: medication.isActive,
-        stockStatus: getPilloStockStatus({
-          stockUnits: medication.stockUnits,
-          minThresholdUnits: medication.minThresholdUnits
-        }),
-        daysLeft,
-        buyAtDate,
-        stockEndsAt
-      };
-    }
+  const medications: PilloMedicationRecord[] = (dbUser.pilloMedications as DbPilloMedication[]).map(
+    medication => ({
+      id: medication.id,
+      name: medication.name,
+      photoUrl: medication.photoUrl,
+      description: medication.description,
+      dosage: medication.dosage,
+      dosageValue: medication.dosageValue ? toNumber(medication.dosageValue) : null,
+      dosageUnit: medication.dosageUnit,
+      form: medication.form,
+      packagesCount: medication.packagesCount,
+      unitsPerPackage: medication.unitsPerPackage,
+      stockUnits: toNumber(medication.stockUnits),
+      minThresholdUnits: toNumber(medication.minThresholdUnits),
+      isActive: medication.isActive
+    })
   );
 
-  const intakes: PilloIntakeView[] = (todayIntakes as DbPilloIntake[]).map(intake => {
-    const med = medications.find(m => m.id === intake.medicationId);
-    return {
+  const intakeRecords: PilloIntakeRecord[] = (todayIntakes as DbPilloIntake[]).map(intake => ({
+    id: intake.id,
+    medicationId: intake.medicationId,
+    medicationName: intake.medication.name,
+    medicationDosage: intake.medication.dosage ?? '',
+    medicationPhotoUrl: intake.medication.photoUrl,
+    scheduledFor: intake.scheduledFor.toISOString(),
+    localDate: intake.localDate,
+    localTime: intake.localTime,
+    doseUnits: toNumber(intake.doseUnits),
+    status: intake.status,
+    comment: intake.scheduleRule.comment,
+    medicationStockUnits: toNumber(intake.medication.stockUnits),
+    medicationMinThresholdUnits: toNumber(intake.medication.minThresholdUnits)
+  }));
+
+  const historyEntries: PilloHistoryEntryView[] = [
+    ...(takenHistoryIntakes as DbTakenHistoryIntake[]).flatMap(intake => {
+      if (!intake.takenAt) {
+        return [];
+      }
+
+      return [
+        {
+          id: intake.id,
+          medicationId: intake.medicationId,
+          medicationName: intake.medication.name,
+          medicationDosage: intake.medication.dosage ?? '',
+          medicationPhotoUrl: intake.medication.photoUrl,
+          doseUnits: toNumber(intake.doseUnits),
+          takenAt: intake.takenAt.toISOString(),
+          localDate: intake.localDate,
+          localTime: intake.localTime,
+          source: 'scheduled' as const
+        }
+      ];
+    }),
+    ...(manualHistoryIntakes as DbPilloManualIntake[]).map(intake => ({
       id: intake.id,
       medicationId: intake.medicationId,
       medicationName: intake.medication.name,
       medicationDosage: intake.medication.dosage ?? '',
       medicationPhotoUrl: intake.medication.photoUrl,
-      scheduledFor: intake.scheduledFor.toISOString(),
+      doseUnits: toNumber(intake.doseUnits),
+      takenAt: intake.takenAt.toISOString(),
       localDate: intake.localDate,
       localTime: intake.localTime,
-      doseUnits: toNumber(intake.doseUnits),
-      status: intake.status,
-      comment: intake.scheduleRule.comment,
-      stockUnits: toNumber(intake.medication.stockUnits),
-      minThresholdUnits: toNumber(intake.medication.minThresholdUnits),
-      stockStatus: getPilloStockStatus({
-        stockUnits: intake.medication.stockUnits,
-        minThresholdUnits: intake.medication.minThresholdUnits,
-        nextDoseUnits: intake.doseUnits
-      }),
-      daysLeft: med?.daysLeft ?? null,
-      buyAtDate: med?.buyAtDate ?? null,
-      stockEndsAt: med?.stockEndsAt ?? null
-    };
+      source: 'manual' as const
+    }))
+  ].sort((left, right) => {
+    return new Date(right.takenAt).getTime() - new Date(left.takenAt).getTime();
   });
+
+  const monthlyHistoryEntries: PilloHistoryEntryView[] = [
+    ...(monthlyTakenIntakes as DbTakenHistoryIntake[]).flatMap(intake => {
+      if (!intake.takenAt) {
+        return [];
+      }
+
+      return [
+        {
+          id: intake.id,
+          medicationId: intake.medicationId,
+          medicationName: intake.medication.name,
+          medicationDosage: intake.medication.dosage ?? '',
+          medicationPhotoUrl: intake.medication.photoUrl,
+          doseUnits: toNumber(intake.doseUnits),
+          takenAt: intake.takenAt.toISOString(),
+          localDate: intake.localDate,
+          localTime: intake.localTime,
+          source: 'scheduled' as const
+        }
+      ];
+    }),
+    ...(monthlyManualIntakes as DbPilloManualIntake[]).map(intake => ({
+      id: intake.id,
+      medicationId: intake.medicationId,
+      medicationName: intake.medication.name,
+      medicationDosage: intake.medication.dosage ?? '',
+      medicationPhotoUrl: intake.medication.photoUrl,
+      doseUnits: toNumber(intake.doseUnits),
+      takenAt: intake.takenAt.toISOString(),
+      localDate: intake.localDate,
+      localTime: intake.localTime,
+      source: 'manual' as const
+    }))
+  ];
 
   const appearanceSettings: PilloAppearanceSettingsView = {
     language: dbUser.language,
     theme: dbUser.theme
   };
 
-  return (
-    <PilloAppShell
-      appearanceSettings={appearanceSettings}
-      intakes={intakes}
-      medications={medications}
-      scheduleRules={scheduleRules}
-      settings={{
-        emailRemindersEnabled: settings.emailRemindersEnabled,
-        pushRemindersEnabled: settings.pushRemindersEnabled,
-        lowStockEmailEnabled: settings.lowStockEmailEnabled,
-        lowStockPushEnabled: settings.lowStockPushEnabled,
-        lowStockWarningDays: settings.lowStockWarningDays
-      }}
-    />
-  );
+  const payload: PilloPagePayload = {
+    appearanceSettings,
+    historyEntries,
+    monthlyHistoryEntries,
+    medications,
+    referenceDateIso: new Date().toISOString(),
+    scheduleRules,
+    settings: {
+      emailRemindersEnabled: settings.emailRemindersEnabled,
+      pushRemindersEnabled: settings.pushRemindersEnabled,
+      lowStockEmailEnabled: settings.lowStockEmailEnabled,
+      lowStockPushEnabled: settings.lowStockPushEnabled,
+      lowStockWarningDays: settings.lowStockWarningDays
+    },
+    todayIntakes: intakeRecords
+  };
+
+  return <PilloPageClient payload={payload} />;
 };
 
 export default PilloPage;

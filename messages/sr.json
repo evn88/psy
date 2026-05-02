@@ -820,6 +820,10 @@
     "eyebrow": "Aplikacija",
     "title": "Pillo",
     "pendingCount": "{count} čeka",
+    "loading": {
+      "title": "Otvaram Pillo",
+      "description": "Pripremam lekove, raspored i istoriju uzimanja."
+    },
     "tabs": {
       "home": "Glavna",
       "medications": "Lekovi",
@@ -828,21 +832,55 @@
     },
     "common": {
       "save": "Sačuvaj",
-      "delete": "Obriši"
+      "delete": "Obriši",
+      "clear": "Resetuj"
     },
     "today": {
       "emptyTitle": "Danas je sve mirno",
       "emptyText": "Dodajte lek i pravilo rasporeda da biste videli današnje doze.",
+      "listTitle": "Sva današnja uzimanja",
+      "quickTakeEyebrow": "Označi sada",
+      "quickTakeDescription": "Brzo potvrdite najbliže uzimanje bez skrolovanja kroz celu listu.",
+      "quickTakeAction": "Označi kao uzeto",
+      "manualTakeTitle": "Ručno beleženje uzimanja",
+      "manualTakeDescription": "Koristite ovo ako ste uzeli lek van rasporeda.",
+      "manualTakeMedication": "Lek",
+      "manualTakeMedicationPlaceholder": "Izaberite lek",
+      "manualTakeDose": "Količina",
+      "manualTakeDoseHint": "Unesite koliko jedinica ste upravo uzeli.",
+      "manualTakeAction": "Označi ručno",
+      "manualTakeSuccess": "Uzimanje je ručno zabeleženo.",
       "take": "Uzeo sam",
       "skip": "Preskoči",
+      "takeError": "Nije uspelo označavanje uzimanja kao završenog.",
+      "skipError": "Nije uspelo označavanje uzimanja kao preskočenog.",
+      "manualTakeError": "Nije uspelo ručno beleženje uzimanja.",
       "lowStockWarning": "Zaliha možda neće biti dovoljna. Vreme je za kupovinu.",
       "undoTitle": "Promeniti izbor?",
       "undoDescription": "Možete otkazati prethodni izbor (Uzeo / Preskočio). Ako otkažete uzimanje leka, količina će biti vraćena u dostupne zalihe.",
       "undoAction": "Otkaži izbor",
+      "undoError": "Nije uspelo otkazivanje izbora.",
       "daysLeft": "Za još ~{count} dana",
       "buyAtDate": "Kupiti do {date}",
       "stockEndsAt": "(nestaje {date})",
       "stockEndsSoon": "Nestaje {date}"
+    },
+    "history": {
+      "title": "Istorija uzimanja",
+      "description": "Ovde su objedinjena uzimanja po rasporedu i ručne oznake.",
+      "openAction": "Istorija",
+      "emptyTitle": "Istorija je još prazna",
+      "emptyText": "Kada počnete da beležite uzimanja, ovde će se pojaviti lista po datumima.",
+      "dayCount": "{count} uzimanja",
+      "monthlyEyebrow": "Ovog meseca",
+      "monthlyTitle": "{month}",
+      "monthlyTotalIntakes": "{count} uzimanja",
+      "monthlyEmpty": "Za tekući mesec još nema zabeleženih uzimanja.",
+      "monthlyItemMeta": "{units} jedinica • {count} uzimanja",
+      "source": {
+        "manual": "Ručno",
+        "scheduled": "Po rasporedu"
+      }
     },
     "medications": {
       "addPackageBtn": "Dodaj pakovanje",

@@ -10,10 +10,12 @@ import {
   materializePilloIntakesForRule,
   materializePilloIntakesForUser,
   skipPilloIntake,
+  takePilloMedicationNow,
   takePilloIntake,
   undoPilloIntake
 } from '@/features/pillo/lib/service';
 import {
+  pilloManualIntakeSchema,
   parsePilloDateInput,
   pilloMedicationSchema,
   pilloScheduleRuleSchema,
@@ -153,6 +155,33 @@ export const addPilloMedicationPackageAction = async (
       stockUnits: { increment: unitsToAdd }
     }
   });
+
+  revalidatePilloPaths();
+  return { success: true };
+};
+
+/**
+ * Отмечает ручной приём таблетки вне расписания.
+ * @param input - идентификатор таблетки и количество.
+ * @returns Результат ручной отметки.
+ */
+export const takePilloMedicationNowAction = async (input: unknown): Promise<PilloActionResult> => {
+  const userId = await requirePilloUserId();
+  const parsed = pilloManualIntakeSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return { error: 'Некорректные данные ручного приёма' };
+  }
+
+  const result = await takePilloMedicationNow(
+    userId,
+    parsed.data.medicationId,
+    parsed.data.doseUnits
+  );
+
+  if (!result) {
+    return { error: 'Таблетка не найдена' };
+  }
 
   revalidatePilloPaths();
   return { success: true };

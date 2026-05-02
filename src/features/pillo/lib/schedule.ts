@@ -48,6 +48,16 @@ export const getPilloLocalDateKey = (date: Date, timezone: string): string => {
 };
 
 /**
+ * Форматирует время в локальный ключ времени пользователя.
+ * @param date - дата в UTC.
+ * @param timezone - IANA timezone пользователя.
+ * @returns Строка `HH:mm`.
+ */
+export const getPilloLocalTimeKey = (date: Date, timezone: string): string => {
+  return formatInTimeZone(date, timezone, 'HH:mm');
+};
+
+/**
  * Возвращает ISO-день недели для локальной даты пользователя.
  * @param localDate - строка `yyyy-MM-dd`.
  * @param timezone - IANA timezone пользователя.

@@ -2,6 +2,8 @@ import { PilloIntakeStatus, Role, type Prisma } from '@prisma/client';
 
 import {
   generatePilloIntakesForRule,
+  getPilloLocalDateKey,
+  getPilloLocalTimeKey,
   getPilloReminderWindowEnd,
   type PilloGeneratedIntake
 } from '@/features/pillo/lib/schedule';
@@ -34,6 +36,28 @@ type PilloRuleWithUser = Prisma.PilloScheduleRuleGetPayload<{
 type PilloMaterializeResult = {
   createdOrUpdated: number;
   workflowsStarted: number;
+};
+
+/**
+ * Возвращает delegate ручных приёмов, если текущий Prisma client уже знает о модели.
+ * Это защищает dev-runtime, когда schema уже обновлена, а процесс ещё живёт на старом client.
+ * @param client - prisma client или transaction client.
+ * @returns Delegate ручных приёмов либо `null`.
+ */
+const getPilloManualIntakeDelegate = (
+  client: Prisma.TransactionClient | typeof prisma
+): { create: (args: { data: Record<string, unknown> }) => Promise<unknown> } | null => {
+  const delegate = (client as { pilloManualIntake?: unknown }).pilloManualIntake;
+
+  if (!delegate || typeof delegate !== 'object') {
+    return null;
+  }
+
+  if (typeof (delegate as { create?: unknown }).create !== 'function') {
+    return null;
+  }
+
+  return delegate as { create: (args: { data: Record<string, unknown> }) => Promise<unknown> };
 };
 
 /**
@@ -355,6 +379,87 @@ export const takePilloIntake = async (userId: string, intakeId: string) => {
   });
 
   if (result.wasChanged && status !== 'enough') {
+    await dispatchPilloLowStockNotifications({
+      userId,
+      medicationName: result.medication.name,
+      stockText: result.medication.stockUnits.toString(),
+      stockStatus: status
+    });
+  }
+
+  return { ...result, stockStatus: status };
+};
+
+/**
+ * Уменьшает остаток лекарства при ручной отметке приёма вне расписания.
+ * @param userId - идентификатор пользователя.
+ * @param medicationId - идентификатор таблетки.
+ * @param doseUnits - сколько единиц было принято.
+ * @returns Результат операции и актуальный остаток.
+ */
+export const takePilloMedicationNow = async (
+  userId: string,
+  medicationId: string,
+  doseUnits: number
+) => {
+  const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    const takenAt = new Date();
+    const manualIntakeDelegate = getPilloManualIntakeDelegate(tx);
+    const medication = await tx.pilloMedication.findFirst({
+      where: { id: medicationId, userId },
+      include: {
+        user: {
+          select: {
+            timezone: true
+          }
+        }
+      }
+    });
+
+    if (!medication) {
+      return null;
+    }
+
+    const timezone = medication.user.timezone || 'UTC';
+    const nextStock = Math.max(0, toNumber(medication.stockUnits) - doseUnits);
+    const writes: Array<Promise<unknown>> = [
+      tx.pilloMedication.update({
+        where: { id: medication.id },
+        data: { stockUnits: nextStock }
+      })
+    ];
+
+    if (manualIntakeDelegate) {
+      writes.push(
+        manualIntakeDelegate.create({
+          data: {
+            userId,
+            medicationId: medication.id,
+            doseUnits,
+            takenAt,
+            localDate: getPilloLocalDateKey(takenAt, timezone),
+            localTime: getPilloLocalTimeKey(takenAt, timezone)
+          }
+        })
+      );
+    }
+
+    const [updatedMedication] = await Promise.all(writes);
+
+    return { medication: updatedMedication };
+  });
+
+  if (!result) {
+    return null;
+  }
+
+  const status = getPilloStockStatus({
+    stockUnits: result.medication.stockUnits,
+    minThresholdUnits: result.medication.minThresholdUnits,
+    nextDoseUnits: doseUnits
+  });
+
+  if (status !== 'enough') {
     await dispatchPilloLowStockNotifications({
       userId,
       medicationName: result.medication.name,
