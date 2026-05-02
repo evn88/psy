@@ -131,6 +131,8 @@ model PilloIntake {
   missedAt                  DateTime?
   reminderWorkflowStartedAt DateTime?
   reminderSentAt            DateTime?
+  reminderEmailSentAt       DateTime?
+  reminderPushSentAt        DateTime?
   createdAt                 DateTime                 @default(now())
   updatedAt                 DateTime                 @updatedAt
   medication                PilloMedication          @relation(fields: [medicationId], references: [id], onDelete: Cascade)
@@ -141,6 +143,7 @@ model PilloIntake {
   @@unique([scheduleRuleId, scheduledFor])
   @@index([userId, scheduledFor])
   @@index([userId, status, scheduledFor])
+  @@index([scheduledFor, reminderEmailSentAt, reminderPushSentAt])
   @@index([medicationId])
 }
 

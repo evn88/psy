@@ -6,6 +6,10 @@
       "schedule": "0 0 * * *"
     },
     {
+      "path": "/api/cron/pillo-reminders",
+      "schedule": "15 0 * * *"
+    },
+    {
       "path": "/api/cron/system-logs-cleanup",
       "schedule": "30 0 * * *"
     }

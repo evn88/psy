@@ -15,8 +15,12 @@ vi.mock('@/workflows/pillo-intake-reminder-workflow', () => ({
 
 import {
   canStartPilloIntakeReminderWorkflow,
+  startPilloIntakeReminderWorkflow,
   type PilloReminderWorkflowTargetIntake
 } from '../pillo-reminder-workflow';
+import prisma from '@/shared/lib/prisma';
+import { start } from 'workflow/api';
+import { runPilloIntakeReminderWorkflow } from '@/workflows/pillo-intake-reminder-workflow';
 
 describe('Pillo reminder workflow launcher', () => {
   beforeEach(() => {
@@ -59,5 +63,34 @@ describe('Pillo reminder workflow launcher', () => {
 
     // Assert
     expect(result).toBe(false);
+  });
+
+  it('запускает workflow с версией правила и отмечает время запуска', async () => {
+    // Arrange
+    const intake: PilloReminderWorkflowTargetIntake = {
+      id: 'intake-1',
+      status: PilloIntakeStatus.PENDING,
+      scheduledFor: new Date('2026-05-02T10:00:00.000Z'),
+      reminderWorkflowStartedAt: null,
+      scheduleRule: {
+        reminderWorkflowVersion: 2
+      }
+    };
+
+    // Act
+    const result = await startPilloIntakeReminderWorkflow(intake);
+
+    // Assert
+    expect(result).toBe(true);
+    expect(start).toHaveBeenCalledWith(runPilloIntakeReminderWorkflow, [
+      {
+        intakeId: 'intake-1',
+        scheduleRuleVersion: 2
+      }
+    ]);
+    expect(prisma.pilloIntake.update).toHaveBeenCalledWith({
+      where: { id: 'intake-1' },
+      data: { reminderWorkflowStartedAt: expect.any(Date) }
+    });
   });
 });
