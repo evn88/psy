@@ -894,6 +894,23 @@
       "stockEndsAt": "(runs out {date})",
       "stockEndsSoon": "Runs out {date}"
     },
+    "history": {
+      "title": "Intake history",
+      "description": "Scheduled intakes and manual marks are collected here.",
+      "openAction": "History",
+      "emptyTitle": "No history yet",
+      "emptyText": "Once you start marking intakes, a date-grouped timeline will appear here.",
+      "dayCount": "{count} intakes",
+      "monthlyEyebrow": "This month",
+      "monthlyTitle": "{month}",
+      "monthlyTotalIntakes": "{count} intakes",
+      "monthlyEmpty": "No marked intakes for the current month yet.",
+      "monthlyItemMeta": "{units} units • {count} intakes",
+      "source": {
+        "manual": "Manual",
+        "scheduled": "Scheduled"
+      }
+    },
     "medications": {
       "addPackageBtn": "Add package",
       "addPackageConfirmTitle": "Add package?",

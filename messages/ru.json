@@ -894,6 +894,23 @@
       "stockEndsAt": "(закончатся {date})",
       "stockEndsSoon": "Закончатся {date}"
     },
+    "history": {
+      "title": "История приёма",
+      "description": "Здесь собраны приёмы по расписанию и ручные отметки.",
+      "openAction": "История",
+      "emptyTitle": "История пока пустая",
+      "emptyText": "Когда вы начнёте отмечать приёмы, здесь появится лента по датам.",
+      "dayCount": "{count} приёма",
+      "monthlyEyebrow": "За месяц",
+      "monthlyTitle": "{month}",
+      "monthlyTotalIntakes": "{count} приёмов",
+      "monthlyEmpty": "За текущий месяц пока нет отмеченных приёмов.",
+      "monthlyItemMeta": "{units} ед. • {count} приёма",
+      "source": {
+        "manual": "Вручную",
+        "scheduled": "По расписанию"
+      }
+    },
     "medications": {
       "addPackageBtn": "Добавить упаковку",
       "addPackageConfirmTitle": "Добавить упаковку?",

@@ -1,4 +1,4 @@
-import { Check, Clock3, Home, Pill, SkipForward } from 'lucide-react';
+import { Check, Clock3, History, Home, Pill, SkipForward } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
@@ -15,9 +15,15 @@ import {
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { usePilloIntakeActions } from '../_hooks/use-pillo-intake-actions';
-import type { PilloIntakeView, PilloMedicationView } from './types';
+import type {
+  PilloHistoryEntryView,
+  PilloIntakeView,
+  PilloMedicationView,
+  PilloMonthlyMedicationStatView
+} from './types';
 import { EmptyState } from './empty-state';
 import { ManualIntakeDialog } from './manual-intake-dialog';
+import { PilloHistorySheet } from './pillo-history-sheet';
 import { getStockGradientClass } from './utils';
 
 /**
@@ -312,11 +318,15 @@ const QuickTakeCard = ({ intake }: { intake: PilloIntakeView }) => {
  * @returns Экран «Сегодня».
  */
 export const TodayView = ({
+  historyEntries,
   intakes,
-  medications
+  medications,
+  monthlyIntakeStats
 }: {
+  historyEntries: PilloHistoryEntryView[];
   intakes: PilloIntakeView[];
   medications: PilloMedicationView[];
+  monthlyIntakeStats: PilloMonthlyMedicationStatView[];
 }) => {
   const t = useTranslations('Pillo');
   const nextPendingIntake = intakes.find(intake => intake.status === 'PENDING') ?? null;
@@ -327,31 +337,72 @@ export const TodayView = ({
     return (
       <div className="space-y-4 pb-4">
         <EmptyState icon={Home} title={t('today.emptyTitle')} text={t('today.emptyText')} />
-        {hasMedications ? (
-          <ManualIntakeDialog medications={medications}>
-            <Button className="h-12 w-full rounded-full font-bold">
+        <div className="grid grid-cols-2 gap-3">
+          {hasMedications ? (
+            <ManualIntakeDialog medications={medications}>
+              <Button className="h-12 w-full rounded-full font-bold">
+                <Check className="mr-2 h-4 w-4 stroke-[3px]" />
+                {t('today.manualTakeAction')}
+              </Button>
+            </ManualIntakeDialog>
+          ) : (
+            <Button className="h-12 w-full rounded-full font-bold" disabled>
               <Check className="mr-2 h-4 w-4 stroke-[3px]" />
               {t('today.manualTakeAction')}
             </Button>
-          </ManualIntakeDialog>
-        ) : null}
+          )}
+
+          <PilloHistorySheet
+            historyEntries={historyEntries}
+            monthlyIntakeStats={monthlyIntakeStats}
+          >
+            <Button
+              variant="outline"
+              className="h-12 w-full rounded-full border-white/40 bg-white/40 font-bold backdrop-blur-sm dark:border-white/10 dark:bg-white/5"
+            >
+              <History className="mr-2 h-4 w-4" />
+              {t('history.openAction')}
+            </Button>
+          </PilloHistorySheet>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-4 pb-4">
-      {hasMedications ? (
-        <ManualIntakeDialog medications={medications}>
+      <div className="grid grid-cols-2 gap-3">
+        {hasMedications ? (
+          <ManualIntakeDialog medications={medications}>
+            <Button
+              variant="outline"
+              className="h-11 w-full rounded-full border-white/40 bg-white/40 font-bold backdrop-blur-sm dark:border-white/10 dark:bg-white/5"
+            >
+              <Check className="mr-2 h-4 w-4 stroke-[3px]" />
+              {t('today.manualTakeAction')}
+            </Button>
+          </ManualIntakeDialog>
+        ) : (
           <Button
             variant="outline"
+            disabled
             className="h-11 w-full rounded-full border-white/40 bg-white/40 font-bold backdrop-blur-sm dark:border-white/10 dark:bg-white/5"
           >
             <Check className="mr-2 h-4 w-4 stroke-[3px]" />
             {t('today.manualTakeAction')}
           </Button>
-        </ManualIntakeDialog>
-      ) : null}
+        )}
+
+        <PilloHistorySheet historyEntries={historyEntries} monthlyIntakeStats={monthlyIntakeStats}>
+          <Button
+            variant="outline"
+            className="h-11 w-full rounded-full border-white/40 bg-white/40 font-bold backdrop-blur-sm dark:border-white/10 dark:bg-white/5"
+          >
+            <History className="mr-2 h-4 w-4" />
+            {t('history.openAction')}
+          </Button>
+        </PilloHistorySheet>
+      </div>
 
       {nextPendingIntake && <QuickTakeCard intake={nextPendingIntake} />}
 

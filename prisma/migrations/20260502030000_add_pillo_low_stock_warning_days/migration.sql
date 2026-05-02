@@ -1,2 +1,0 @@
-ALTER TABLE "PilloUserSettings"
-ADD COLUMN "lowStockWarningDays" INTEGER NOT NULL DEFAULT 7;

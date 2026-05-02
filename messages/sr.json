@@ -861,6 +861,23 @@
       "stockEndsAt": "(nestaje {date})",
       "stockEndsSoon": "Nestaje {date}"
     },
+    "history": {
+      "title": "Istorija uzimanja",
+      "description": "Ovde su objedinjena uzimanja po rasporedu i ručne oznake.",
+      "openAction": "Istorija",
+      "emptyTitle": "Istorija je još prazna",
+      "emptyText": "Kada počnete da beležite uzimanja, ovde će se pojaviti lista po datumima.",
+      "dayCount": "{count} uzimanja",
+      "monthlyEyebrow": "Ovog meseca",
+      "monthlyTitle": "{month}",
+      "monthlyTotalIntakes": "{count} uzimanja",
+      "monthlyEmpty": "Za tekući mesec još nema zabeleženih uzimanja.",
+      "monthlyItemMeta": "{units} jedinica • {count} uzimanja",
+      "source": {
+        "manual": "Ručno",
+        "scheduled": "Po rasporedu"
+      }
+    },
     "medications": {
       "addPackageBtn": "Dodaj pakovanje",
       "addPackageConfirmTitle": "Dodati pakovanje?",

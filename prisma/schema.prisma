@@ -41,6 +41,7 @@ model User {
   payments                  Payment[]
   pilloIntakes              PilloIntake[]
   pilloActionTokens         PilloIntakeActionToken[]
+  pilloManualIntakes        PilloManualIntake[]
   pilloMedications          PilloMedication[]
   pilloScheduleRules        PilloScheduleRule[]
   pilloUserSettings         PilloUserSettings?
@@ -83,6 +84,7 @@ model PilloMedication {
   dosageUnit        String?
   dosageValue       Decimal?            @db.Decimal(10, 2)
   intakes           PilloIntake[]
+  manualIntakes     PilloManualIntake[]
   user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   scheduleRules     PilloScheduleRule[]
 
@@ -155,6 +157,25 @@ model PilloIntakeActionToken {
 
   @@index([intakeId])
   @@index([userId, expiresAt])
+}
+
+model PilloManualIntake {
+  id           String          @id @default(cuid())
+  userId       String
+  medicationId String
+  doseUnits    Decimal         @db.Decimal(10, 2)
+  takenAt      DateTime        @default(now())
+  localDate    String
+  localTime    String
+  note         String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  medication   PilloMedication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, takenAt])
+  @@index([userId, localDate])
+  @@index([medicationId])
 }
 
 model PilloUserSettings {

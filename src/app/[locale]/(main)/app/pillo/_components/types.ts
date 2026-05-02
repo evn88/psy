@@ -54,6 +54,27 @@ export type PilloIntakeView = {
   stockEndsAt: string | null;
 };
 
+export type PilloHistoryEntryView = {
+  id: string;
+  medicationId: string;
+  medicationName: string;
+  medicationDosage: string;
+  medicationPhotoUrl: string | null;
+  doseUnits: number;
+  takenAt: string;
+  localDate: string;
+  localTime: string;
+  source: 'manual' | 'scheduled';
+};
+
+export type PilloMonthlyMedicationStatView = {
+  medicationId: string;
+  medicationName: string;
+  medicationPhotoUrl: string | null;
+  totalUnits: number;
+  intakesCount: number;
+};
+
 export type PilloSettingsView = {
   emailRemindersEnabled: boolean;
   pushRemindersEnabled: boolean;
