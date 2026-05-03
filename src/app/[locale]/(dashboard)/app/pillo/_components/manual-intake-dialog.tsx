@@ -36,6 +36,7 @@ import {
 import { toast } from 'sonner';
 
 import { takePilloMedicationNowAction } from '../actions';
+import { PilloPendingIndicator } from './pillo-pending-indicator';
 import type { PilloMedicationView } from './types';
 
 type ManualIntakeFormValues = z.input<typeof pilloManualIntakeSchema>;
@@ -107,9 +108,18 @@ export const ManualIntakeDialog = ({
           <DialogTitle>{t('today.manualTakeTitle')}</DialogTitle>
           <DialogDescription>{t('today.manualTakeDescription')}</DialogDescription>
         </DialogHeader>
+        {isPending ? (
+          <div className="rounded-full bg-primary/10 px-3 py-2 text-sm font-medium text-primary">
+            <PilloPendingIndicator label={t('today.manualTakePending')} />
+          </div>
+        ) : null}
 
         <Form {...form}>
-          <form className="space-y-4 pt-2" onSubmit={form.handleSubmit(onSubmit)}>
+          <form
+            className="space-y-4 pt-2"
+            onSubmit={form.handleSubmit(onSubmit)}
+            aria-busy={isPending}
+          >
             <FormField
               control={form.control}
               name="medicationId"
@@ -175,8 +185,14 @@ export const ManualIntakeDialog = ({
                 {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={isPending} className="h-11 flex-1 rounded-full">
-                <Pill className="mr-2 h-4 w-4" />
-                {t('today.manualTakeAction')}
+                {isPending ? (
+                  <PilloPendingIndicator label={t('today.manualTakePending')} />
+                ) : (
+                  <>
+                    <Pill className="mr-2 h-4 w-4" />
+                    {t('today.manualTakeAction')}
+                  </>
+                )}
               </Button>
             </div>
           </form>

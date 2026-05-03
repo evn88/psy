@@ -46,6 +46,7 @@ import { deletePilloMedicationAction } from '../actions';
 import { usePilloMedicationForm } from '../_hooks/use-pillo-medication-form';
 import { DeleteConfirmDialog } from './delete-confirm-dialog';
 import { TextField } from './form-fields';
+import { PilloPendingIndicator } from './pillo-pending-indicator';
 import type { PilloMedicationView } from './types';
 
 const DOSAGE_UNITS = [
@@ -107,8 +108,13 @@ export const MedicationDialog = ({
           <DialogTitle>{medication ? t('medications.edit') : t('medications.add')}</DialogTitle>
           <DialogDescription>{t('medications.formDescription')}</DialogDescription>
         </DialogHeader>
+        {isPending ? (
+          <div className="rounded-full bg-primary/10 px-3 py-2 text-sm font-medium text-primary">
+            <PilloPendingIndicator label={t('common.processing')} />
+          </div>
+        ) : null}
         <Form {...form}>
-          <form onSubmit={onSubmit} className="space-y-4">
+          <form onSubmit={onSubmit} className="space-y-4" aria-busy={isPending}>
             {photoUrl && (
               <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-black/[0.05] bg-muted/30 dark:border-white/[0.05]">
                 <Image src={photoUrl} alt="Preview" fill className="object-cover" />
@@ -268,10 +274,17 @@ export const MedicationDialog = ({
             />
             <div className="flex flex-col gap-2 pt-2">
               <Button type="submit" disabled={isPending} className="h-12 w-full rounded-full">
-                {t('common.save')}
+                {isPending ? (
+                  <PilloPendingIndicator
+                    label={isDeleting ? t('common.deleting') : t('common.saving')}
+                  />
+                ) : (
+                  t('common.save')
+                )}
               </Button>
               {medication && (
                 <DeleteConfirmDialog
+                  isPending={isDeleting}
                   onConfirm={() => {
                     startTransition(() => {
                       void deletePilloMedicationAction(medication.id).then(() => {
@@ -286,8 +299,14 @@ export const MedicationDialog = ({
                     disabled={isPending}
                     className="h-12 w-full rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
                   >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    {t('common.delete')}
+                    {isDeleting ? (
+                      <PilloPendingIndicator label={t('common.deleting')} />
+                    ) : (
+                      <>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        {t('common.delete')}
+                      </>
+                    )}
                   </Button>
                 </DeleteConfirmDialog>
               )}

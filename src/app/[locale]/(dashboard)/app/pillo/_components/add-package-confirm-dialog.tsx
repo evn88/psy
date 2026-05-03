@@ -19,9 +19,11 @@ import {
  */
 export const AddPackageConfirmDialog = ({
   children,
+  isPending,
   onConfirm
 }: {
   children: ReactNode;
+  isPending?: boolean;
   onConfirm: () => void;
 }) => {
   const t = useTranslations('Pillo');
@@ -37,12 +39,15 @@ export const AddPackageConfirmDialog = ({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel className="rounded-full">{t('common.cancel')}</AlertDialogCancel>
+          <AlertDialogCancel className="rounded-full" disabled={isPending}>
+            {t('common.cancel')}
+          </AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
+            disabled={isPending}
             className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
           >
-            {t('medications.addPackageBtn')}
+            {isPending ? t('medications.addPackagePending') : t('medications.addPackageBtn')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

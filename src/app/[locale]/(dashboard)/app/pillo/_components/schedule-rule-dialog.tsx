@@ -32,6 +32,7 @@ import { deletePilloScheduleRuleAction } from '../actions';
 import { usePilloScheduleForm } from '../_hooks/use-pillo-schedule-form';
 import { DeleteConfirmDialog } from './delete-confirm-dialog';
 import { DateField, SwitchField, TextField, TimeField } from './form-fields';
+import { PilloPendingIndicator } from './pillo-pending-indicator';
 import type { PilloMedicationView, PilloScheduleRuleView } from './types';
 
 /**
@@ -69,8 +70,13 @@ export const ScheduleRuleDialog = ({
           <DialogTitle>{rule ? t('schedule.edit') : t('schedule.add')}</DialogTitle>
           <DialogDescription>{t('schedule.formDescription')}</DialogDescription>
         </DialogHeader>
+        {isPending ? (
+          <div className="rounded-full bg-primary/10 px-3 py-2 text-sm font-medium text-primary">
+            <PilloPendingIndicator label={t('common.processing')} />
+          </div>
+        ) : null}
         <Form {...form}>
-          <form onSubmit={onSubmit} className="space-y-4">
+          <form onSubmit={onSubmit} className="space-y-4" aria-busy={isPending}>
             <FormField
               control={form.control}
               name="medicationId"
@@ -154,10 +160,17 @@ export const ScheduleRuleDialog = ({
             <SwitchField control={form.control} name="isActive" label={t('schedule.isActive')} />
             <div className="flex flex-col gap-2 pt-2">
               <Button type="submit" disabled={isPending} className="h-12 w-full rounded-full">
-                {t('common.save')}
+                {isPending ? (
+                  <PilloPendingIndicator
+                    label={isDeleting ? t('common.deleting') : t('common.saving')}
+                  />
+                ) : (
+                  t('common.save')
+                )}
               </Button>
               {rule && (
                 <DeleteConfirmDialog
+                  isPending={isDeleting}
                   onConfirm={() => {
                     startTransition(() => {
                       void deletePilloScheduleRuleAction(rule.id).then(() => {
@@ -172,8 +185,14 @@ export const ScheduleRuleDialog = ({
                     disabled={isPending}
                     className="h-12 w-full rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
                   >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    {t('common.delete')}
+                    {isDeleting ? (
+                      <PilloPendingIndicator label={t('common.deleting')} />
+                    ) : (
+                      <>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        {t('common.delete')}
+                      </>
+                    )}
                   </Button>
                 </DeleteConfirmDialog>
               )}

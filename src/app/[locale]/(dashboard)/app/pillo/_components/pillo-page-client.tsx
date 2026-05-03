@@ -8,9 +8,26 @@ import type {
   PilloHistoryEntryView,
   PilloIntakeView,
   PilloMedicationView,
-  PilloMonthlyMedicationStatView,
-  PilloPagePayload
+  PilloPagePayload,
+  PilloWeeklyScheduledIntakeView
 } from './types';
+
+/**
+ * Возвращает приоритет статуса для сортировки списка приёмов.
+ * @param status - статус приёма.
+ * @returns Меньшее значение поднимает элемент выше.
+ */
+const getIntakeStatusPriority = (status: PilloIntakeView['status']): number => {
+  if (status === 'PENDING') {
+    return 0;
+  }
+
+  if (status === 'TAKEN') {
+    return 1;
+  }
+
+  return 2;
+};
 
 /**
  * Клиентский composer Pillo, который собирает view-model из серверного payload.
@@ -74,58 +91,45 @@ export const PilloPageClient = ({ payload }: { payload: PilloPagePayload }) => {
   ]);
 
   const todayIntakes = useMemo<PilloIntakeView[]>(() => {
-    return payload.todayIntakes.map(intake => {
-      const medication = medications.find(item => item.id === intake.medicationId);
+    return payload.todayIntakes
+      .map(intake => {
+        const medication = medications.find(item => item.id === intake.medicationId);
 
-      return {
-        id: intake.id,
-        medicationId: intake.medicationId,
-        medicationName: intake.medicationName,
-        medicationDosage: intake.medicationDosage,
-        medicationPhotoUrl: intake.medicationPhotoUrl,
-        scheduledFor: intake.scheduledFor,
-        localDate: intake.localDate,
-        localTime: intake.localTime,
-        doseUnits: intake.doseUnits,
-        status: intake.status,
-        comment: intake.comment,
-        stockUnits: intake.medicationStockUnits,
-        minThresholdUnits: intake.medicationMinThresholdUnits,
-        stockStatus: getPilloStockStatus({
+        return {
+          id: intake.id,
+          medicationId: intake.medicationId,
+          medicationName: intake.medicationName,
+          medicationDosage: intake.medicationDosage,
+          medicationPhotoUrl: intake.medicationPhotoUrl,
+          scheduledFor: intake.scheduledFor,
+          localDate: intake.localDate,
+          localTime: intake.localTime,
+          doseUnits: intake.doseUnits,
+          status: intake.status,
+          comment: intake.comment,
           stockUnits: intake.medicationStockUnits,
           minThresholdUnits: intake.medicationMinThresholdUnits,
-          nextDoseUnits: intake.doseUnits
-        }),
-        daysLeft: medication?.daysLeft ?? null,
-        buyAtDate: medication?.buyAtDate ?? null,
-        stockEndsAt: medication?.stockEndsAt ?? null
-      };
-    });
-  }, [medications, payload.todayIntakes]);
+          stockStatus: getPilloStockStatus({
+            stockUnits: intake.medicationStockUnits,
+            minThresholdUnits: intake.medicationMinThresholdUnits,
+            nextDoseUnits: intake.doseUnits
+          }),
+          daysLeft: medication?.daysLeft ?? null,
+          buyAtDate: medication?.buyAtDate ?? null,
+          stockEndsAt: medication?.stockEndsAt ?? null
+        };
+      })
+      .sort((left, right) => {
+        const statusDiff =
+          getIntakeStatusPriority(left.status) - getIntakeStatusPriority(right.status);
 
-  const monthlyIntakeStats = useMemo<PilloMonthlyMedicationStatView[]>(() => {
-    const monthlyStatsMap = new Map<string, PilloMonthlyMedicationStatView>();
+        if (statusDiff !== 0) {
+          return statusDiff;
+        }
 
-    for (const entry of payload.monthlyHistoryEntries) {
-      const current = monthlyStatsMap.get(entry.medicationId);
-
-      if (current) {
-        current.totalUnits += entry.doseUnits;
-        current.intakesCount += 1;
-        continue;
-      }
-
-      monthlyStatsMap.set(entry.medicationId, {
-        medicationId: entry.medicationId,
-        medicationName: entry.medicationName,
-        medicationPhotoUrl: entry.medicationPhotoUrl,
-        totalUnits: entry.doseUnits,
-        intakesCount: 1
+        return new Date(left.scheduledFor).getTime() - new Date(right.scheduledFor).getTime();
       });
-    }
-
-    return [...monthlyStatsMap.values()].sort((left, right) => right.totalUnits - left.totalUnits);
-  }, [payload.monthlyHistoryEntries]);
+  }, [medications, payload.todayIntakes]);
 
   const historyEntries = useMemo<PilloHistoryEntryView[]>(() => {
     return [...payload.historyEntries].sort((left, right) => {
@@ -133,15 +137,22 @@ export const PilloPageClient = ({ payload }: { payload: PilloPagePayload }) => {
     });
   }, [payload.historyEntries]);
 
+  const weeklyScheduledIntakes = useMemo<PilloWeeklyScheduledIntakeView[]>(() => {
+    return [...payload.weeklyScheduledIntakes].sort((left, right) => {
+      return new Date(left.scheduledFor).getTime() - new Date(right.scheduledFor).getTime();
+    });
+  }, [payload.weeklyScheduledIntakes]);
+
   return (
     <PilloAppShell
       appearanceSettings={payload.appearanceSettings}
+      currentLocalDate={payload.currentLocalDate}
       historyEntries={historyEntries}
       intakes={todayIntakes}
       medications={medications}
-      monthlyIntakeStats={monthlyIntakeStats}
       scheduleRules={payload.scheduleRules}
       settings={payload.settings}
+      weeklyScheduledIntakes={weeklyScheduledIntakes}
     />
   );
 };

@@ -1,4 +1,5 @@
 export const PILLO_REMINDER_WINDOW_HOURS = 48;
+export const PILLO_MISSED_GRACE_HOURS = 24;
 export const PILLO_ACTION_TOKEN_TTL_HOURS = 48;
 export const PILLO_DEFAULT_TIMEZONE = 'UTC';
 export const PILLO_MIN_TIME = '00:00';

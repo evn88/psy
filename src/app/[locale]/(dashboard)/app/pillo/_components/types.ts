@@ -99,23 +99,29 @@ export type PilloHistoryEntryView = {
   source: 'manual' | 'scheduled';
 };
 
-export type PilloMonthlyMedicationStatView = {
+export type PilloWeeklyScheduledIntakeView = {
+  id: string;
   medicationId: string;
   medicationName: string;
+  medicationDosage: string;
   medicationPhotoUrl: string | null;
-  totalUnits: number;
-  intakesCount: number;
+  scheduledFor: string;
+  localDate: string;
+  localTime: string;
+  doseUnits: number;
+  status: PilloIntakeStatus;
 };
 
 export type PilloPagePayload = {
   appearanceSettings: PilloAppearanceSettingsView;
+  currentLocalDate: string;
   historyEntries: PilloHistoryEntryView[];
-  monthlyHistoryEntries: PilloHistoryEntryView[];
   medications: PilloMedicationRecord[];
   referenceDateIso: string;
   scheduleRules: PilloScheduleRuleView[];
   settings: PilloSettingsView;
   todayIntakes: PilloIntakeRecord[];
+  weeklyScheduledIntakes: PilloWeeklyScheduledIntakeView[];
 };
 
 export type PilloSettingsView = {

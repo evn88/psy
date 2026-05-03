@@ -1,6 +1,6 @@
 'use client';
 
-import { useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
@@ -12,6 +12,7 @@ import { skipPilloIntakeAction, takePilloIntakeAction, undoPilloIntakeAction } f
  */
 export const usePilloIntakeActions = () => {
   const [isPending, startTransition] = useTransition();
+  const [pendingAction, setPendingAction] = useState<'skip' | 'take' | 'undo' | null>(null);
   const t = useTranslations('Pillo');
 
   /**
@@ -20,8 +21,10 @@ export const usePilloIntakeActions = () => {
    */
   const runAction = (
     action: () => Promise<{ error?: string; success?: boolean }>,
-    fallbackErrorMessage: string
+    fallbackErrorMessage: string,
+    nextPendingAction: 'skip' | 'take' | 'undo'
   ) => {
+    setPendingAction(nextPendingAction);
     startTransition(() => {
       void action()
         .then(result => {
@@ -36,16 +39,23 @@ export const usePilloIntakeActions = () => {
         })
         .catch(() => {
           toast.error(fallbackErrorMessage);
+        })
+        .finally(() => {
+          setPendingAction(null);
         });
     });
   };
 
-  const onTake = (id: string) => runAction(() => takePilloIntakeAction(id), t('today.takeError'));
-  const onSkip = (id: string) => runAction(() => skipPilloIntakeAction(id), t('today.skipError'));
-  const onUndo = (id: string) => runAction(() => undoPilloIntakeAction(id), t('today.undoError'));
+  const onTake = (id: string) =>
+    runAction(() => takePilloIntakeAction(id), t('today.takeError'), 'take');
+  const onSkip = (id: string) =>
+    runAction(() => skipPilloIntakeAction(id), t('today.skipError'), 'skip');
+  const onUndo = (id: string) =>
+    runAction(() => undoPilloIntakeAction(id), t('today.undoError'), 'undo');
 
   return {
     isPending,
+    pendingAction,
     onTake,
     onSkip,
     onUndo

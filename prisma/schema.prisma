@@ -67,26 +67,28 @@ model PushSubscription {
 }
 
 model PilloMedication {
-  id                String              @id @default(cuid())
-  userId            String
-  name              String
-  photoUrl          String?
-  description       String?
-  dosage            String?
-  form              String
-  packagesCount     Int                 @default(0)
-  unitsPerPackage   Int?
-  stockUnits        Decimal             @default(0) @db.Decimal(10, 2)
-  minThresholdUnits Decimal             @default(0) @db.Decimal(10, 2)
-  isActive          Boolean             @default(true)
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  dosageUnit        String?
-  dosageValue       Decimal?            @db.Decimal(10, 2)
-  intakes           PilloIntake[]
-  manualIntakes     PilloManualIntake[]
-  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  scheduleRules     PilloScheduleRule[]
+  id                   String              @id @default(cuid())
+  userId               String
+  name                 String
+  photoUrl             String?
+  description          String?
+  dosage               String?
+  form                 String
+  packagesCount        Int                 @default(0)
+  unitsPerPackage      Int?
+  stockUnits           Decimal             @default(0) @db.Decimal(10, 2)
+  minThresholdUnits    Decimal             @default(0) @db.Decimal(10, 2)
+  lowStockNotifiedAt   DateTime?
+  emptyStockNotifiedAt DateTime?
+  isActive             Boolean             @default(true)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  dosageUnit           String?
+  dosageValue          Decimal?            @db.Decimal(10, 2)
+  intakes              PilloIntake[]
+  manualIntakes        PilloManualIntake[]
+  user                 User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scheduleRules        PilloScheduleRule[]
 
   @@index([userId, isActive])
   @@index([userId, name])
@@ -104,7 +106,7 @@ model PilloScheduleRule {
   comment                 String?
   isActive                Boolean         @default(true)
   reminderWorkflowVersion Int             @default(1)
-  courseEndNotifiedAt      DateTime?
+  courseEndNotifiedAt     DateTime?
   createdAt               DateTime        @default(now())
   updatedAt               DateTime        @updatedAt
   intakes                 PilloIntake[]

@@ -17,6 +17,8 @@ import {
 interface DeleteConfirmDialogProps {
   children: ReactNode;
   onConfirm: () => void;
+  isPending?: boolean;
+  pendingLabel?: string;
   title?: string;
   description?: string;
 }
@@ -29,6 +31,8 @@ interface DeleteConfirmDialogProps {
 export const DeleteConfirmDialog = ({
   children,
   onConfirm,
+  isPending,
+  pendingLabel,
   title,
   description
 }: DeleteConfirmDialogProps) => {
@@ -45,12 +49,15 @@ export const DeleteConfirmDialog = ({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel className="rounded-full">{t('common.cancel')}</AlertDialogCancel>
+          <AlertDialogCancel className="rounded-full" disabled={isPending}>
+            {t('common.cancel')}
+          </AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
+            disabled={isPending}
             className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {t('common.delete')}
+            {isPending ? (pendingLabel ?? t('common.deleting')) : t('common.delete')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
