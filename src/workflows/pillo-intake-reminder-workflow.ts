@@ -1,6 +1,8 @@
 import type { Prisma } from '@prisma/client';
-import { sleep } from 'workflow';
 
+import { sendPilloIntakeReminderEmail } from '@/lib/email';
+import prisma from '@/lib/prisma';
+import { sendPushToMany } from '@/lib/push';
 import {
   getPilloNotificationCopy,
   getPilloSkipUrl,
@@ -8,24 +10,21 @@ import {
   interpolatePilloCopy
 } from '@/modules/pillo/notifications';
 import {
-  createPilloActionToken,
+  createPilloActionToken as createPilloActionTokenValue,
   getPilloActionTokenExpiresAt,
   hashPilloActionToken
 } from '@/modules/pillo/tokens';
-import { sendPilloIntakeReminderEmail } from '@/lib/email';
-import prisma from '@/lib/prisma';
-import { sendPushToMany } from '@/lib/push';
 
 type PilloIntakeReminderWorkflowParams = {
-  intakeId: string;
-  scheduleRuleVersion: number;
+  nowIso?: string;
 };
 
 type PilloIntakeReminderWorkflowResult = {
-  status: 'sent' | 'skipped';
-  reason?: string;
-  emailSent: boolean;
-  pushSent: boolean;
+  status: 'completed';
+  scanned: number;
+  sent: number;
+  skipped: number;
+  failed: number;
 };
 
 type PilloReminderIntakeRecord = Prisma.PilloIntakeGetPayload<{
@@ -47,15 +46,17 @@ type PilloReminderIntakeRecord = Prisma.PilloIntakeGetPayload<{
   };
 }>;
 
-type PilloReminderReadiness = {
-  isReady: boolean;
-  reason: string;
-  triggerAt: Date;
+type PilloReminderDispatchResult = {
+  status: 'sent' | 'skipped' | 'failed';
+  emailSent: boolean;
+  pushSent: boolean;
+  reason?: string;
 };
 
 const PENDING_INTAKE_STATUS = 'PENDING';
 const ADMIN_ROLE = 'ADMIN';
 const USER_ROLE = 'USER';
+const PILLO_REMINDER_BATCH_SIZE = 100;
 
 /**
  * Формирует человекочитаемый текст дозы.
@@ -67,17 +68,66 @@ const getPilloDoseText = (intake: PilloReminderIntakeRecord): string => {
 };
 
 /**
- * Загружает приём Pillo вместе с пользователем, таблеткой и правилом.
- * @param intakeId - идентификатор приёма.
- * @returns Приём или null.
+ * Нормализует опциональную дату запуска runner.
+ * @param params - параметры workflow.
+ * @returns Дата, относительно которой ищутся наступившие приёмы.
  */
-const loadPilloReminderIntakeByIdStep = async (
-  intakeId: string
-): Promise<PilloReminderIntakeRecord | null> => {
-  'use step';
+const resolvePilloRunnerNow = (params: PilloIntakeReminderWorkflowParams): Date => {
+  const parsedDate = params.nowIso ? new Date(params.nowIso) : new Date();
 
-  return prisma.pilloIntake.findUnique({
-    where: { id: intakeId },
+  if (Number.isNaN(parsedDate.getTime())) {
+    return new Date();
+  }
+
+  return parsedDate;
+};
+
+/**
+ * Проверяет, можно ли отправлять напоминание для текущего состояния приёма.
+ * @param intake - приём с зависимостями.
+ * @returns Причина пропуска или null.
+ */
+const getPilloReminderSkipReason = (intake: PilloReminderIntakeRecord): string | null => {
+  if (intake.status !== PENDING_INTAKE_STATUS) {
+    return 'intake-is-not-pending';
+  }
+
+  if (!intake.scheduleRule.isActive) {
+    return 'schedule-rule-disabled';
+  }
+
+  if (!intake.medication.isActive) {
+    return 'medication-disabled';
+  }
+
+  if (
+    intake.user.isDisabled ||
+    (intake.user.role !== ADMIN_ROLE && intake.user.role !== USER_ROLE)
+  ) {
+    return 'user-is-not-eligible';
+  }
+
+  if (intake.reminderSentAt || (intake.reminderEmailSentAt && intake.reminderPushSentAt)) {
+    return 'reminder-already-sent';
+  }
+
+  return null;
+};
+
+/**
+ * Загружает наступившие приёмы Pillo для одного прохода runner.
+ * @param now - верхняя граница наступивших приёмов.
+ * @returns Список приёмов, которым ещё нужны напоминания.
+ */
+const loadDuePilloReminderIntakes = async (now: Date): Promise<PilloReminderIntakeRecord[]> => {
+  return prisma.pilloIntake.findMany({
+    where: {
+      status: PENDING_INTAKE_STATUS,
+      scheduledFor: { lte: now },
+      OR: [{ reminderEmailSentAt: null }, { reminderPushSentAt: null }]
+    },
+    orderBy: { scheduledFor: 'asc' },
+    take: PILLO_REMINDER_BATCH_SIZE,
     include: {
       medication: true,
       scheduleRule: true,
@@ -98,62 +148,12 @@ const loadPilloReminderIntakeByIdStep = async (
 };
 
 /**
- * Проверяет, можно ли отправлять напоминание для текущего состояния приёма.
- * @param intake - приём с зависимостями.
- * @param expectedVersion - версия правила на момент запуска workflow.
- * @returns Результат проверки готовности.
- */
-const getPilloReminderReadiness = (
-  intake: PilloReminderIntakeRecord | null,
-  expectedVersion: number
-): PilloReminderReadiness => {
-  const now = new Date();
-
-  if (!intake) {
-    return { isReady: false, reason: 'intake-not-found', triggerAt: now };
-  }
-
-  if (intake.status !== PENDING_INTAKE_STATUS) {
-    return { isReady: false, reason: 'intake-is-not-pending', triggerAt: intake.scheduledFor };
-  }
-
-  if (intake.scheduleRule.reminderWorkflowVersion !== expectedVersion) {
-    return {
-      isReady: false,
-      reason: 'stale-schedule-rule-version',
-      triggerAt: intake.scheduledFor
-    };
-  }
-
-  if (!intake.scheduleRule.isActive) {
-    return { isReady: false, reason: 'schedule-rule-disabled', triggerAt: intake.scheduledFor };
-  }
-
-  if (!intake.medication.isActive) {
-    return { isReady: false, reason: 'medication-disabled', triggerAt: intake.scheduledFor };
-  }
-
-  if (
-    intake.user.isDisabled ||
-    (intake.user.role !== ADMIN_ROLE && intake.user.role !== USER_ROLE)
-  ) {
-    return { isReady: false, reason: 'user-is-not-eligible', triggerAt: intake.scheduledFor };
-  }
-
-  if (intake.reminderSentAt || (intake.reminderEmailSentAt && intake.reminderPushSentAt)) {
-    return { isReady: false, reason: 'reminder-already-sent', triggerAt: intake.scheduledFor };
-  }
-
-  return { isReady: true, reason: 'ready', triggerAt: intake.scheduledFor };
-};
-
-/**
  * Создаёт одноразовую ссылку для подтверждения приёма.
  * @param intake - приём лекарства.
  * @returns Открытый токен для ссылки.
  */
 const createPilloActionTokenStep = async (intake: PilloReminderIntakeRecord): Promise<string> => {
-  const token = createPilloActionToken();
+  const token = createPilloActionTokenValue();
 
   await prisma.pilloIntakeActionToken.create({
     data: {
@@ -168,40 +168,19 @@ const createPilloActionTokenStep = async (intake: PilloReminderIntakeRecord): Pr
 };
 
 /**
- * Отправляет email и push-напоминание по готовому приёму.
- * @param params - параметры workflow.
+ * Отправляет email и push-напоминание по одному наступившему приёму.
+ * @param intake - приём с зависимостями.
  * @returns Результат отправки.
  */
-const dispatchPilloIntakeReminderStep = async (
-  params: PilloIntakeReminderWorkflowParams
-): Promise<PilloIntakeReminderWorkflowResult> => {
-  'use step';
+const dispatchPilloIntakeReminder = async (
+  intake: PilloReminderIntakeRecord
+): Promise<PilloReminderDispatchResult> => {
+  const skipReason = getPilloReminderSkipReason(intake);
 
-  const intake = await prisma.pilloIntake.findUnique({
-    where: { id: params.intakeId },
-    include: {
-      medication: true,
-      scheduleRule: true,
-      user: {
-        include: {
-          pilloUserSettings: true,
-          pushSubscriptions: {
-            select: {
-              endpoint: true,
-              p256dh: true,
-              auth: true
-            }
-          }
-        }
-      }
-    }
-  });
-  const readiness = getPilloReminderReadiness(intake, params.scheduleRuleVersion);
-
-  if (!readiness.isReady || !intake) {
+  if (skipReason) {
     return {
       status: 'skipped',
-      reason: readiness.reason,
+      reason: skipReason,
       emailSent: false,
       pushSent: false
     };
@@ -220,7 +199,7 @@ const dispatchPilloIntakeReminderStep = async (
   let reminderPushSentAt = intake.reminderPushSentAt;
   let isEmailSent = false;
   let isPushSent = false;
-  let shouldRetryDelivery = false;
+  let hasFailedChannel = false;
 
   if (!intake.reminderEmailSentAt && isEmailEnabled && intake.user.email) {
     const emailResult = await sendPilloIntakeReminderEmail({
@@ -239,7 +218,7 @@ const dispatchPilloIntakeReminderStep = async (
       isEmailSent = true;
       reminderEmailSentAt = nowTimestamp;
     } else {
-      shouldRetryDelivery = true;
+      hasFailedChannel = true;
     }
   } else if (!intake.reminderEmailSentAt) {
     reminderEmailSentAt = nowTimestamp;
@@ -259,29 +238,29 @@ const dispatchPilloIntakeReminderStep = async (
       isPushSent = true;
       reminderPushSentAt = nowTimestamp;
     } else {
-      shouldRetryDelivery = true;
+      hasFailedChannel = true;
     }
   } else if (!intake.reminderPushSentAt) {
     reminderPushSentAt = nowTimestamp;
   }
 
-  if (
-    reminderEmailSentAt?.getTime() !== intake.reminderEmailSentAt?.getTime() ||
-    reminderPushSentAt?.getTime() !== intake.reminderPushSentAt?.getTime()
-  ) {
-    await prisma.pilloIntake.update({
-      where: { id: intake.id },
-      data: {
-        reminderEmailSentAt,
-        reminderPushSentAt,
-        reminderSentAt:
-          reminderEmailSentAt && reminderPushSentAt ? nowTimestamp : intake.reminderSentAt
-      }
-    });
-  }
+  await prisma.pilloIntake.update({
+    where: { id: intake.id },
+    data: {
+      reminderEmailSentAt,
+      reminderPushSentAt,
+      reminderSentAt:
+        reminderEmailSentAt && reminderPushSentAt ? nowTimestamp : intake.reminderSentAt
+    }
+  });
 
-  if (shouldRetryDelivery) {
-    throw new Error('Pillo reminder delivery failed for at least one channel');
+  if (hasFailedChannel) {
+    return {
+      status: 'failed',
+      reason: 'delivery-failed',
+      emailSent: isEmailSent,
+      pushSent: isPushSent
+    };
   }
 
   return {
@@ -292,30 +271,50 @@ const dispatchPilloIntakeReminderStep = async (
 };
 
 /**
- * Workflow отправки Pillo-напоминания о приёме лекарства.
- * @param params - идентификатор приёма и версия правила.
- * @returns Итог отправки или причина пропуска.
+ * Выполняет один проход отправки Pillo-напоминаний для всех пользователей.
+ * @param intakes - наступившие приёмы.
+ * @returns Сводка отправки.
+ */
+const dispatchPilloIntakeRemindersStep = async (
+  now: Date
+): Promise<Omit<PilloIntakeReminderWorkflowResult, 'status'>> => {
+  'use step';
+
+  const intakes = await loadDuePilloReminderIntakes(now);
+  let sent = 0;
+  let skipped = 0;
+  let failed = 0;
+
+  for (const intake of intakes) {
+    const result = await dispatchPilloIntakeReminder(intake);
+
+    if (result.status === 'sent') {
+      sent++;
+    } else if (result.status === 'failed') {
+      failed++;
+    } else {
+      skipped++;
+    }
+  }
+
+  return { scanned: intakes.length, sent, skipped, failed };
+};
+
+/**
+ * Workflow-раннер Pillo, который одним проходом проверяет наступившие приёмы всех пользователей.
+ * @param params - опциональная дата запуска для тестового/ручного вызова.
+ * @returns Сводка обработанных напоминаний.
  */
 export const runPilloIntakeReminderWorkflow = async (
-  params: PilloIntakeReminderWorkflowParams
+  params: PilloIntakeReminderWorkflowParams = {}
 ): Promise<PilloIntakeReminderWorkflowResult> => {
   'use workflow';
 
-  const intake = await loadPilloReminderIntakeByIdStep(params.intakeId);
-  const readiness = getPilloReminderReadiness(intake, params.scheduleRuleVersion);
+  const now = resolvePilloRunnerNow(params);
+  const result = await dispatchPilloIntakeRemindersStep(now);
 
-  if (!readiness.isReady) {
-    return {
-      status: 'skipped',
-      reason: readiness.reason,
-      emailSent: false,
-      pushSent: false
-    };
-  }
-
-  if (readiness.triggerAt > new Date()) {
-    await sleep(readiness.triggerAt);
-  }
-
-  return dispatchPilloIntakeReminderStep(params);
+  return {
+    status: 'completed',
+    ...result
+  };
 };

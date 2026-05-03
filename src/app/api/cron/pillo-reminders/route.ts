@@ -4,6 +4,7 @@ import {
   checkPilloCourseEndNotifications,
   recoverPilloReminderWindow
 } from '@/modules/pillo/service';
+import { startPilloIntakeReminderRunnerWorkflow } from '@/lib/pillo-reminder-workflow';
 import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 export const runtime = 'nodejs';
@@ -25,10 +26,9 @@ const isAuthorizedCronRequest = (request: Request): boolean => {
 };
 
 /**
- * Ежедневно восстанавливает rolling window Pillo и проверяет завершённые курсы.
- * Cron не является точным планировщиком: точное время обеспечивают Workflow `sleep`.
+ * Восстанавливает rolling window Pillo и запускает единый runner напоминаний.
  * @param request - cron-запрос Vercel.
- * @returns Сводка восстановленных приёмов, workflow и уведомлений о курсах.
+ * @returns Сводка восстановленных приёмов, runner workflow и уведомлений о курсах.
  */
 async function getHandler(request: Request) {
   if (!process.env.CRON_SECRET) {
@@ -39,14 +39,17 @@ async function getHandler(request: Request) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  const [summary, courseEndResult] = await Promise.all([
-    recoverPilloReminderWindow(),
+  const now = new Date();
+  const [summary, isReminderRunnerStarted, courseEndResult] = await Promise.all([
+    recoverPilloReminderWindow(now),
+    startPilloIntakeReminderRunnerWorkflow(now),
     checkPilloCourseEndNotifications()
   ]);
 
   return NextResponse.json({
     success: true,
     summary,
+    reminderRunnerStarted: isReminderRunnerStarted,
     courseEnd: courseEndResult
   });
 }

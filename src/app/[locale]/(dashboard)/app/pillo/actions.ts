@@ -22,7 +22,7 @@ import {
   pilloSettingsSchema
 } from '@/modules/pillo/schemas';
 import { requirePilloUserId, canUsePillo } from '@/modules/pillo/access';
-import { resolveStockUnits } from '@/modules/pillo/stock';
+import { getPilloStockStatus, resolveStockUnits, toNumber } from '@/modules/pillo/stock';
 import prisma from '@/lib/prisma';
 
 type PilloActionResult = {
@@ -38,6 +38,30 @@ const revalidatePilloPaths = () => {
     revalidatePath(`/${locale}/app`);
     revalidatePath(`/${locale}/app/pillo`);
   });
+};
+
+/**
+ * Сбрасывает отметки складских уведомлений, если остаток снова достаточный.
+ * @param params - остаток и порог таблетки.
+ * @returns Частичное обновление для Prisma.
+ */
+const getPilloStockNotificationResetData = (params: {
+  stockUnits: number;
+  minThresholdUnits: number;
+}) => {
+  const status = getPilloStockStatus({
+    stockUnits: params.stockUnits,
+    minThresholdUnits: params.minThresholdUnits
+  });
+
+  if (status !== 'enough') {
+    return {};
+  }
+
+  return {
+    lowStockNotifiedAt: null,
+    emptyStockNotifiedAt: null
+  };
 };
 
 /**
@@ -83,7 +107,11 @@ export const savePilloMedicationAction = async (input: unknown): Promise<PilloAc
         unitsPerPackage: data.unitsPerPackage,
         stockUnits,
         minThresholdUnits: data.minThresholdUnits,
-        isActive: data.isActive
+        isActive: data.isActive,
+        ...getPilloStockNotificationResetData({
+          stockUnits,
+          minThresholdUnits: data.minThresholdUnits
+        })
       }
     });
   } else {
@@ -147,12 +175,17 @@ export const addPilloMedicationPackageAction = async (
   }
 
   const unitsToAdd = medication.unitsPerPackage || 0;
+  const nextStock = toNumber(medication.stockUnits) + unitsToAdd;
 
   await prisma.pilloMedication.update({
     where: { id: medicationId },
     data: {
       packagesCount: { increment: 1 },
-      stockUnits: { increment: unitsToAdd }
+      stockUnits: { increment: unitsToAdd },
+      ...getPilloStockNotificationResetData({
+        stockUnits: nextStock,
+        minThresholdUnits: toNumber(medication.minThresholdUnits)
+      })
     }
   });
 

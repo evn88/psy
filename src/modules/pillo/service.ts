@@ -7,6 +7,7 @@ import {
   getPilloReminderWindowEnd,
   type PilloGeneratedIntake
 } from '@/modules/pillo/schedule';
+import { PILLO_MISSED_GRACE_HOURS } from '@/modules/pillo/constants';
 import { getPilloAppUrl, getPilloNotificationCopy, interpolatePilloCopy } from './notifications';
 import { getPilloStockStatus, toNumber, type PilloStockStatus } from './stock';
 import {
@@ -14,7 +15,6 @@ import {
   sendPilloEmptyStockEmail,
   sendPilloLowStockEmail
 } from '@/lib/email';
-import { startPilloIntakeReminderWorkflow } from '@/lib/pillo-reminder-workflow';
 import prisma from '@/lib/prisma';
 import { sendPushToMany } from '@/lib/push';
 
@@ -35,7 +35,11 @@ type PilloRuleWithUser = Prisma.PilloScheduleRuleGetPayload<{
 
 type PilloMaterializeResult = {
   createdOrUpdated: number;
-  workflowsStarted: number;
+};
+
+type PilloStockNotificationReservation = {
+  status: Exclude<PilloStockStatus, 'enough'> | null;
+  markedAt: Date;
 };
 
 /**
@@ -121,25 +125,10 @@ const upsertGeneratedPilloIntake = async (intake: PilloGeneratedIntake) => {
 };
 
 /**
- * Запускает workflow для новых или восстановленных приёмов.
- * @param intakes - список приёмов из БД.
- * @returns Количество успешно запущенных workflow.
- */
-const startPilloWorkflowsForIntakes = async (
-  intakes: Awaited<ReturnType<typeof upsertGeneratedPilloIntake>>[]
-): Promise<number> => {
-  const results = await Promise.all(
-    intakes.map(intake => startPilloIntakeReminderWorkflow(intake))
-  );
-
-  return results.filter(Boolean).length;
-};
-
-/**
  * Материализует rolling window приёмов для набора правил.
  * @param rules - правила расписания.
  * @param now - начало окна.
- * @returns Сводка созданных приёмов и workflow.
+ * @returns Сводка созданных приёмов.
  */
 const materializePilloRules = async (
   rules: PilloRuleWithUser[],
@@ -164,11 +153,8 @@ const materializePilloRules = async (
     }
   }
 
-  const workflowsStarted = await startPilloWorkflowsForIntakes(upsertedIntakes);
-
   return {
-    createdOrUpdated: upsertedIntakes.length,
-    workflowsStarted
+    createdOrUpdated: upsertedIntakes.length
   };
 };
 
@@ -176,7 +162,7 @@ const materializePilloRules = async (
  * Материализует будущие приёмы пользователя на 48 часов.
  * @param userId - идентификатор пользователя.
  * @param now - начало окна.
- * @returns Сводка созданных приёмов и workflow.
+ * @returns Сводка созданных приёмов.
  */
 export const materializePilloIntakesForUser = async (
   userId: string,
@@ -201,7 +187,7 @@ export const materializePilloIntakesForUser = async (
  * Материализует будущие приёмы одного правила на 48 часов.
  * @param ruleId - идентификатор правила.
  * @param now - начало окна.
- * @returns Сводка созданных приёмов и workflow.
+ * @returns Сводка созданных приёмов.
  */
 export const materializePilloIntakesForRule = async (
   ruleId: string,
@@ -216,7 +202,7 @@ export const materializePilloIntakesForRule = async (
   });
 
   if (!rule || !rule.isActive) {
-    return { createdOrUpdated: 0, workflowsStarted: 0 };
+    return { createdOrUpdated: 0 };
   }
 
   return materializePilloRules([rule], now);
@@ -228,10 +214,11 @@ export const materializePilloIntakesForRule = async (
  * @returns Сводка cron-восстановления.
  */
 export const recoverPilloReminderWindow = async (now = new Date()) => {
+  const missedBefore = new Date(now.getTime() - PILLO_MISSED_GRACE_HOURS * 60 * 60 * 1000);
   const missed = await prisma.pilloIntake.updateMany({
     where: {
       status: PilloIntakeStatus.PENDING,
-      scheduledFor: { lt: now }
+      scheduledFor: { lt: missedBefore }
     },
     data: {
       status: PilloIntakeStatus.MISSED,
@@ -322,6 +309,65 @@ const dispatchPilloLowStockNotifications = async (params: {
 };
 
 /**
+ * Определяет, нужно ли впервые отправить уведомление по текущему статусу остатка.
+ * @param params - статус остатка и уже отправленные отметки таблетки.
+ * @returns Статус для отправки или null.
+ */
+const reservePilloStockNotification = (params: {
+  status: PilloStockStatus;
+  lowStockNotifiedAt: Date | null;
+  emptyStockNotifiedAt: Date | null;
+  markedAt: Date;
+}): PilloStockNotificationReservation => {
+  if (params.status === 'low' && !params.lowStockNotifiedAt) {
+    return { status: 'low', markedAt: params.markedAt };
+  }
+
+  if (params.status === 'empty' && !params.emptyStockNotifiedAt) {
+    return { status: 'empty', markedAt: params.markedAt };
+  }
+
+  return { status: null, markedAt: params.markedAt };
+};
+
+/**
+ * Возвращает отметки отправки уведомлений, которые нужно применить к таблетке.
+ * @param reservation - зарезервированное уведомление.
+ * @returns Частичное обновление Prisma.
+ */
+const getPilloStockNotificationMarkData = (
+  reservation: PilloStockNotificationReservation
+): Prisma.PilloMedicationUpdateInput => {
+  if (reservation.status === 'low') {
+    return { lowStockNotifiedAt: reservation.markedAt };
+  }
+
+  if (reservation.status === 'empty') {
+    return { emptyStockNotifiedAt: reservation.markedAt };
+  }
+
+  return {};
+};
+
+/**
+ * Сбрасывает отметки складских уведомлений, если запас снова стал достаточным.
+ * @param status - новый статус остатка.
+ * @returns Частичное обновление Prisma.
+ */
+const getPilloStockNotificationResetData = (
+  status: PilloStockStatus
+): Prisma.PilloMedicationUpdateInput => {
+  if (status !== 'enough') {
+    return {};
+  }
+
+  return {
+    lowStockNotifiedAt: null,
+    emptyStockNotifiedAt: null
+  };
+};
+
+/**
  * Отмечает приём как принятый и уменьшает остаток лекарства.
  * @param userId - идентификатор пользователя.
  * @param intakeId - идентификатор приёма.
@@ -346,44 +392,62 @@ export const takePilloIntake = async (userId: string, intakeId: string) => {
       return { intake, medication: intake.medication, wasChanged: false };
     }
 
+    const takenAt = new Date();
     const nextStock = Math.max(
       0,
       toNumber(intake.medication.stockUnits) - toNumber(intake.doseUnits)
     );
+    const stockStatus = getPilloStockStatus({
+      stockUnits: nextStock,
+      minThresholdUnits: intake.medication.minThresholdUnits,
+      nextDoseUnits: intake.doseUnits
+    });
+    const stockNotification = reservePilloStockNotification({
+      status: stockStatus,
+      lowStockNotifiedAt: intake.medication.lowStockNotifiedAt,
+      emptyStockNotifiedAt: intake.medication.emptyStockNotifiedAt,
+      markedAt: takenAt
+    });
     const [updatedIntake, medication] = await Promise.all([
       tx.pilloIntake.update({
         where: { id: intake.id },
         data: {
           status: PilloIntakeStatus.TAKEN,
-          takenAt: new Date()
+          takenAt
         },
         include: { medication: true }
       }),
       tx.pilloMedication.update({
         where: { id: intake.medicationId },
-        data: { stockUnits: nextStock }
+        data: {
+          stockUnits: nextStock,
+          ...getPilloStockNotificationMarkData(stockNotification)
+        }
       })
     ]);
 
-    return { intake: updatedIntake, medication, wasChanged: true };
+    return { intake: updatedIntake, medication, stockNotification, stockStatus, wasChanged: true };
   });
 
   if (!result) {
     return null;
   }
 
-  const status = getPilloStockStatus({
-    stockUnits: result.medication.stockUnits,
-    minThresholdUnits: result.medication.minThresholdUnits,
-    nextDoseUnits: result.intake.doseUnits
-  });
+  const status =
+    'stockStatus' in result
+      ? result.stockStatus
+      : getPilloStockStatus({
+          stockUnits: result.medication.stockUnits,
+          minThresholdUnits: result.medication.minThresholdUnits,
+          nextDoseUnits: result.intake.doseUnits
+        });
 
-  if (result.wasChanged && status !== 'enough') {
+  if (result.wasChanged && 'stockNotification' in result && result.stockNotification.status) {
     await dispatchPilloLowStockNotifications({
       userId,
       medicationName: result.medication.name,
       stockText: result.medication.stockUnits.toString(),
-      stockStatus: status
+      stockStatus: result.stockNotification.status
     });
   }
 
@@ -422,10 +486,24 @@ export const takePilloMedicationNow = async (
 
     const timezone = medication.user.timezone || 'UTC';
     const nextStock = Math.max(0, toNumber(medication.stockUnits) - doseUnits);
+    const stockStatus = getPilloStockStatus({
+      stockUnits: nextStock,
+      minThresholdUnits: medication.minThresholdUnits,
+      nextDoseUnits: doseUnits
+    });
+    const stockNotification = reservePilloStockNotification({
+      status: stockStatus,
+      lowStockNotifiedAt: medication.lowStockNotifiedAt,
+      emptyStockNotifiedAt: medication.emptyStockNotifiedAt,
+      markedAt: takenAt
+    });
     const writes: Array<Promise<unknown>> = [
       tx.pilloMedication.update({
         where: { id: medication.id },
-        data: { stockUnits: nextStock }
+        data: {
+          stockUnits: nextStock,
+          ...getPilloStockNotificationMarkData(stockNotification)
+        }
       })
     ];
 
@@ -446,25 +524,21 @@ export const takePilloMedicationNow = async (
 
     const [updatedMedication] = await Promise.all(writes);
 
-    return { medication: updatedMedication };
+    return { medication: updatedMedication, stockNotification, stockStatus };
   });
 
   if (!result) {
     return null;
   }
 
-  const status = getPilloStockStatus({
-    stockUnits: result.medication.stockUnits,
-    minThresholdUnits: result.medication.minThresholdUnits,
-    nextDoseUnits: doseUnits
-  });
+  const status = result.stockStatus;
 
-  if (status !== 'enough') {
+  if (result.stockNotification.status) {
     await dispatchPilloLowStockNotifications({
       userId,
       medicationName: result.medication.name,
       stockText: result.medication.stockUnits.toString(),
-      stockStatus: status
+      stockStatus: result.stockNotification.status
     });
   }
 
@@ -519,9 +593,17 @@ export const undoPilloIntake = async (userId: string, intakeId: string) => {
     let nextStock = toNumber(intake.medication.stockUnits);
     if (intake.status === PilloIntakeStatus.TAKEN) {
       nextStock = nextStock + toNumber(intake.doseUnits);
+      const stockStatus = getPilloStockStatus({
+        stockUnits: nextStock,
+        minThresholdUnits: intake.medication.minThresholdUnits,
+        nextDoseUnits: intake.doseUnits
+      });
       await tx.pilloMedication.update({
         where: { id: intake.medicationId },
-        data: { stockUnits: nextStock }
+        data: {
+          stockUnits: nextStock,
+          ...getPilloStockNotificationResetData(stockStatus)
+        }
       });
     }
 
