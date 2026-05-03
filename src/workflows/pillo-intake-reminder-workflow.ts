@@ -1,4 +1,5 @@
 import type { Prisma } from '@prisma/client';
+import { sleep } from 'workflow';
 
 import { sendPilloIntakeReminderEmail } from '@/lib/email';
 import prisma from '@/lib/prisma';
@@ -301,20 +302,48 @@ const dispatchPilloIntakeRemindersStep = async (
 };
 
 /**
- * Workflow-раннер Pillo, который одним проходом проверяет наступившие приёмы всех пользователей.
+ * Workflow-раннер Pillo, который работает как краулер в течение 24 часов.
  * @param params - опциональная дата запуска для тестового/ручного вызова.
- * @returns Сводка обработанных напоминаний.
+ * @returns Сводка обработанных напоминаний за все проходы.
  */
 export const runPilloIntakeReminderWorkflow = async (
   params: PilloIntakeReminderWorkflowParams = {}
 ): Promise<PilloIntakeReminderWorkflowResult> => {
   'use workflow';
 
-  const now = resolvePilloRunnerNow(params);
-  const result = await dispatchPilloIntakeRemindersStep(now);
+  let totalScanned = 0;
+  let totalSent = 0;
+  let totalSkipped = 0;
+  let totalFailed = 0;
+
+  // Ограничение cron на Vercel Hobby - 1 раз в день.
+  // Запускаем цикл на 24 часа с интервалом проверки каждые 5 минут.
+  // 24 часа = 288 итераций по 5 минут.
+  const iterations = 288;
+
+  for (let i = 0; i < iterations; i++) {
+    // В первой итерации используем переданное время, если оно есть.
+    // В последующих всегда берем текущее время, чтобы проверять актуальное расписание.
+    const now = i === 0 ? resolvePilloRunnerNow(params) : new Date();
+
+    const result = await dispatchPilloIntakeRemindersStep(now);
+
+    totalScanned += result.scanned;
+    totalSent += result.sent;
+    totalSkipped += result.skipped;
+    totalFailed += result.failed;
+
+    // Спим 5 минут перед следующей проверкой
+    if (i < iterations - 1) {
+      await sleep('5m');
+    }
+  }
 
   return {
     status: 'completed',
-    ...result
+    scanned: totalScanned,
+    sent: totalSent,
+    skipped: totalSkipped,
+    failed: totalFailed
   };
 };
