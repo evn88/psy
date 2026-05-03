@@ -134,13 +134,21 @@ export const ThemeProvider = ({
 export const useTheme = (): ThemeContextValue => {
   const { forcedTheme, resolvedTheme, setTheme, systemTheme, theme } = useNextTheme();
 
-  return {
-    forcedTheme: forcedTheme ? normalizeTheme(forcedTheme, DEFAULT_THEME) : undefined,
-    resolvedTheme: normalizeResolvedTheme(resolvedTheme),
-    setTheme: (nextTheme: Theme) => {
+  const memoizedSetTheme = React.useCallback(
+    (nextTheme: Theme) => {
       setTheme(nextTheme);
     },
-    systemTheme: normalizeResolvedTheme(systemTheme),
-    theme: normalizeTheme(theme, DEFAULT_THEME)
-  };
+    [setTheme]
+  );
+
+  return React.useMemo(
+    () => ({
+      forcedTheme: forcedTheme ? normalizeTheme(forcedTheme, DEFAULT_THEME) : undefined,
+      resolvedTheme: normalizeResolvedTheme(resolvedTheme),
+      setTheme: memoizedSetTheme,
+      systemTheme: normalizeResolvedTheme(systemTheme),
+      theme: normalizeTheme(theme, DEFAULT_THEME)
+    }),
+    [forcedTheme, resolvedTheme, memoizedSetTheme, systemTheme, theme]
+  );
 };

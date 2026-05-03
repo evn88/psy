@@ -1002,7 +1002,8 @@
       "appearance": "Appearance",
       "appearanceDescription": "Customize your app theme and language",
       "about": "About Pillo",
-      "secureDescription": "All data is encrypted and stored securely."
+      "secureDescription": "All data is encrypted and stored securely.",
+      "days": "days"
     },
     "stockStatus": {
       "enough": "Enough",

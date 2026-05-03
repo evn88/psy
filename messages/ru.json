@@ -1002,7 +1002,8 @@
       "appearance": "Внешний вид",
       "appearanceDescription": "Настройте тему и язык приложения",
       "about": "О приложении",
-      "secureDescription": "Все данные защищены и хранятся локально."
+      "secureDescription": "Все данные защищены и хранятся локально.",
+      "days": "дн."
     },
     "stockStatus": {
       "enough": "Достаточно",

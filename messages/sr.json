@@ -966,7 +966,10 @@
       "lowStockWarningDays": "Koliko dana ranije preporučiti kupovinu",
       "lowStockWarningDaysDescription": "Pillo računa za koliko dana je dovoljna trenutna zaliha i prikazuje datum kupovine toliko dana pre nego što zaliha nestane. Podrazumevano je 7 dana.",
       "appearance": "Jezik i tema",
-      "appearanceDescription": "Ova podešavanja su sinhronizovana sa sajtom."
+      "appearanceDescription": "Ova podešavanja su sinhronizovana sa sajtom.",
+      "about": "O aplikaciji",
+      "secureDescription": "Svi podaci su šifrovani i sigurno uskladišteni.",
+      "days": "dana"
     },
     "stockStatus": {
       "enough": "Dovoljno",
