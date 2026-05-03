@@ -7,7 +7,7 @@
     },
     {
       "path": "/api/cron/pillo-reminders",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 0 * * *"
     },
     {
       "path": "/api/cron/system-logs-cleanup",
