@@ -8,8 +8,8 @@ import type {
   PilloHistoryEntryView,
   PilloIntakeView,
   PilloMedicationView,
-  PilloMonthlyMedicationStatView,
-  PilloPagePayload
+  PilloPagePayload,
+  PilloWeeklyScheduledIntakeView
 } from './types';
 
 /**
@@ -131,45 +131,28 @@ export const PilloPageClient = ({ payload }: { payload: PilloPagePayload }) => {
       });
   }, [medications, payload.todayIntakes]);
 
-  const monthlyIntakeStats = useMemo<PilloMonthlyMedicationStatView[]>(() => {
-    const monthlyStatsMap = new Map<string, PilloMonthlyMedicationStatView>();
-
-    for (const entry of payload.monthlyHistoryEntries) {
-      const current = monthlyStatsMap.get(entry.medicationId);
-
-      if (current) {
-        current.totalUnits += entry.doseUnits;
-        current.intakesCount += 1;
-        continue;
-      }
-
-      monthlyStatsMap.set(entry.medicationId, {
-        medicationId: entry.medicationId,
-        medicationName: entry.medicationName,
-        medicationPhotoUrl: entry.medicationPhotoUrl,
-        totalUnits: entry.doseUnits,
-        intakesCount: 1
-      });
-    }
-
-    return [...monthlyStatsMap.values()].sort((left, right) => right.totalUnits - left.totalUnits);
-  }, [payload.monthlyHistoryEntries]);
-
   const historyEntries = useMemo<PilloHistoryEntryView[]>(() => {
     return [...payload.historyEntries].sort((left, right) => {
       return new Date(right.takenAt).getTime() - new Date(left.takenAt).getTime();
     });
   }, [payload.historyEntries]);
 
+  const weeklyScheduledIntakes = useMemo<PilloWeeklyScheduledIntakeView[]>(() => {
+    return [...payload.weeklyScheduledIntakes].sort((left, right) => {
+      return new Date(left.scheduledFor).getTime() - new Date(right.scheduledFor).getTime();
+    });
+  }, [payload.weeklyScheduledIntakes]);
+
   return (
     <PilloAppShell
       appearanceSettings={payload.appearanceSettings}
+      currentLocalDate={payload.currentLocalDate}
       historyEntries={historyEntries}
       intakes={todayIntakes}
       medications={medications}
-      monthlyIntakeStats={monthlyIntakeStats}
       scheduleRules={payload.scheduleRules}
       settings={payload.settings}
+      weeklyScheduledIntakes={weeklyScheduledIntakes}
     />
   );
 };

@@ -19,7 +19,7 @@ import type {
   PilloHistoryEntryView,
   PilloIntakeView,
   PilloMedicationView,
-  PilloMonthlyMedicationStatView
+  PilloWeeklyScheduledIntakeView
 } from './types';
 import { EmptyState } from './empty-state';
 import { ManualIntakeDialog } from './manual-intake-dialog';
@@ -304,15 +304,17 @@ const IntakeCard = ({ intake }: { intake: PilloIntakeView }) => {
  * @returns Экран «Сегодня».
  */
 export const TodayView = ({
+  currentLocalDate,
   historyEntries,
   intakes,
   medications,
-  monthlyIntakeStats
+  weeklyScheduledIntakes
 }: {
+  currentLocalDate: string;
   historyEntries: PilloHistoryEntryView[];
   intakes: PilloIntakeView[];
   medications: PilloMedicationView[];
-  monthlyIntakeStats: PilloMonthlyMedicationStatView[];
+  weeklyScheduledIntakes: PilloWeeklyScheduledIntakeView[];
 }) => {
   const t = useTranslations('Pillo');
   const hasMedications = medications.length > 0;
@@ -337,8 +339,9 @@ export const TodayView = ({
           )}
 
           <PilloHistorySheet
+            currentLocalDate={currentLocalDate}
             historyEntries={historyEntries}
-            monthlyIntakeStats={monthlyIntakeStats}
+            weeklyScheduledIntakes={weeklyScheduledIntakes}
           >
             <Button
               variant="outline"
@@ -377,7 +380,11 @@ export const TodayView = ({
           </Button>
         )}
 
-        <PilloHistorySheet historyEntries={historyEntries} monthlyIntakeStats={monthlyIntakeStats}>
+        <PilloHistorySheet
+          currentLocalDate={currentLocalDate}
+          historyEntries={historyEntries}
+          weeklyScheduledIntakes={weeklyScheduledIntakes}
+        >
           <Button
             variant="outline"
             className="h-11 w-full rounded-full border-white/40 bg-white/40 font-bold backdrop-blur-sm dark:border-white/10 dark:bg-white/5"

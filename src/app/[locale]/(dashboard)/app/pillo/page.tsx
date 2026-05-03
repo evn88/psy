@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import type { Prisma } from '@prisma/client';
+import { subDays } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 
 import { requirePilloUser } from '@/modules/pillo/access';
@@ -14,7 +15,8 @@ import type {
   PilloIntakeRecord,
   PilloMedicationRecord,
   PilloPagePayload,
-  PilloScheduleRuleView
+  PilloScheduleRuleView,
+  PilloWeeklyScheduledIntakeView
 } from './_components/types';
 
 type DbPilloMedication = Prisma.PilloMedicationGetPayload<Record<string, never>>;
@@ -122,79 +124,61 @@ const PilloPage = async () => {
   };
   const timezone = dbUser.timezone || 'UTC';
   const todayKey = getPilloLocalDateKey(new Date(), timezone);
-  const currentMonthPrefix = formatInTimeZone(new Date(), timezone, 'yyyy-MM');
+  const weekStartKey = formatInTimeZone(subDays(new Date(), 6), timezone, 'yyyy-MM-dd');
   const manualIntakeDelegate = getPilloManualIntakeDelegate();
-  const [
-    todayIntakes,
-    takenHistoryIntakes,
-    manualHistoryIntakes,
-    monthlyTakenIntakes,
-    monthlyManualIntakes
-  ] = await Promise.all([
-    prisma.pilloIntake.findMany({
-      where: {
-        userId: user.id,
-        localDate: todayKey
-      },
-      include: {
-        medication: true,
-        scheduleRule: {
-          select: { comment: true }
-        }
-      },
-      orderBy: [{ scheduledFor: 'asc' }]
-    }),
-    prisma.pilloIntake.findMany({
-      where: {
-        userId: user.id,
-        status: 'TAKEN',
-        takenAt: { not: null }
-      },
-      include: {
-        medication: true
-      },
-      orderBy: [{ takenAt: 'desc' }],
-      take: 120
-    }),
-    manualIntakeDelegate
-      ? manualIntakeDelegate.findMany({
-          where: {
-            userId: user.id
-          },
-          include: {
-            medication: true
-          },
-          orderBy: [{ takenAt: 'desc' }],
-          take: 120
-        })
-      : Promise.resolve([]),
-    prisma.pilloIntake.findMany({
-      where: {
-        userId: user.id,
-        status: 'TAKEN',
-        localDate: {
-          startsWith: currentMonthPrefix
+  const [todayIntakes, takenHistoryIntakes, manualHistoryIntakes, weeklyScheduledIntakes] =
+    await Promise.all([
+      prisma.pilloIntake.findMany({
+        where: {
+          userId: user.id,
+          localDate: todayKey
         },
-        takenAt: { not: null }
-      },
-      include: {
-        medication: true
-      }
-    }),
-    manualIntakeDelegate
-      ? manualIntakeDelegate.findMany({
-          where: {
-            userId: user.id,
-            localDate: {
-              startsWith: currentMonthPrefix
-            }
-          },
-          include: {
-            medication: true
+        include: {
+          medication: true,
+          scheduleRule: {
+            select: { comment: true }
           }
-        })
-      : Promise.resolve([])
-  ]);
+        },
+        orderBy: [{ scheduledFor: 'asc' }]
+      }),
+      prisma.pilloIntake.findMany({
+        where: {
+          userId: user.id,
+          status: 'TAKEN',
+          takenAt: { not: null }
+        },
+        include: {
+          medication: true
+        },
+        orderBy: [{ takenAt: 'desc' }],
+        take: 120
+      }),
+      manualIntakeDelegate
+        ? manualIntakeDelegate.findMany({
+            where: {
+              userId: user.id
+            },
+            include: {
+              medication: true
+            },
+            orderBy: [{ takenAt: 'desc' }],
+            take: 120
+          })
+        : Promise.resolve([]),
+      prisma.pilloIntake.findMany({
+        where: {
+          userId: user.id,
+          localDate: {
+            gte: weekStartKey,
+            lte: todayKey
+          }
+        },
+        include: {
+          medication: true
+        },
+        orderBy: [{ scheduledFor: 'asc' }]
+      })
+    ]);
 
   const scheduleRules: PilloScheduleRuleView[] = (
     dbUser.pilloScheduleRules as DbPilloScheduleRule[]
@@ -283,40 +267,20 @@ const PilloPage = async () => {
     return new Date(right.takenAt).getTime() - new Date(left.takenAt).getTime();
   });
 
-  const monthlyHistoryEntries: PilloHistoryEntryView[] = [
-    ...(monthlyTakenIntakes as DbTakenHistoryIntake[]).flatMap(intake => {
-      if (!intake.takenAt) {
-        return [];
-      }
-
-      return [
-        {
-          id: intake.id,
-          medicationId: intake.medicationId,
-          medicationName: intake.medication.name,
-          medicationDosage: intake.medication.dosage ?? '',
-          medicationPhotoUrl: intake.medication.photoUrl,
-          doseUnits: toNumber(intake.doseUnits),
-          takenAt: intake.takenAt.toISOString(),
-          localDate: intake.localDate,
-          localTime: intake.localTime,
-          source: 'scheduled' as const
-        }
-      ];
-    }),
-    ...(monthlyManualIntakes as DbPilloManualIntake[]).map(intake => ({
-      id: intake.id,
-      medicationId: intake.medicationId,
-      medicationName: intake.medication.name,
-      medicationDosage: intake.medication.dosage ?? '',
-      medicationPhotoUrl: intake.medication.photoUrl,
-      doseUnits: toNumber(intake.doseUnits),
-      takenAt: intake.takenAt.toISOString(),
-      localDate: intake.localDate,
-      localTime: intake.localTime,
-      source: 'manual' as const
-    }))
-  ];
+  const weeklyIntakeRecords: PilloWeeklyScheduledIntakeView[] = (
+    weeklyScheduledIntakes as DbPilloIntake[]
+  ).map(intake => ({
+    id: intake.id,
+    medicationId: intake.medicationId,
+    medicationName: intake.medication.name,
+    medicationDosage: intake.medication.dosage ?? '',
+    medicationPhotoUrl: intake.medication.photoUrl,
+    scheduledFor: intake.scheduledFor.toISOString(),
+    localDate: intake.localDate,
+    localTime: intake.localTime,
+    doseUnits: toNumber(intake.doseUnits),
+    status: intake.status
+  }));
 
   const appearanceSettings: PilloAppearanceSettingsView = {
     language: dbUser.language,
@@ -325,8 +289,8 @@ const PilloPage = async () => {
 
   const payload: PilloPagePayload = {
     appearanceSettings,
+    currentLocalDate: todayKey,
     historyEntries,
-    monthlyHistoryEntries,
     medications,
     referenceDateIso: new Date().toISOString(),
     scheduleRules,
@@ -337,7 +301,8 @@ const PilloPage = async () => {
       lowStockPushEnabled: settings.lowStockPushEnabled,
       lowStockWarningDays: settings.lowStockWarningDays
     },
-    todayIntakes: intakeRecords
+    todayIntakes: intakeRecords,
+    weeklyScheduledIntakes: weeklyIntakeRecords
   };
 
   return <PilloPageClient payload={payload} />;

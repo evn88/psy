@@ -13,10 +13,10 @@ import type {
   PilloHistoryEntryView,
   PilloIntakeView,
   PilloMedicationView,
-  PilloMonthlyMedicationStatView,
   PilloScheduleRuleView,
   PilloSettingsView,
-  PilloTab
+  PilloTab,
+  PilloWeeklyScheduledIntakeView
 } from './types';
 
 import { TodayView } from './today-view';
@@ -26,12 +26,13 @@ import { SettingsView } from './pillo-settings-view';
 
 interface PilloAppShellProps {
   appearanceSettings: PilloAppearanceSettingsView;
+  currentLocalDate: string;
   historyEntries: PilloHistoryEntryView[];
   intakes: PilloIntakeView[];
   medications: PilloMedicationView[];
-  monthlyIntakeStats: PilloMonthlyMedicationStatView[];
   scheduleRules: PilloScheduleRuleView[];
   settings: PilloSettingsView;
+  weeklyScheduledIntakes: PilloWeeklyScheduledIntakeView[];
 }
 
 const tabs: Array<{ icon: typeof Home; id: PilloTab; labelKey: string }> = [
@@ -48,12 +49,13 @@ const tabs: Array<{ icon: typeof Home; id: PilloTab; labelKey: string }> = [
  */
 export const PilloAppShell = ({
   appearanceSettings,
+  currentLocalDate,
   historyEntries,
   intakes,
   medications,
-  monthlyIntakeStats,
   scheduleRules,
-  settings
+  settings,
+  weeklyScheduledIntakes
 }: PilloAppShellProps) => {
   const t = useTranslations('Pillo');
   const { activeTab, setActiveTab } = usePilloTabs('home');
@@ -92,10 +94,11 @@ export const PilloAppShell = ({
         <main className="flex-1 overflow-y-auto px-4 py-4 pb-32">
           {activeTab === 'home' && (
             <TodayView
+              currentLocalDate={currentLocalDate}
               historyEntries={historyEntries}
               intakes={intakes}
               medications={medications}
-              monthlyIntakeStats={monthlyIntakeStats}
+              weeklyScheduledIntakes={weeklyScheduledIntakes}
             />
           )}
           {activeTab === 'medications' && <MedicationsView medications={medications} />}
