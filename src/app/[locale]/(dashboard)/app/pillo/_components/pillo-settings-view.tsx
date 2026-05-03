@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { usePilloSettingsForm } from '../_hooks/use-pillo-settings-form';
+import { PilloPendingIndicator } from './pillo-pending-indicator';
 import { PilloSwitchControl } from './pillo-switch-control';
 import type { PilloAppearanceSettingsView, PilloSettingsView } from './types';
 
@@ -70,9 +71,19 @@ export const SettingsView = ({
     <div className="space-y-6 pb-8">
       {/* Секция Уведомлений */}
       <section className="space-y-2.5">
-        <h2 className="px-4 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-          {t('settings.notifications')}
-        </h2>
+        <div className="flex items-center justify-between gap-3 px-4">
+          <h2 className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+            {t('settings.notifications')}
+          </h2>
+          {isPending ? (
+            <div className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+              <PilloPendingIndicator
+                label={t('common.updating')}
+                className="[&_svg]:h-3.5 [&_svg]:w-3.5"
+              />
+            </div>
+          ) : null}
+        </div>
         <Card className="overflow-hidden rounded-[1.75rem] border-white/40 bg-white/60 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-black/20">
           <CardContent className="divide-y divide-black/[0.03] p-0 dark:divide-white/[0.03]">
             {NOTIFICATIONS.map(({ name, labelKey, icon: Icon, color }, index) => (
@@ -108,9 +119,19 @@ export const SettingsView = ({
 
       {/* Секция Запасов */}
       <section className="space-y-2.5">
-        <h2 className="px-4 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-          {t('settings.stock')}
-        </h2>
+        <div className="flex items-center justify-between gap-3 px-4">
+          <h2 className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+            {t('settings.stock')}
+          </h2>
+          {isPending ? (
+            <div className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+              <PilloPendingIndicator
+                label={t('common.saving')}
+                className="[&_svg]:h-3.5 [&_svg]:w-3.5"
+              />
+            </div>
+          ) : null}
+        </div>
         <Card className="rounded-[1.75rem] border-white/40 bg-white/60 p-4 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-black/20">
           <Form {...form}>
             <FormField

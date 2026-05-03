@@ -833,7 +833,15 @@
     "common": {
       "save": "Sačuvaj",
       "delete": "Obriši",
-      "clear": "Resetuj"
+      "cancel": "Otkaži",
+      "clear": "Resetuj",
+      "processing": "Obrađujem...",
+      "saving": "Čuvam...",
+      "deleting": "Brišem...",
+      "updating": "Ažuriram...",
+      "uploading": "Otpremam...",
+      "deleteConfirmTitle": "Potvrdite brisanje",
+      "deleteConfirmDescription": "Da li ste sigurni da želite da obrišete ovu stavku? Ova radnja ne može da se opozove."
     },
     "today": {
       "emptyTitle": "Danas je sve mirno",
@@ -849,9 +857,12 @@
       "manualTakeDose": "Količina",
       "manualTakeDoseHint": "Unesite koliko jedinica ste upravo uzeli.",
       "manualTakeAction": "Označi ručno",
+      "manualTakePending": "Beležim...",
       "manualTakeSuccess": "Uzimanje je ručno zabeleženo.",
       "take": "Uzeo sam",
+      "takePending": "Beležim...",
       "skip": "Preskoči",
+      "skipPending": "Preskačem...",
       "takeError": "Nije uspelo označavanje uzimanja kao završenog.",
       "skipError": "Nije uspelo označavanje uzimanja kao preskočenog.",
       "manualTakeError": "Nije uspelo ručno beleženje uzimanja.",
@@ -859,6 +870,7 @@
       "undoTitle": "Promeniti izbor?",
       "undoDescription": "Možete otkazati prethodni izbor (Uzeo / Preskočio). Ako otkažete uzimanje leka, količina će biti vraćena u dostupne zalihe.",
       "undoAction": "Otkaži izbor",
+      "undoPending": "Otkazujem...",
       "undoError": "Nije uspelo otkazivanje izbora.",
       "remainingUnits": "Ostalo je {count} jedinica",
       "daysLeft": "Za još ~{count} dana",
@@ -885,6 +897,7 @@
     },
     "medications": {
       "addPackageBtn": "Dodaj pakovanje",
+      "addPackagePending": "Dodajem pakovanje...",
       "addPackageConfirmTitle": "Dodati pakovanje?",
       "addPackageConfirmDescription": "Jedno pakovanje će biti dodato zalihama. Nastaviti?",
       "add": "Dodaj lek",

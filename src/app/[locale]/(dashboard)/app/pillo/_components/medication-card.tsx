@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { addPilloMedicationPackageAction } from '../actions';
 import { AddPackageConfirmDialog } from './add-package-confirm-dialog';
 import { MedicationDialog } from './medication-dialog';
+import { PilloPendingIndicator } from './pillo-pending-indicator';
 import type { PilloMedicationView } from './types';
 
 /**
@@ -177,6 +178,7 @@ export const MedicationCard = ({ medication }: { medication: PilloMedicationView
             >
               {medication.unitsPerPackage ? (
                 <AddPackageConfirmDialog
+                  isPending={isPending}
                   onConfirm={() => {
                     startTransition(() => {
                       void addPilloMedicationPackageAction(medication.id);
@@ -189,7 +191,14 @@ export const MedicationCard = ({ medication }: { medication: PilloMedicationView
                     disabled={isPending}
                     className="h-8 w-8 rounded-full shadow-sm transition-all hover:scale-105 active:scale-95"
                   >
-                    <Plus className="h-4 w-4" />
+                    {isPending ? (
+                      <PilloPendingIndicator
+                        label=""
+                        className="gap-0 [&_svg]:h-4 [&_svg]:w-4 [&_span]:hidden"
+                      />
+                    ) : (
+                      <Plus className="h-4 w-4" />
+                    )}
                   </Button>
                 </AddPackageConfirmDialog>
               ) : null}
