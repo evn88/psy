@@ -111,8 +111,8 @@ export const PilloAppShell = ({
         </main>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/20 bg-background/60 px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-2 backdrop-blur-3xl saturate-[1.8] dark:border-white/5">
-        <div className="mx-auto grid max-w-md grid-cols-4 gap-1 rounded-[1.75rem] bg-black/5 p-1 dark:bg-white/5">
+      <nav className="fixed inset-x-0 bottom-0 z-30 px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-2">
+        <div className="mx-auto grid max-w-md grid-cols-4 gap-1 rounded-[1.75rem] border border-white/10 bg-white/40 p-1 backdrop-blur-xl dark:border-white/5 dark:bg-black/10">
           {tabs.map(tab => (
             <button
               key={tab.id}
