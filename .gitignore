@@ -48,3 +48,7 @@ skills-lock.json
 /public/.well-known/workflow/
 /src/app/.well-known/workflow/
 /app/.well-known/workflow/
+/.claude/
+/.codex/
+/.swc/
+AGENTS.md
