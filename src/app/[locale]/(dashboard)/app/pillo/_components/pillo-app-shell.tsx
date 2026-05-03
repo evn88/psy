@@ -82,7 +82,7 @@ export const PilloAppShell = ({
             </div>
             <Badge
               variant="secondary"
-              className="rounded-full border-none bg-primary/15 px-3 py-1 font-semibold text-primary-foreground shadow-sm"
+              className="rounded-full border border-primary/20 bg-primary/20 px-3 py-1 font-semibold text-primary shadow-sm shadow-primary/10"
             >
               {t('pendingCount', { count: todayPendingCount })}
             </Badge>

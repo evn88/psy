@@ -89,6 +89,15 @@ const IntakeCard = ({ intake }: { intake: PilloIntakeView }) => {
   const locale = useLocale();
   const { isPending, onSkip, onTake, onUndo } = usePilloIntakeActions();
   const isDone = intake.status !== 'PENDING';
+  const hasStockWarning = intake.stockStatus !== 'enough' && !isDone;
+  const stockDateFormatter = new Intl.DateTimeFormat(locale, {
+    month: 'short',
+    day: 'numeric'
+  });
+
+  const stockSummary = t('today.remainingUnits', {
+    count: intake.stockUnits
+  });
 
   const cardContent = (
     <Card
@@ -132,7 +141,8 @@ const IntakeCard = ({ intake }: { intake: PilloIntakeView }) => {
                   'shrink-0 rounded-full border-none px-2 py-0.5 text-[10px] font-bold uppercase backdrop-blur-md',
                   intake.status === 'TAKEN' && 'bg-emerald-500/15 text-emerald-600',
                   intake.status === 'SKIPPED' && 'bg-rose-500/15 text-rose-600',
-                  intake.status === 'PENDING' && 'bg-primary/15 text-primary'
+                  intake.status === 'PENDING' &&
+                    'bg-primary/25 text-primary shadow-sm shadow-primary/10 hover:bg-primary/25'
                 )}
               >
                 {t(`intakeStatus.${intake.status}`)}
@@ -146,15 +156,29 @@ const IntakeCard = ({ intake }: { intake: PilloIntakeView }) => {
                   {intake.doseUnits} x {intake.medicationDosage}
                 </span>
               </div>
-              {intake.daysLeft !== null && (
-                <span className="text-foreground/80 truncate">
-                  {t('today.daysLeft', { count: intake.daysLeft })}
+              <div className="mt-1 flex flex-wrap gap-2">
+                <span className="rounded-full bg-foreground/[0.04] px-2.5 py-1 text-[11px] font-semibold text-foreground/75 dark:bg-white/10">
+                  {stockSummary}
                 </span>
-              )}
+                {intake.daysLeft !== null && (
+                  <span
+                    className={cn(
+                      'rounded-full px-2.5 py-1 text-[11px] font-semibold',
+                      intake.stockStatus === 'enough'
+                        ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                        : intake.stockStatus === 'low'
+                          ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300'
+                          : 'bg-rose-500/10 text-rose-700 dark:text-rose-300'
+                    )}
+                  >
+                    {t('today.daysLeft', { count: intake.daysLeft })}
+                  </span>
+                )}
+              </div>
               {(intake.buyAtDate !== null || intake.stockEndsAt !== null) && (
                 <span
                   className={cn(
-                    'font-bold truncate',
+                    'pt-1 font-bold truncate',
                     intake.stockStatus === 'enough' && 'text-emerald-600 dark:text-emerald-400',
                     intake.stockStatus === 'low' && 'text-amber-600 dark:text-amber-400',
                     intake.stockStatus === 'empty' && 'text-rose-600 dark:text-rose-400'
@@ -163,20 +187,14 @@ const IntakeCard = ({ intake }: { intake: PilloIntakeView }) => {
                   {intake.buyAtDate !== null ? (
                     <>
                       {t('today.buyAtDate', {
-                        date: new Intl.DateTimeFormat(locale, {
-                          month: 'short',
-                          day: 'numeric'
-                        }).format(new Date(intake.buyAtDate))
+                        date: stockDateFormatter.format(new Date(intake.buyAtDate))
                       })}
                       {intake.stockEndsAt !== null && (
                         <>
                           {' '}
                           <span className="font-medium opacity-70">
                             {t('today.stockEndsAt', {
-                              date: new Intl.DateTimeFormat(locale, {
-                                month: 'short',
-                                day: 'numeric'
-                              }).format(new Date(intake.stockEndsAt))
+                              date: stockDateFormatter.format(new Date(intake.stockEndsAt))
                             })}
                           </span>
                         </>
@@ -184,10 +202,7 @@ const IntakeCard = ({ intake }: { intake: PilloIntakeView }) => {
                     </>
                   ) : intake.stockEndsAt !== null ? (
                     t('today.stockEndsSoon', {
-                      date: new Intl.DateTimeFormat(locale, {
-                        month: 'short',
-                        day: 'numeric'
-                      }).format(new Date(intake.stockEndsAt))
+                      date: stockDateFormatter.format(new Date(intake.stockEndsAt))
                     })
                   ) : null}
                 </span>
@@ -202,23 +217,16 @@ const IntakeCard = ({ intake }: { intake: PilloIntakeView }) => {
           </p>
         )}
 
-        {intake.stockStatus !== 'enough' && !isDone && (
+        {hasStockWarning && (
           <div
             className={cn(
-              'rounded-2xl border px-3 py-2 text-xs font-medium',
+              'rounded-[1.4rem] border px-3.5 py-3 text-xs font-medium shadow-inner',
               intake.stockStatus === 'empty'
                 ? 'border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-400'
                 : 'border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-400'
             )}
           >
-            <div className="flex items-center justify-between gap-2">
-              <span>{t('today.lowStockWarning')}</span>
-              {intake.daysLeft !== null && (
-                <span className="shrink-0 font-bold opacity-80">
-                  {t('today.daysLeft', { count: intake.daysLeft })}
-                </span>
-              )}
-            </div>
+            <p className="text-sm font-bold leading-snug">{t('today.lowStockWarning')}</p>
           </div>
         )}
 
@@ -330,7 +338,6 @@ export const TodayView = ({
 }) => {
   const t = useTranslations('Pillo');
   const nextPendingIntake = intakes.find(intake => intake.status === 'PENDING') ?? null;
-  const pendingCount = intakes.filter(intake => intake.status === 'PENDING').length;
   const hasMedications = medications.length > 0;
 
   if (intakes.length === 0) {
@@ -410,12 +417,6 @@ export const TodayView = ({
         <h2 className="text-sm font-bold uppercase tracking-[0.22em] text-muted-foreground/60">
           {t('today.listTitle')}
         </h2>
-        <Badge
-          variant="secondary"
-          className="rounded-full bg-muted/50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide"
-        >
-          {t('pendingCount', { count: pendingCount })}
-        </Badge>
       </div>
 
       {intakes.map(intake => (
