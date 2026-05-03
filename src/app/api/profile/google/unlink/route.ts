@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/shared/lib/prisma';
+import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 /**
  * API роут для отвязки Google аккаунта от профиля пользователя.

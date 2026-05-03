@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { locales } from '@/i18n/config';
-import { SITE_URL } from '@/shared/lib/seo';
+import { SITE_URL } from '@/lib/seo';
 
 /**
  * Генерирует robots.txt через metadata file convention.

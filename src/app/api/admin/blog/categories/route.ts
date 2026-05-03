@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import prisma from '@/shared/lib/prisma';
-import { generateSlug } from '@/shared/lib/blog-utils';
+import prisma from '@/lib/prisma';
+import { generateSlug } from '@/lib/blog-utils';
 import { z } from 'zod';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 const createSchema = z.object({
   nameRu: z.string().min(1),

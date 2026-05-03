@@ -4,17 +4,17 @@ import {
   BACKUP_DATABASE_ARCHIVE_PREFIX,
   BACKUP_SHADOW_DATABASE_PREFIX,
   BACKUP_UPLOAD_PREFIX
-} from '@/configs/backup';
-import { requireAdminSession } from '@/shared/lib/backup/auth';
-import { normalizeBackupRouteError } from '@/shared/lib/backup/http';
+} from '@/lib/config/backup';
+import { requireAdminSession } from '@/modules/backup/auth';
+import { normalizeBackupRouteError } from '@/modules/backup/http';
 import {
   createBackupJobId,
   createInitialBackupJobSnapshot,
   updateBackupJobSnapshot,
   writeBackupJobSnapshot
-} from '@/shared/lib/backup/jobs';
-import { startRestoreSiteBackupWorkflow } from '@/shared/lib/backup/workflow';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+} from '@/modules/backup/jobs';
+import { startRestoreSiteBackupWorkflow } from '@/modules/backup/workflow';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 export const dynamic = 'force-dynamic';
 

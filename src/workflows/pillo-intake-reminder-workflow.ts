@@ -6,15 +6,15 @@ import {
   getPilloSkipUrl,
   getPilloTakeUrl,
   interpolatePilloCopy
-} from '@/features/pillo/lib/notifications';
+} from '@/modules/pillo/notifications';
 import {
   createPilloActionToken,
   getPilloActionTokenExpiresAt,
   hashPilloActionToken
-} from '@/features/pillo/lib/tokens';
-import { sendPilloIntakeReminderEmail } from '@/shared/lib/email';
-import prisma from '@/shared/lib/prisma';
-import { sendPushToMany } from '@/shared/lib/push';
+} from '@/modules/pillo/tokens';
+import { sendPilloIntakeReminderEmail } from '@/lib/email';
+import prisma from '@/lib/prisma';
+import { sendPushToMany } from '@/lib/push';
 
 type PilloIntakeReminderWorkflowParams = {
   intakeId: string;
@@ -140,7 +140,7 @@ const getPilloReminderReadiness = (
     return { isReady: false, reason: 'user-is-not-eligible', triggerAt: intake.scheduledFor };
   }
 
-  if (intake.reminderSentAt) {
+  if (intake.reminderSentAt || (intake.reminderEmailSentAt && intake.reminderPushSentAt)) {
     return { isReady: false, reason: 'reminder-already-sent', triggerAt: intake.scheduledFor };
   }
 
@@ -215,11 +215,14 @@ const dispatchPilloIntakeReminderStep = async (
   const skipUrl = getPilloSkipUrl({ locale: intake.user.language, token });
   const copy = getPilloNotificationCopy(intake.user.language);
   const doseText = getPilloDoseText(intake);
+  const nowTimestamp = new Date();
+  let reminderEmailSentAt = intake.reminderEmailSentAt;
+  let reminderPushSentAt = intake.reminderPushSentAt;
   let isEmailSent = false;
   let isPushSent = false;
   let shouldRetryDelivery = false;
 
-  if (isEmailEnabled && intake.user.email) {
+  if (!intake.reminderEmailSentAt && isEmailEnabled && intake.user.email) {
     const emailResult = await sendPilloIntakeReminderEmail({
       email: intake.user.email,
       name: intake.user.name || 'User',
@@ -234,12 +237,15 @@ const dispatchPilloIntakeReminderStep = async (
 
     if (emailResult) {
       isEmailSent = true;
+      reminderEmailSentAt = nowTimestamp;
     } else {
       shouldRetryDelivery = true;
     }
+  } else if (!intake.reminderEmailSentAt) {
+    reminderEmailSentAt = nowTimestamp;
   }
 
-  if (isPushEnabled && intake.user.pushSubscriptions.length > 0) {
+  if (!intake.reminderPushSentAt && isPushEnabled && intake.user.pushSubscriptions.length > 0) {
     const pushResults = await sendPushToMany(intake.user.pushSubscriptions, {
       title: copy.pushIntakeTitle,
       body: interpolatePilloCopy(copy.pushIntakeBody, {
@@ -251,19 +257,32 @@ const dispatchPilloIntakeReminderStep = async (
 
     if (pushResults.some(item => item.success)) {
       isPushSent = true;
+      reminderPushSentAt = nowTimestamp;
     } else {
       shouldRetryDelivery = true;
     }
+  } else if (!intake.reminderPushSentAt) {
+    reminderPushSentAt = nowTimestamp;
+  }
+
+  if (
+    reminderEmailSentAt?.getTime() !== intake.reminderEmailSentAt?.getTime() ||
+    reminderPushSentAt?.getTime() !== intake.reminderPushSentAt?.getTime()
+  ) {
+    await prisma.pilloIntake.update({
+      where: { id: intake.id },
+      data: {
+        reminderEmailSentAt,
+        reminderPushSentAt,
+        reminderSentAt:
+          reminderEmailSentAt && reminderPushSentAt ? nowTimestamp : intake.reminderSentAt
+      }
+    });
   }
 
   if (shouldRetryDelivery) {
     throw new Error('Pillo reminder delivery failed for at least one channel');
   }
-
-  await prisma.pilloIntake.update({
-    where: { id: intake.id },
-    data: { reminderSentAt: new Date() }
-  });
 
   return {
     status: 'sent',

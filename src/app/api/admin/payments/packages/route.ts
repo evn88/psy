@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
-import prisma from '@/shared/lib/prisma';
+import prisma from '@/lib/prisma';
 import { z } from 'zod';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 const createSchema = z.object({
   title: z.any(), // Record<string, string> expected
@@ -58,7 +58,7 @@ async function postHandler(req: Request) {
   });
 
   revalidatePath('/my/payments', 'page');
-  revalidatePath('/[locale]/(main)/my/payments', 'page');
+  revalidatePath('/[locale]/(dashboard)/my/payments', 'page');
 
   return NextResponse.json(pkg, { status: 201 });
 }

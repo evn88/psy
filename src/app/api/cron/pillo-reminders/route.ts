@@ -3,8 +3,8 @@ import { NextResponse } from 'next/server';
 import {
   checkPilloCourseEndNotifications,
   recoverPilloReminderWindow
-} from '@/features/pillo/lib/service';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+} from '@/modules/pillo/service';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { defaultLocale } from '@/i18n/config';
-import prisma from '@/shared/lib/prisma';
+import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
 import { headers } from 'next/headers';
-import { sendVerificationEmail } from '@/shared/lib/email';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import { sendVerificationEmail } from '@/lib/email';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 /** Время жизни токена верификации — 24 часа */
 const VERIFICATION_TOKEN_EXPIRY_HOURS = 24;

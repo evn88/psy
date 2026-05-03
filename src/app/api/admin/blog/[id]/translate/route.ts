@@ -2,13 +2,13 @@ import { NextResponse } from 'next/server';
 import { z, ZodError } from 'zod';
 import { defaultLocale, locales } from '@/i18n/config';
 import { auth } from '@/auth';
-import { aiModelIdSchema } from '@/shared/lib/ai/ai-model-catalog';
-import { aiSkillPromptOverridesSchema } from '@/shared/lib/ai/ai-contracts';
-import { AiSkillConfigurationError, AiSkillPromptOverrideError } from '@/shared/lib/ai/ai-errors';
-import { executeAiSkill } from '@/shared/lib/ai/execute-ai-skill.server';
-import type { BlogArticleTranslationResult } from '@/shared/lib/ai/skills/blog-article-translation.contract';
-import prisma from '@/shared/lib/prisma';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import { aiModelIdSchema } from '@/modules/ai/ai-model-catalog';
+import { aiSkillPromptOverridesSchema } from '@/modules/ai/ai-contracts';
+import { AiSkillConfigurationError, AiSkillPromptOverrideError } from '@/modules/ai/ai-errors';
+import { executeAiSkill } from '@/modules/ai/execute-ai-skill.server';
+import type { BlogArticleTranslationResult } from '@/modules/ai/skills/blog-article-translation.contract';
+import prisma from '@/lib/prisma';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 const schema = z.object({
   targetLocale: z.enum(locales).refine(val => val !== defaultLocale, {

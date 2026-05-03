@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { verifyPayPalWebhookSignature } from '@/shared/lib/paypal/client';
-import { processPayPalWebhookEvent } from '@/shared/lib/paypal/service';
-import type { PayPalWebhookEvent } from '@/shared/lib/paypal/types';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import { verifyPayPalWebhookSignature } from '@/modules/payments/paypal/client';
+import { processPayPalWebhookEvent } from '@/modules/payments/paypal/service';
+import type { PayPalWebhookEvent } from '@/modules/payments/paypal/types';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 /**
  * POST /api/paypal/webhooks

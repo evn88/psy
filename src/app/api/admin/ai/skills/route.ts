@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { AI_MODEL_CATALOG, AI_MODEL_IDS } from '@/shared/lib/ai/ai-model-catalog';
-import { AI_SKILL_IDS, AI_SKILL_MANIFEST } from '@/shared/lib/ai/ai-skill-manifest';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import { AI_MODEL_CATALOG, AI_MODEL_IDS } from '@/modules/ai/ai-model-catalog';
+import { AI_SKILL_IDS, AI_SKILL_MANIFEST } from '@/modules/ai/ai-skill-manifest';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 /**
  * Проверяет, что текущий пользователь является администратором.

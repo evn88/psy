@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
-import prisma from '@/shared/lib/prisma';
-import { acquireBlogEditorLock } from '@/shared/lib/blog-editor-lock-store';
-import { calculateReadingTime } from '@/shared/lib/blog-utils';
+import prisma from '@/lib/prisma';
+import { acquireBlogEditorLock } from '@/lib/blog-editor-lock-store';
+import { calculateReadingTime } from '@/lib/blog-utils';
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 const updateSchema = z.object({
   slug: z.string().min(1).optional(),

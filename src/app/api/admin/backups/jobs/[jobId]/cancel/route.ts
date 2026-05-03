@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getRun } from 'workflow/api';
-import { requireAdminSession } from '@/shared/lib/backup/auth';
-import { normalizeBackupRouteError } from '@/shared/lib/backup/http';
-import { readBackupJobSnapshot, requestBackupJobCancellation } from '@/shared/lib/backup/jobs';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import { requireAdminSession } from '@/modules/backup/auth';
+import { normalizeBackupRouteError } from '@/modules/backup/http';
+import { readBackupJobSnapshot, requestBackupJobCancellation } from '@/modules/backup/jobs';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 export const dynamic = 'force-dynamic';
 

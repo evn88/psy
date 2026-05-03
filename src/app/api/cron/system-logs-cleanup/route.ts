@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { startSystemLogCleanupWorkflow } from '@/shared/lib/system-logs/system-log-cleanup-workflow';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import { startSystemLogCleanupWorkflow } from '@/modules/system-logs/system-log-cleanup-workflow';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

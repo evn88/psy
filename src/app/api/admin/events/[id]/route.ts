@@ -2,17 +2,17 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { EventStatus, EventType, Prisma } from '@prisma/client';
 import { z } from 'zod';
-import prisma from '@/shared/lib/prisma';
-import { sendEventCancellationEmail, sendEventNotificationEmail } from '@/shared/lib/email';
-import { syncEventWithGoogle } from '@/shared/lib/google-sync';
-import { doesDateRangeOverlap, isValidDateRange } from '@/shared/lib/event-utils';
-import { optionalMeetingUrlSchema } from '@/shared/lib/safe-url';
-import { startSessionReminderWorkflow } from '@/shared/lib/session-reminder-workflow';
+import prisma from '@/lib/prisma';
+import { sendEventCancellationEmail, sendEventNotificationEmail } from '@/lib/email';
+import { syncEventWithGoogle } from '@/lib/google-sync';
+import { doesDateRangeOverlap, isValidDateRange } from '@/lib/event-utils';
+import { optionalMeetingUrlSchema } from '@/lib/safe-url';
+import { startSessionReminderWorkflow } from '@/lib/session-reminder-workflow';
 import {
   MAX_SESSION_REMINDER_MINUTES,
   MIN_SESSION_REMINDER_MINUTES
-} from '@/shared/lib/session-reminders';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+} from '@/lib/session-reminders';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 const eventUserSelect = {
   id: true,

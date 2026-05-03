@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 import { auth } from '@/auth';
-import { aiSkillExecuteRequestSchema } from '@/shared/lib/ai/ai-contracts';
+import { aiSkillExecuteRequestSchema } from '@/modules/ai/ai-contracts';
 import {
   AiSkillConfigurationError,
   AiSkillNotFoundError,
   AiSkillPromptOverrideError
-} from '@/shared/lib/ai/ai-errors';
-import { executeAiSkill } from '@/shared/lib/ai/execute-ai-skill.server';
-import { aiSkillIdSchema } from '@/shared/lib/ai/ai-skill-manifest';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+} from '@/modules/ai/ai-errors';
+import { executeAiSkill } from '@/modules/ai/execute-ai-skill.server';
+import { aiSkillIdSchema } from '@/modules/ai/ai-skill-manifest';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 /**
  * Проверяет, что текущий пользователь является администратором.

@@ -1,10 +1,10 @@
 import { auth } from '@/auth';
 import { NextResponse } from 'next/server';
 import { verifyRegistrationResponse } from '@simplewebauthn/server';
-import prisma from '@/shared/lib/prisma';
+import prisma from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { getExpectedOrigin, getRPID } from '../config';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 /**
  * POST handler для проверки и сохранения Passkey

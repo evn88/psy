@@ -1,9 +1,9 @@
 import { Resend } from 'resend';
-import { AdminMessageTemplate } from '@/components/email-templates/admin-message-template';
+import { AdminMessageTemplate } from '@/emails/admin-message-template';
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import prisma from '@/shared/lib/prisma';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import prisma from '@/lib/prisma';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 

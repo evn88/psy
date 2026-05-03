@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/shared/lib/prisma';
+import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
 import { z } from 'zod';
 import type { Prisma } from '@prisma/client';
-import type { ParsedEvent } from '@/shared/lib/ical-parser';
-import { doesDateRangeOverlap, isValidDateRange } from '@/shared/lib/event-utils';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import type { ParsedEvent } from '@/lib/ical-parser';
+import { doesDateRangeOverlap, isValidDateRange } from '@/lib/event-utils';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 const getEventsSchema = z.object({
   start: z.string().datetime().optional(),
@@ -74,7 +74,7 @@ async function getHandler(req: Request) {
 
     let googleEvents: ParsedEvent[] = [];
     if (admin) {
-      const { fetchGoogleEvents } = await import('@/shared/lib/google-sync');
+      const { fetchGoogleEvents } = await import('@/lib/google-sync');
       googleEvents = await fetchGoogleEvents(admin.id);
       if (start && end) {
         const startD = new Date(start);

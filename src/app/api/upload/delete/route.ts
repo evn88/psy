@@ -1,7 +1,7 @@
 import { del } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 async function deleteHandler(req: Request) {
   const session = await auth();

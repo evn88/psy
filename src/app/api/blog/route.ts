@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { locales } from '@/i18n/config';
-import prisma from '@/shared/lib/prisma';
-import { getBlogLocale } from '@/shared/lib/blog-utils';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import prisma from '@/lib/prisma';
+import { getBlogLocale } from '@/lib/blog-utils';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 async function getHandler(req: Request) {
   const { searchParams } = new URL(req.url);

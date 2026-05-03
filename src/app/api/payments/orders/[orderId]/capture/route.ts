@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { getPaymentService } from '@/shared/lib/payments/factory';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+import { getPaymentService } from '@/modules/payments/factory';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 interface CaptureRouteProps {
   params: Promise<{ orderId: string }>;

@@ -19,7 +19,7 @@ const deleteExpiredSystemLogsStep = async (): Promise<{
 }> => {
   'use step';
 
-  const { default: prisma } = await import('@/shared/lib/prisma');
+  const { default: prisma } = await import('@/lib/prisma');
 
   const settings = await prisma.systemLogSettings.upsert({
     where: { id: 'default' },

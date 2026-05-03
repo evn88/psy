@@ -1,0 +1,2 @@
+-- RenameIndex
+ALTER INDEX "PilloIntake_scheduledFor_reminderEmailSentAt_reminderPushSentAt" RENAME TO "PilloIntake_scheduledFor_reminderEmailSentAt_reminderPushSe_idx";

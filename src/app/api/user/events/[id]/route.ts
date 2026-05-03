@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/shared/lib/prisma';
+import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
 import { z } from 'zod';
 import {
@@ -7,14 +7,14 @@ import {
   sendAdminEventCancellationEmail,
   sendEventCancellationEmail,
   sendEventNotificationEmail
-} from '@/shared/lib/email';
-import { syncEventWithGoogle } from '@/shared/lib/google-sync';
-import { startSessionReminderWorkflow } from '@/shared/lib/session-reminder-workflow';
+} from '@/lib/email';
+import { syncEventWithGoogle } from '@/lib/google-sync';
+import { startSessionReminderWorkflow } from '@/lib/session-reminder-workflow';
 import {
   MAX_SESSION_REMINDER_MINUTES,
   MIN_SESSION_REMINDER_MINUTES
-} from '@/shared/lib/session-reminders';
-import { withApiLogging } from '@/shared/lib/system-logs/with-api-logging.server';
+} from '@/lib/session-reminders';
+import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 const reminderMinutesSchema = z.coerce
   .number()
