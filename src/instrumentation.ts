@@ -1,8 +1,10 @@
-import { startPilloIntakeReminderRunnerWorkflow } from '@/lib/pillo-reminder-workflow';
-import prisma from '@/lib/prisma';
-
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
+    const { startPilloIntakeReminderRunnerWorkflow } = await import(
+      '@/lib/pillo-reminder-workflow'
+    );
+    const prisma = (await import('@/lib/prisma')).default;
+
     try {
       // Ищем последний запуск краулера
       const lastStart = await prisma.systemLogEntry.findFirst({

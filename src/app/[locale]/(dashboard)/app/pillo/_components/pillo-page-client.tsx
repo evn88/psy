@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useOptimistic } from 'react';
 
 import { getPilloStockStatus } from '@/modules/pillo/stock';
 import { PilloAppShell } from './pillo-app-shell';
@@ -11,6 +11,7 @@ import type {
   PilloPagePayload,
   PilloWeeklyScheduledIntakeView
 } from './types';
+import { PilloOptimisticContext, type PilloOptimisticAction } from '../_hooks/use-pillo-optimistic';
 
 /**
  * Возвращает приоритет статуса для сортировки списка приёмов.
@@ -34,55 +35,130 @@ const getIntakeStatusPriority = (status: PilloIntakeView['status']): number => {
  * @param props - сериализуемые данные маршрута.
  * @returns Полностью клиентский shell приложения.
  */
-export const PilloPageClient = ({ payload }: { payload: PilloPagePayload }) => {
+export const PilloPageClient = ({ payload: initialPayload }: { payload: PilloPagePayload }) => {
+  const [payload, addOptimisticAction] = useOptimistic<PilloPagePayload, PilloOptimisticAction>(
+    initialPayload,
+    (state, action) => {
+      switch (action.type) {
+        case 'take_intake':
+          return {
+            ...state,
+            todayIntakes: state.todayIntakes.map(intake =>
+              intake.id === action.id ? { ...intake, status: 'TAKEN' } : intake
+            )
+          };
+        case 'skip_intake':
+          return {
+            ...state,
+            todayIntakes: state.todayIntakes.map(intake =>
+              intake.id === action.id ? { ...intake, status: 'SKIPPED' } : intake
+            )
+          };
+        case 'undo_intake':
+          return {
+            ...state,
+            todayIntakes: state.todayIntakes.map(intake =>
+              intake.id === action.id ? { ...intake, status: 'PENDING' } : intake
+            )
+          };
+        case 'add_medication':
+          return {
+            ...state,
+            medications: [...state.medications, action.medication]
+          };
+        case 'update_medication':
+          return {
+            ...state,
+            medications: state.medications.map(m =>
+              m.id === action.medication.id ? action.medication : m
+            )
+          };
+        case 'delete_medication':
+          return {
+            ...state,
+            medications: state.medications.filter(m => m.id !== action.id),
+            scheduleRules: state.scheduleRules.filter(r => r.medicationId !== action.id),
+            todayIntakes: state.todayIntakes.filter(i => i.medicationId !== action.id)
+          };
+        case 'add_schedule':
+          return {
+            ...state,
+            scheduleRules: [...state.scheduleRules, action.schedule]
+          };
+        case 'update_schedule':
+          return {
+            ...state,
+            scheduleRules: state.scheduleRules.map(r =>
+              r.id === action.schedule.id ? action.schedule : r
+            )
+          };
+        case 'delete_schedule':
+          return {
+            ...state,
+            scheduleRules: state.scheduleRules.filter(r => r.id !== action.id),
+            todayIntakes: state.todayIntakes.filter(i => i.id !== action.id) // Rough approximation, rules map to multiple intakes, but this is optimistic
+          };
+        case 'take_manual_intake':
+          return {
+            ...state,
+            historyEntries: [action.entry, ...state.historyEntries]
+          };
+        default:
+          return state;
+      }
+    }
+  );
+
   const medications = useMemo<PilloMedicationView[]>(() => {
     const referenceDate = new Date(payload.referenceDateIso);
 
-    return payload.medications.map(medication => {
-      const activeRules = payload.scheduleRules.filter(
-        rule => rule.medicationId === medication.id && rule.isActive
-      );
+    return payload.medications
+      .map(medication => {
+        const activeRules = payload.scheduleRules.filter(
+          rule => rule.medicationId === medication.id && rule.isActive
+        );
 
-      let daysLeft: number | null = null;
-      let buyAtDate: string | null = null;
-      let stockEndsAt: string | null = null;
+        let daysLeft: number | null = null;
+        let buyAtDate: string | null = null;
+        let stockEndsAt: string | null = null;
 
-      if (activeRules.length > 0) {
-        let weeklyConsumption = 0;
+        if (activeRules.length > 0) {
+          let weeklyConsumption = 0;
 
-        for (const rule of activeRules) {
-          weeklyConsumption += rule.doseUnits * rule.daysOfWeek.length;
-        }
+          for (const rule of activeRules) {
+            weeklyConsumption += rule.doseUnits * rule.daysOfWeek.length;
+          }
 
-        if (weeklyConsumption > 0) {
-          const dailyConsumption = weeklyConsumption / 7;
-          daysLeft = Math.floor(medication.stockUnits / dailyConsumption);
+          if (weeklyConsumption > 0) {
+            const dailyConsumption = weeklyConsumption / 7;
+            daysLeft = Math.floor(medication.stockUnits / dailyConsumption);
 
-          const endsDate = new Date(referenceDate);
-          endsDate.setDate(endsDate.getDate() + daysLeft);
-          stockEndsAt = endsDate.toISOString();
+            const endsDate = new Date(referenceDate);
+            endsDate.setDate(endsDate.getDate() + daysLeft);
+            stockEndsAt = endsDate.toISOString();
 
-          const daysToBuy = Math.max(0, daysLeft - payload.settings.lowStockWarningDays);
+            const daysToBuy = Math.max(0, daysLeft - payload.settings.lowStockWarningDays);
 
-          if (daysToBuy > 1) {
-            const buyDate = new Date(referenceDate);
-            buyDate.setDate(buyDate.getDate() + daysToBuy);
-            buyAtDate = buyDate.toISOString();
+            if (daysToBuy > 1) {
+              const buyDate = new Date(referenceDate);
+              buyDate.setDate(buyDate.getDate() + daysToBuy);
+              buyAtDate = buyDate.toISOString();
+            }
           }
         }
-      }
 
-      return {
-        ...medication,
-        stockStatus: getPilloStockStatus({
-          stockUnits: medication.stockUnits,
-          minThresholdUnits: medication.minThresholdUnits
-        }),
-        daysLeft,
-        buyAtDate,
-        stockEndsAt
-      };
-    });
+        return {
+          ...medication,
+          stockStatus: getPilloStockStatus({
+            stockUnits: medication.stockUnits,
+            minThresholdUnits: medication.minThresholdUnits
+          }),
+          daysLeft,
+          buyAtDate,
+          stockEndsAt
+        };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [
     payload.medications,
     payload.referenceDateIso,
@@ -143,16 +219,29 @@ export const PilloPageClient = ({ payload }: { payload: PilloPagePayload }) => {
     });
   }, [payload.weeklyScheduledIntakes]);
 
+  const scheduleRules = useMemo(() => {
+    return [...payload.scheduleRules].sort((a, b) => {
+      // isActive: desc
+      if (a.isActive !== b.isActive) {
+        return a.isActive ? -1 : 1;
+      }
+      // time: asc
+      return a.time.localeCompare(b.time);
+    });
+  }, [payload.scheduleRules]);
+
   return (
-    <PilloAppShell
-      appearanceSettings={payload.appearanceSettings}
-      currentLocalDate={payload.currentLocalDate}
-      historyEntries={historyEntries}
-      intakes={todayIntakes}
-      medications={medications}
-      scheduleRules={payload.scheduleRules}
-      settings={payload.settings}
-      weeklyScheduledIntakes={weeklyScheduledIntakes}
-    />
+    <PilloOptimisticContext.Provider value={addOptimisticAction}>
+      <PilloAppShell
+        appearanceSettings={payload.appearanceSettings}
+        currentLocalDate={payload.currentLocalDate}
+        historyEntries={historyEntries}
+        intakes={todayIntakes}
+        medications={medications}
+        scheduleRules={scheduleRules}
+        settings={payload.settings}
+        weeklyScheduledIntakes={weeklyScheduledIntakes}
+      />
+    </PilloOptimisticContext.Provider>
   );
 };

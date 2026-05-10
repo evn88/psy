@@ -37,7 +37,8 @@ import { toast } from 'sonner';
 
 import { takePilloMedicationNowAction } from '../actions';
 import { PilloPendingIndicator } from './pillo-pending-indicator';
-import type { PilloMedicationView } from './types';
+import type { PilloHistoryEntryView, PilloMedicationView } from './types';
+import { usePilloOptimistic } from '../_hooks/use-pillo-optimistic';
 
 type ManualIntakeFormValues = z.input<typeof pilloManualIntakeSchema>;
 
@@ -56,6 +57,7 @@ export const ManualIntakeDialog = ({
   const t = useTranslations('Pillo');
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const addOptimisticAction = usePilloOptimistic();
 
   const form = useForm<ManualIntakeFormValues>({
     resolver: zodResolver(pilloManualIntakeSchema),
@@ -66,6 +68,25 @@ export const ManualIntakeDialog = ({
   });
 
   const onSubmit = (values: ManualIntakeFormValues) => {
+    if (addOptimisticAction) {
+      const selectedMed = medications.find(m => m.id === values.medicationId);
+      const now = new Date();
+      const optimisticEntry: PilloHistoryEntryView = {
+        id: crypto.randomUUID(),
+        medicationId: values.medicationId,
+        medicationName: selectedMed?.name || 'Unknown',
+        medicationDosage: selectedMed?.dosage || '',
+        medicationPhotoUrl: selectedMed?.photoUrl || null,
+        doseUnits: Number(values.doseUnits),
+        takenAt: now.toISOString(),
+        localDate: now.toISOString().slice(0, 10),
+        localTime: now.toISOString().slice(11, 16),
+        source: 'manual'
+      };
+
+      addOptimisticAction({ type: 'take_manual_intake', entry: optimisticEntry });
+    }
+
     startTransition(() => {
       void takePilloMedicationNowAction(values)
         .then(result => {

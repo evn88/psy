@@ -7,6 +7,7 @@ import type { z } from 'zod';
 import { pilloMedicationSchema } from '@/modules/pillo/schemas';
 import { savePilloMedicationAction, uploadPilloMedicationPhotoAction } from '../actions';
 import type { PilloMedicationView } from '../_components/types';
+import { usePilloOptimistic } from './use-pillo-optimistic';
 
 type MedicationFormValues = z.input<typeof pilloMedicationSchema>;
 
@@ -18,6 +19,7 @@ type MedicationFormValues = z.input<typeof pilloMedicationSchema>;
 export const usePilloMedicationForm = (medication?: PilloMedicationView) => {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const addOptimisticAction = usePilloOptimistic();
 
   const form = useForm<MedicationFormValues>({
     resolver: zodResolver(pilloMedicationSchema),
@@ -80,6 +82,30 @@ export const usePilloMedicationForm = (medication?: PilloMedicationView) => {
   };
 
   const onSubmit = (values: MedicationFormValues) => {
+    if (addOptimisticAction) {
+      const optimisticMedication = {
+        id: values.id || crypto.randomUUID(),
+        name: values.name,
+        photoUrl: values.photoUrl || null,
+        description: values.description || null,
+        dosage: `${values.dosageValue} ${values.dosageUnit}`,
+        dosageValue: values.dosageValue ? Number(values.dosageValue) : null,
+        dosageUnit: values.dosageUnit || null,
+        form: values.form,
+        packagesCount: values.packagesCount ? Number(values.packagesCount) : 0,
+        unitsPerPackage: values.unitsPerPackage ? Number(values.unitsPerPackage) : null,
+        stockUnits: values.stockUnits ? Number(values.stockUnits) : 0,
+        minThresholdUnits: values.minThresholdUnits ? Number(values.minThresholdUnits) : 0,
+        isActive: Boolean(values.isActive ?? true)
+      };
+
+      if (values.id) {
+        addOptimisticAction({ type: 'update_medication', medication: optimisticMedication });
+      } else {
+        addOptimisticAction({ type: 'add_medication', medication: optimisticMedication });
+      }
+    }
+
     startTransition(() => {
       void savePilloMedicationAction(values).then(result => {
         if (result.success) {

@@ -7,6 +7,7 @@ import type { z } from 'zod';
 import { pilloScheduleRuleSchema } from '@/modules/pillo/schemas';
 import { savePilloScheduleRuleAction } from '../actions';
 import type { PilloMedicationView, PilloScheduleRuleView } from '../_components/types';
+import { usePilloOptimistic } from './use-pillo-optimistic';
 
 type ScheduleRuleFormValues = z.input<typeof pilloScheduleRuleSchema>;
 
@@ -22,6 +23,7 @@ export const usePilloScheduleForm = (
 ) => {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const addOptimisticAction = usePilloOptimistic();
 
   const form = useForm<ScheduleRuleFormValues>({
     resolver: zodResolver(pilloScheduleRuleSchema),
@@ -48,6 +50,30 @@ export const usePilloScheduleForm = (
   };
 
   const onSubmit = (values: ScheduleRuleFormValues) => {
+    if (addOptimisticAction) {
+      const selectedMed = medications.find(m => m.id === values.medicationId);
+
+      const optimisticRule: PilloScheduleRuleView = {
+        id: values.id || crypto.randomUUID(),
+        medicationId: values.medicationId,
+        medicationName: selectedMed?.name || '',
+        medicationPhotoUrl: selectedMed?.photoUrl || null,
+        time: values.time,
+        doseUnits: Number(values.doseUnits),
+        daysOfWeek: values.daysOfWeek.map(Number),
+        startDate: values.startDate,
+        endDate: values.endDate || null,
+        comment: values.comment || null,
+        isActive: Boolean(values.isActive ?? true)
+      };
+
+      if (values.id) {
+        addOptimisticAction({ type: 'update_schedule', schedule: optimisticRule });
+      } else {
+        addOptimisticAction({ type: 'add_schedule', schedule: optimisticRule });
+      }
+    }
+
     startTransition(() => {
       void savePilloScheduleRuleAction(values).then(result => {
         if (result.success) {

@@ -30,6 +30,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { deletePilloScheduleRuleAction } from '../actions';
 import { usePilloScheduleForm } from '../_hooks/use-pillo-schedule-form';
+import { usePilloOptimistic } from '../_hooks/use-pillo-optimistic';
 import { DeleteConfirmDialog } from './delete-confirm-dialog';
 import { DateField, SwitchField, TextField, TimeField } from './form-fields';
 import { PilloPendingIndicator } from './pillo-pending-indicator';
@@ -50,6 +51,7 @@ export const ScheduleRuleDialog = ({
   rule?: PilloScheduleRuleView;
 }) => {
   const t = useTranslations('Pillo');
+  const addOptimisticAction = usePilloOptimistic();
   const {
     form,
     isPending: isFormPending,
@@ -172,6 +174,9 @@ export const ScheduleRuleDialog = ({
                 <DeleteConfirmDialog
                   isPending={isDeleting}
                   onConfirm={() => {
+                    if (addOptimisticAction) {
+                      addOptimisticAction({ type: 'delete_schedule', id: rule.id });
+                    }
                     startTransition(() => {
                       void deletePilloScheduleRuleAction(rule.id).then(() => {
                         setOpen(false);

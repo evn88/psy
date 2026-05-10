@@ -44,6 +44,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { deletePilloMedicationAction } from '../actions';
 import { usePilloMedicationForm } from '../_hooks/use-pillo-medication-form';
+import { usePilloOptimistic } from '../_hooks/use-pillo-optimistic';
 import { DeleteConfirmDialog } from './delete-confirm-dialog';
 import { TextField } from './form-fields';
 import { PilloPendingIndicator } from './pillo-pending-indicator';
@@ -87,6 +88,7 @@ export const MedicationDialog = ({
   medication?: PilloMedicationView;
 }) => {
   const t = useTranslations('Pillo');
+  const addOptimisticAction = usePilloOptimistic();
   const {
     form,
     isPending: isFormPending,
@@ -286,6 +288,9 @@ export const MedicationDialog = ({
                 <DeleteConfirmDialog
                   isPending={isDeleting}
                   onConfirm={() => {
+                    if (addOptimisticAction) {
+                      addOptimisticAction({ type: 'delete_medication', id: medication.id });
+                    }
                     startTransition(() => {
                       void deletePilloMedicationAction(medication.id).then(() => {
                         setOpen(false);
