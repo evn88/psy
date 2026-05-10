@@ -1,13 +1,16 @@
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
+import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
+import { useTranslations } from 'next-intl';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
 import { pilloMedicationSchema } from '@/modules/pillo/schemas';
 import { savePilloMedicationAction, uploadPilloMedicationPhotoAction } from '../actions';
 import type { PilloMedicationView } from '../_components/types';
 import { usePilloOptimistic } from './use-pillo-optimistic';
+import { compressImage } from '@/lib/image-utils';
 
 type MedicationFormValues = z.input<typeof pilloMedicationSchema>;
 
@@ -17,6 +20,7 @@ type MedicationFormValues = z.input<typeof pilloMedicationSchema>;
  * @returns Состояние диалога, форма и обработчики.
  */
 export const usePilloMedicationForm = (medication?: PilloMedicationView) => {
+  const t = useTranslations('Pillo');
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const addOptimisticAction = usePilloOptimistic();
@@ -70,14 +74,39 @@ export const usePilloMedicationForm = (medication?: PilloMedicationView) => {
   const onUploadPhoto = (file: File | null) => {
     if (!file) return;
 
-    startTransition(() => {
-      const formData = new FormData();
-      formData.set('file', file);
-      void uploadPilloMedicationPhotoAction(formData).then(result => {
+    startTransition(async () => {
+      try {
+        // Оптимизируем изображение перед загрузкой (макс 1280px, качество 0.8)
+        const optimizedBlob = await compressImage(file);
+        const optimizedFile = new File(
+          [optimizedBlob],
+          file.name.replace(/\.[^/.]+$/, '') + '.jpg',
+          { type: 'image/jpeg' }
+        );
+
+        const formData = new FormData();
+        formData.set('file', optimizedFile);
+        const result = await uploadPilloMedicationPhotoAction(formData);
+
         if ('url' in result) {
           form.setValue('photoUrl', result.url, { shouldDirty: true });
+          toast.success(t('medications.photoUploaded'));
+        } else if ('error' in result) {
+          toast.error(result.error);
         }
-      });
+      } catch (error) {
+        console.error('Image optimization or upload failed:', error);
+        // Резервный вариант: пробуем загрузить оригинал, если оптимизация не удалась
+        const formData = new FormData();
+        formData.set('file', file);
+        const result = await uploadPilloMedicationPhotoAction(formData);
+        if ('url' in result) {
+          form.setValue('photoUrl', result.url, { shouldDirty: true });
+          toast.success(t('medications.photoUploaded'));
+        } else if ('error' in result) {
+          toast.error(result.error);
+        }
+      }
     });
   };
 

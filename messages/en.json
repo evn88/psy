@@ -953,6 +953,8 @@
       "addPackageConfirmDescription": "One package will be added to the stock. Continue?",
       "add": "Add pill",
       "edit": "Edit pill",
+      "photoUploaded": "Photo uploaded successfully",
+      "photoUploadError": "Failed to upload photo",
       "emptyTitle": "No pills yet",
       "emptyText": "Add the first pill to track stock and schedule.",
       "formDescription": "Set dosage, form, and current stock.",

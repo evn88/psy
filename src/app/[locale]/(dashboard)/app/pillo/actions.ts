@@ -514,8 +514,8 @@ export const uploadPilloMedicationPhotoAction = async (formData: FormData) => {
     return { error: 'Можно загружать только изображения' };
   }
 
-  if (file.size > 5 * 1024 * 1024) {
-    return { error: 'Размер файла не должен превышать 5 МБ' };
+  if (file.size > 10 * 1024 * 1024) {
+    return { error: 'Размер файла не должен превышать 10 МБ' };
   }
 
   const blob = await put(`pillo/${userId}/${Date.now()}-${file.name}`, file, {

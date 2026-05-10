@@ -923,6 +923,8 @@
       "addPackageConfirmDescription": "Jedno pakovanje će biti dodato zalihama. Nastaviti?",
       "add": "Dodaj lek",
       "edit": "Uredi lek",
+      "photoUploaded": "Slika je uspešno otpremljena",
+      "photoUploadError": "Nije uspelo otpremanje slike",
       "emptyTitle": "Još nema lekova",
       "emptyText": "Dodajte prvi lek da pratite zalihe i raspored.",
       "formDescription": "Unesite dozu, oblik i trenutnu zalihu.",
