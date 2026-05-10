@@ -83,9 +83,16 @@ export const usePilloScheduleForm = (
     });
   };
 
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (!nextOpen && !rule?.id) {
+      setTimeout(() => form.reset(), 200); // delay to avoid visual jump during closing animation
+    }
+  };
+
   return {
     open,
-    setOpen,
+    setOpen: handleOpenChange,
     isPending,
     form,
     selectedDays,

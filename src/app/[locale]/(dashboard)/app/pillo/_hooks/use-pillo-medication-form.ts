@@ -115,9 +115,16 @@ export const usePilloMedicationForm = (medication?: PilloMedicationView) => {
     });
   };
 
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (!nextOpen && !medication?.id) {
+      setTimeout(() => form.reset(), 200); // delay to avoid visual jump during closing animation
+    }
+  };
+
   return {
     open,
-    setOpen,
+    setOpen: handleOpenChange,
     isPending,
     form,
     onUploadPhoto,

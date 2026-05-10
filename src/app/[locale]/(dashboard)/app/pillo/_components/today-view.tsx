@@ -321,19 +321,25 @@ export const TodayView = ({
 
   if (intakes.length === 0) {
     return (
-      <div className="space-y-4 pb-4">
-        <EmptyState icon={Home} title={t('today.emptyTitle')} text={t('today.emptyText')} />
-        <div className="grid grid-cols-2 gap-3">
+      <>
+        <div className="space-y-4 pb-4">
+          <EmptyState icon={Home} title={t('today.emptyTitle')} text={t('today.emptyText')} />
+        </div>
+
+        <div className="fixed bottom-[5.5rem] left-1/2 z-20 flex w-full max-w-md -translate-x-1/2 gap-3 px-4 pointer-events-none">
           {hasMedications ? (
             <ManualIntakeDialog medications={medications}>
-              <Button className="h-12 w-full rounded-full font-bold">
-                <Check className="mr-2 h-4 w-4 stroke-[3px]" />
+              <Button className="pointer-events-auto h-14 flex-1 rounded-full shadow-xl shadow-primary/20 text-base font-bold">
+                <Check className="mr-2 h-5 w-5 stroke-[3px]" />
                 {t('today.manualTakeAction')}
               </Button>
             </ManualIntakeDialog>
           ) : (
-            <Button className="h-12 w-full rounded-full font-bold" disabled>
-              <Check className="mr-2 h-4 w-4 stroke-[3px]" />
+            <Button
+              disabled
+              className="pointer-events-auto h-14 flex-1 rounded-full shadow-xl shadow-primary/20 text-base font-bold"
+            >
+              <Check className="mr-2 h-5 w-5 stroke-[3px]" />
               {t('today.manualTakeAction')}
             </Button>
           )}
@@ -345,37 +351,45 @@ export const TodayView = ({
           >
             <Button
               variant="outline"
-              className="h-12 w-full rounded-full border-white/40 bg-white/40 font-bold backdrop-blur-sm dark:border-white/10 dark:bg-white/5"
+              size="icon"
+              className="pointer-events-auto h-14 w-14 shrink-0 rounded-full border-white/40 bg-white/60 backdrop-blur-md shadow-xl dark:border-white/10 dark:bg-white/5"
             >
-              <History className="mr-2 h-4 w-4" />
-              {t('history.openAction')}
+              <History className="h-5 w-5" />
             </Button>
           </PilloHistorySheet>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="space-y-4 pb-4">
-      <div className="grid grid-cols-2 gap-3">
+    <>
+      <div className="space-y-4 pb-12">
+        <div className="flex items-center justify-between px-1 pt-1">
+          <h2 className="text-sm font-bold uppercase tracking-[0.22em] text-muted-foreground/60">
+            {t('today.listTitle')}
+          </h2>
+        </div>
+
+        {intakes.map(intake => (
+          <IntakeCard key={intake.id} intake={intake} />
+        ))}
+      </div>
+
+      <div className="fixed bottom-[5.5rem] left-1/2 z-20 flex w-full max-w-md -translate-x-1/2 gap-3 px-4 pointer-events-none">
         {hasMedications ? (
           <ManualIntakeDialog medications={medications}>
-            <Button
-              variant="outline"
-              className="h-11 w-full rounded-full border-white/40 bg-white/40 font-bold backdrop-blur-sm dark:border-white/10 dark:bg-white/5"
-            >
-              <Check className="mr-2 h-4 w-4 stroke-[3px]" />
+            <Button className="pointer-events-auto h-14 flex-1 rounded-full shadow-xl shadow-primary/20 text-base font-bold">
+              <Check className="mr-2 h-5 w-5 stroke-[3px]" />
               {t('today.manualTakeAction')}
             </Button>
           </ManualIntakeDialog>
         ) : (
           <Button
-            variant="outline"
             disabled
-            className="h-11 w-full rounded-full border-white/40 bg-white/40 font-bold backdrop-blur-sm dark:border-white/10 dark:bg-white/5"
+            className="pointer-events-auto h-14 flex-1 rounded-full shadow-xl shadow-primary/20 text-base font-bold"
           >
-            <Check className="mr-2 h-4 w-4 stroke-[3px]" />
+            <Check className="mr-2 h-5 w-5 stroke-[3px]" />
             {t('today.manualTakeAction')}
           </Button>
         )}
@@ -387,22 +401,13 @@ export const TodayView = ({
         >
           <Button
             variant="outline"
-            className="h-11 w-full rounded-full border-white/40 bg-white/40 font-bold backdrop-blur-sm dark:border-white/10 dark:bg-white/5"
+            size="icon"
+            className="pointer-events-auto h-14 w-14 shrink-0 rounded-full border-white/40 bg-white/60 backdrop-blur-md shadow-xl dark:border-white/10 dark:bg-white/5"
           >
-            <History className="mr-2 h-4 w-4" />
-            {t('history.openAction')}
+            <History className="h-5 w-5" />
           </Button>
         </PilloHistorySheet>
       </div>
-      <div className="flex items-center justify-between px-1 pt-1">
-        <h2 className="text-sm font-bold uppercase tracking-[0.22em] text-muted-foreground/60">
-          {t('today.listTitle')}
-        </h2>
-      </div>
-
-      {intakes.map(intake => (
-        <IntakeCard key={intake.id} intake={intake} />
-      ))}
-    </div>
+    </>
   );
 };
