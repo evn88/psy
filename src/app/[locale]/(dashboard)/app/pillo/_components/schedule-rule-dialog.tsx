@@ -174,10 +174,10 @@ export const ScheduleRuleDialog = ({
                 <DeleteConfirmDialog
                   isPending={isDeleting}
                   onConfirm={() => {
-                    if (addOptimisticAction) {
-                      addOptimisticAction({ type: 'delete_schedule', id: rule.id });
-                    }
                     startTransition(() => {
+                      if (addOptimisticAction) {
+                        addOptimisticAction({ type: 'delete_schedule', id: rule.id });
+                      }
                       void deletePilloScheduleRuleAction(rule.id).then(() => {
                         setOpen(false);
                       });

@@ -50,31 +50,31 @@ export const usePilloScheduleForm = (
   };
 
   const onSubmit = (values: ScheduleRuleFormValues) => {
-    if (addOptimisticAction) {
-      const selectedMed = medications.find(m => m.id === values.medicationId);
-
-      const optimisticRule: PilloScheduleRuleView = {
-        id: values.id || crypto.randomUUID(),
-        medicationId: values.medicationId,
-        medicationName: selectedMed?.name || '',
-        medicationPhotoUrl: selectedMed?.photoUrl || null,
-        time: values.time,
-        doseUnits: Number(values.doseUnits),
-        daysOfWeek: values.daysOfWeek.map(Number),
-        startDate: values.startDate,
-        endDate: values.endDate || null,
-        comment: values.comment || null,
-        isActive: Boolean(values.isActive ?? true)
-      };
-
-      if (values.id) {
-        addOptimisticAction({ type: 'update_schedule', schedule: optimisticRule });
-      } else {
-        addOptimisticAction({ type: 'add_schedule', schedule: optimisticRule });
-      }
-    }
-
     startTransition(() => {
+      if (addOptimisticAction) {
+        const selectedMed = medications.find(m => m.id === values.medicationId);
+
+        const optimisticRule: PilloScheduleRuleView = {
+          id: values.id || crypto.randomUUID(),
+          medicationId: values.medicationId,
+          medicationName: selectedMed?.name || '',
+          medicationPhotoUrl: selectedMed?.photoUrl || null,
+          time: values.time,
+          doseUnits: Number(values.doseUnits),
+          daysOfWeek: values.daysOfWeek.map(Number),
+          startDate: values.startDate,
+          endDate: values.endDate || null,
+          comment: values.comment || null,
+          isActive: Boolean(values.isActive ?? true)
+        };
+
+        if (values.id) {
+          addOptimisticAction({ type: 'update_schedule', schedule: optimisticRule });
+        } else {
+          addOptimisticAction({ type: 'add_schedule', schedule: optimisticRule });
+        }
+      }
+
       void savePilloScheduleRuleAction(values).then(result => {
         if (result.success) {
           setOpen(false);

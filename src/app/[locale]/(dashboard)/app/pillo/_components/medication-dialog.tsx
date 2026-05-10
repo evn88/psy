@@ -288,10 +288,10 @@ export const MedicationDialog = ({
                 <DeleteConfirmDialog
                   isPending={isDeleting}
                   onConfirm={() => {
-                    if (addOptimisticAction) {
-                      addOptimisticAction({ type: 'delete_medication', id: medication.id });
-                    }
                     startTransition(() => {
+                      if (addOptimisticAction) {
+                        addOptimisticAction({ type: 'delete_medication', id: medication.id });
+                      }
                       void deletePilloMedicationAction(medication.id).then(() => {
                         setOpen(false);
                       });

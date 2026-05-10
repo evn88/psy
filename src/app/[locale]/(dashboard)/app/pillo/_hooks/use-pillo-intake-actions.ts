@@ -30,12 +30,12 @@ export const usePilloIntakeActions = () => {
   ) => {
     setPendingAction(nextPendingAction);
 
-    // Оптимистичное обновление интерфейса мгновенно
-    if (addOptimisticAction) {
-      addOptimisticAction({ type: `${nextPendingAction}_intake` as any, id });
-    }
-
     startTransition(() => {
+      // Оптимистичное обновление интерфейса мгновенно
+      if (addOptimisticAction) {
+        addOptimisticAction({ type: `${nextPendingAction}_intake` as any, id });
+      }
+
       void action()
         .then(result => {
           if (result.error) {
