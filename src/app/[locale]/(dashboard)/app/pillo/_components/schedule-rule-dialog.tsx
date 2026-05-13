@@ -32,7 +32,8 @@ import { deletePilloScheduleRuleAction } from '../actions';
 import { usePilloScheduleForm } from '../_hooks/use-pillo-schedule-form';
 import { usePilloOptimistic } from '../_hooks/use-pillo-optimistic';
 import { DeleteConfirmDialog } from './delete-confirm-dialog';
-import { DateField, SwitchField, TextField, TimeField } from './form-fields';
+import { DoseUnitsField } from './dose-units-field';
+import { DateField, SwitchField, TimeField } from './form-fields';
 import { PilloPendingIndicator } from './pillo-pending-indicator';
 import type { PilloMedicationView, PilloScheduleRuleView } from './types';
 
@@ -108,12 +109,7 @@ export const ScheduleRuleDialog = ({
               )}
             />
             <TimeField control={form.control} name="time" label={t('schedule.time')} />
-            <TextField
-              control={form.control}
-              name="doseUnits"
-              label={t('schedule.dose')}
-              type="number"
-            />
+            <DoseUnitsField control={form.control} name="doseUnits" label={t('schedule.dose')} />
             <div className="space-y-2">
               <Label>{t('schedule.days')}</Label>
               <div className="grid grid-cols-7 gap-1">

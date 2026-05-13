@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 
-import { getPilloStockStatus } from '@/modules/pillo/stock';
+import { calculatePilloStockOutlook, getPilloStockStatus } from '@/modules/pillo/stock';
 
 import type {
   PilloHistoryEntryView,
@@ -58,34 +58,12 @@ export const usePilloViewModel = (payload: PilloPagePayload) => {
     return payload.medications
       .map(medication => {
         const activeRules = activeRulesByMedicationId.get(medication.id) ?? [];
-        let daysLeft: number | null = null;
-        let buyAtDate: string | null = null;
-        let stockEndsAt: string | null = null;
-
-        if (activeRules.length > 0) {
-          let weeklyConsumption = 0;
-
-          for (const rule of activeRules) {
-            weeklyConsumption += rule.doseUnits * rule.daysOfWeek.length;
-          }
-
-          if (weeklyConsumption > 0) {
-            const dailyConsumption = weeklyConsumption / 7;
-            daysLeft = Math.floor(medication.stockUnits / dailyConsumption);
-
-            const endsDate = new Date(referenceDate);
-            endsDate.setDate(endsDate.getDate() + daysLeft);
-            stockEndsAt = endsDate.toISOString();
-
-            const daysToBuy = Math.max(0, daysLeft - payload.settings.lowStockWarningDays);
-
-            if (daysToBuy > 1) {
-              const buyDate = new Date(referenceDate);
-              buyDate.setDate(buyDate.getDate() + daysToBuy);
-              buyAtDate = buyDate.toISOString();
-            }
-          }
-        }
+        const stockOutlook = calculatePilloStockOutlook({
+          stockUnits: medication.stockUnits,
+          rules: activeRules,
+          referenceDate,
+          lowStockWarningDays: payload.settings.lowStockWarningDays
+        });
 
         return {
           ...medication,
@@ -93,9 +71,9 @@ export const usePilloViewModel = (payload: PilloPagePayload) => {
             stockUnits: medication.stockUnits,
             minThresholdUnits: medication.minThresholdUnits
           }),
-          daysLeft,
-          buyAtDate,
-          stockEndsAt
+          daysLeft: stockOutlook.daysLeft,
+          buyAtDate: stockOutlook.buyAtDate,
+          stockEndsAt: stockOutlook.stockEndsAt
         };
       })
       .sort((left, right) => left.name.localeCompare(right.name));

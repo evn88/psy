@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { formatPilloAmount } from '@/modules/pillo/stock';
 import { ScheduleRuleDialog } from './schedule-rule-dialog';
 import type { PilloMedicationView, PilloScheduleRuleView } from './types';
 
@@ -57,7 +58,7 @@ export const ScheduleRuleCard = ({
                     <span className="text-foreground">{rule.time}</span>
                     <span className="text-muted-foreground/40">•</span>
                     <span>
-                      {rule.doseUnits} {t('schedule.doseUnitsShort')}
+                      {formatPilloAmount(rule.doseUnits)} {t('schedule.doseUnitsShort')}
                     </span>
                   </div>
                 </div>

@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { formatPilloAmount } from '@/modules/pillo/stock';
 
 import type { PilloHistoryEntryView } from './types';
 
@@ -45,7 +46,7 @@ export const HistoryEntryRow = ({ entry }: { entry: PilloHistoryEntryView }) => 
           <span className="font-bold text-foreground">{entry.localTime}</span>
           <span>•</span>
           <span>
-            {entry.doseUnits} x {entry.medicationDosage}
+            {formatPilloAmount(entry.doseUnits)} x {entry.medicationDosage}
           </span>
         </div>
       </div>

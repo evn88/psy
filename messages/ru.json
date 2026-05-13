@@ -889,7 +889,7 @@
       "manualTakePreviousMonth": "Предыдущий месяц",
       "manualTakeNextMonth": "Следующий месяц",
       "manualTakeDose": "Количество",
-      "manualTakeDoseHint": "Укажите, сколько единиц вы приняли сейчас.",
+      "manualTakeDoseHint": "Можно указать целое число или дробь: 1/4, 1/3, 1/2.",
       "manualTakeAction": "Отметить вручную",
       "manualTakePending": "Отмечаем...",
       "manualTakeSuccess": "Приём отмечен вручную.",

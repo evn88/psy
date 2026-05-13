@@ -23,6 +23,7 @@ import {
 } from '@/modules/pillo/schemas';
 import { requirePilloUserId, canUsePillo } from '@/modules/pillo/access';
 import { getPilloStockStatus, resolveStockUnits, toNumber } from '@/modules/pillo/stock';
+import { getPilloLocalDateKey } from '@/modules/pillo/schedule';
 import prisma from '@/lib/prisma';
 
 type PilloActionResult = {
@@ -204,6 +205,16 @@ export const takePilloMedicationNowAction = async (input: unknown): Promise<Pill
 
   if (!parsed.success) {
     return { error: 'Некорректные данные ручного приёма' };
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { timezone: true }
+  });
+  const currentLocalDate = getPilloLocalDateKey(new Date(), user?.timezone || 'UTC');
+
+  if (parsed.data.takenDate > currentLocalDate) {
+    return { error: 'Некорректная дата ручного приёма' };
   }
 
   const result = await takePilloMedicationNow(

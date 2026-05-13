@@ -5,6 +5,7 @@ import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
 import { pilloScheduleRuleSchema } from '@/modules/pillo/schemas';
+import { parsePilloAmount } from '@/modules/pillo/stock';
 import { savePilloScheduleRuleAction } from '../actions';
 import type { PilloMedicationView, PilloScheduleRuleView } from '../_components/types';
 import { usePilloOptimistic } from './use-pillo-optimistic';
@@ -40,7 +41,8 @@ export const usePilloScheduleForm = (
     }
   });
 
-  const selectedDays = useWatch({ control: form.control, name: 'daysOfWeek' }) ?? [];
+  const watchedDays = useWatch({ control: form.control, name: 'daysOfWeek' });
+  const selectedDays = Array.isArray(watchedDays) ? watchedDays.map(Number) : [];
 
   const toggleDay = (day: number) => {
     const nextDays = selectedDays.includes(day)
@@ -60,7 +62,7 @@ export const usePilloScheduleForm = (
           medicationName: selectedMed?.name || '',
           medicationPhotoUrl: selectedMed?.photoUrl || null,
           time: values.time,
-          doseUnits: Number(values.doseUnits),
+          doseUnits: parsePilloAmount(values.doseUnits) ?? 0,
           daysOfWeek: values.daysOfWeek.map(Number),
           startDate: values.startDate,
           endDate: values.endDate || null,

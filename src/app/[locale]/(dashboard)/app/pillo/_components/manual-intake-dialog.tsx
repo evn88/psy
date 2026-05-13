@@ -27,7 +27,6 @@ import {
   FormLabel,
   FormMessage
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -36,9 +35,11 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { pilloManualIntakeSchema } from '@/modules/pillo/schemas';
+import { parsePilloAmount } from '@/modules/pillo/stock';
 
 import { takePilloMedicationNowAction } from '../actions';
 import { usePilloOptimistic } from '../_hooks/use-pillo-optimistic';
+import { DoseUnitsField } from './dose-units-field';
 import { ManualIntakeDateCalendar } from './manual-intake-date-calendar';
 import { PilloPendingIndicator } from './pillo-pending-indicator';
 import type { PilloHistoryEntryView, PilloMedicationView } from './types';
@@ -87,7 +88,7 @@ export const ManualIntakeDialog = ({
           medicationName: selectedMed?.name || 'Unknown',
           medicationDosage: selectedMed?.dosage || '',
           medicationPhotoUrl: selectedMed?.photoUrl || null,
-          doseUnits: Number(values.doseUnits),
+          doseUnits: parsePilloAmount(values.doseUnits) ?? 0,
           takenAt: takenAt.toISOString(),
           localDate: values.takenDate,
           localTime,
@@ -196,30 +197,11 @@ export const ManualIntakeDialog = ({
               )}
             />
 
-            <FormField
+            <DoseUnitsField
               control={form.control}
               name="doseUnits"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('today.manualTakeDose')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min="0.01"
-                      step="0.01"
-                      inputMode="decimal"
-                      className="h-11 rounded-2xl bg-white/70 dark:bg-white/5"
-                      name={field.name}
-                      ref={field.ref}
-                      value={String(field.value ?? '')}
-                      onBlur={field.onBlur}
-                      onChange={event => field.onChange(event.target.value)}
-                    />
-                  </FormControl>
-                  <p className="text-xs text-muted-foreground">{t('today.manualTakeDoseHint')}</p>
-                  <FormMessage />
-                </FormItem>
-              )}
+              label={t('today.manualTakeDose')}
+              description={t('today.manualTakeDoseHint')}
             />
 
             <div className="flex gap-3 pt-2">

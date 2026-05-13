@@ -859,7 +859,7 @@
       "manualTakePreviousMonth": "Prethodni mesec",
       "manualTakeNextMonth": "Sledeći mesec",
       "manualTakeDose": "Količina",
-      "manualTakeDoseHint": "Unesite koliko jedinica ste upravo uzeli.",
+      "manualTakeDoseHint": "Unesite ceo broj ili razlomak: 1/4, 1/3, 1/2.",
       "manualTakeAction": "Označi ručno",
       "manualTakePending": "Beležim...",
       "manualTakeSuccess": "Uzimanje je ručno zabeleženo.",

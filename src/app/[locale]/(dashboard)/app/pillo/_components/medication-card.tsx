@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { formatPilloAmount } from '@/modules/pillo/stock';
 import { addPilloMedicationPackageAction } from '../actions';
 import { AddPackageConfirmDialog } from './add-package-confirm-dialog';
 import { MedicationDialog } from './medication-dialog';
@@ -137,7 +138,7 @@ export const MedicationCard = ({ medication }: { medication: PilloMedicationView
               <div className="flex items-end justify-between">
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-xl font-bold tracking-tight text-foreground/90">
-                    {medication.stockUnits}
+                    {formatPilloAmount(medication.stockUnits)}
                   </span>
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
                     {t('schedule.doseUnitsShort')}

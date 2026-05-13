@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { formatPilloAmount } from '@/modules/pillo/stock';
 
 import { usePilloIntakeActions } from '../_hooks/use-pillo-intake-actions';
 import { IntakeUndoDialog } from './intake-undo-dialog';
@@ -84,7 +85,7 @@ export const IntakeCard = ({ intake }: { intake: PilloIntakeView }) => {
                 <span className="text-foreground font-bold">{intake.localTime}</span>
                 <span className="text-muted-foreground/40">•</span>
                 <span>
-                  {intake.doseUnits} x {intake.medicationDosage}
+                  {formatPilloAmount(intake.doseUnits)} x {intake.medicationDosage}
                 </span>
               </div>
               <div className="mt-1 flex flex-wrap gap-2">

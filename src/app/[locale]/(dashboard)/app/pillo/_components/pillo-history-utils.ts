@@ -1,6 +1,6 @@
 import { eachDayOfInterval, format, subDays } from 'date-fns';
 
-import type { PilloWeeklyScheduledIntakeView } from './types';
+import type { PilloHistoryEntryView, PilloWeeklyScheduledIntakeView } from './types';
 
 export type DailyMedicationSummary = {
   count: number;
@@ -20,6 +20,11 @@ export type WeeklyDaySummary = {
   takenCount: number;
   takenMedications: DailyMedicationSummary[];
 };
+
+type WeeklySummaryEntry = Pick<
+  PilloWeeklyScheduledIntakeView,
+  'localDate' | 'medicationId' | 'medicationName'
+>;
 
 export const getWeeklyDayTone = (day: WeeklyDaySummary) => {
   if (day.missedCount > 0) {
@@ -59,7 +64,7 @@ export const getLocalHistoryDate = (value: string) => {
 
 export const appendMedicationSummary = (
   items: DailyMedicationSummary[],
-  entry: PilloWeeklyScheduledIntakeView
+  entry: WeeklySummaryEntry
 ) => {
   const current = items.find(item => item.medicationId === entry.medicationId);
 
@@ -80,9 +85,11 @@ export const appendMedicationSummary = (
 
 export const buildWeeklyDaySummaries = ({
   currentLocalDate,
+  historyEntries,
   weeklyScheduledIntakes
 }: {
   currentLocalDate: string;
+  historyEntries: PilloHistoryEntryView[];
   weeklyScheduledIntakes: PilloWeeklyScheduledIntakeView[];
 }) => {
   const referenceDate = getLocalHistoryDate(currentLocalDate);
@@ -91,6 +98,7 @@ export const buildWeeklyDaySummaries = ({
     end: referenceDate
   });
   const weeklyEntriesByDate = new Map<string, PilloWeeklyScheduledIntakeView[]>();
+  const manualEntriesByDate = new Map<string, PilloHistoryEntryView[]>();
 
   for (const entry of weeklyScheduledIntakes) {
     const existingEntries = weeklyEntriesByDate.get(entry.localDate);
@@ -103,9 +111,25 @@ export const buildWeeklyDaySummaries = ({
     weeklyEntriesByDate.set(entry.localDate, [entry]);
   }
 
+  for (const entry of historyEntries) {
+    if (entry.source !== 'manual') {
+      continue;
+    }
+
+    const existingEntries = manualEntriesByDate.get(entry.localDate);
+
+    if (existingEntries) {
+      existingEntries.push(entry);
+      continue;
+    }
+
+    manualEntriesByDate.set(entry.localDate, [entry]);
+  }
+
   return weekDays.map(day => {
     const dateKey = format(day, 'yyyy-MM-dd');
     const dayEntries = weeklyEntriesByDate.get(dateKey) ?? [];
+    const manualEntries = manualEntriesByDate.get(dateKey) ?? [];
     let missedCount = 0;
     let pendingCount = 0;
     let takenCount = 0;
@@ -134,16 +158,22 @@ export const buildWeeklyDaySummaries = ({
       pendingMedications = appendMedicationSummary(pendingMedications, entry);
     }
 
+    for (const entry of manualEntries) {
+      takenCount += 1;
+      takenMedications = appendMedicationSummary(takenMedications, entry);
+    }
+
+    const plannedCount = dayEntries.length + manualEntries.length;
+
     return {
-      adherencePercent:
-        dayEntries.length > 0 ? Math.round((takenCount / dayEntries.length) * 100) : 0,
+      adherencePercent: plannedCount > 0 ? Math.round((takenCount / plannedCount) * 100) : 0,
       date: day,
       dateKey,
       missedCount,
       missedMedications,
       pendingCount,
       pendingMedications,
-      plannedCount: dayEntries.length,
+      plannedCount,
       takenCount,
       takenMedications
     } satisfies WeeklyDaySummary;

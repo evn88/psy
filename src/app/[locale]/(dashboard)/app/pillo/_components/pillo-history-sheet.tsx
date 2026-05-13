@@ -90,6 +90,7 @@ export const PilloHistorySheet = ({
                 </p>
                 <WeeklyIntakeCalendar
                   currentLocalDate={currentLocalDate}
+                  historyEntries={historyEntries}
                   weeklyScheduledIntakes={weeklyScheduledIntakes}
                 />
               </TabsContent>

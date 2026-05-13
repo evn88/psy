@@ -10,7 +10,14 @@ import {
 } from '@/modules/pillo/schedule';
 import { PILLO_MISSED_GRACE_HOURS } from '@/modules/pillo/constants';
 import { getPilloAppUrl, getPilloNotificationCopy, interpolatePilloCopy } from './notifications';
-import { getPilloStockStatus, toNumber, type PilloStockStatus } from './stock';
+import {
+  formatPilloAmount,
+  getPilloStockStatus,
+  restorePilloDoseToStock,
+  subtractPilloDoseFromStock,
+  toNumber,
+  type PilloStockStatus
+} from './stock';
 import {
   sendPilloCourseEndEmail,
   sendPilloEmptyStockEmail,
@@ -394,10 +401,10 @@ export const takePilloIntake = async (userId: string, intakeId: string) => {
     }
 
     const takenAt = new Date();
-    const nextStock = Math.max(
-      0,
-      toNumber(intake.medication.stockUnits) - toNumber(intake.doseUnits)
-    );
+    const nextStock = subtractPilloDoseFromStock({
+      stockUnits: intake.medication.stockUnits,
+      doseUnits: intake.doseUnits
+    });
     const stockStatus = getPilloStockStatus({
       stockUnits: nextStock,
       minThresholdUnits: intake.medication.minThresholdUnits,
@@ -447,7 +454,7 @@ export const takePilloIntake = async (userId: string, intakeId: string) => {
     await dispatchPilloLowStockNotifications({
       userId,
       medicationName: result.medication.name,
-      stockText: result.medication.stockUnits.toString(),
+      stockText: formatPilloAmount(result.medication.stockUnits),
       stockStatus: result.stockNotification.status
     });
   }
@@ -490,7 +497,10 @@ export const takePilloMedicationNow = async (
     const now = new Date();
     const localTime = getPilloLocalTimeKey(now, timezone);
     const takenAt = fromZonedTime(`${takenDate}T${localTime}:00`, timezone);
-    const nextStock = Math.max(0, toNumber(medication.stockUnits) - doseUnits);
+    const nextStock = subtractPilloDoseFromStock({
+      stockUnits: medication.stockUnits,
+      doseUnits
+    });
     const stockStatus = getPilloStockStatus({
       stockUnits: nextStock,
       minThresholdUnits: medication.minThresholdUnits,
@@ -542,7 +552,7 @@ export const takePilloMedicationNow = async (
     await dispatchPilloLowStockNotifications({
       userId,
       medicationName: result.medication.name,
-      stockText: result.medication.stockUnits.toString(),
+      stockText: formatPilloAmount(result.medication.stockUnits),
       stockStatus: result.stockNotification.status
     });
   }
@@ -597,7 +607,10 @@ export const undoPilloIntake = async (userId: string, intakeId: string) => {
     // Если был TAKEN, возвращаем остаток на место
     let nextStock = toNumber(intake.medication.stockUnits);
     if (intake.status === PilloIntakeStatus.TAKEN) {
-      nextStock = nextStock + toNumber(intake.doseUnits);
+      nextStock = restorePilloDoseToStock({
+        stockUnits: nextStock,
+        doseUnits: intake.doseUnits
+      });
       const stockStatus = getPilloStockStatus({
         stockUnits: nextStock,
         minThresholdUnits: intake.medication.minThresholdUnits,

@@ -7,15 +7,17 @@ import { getDateFnsLocale } from '@/lib/date-locale';
 import { cn } from '@/lib/utils';
 
 import { buildWeeklyDaySummaries, getWeeklyDayTone } from './pillo-history-utils';
-import type { PilloWeeklyScheduledIntakeView } from './types';
+import type { PilloHistoryEntryView, PilloWeeklyScheduledIntakeView } from './types';
 import { WeeklyMedicationBlock } from './weekly-medication-block';
 import { WeeklyProgressRing } from './weekly-progress-ring';
 
 export const WeeklyIntakeCalendar = ({
   currentLocalDate,
+  historyEntries,
   weeklyScheduledIntakes
 }: {
   currentLocalDate: string;
+  historyEntries: PilloHistoryEntryView[];
   weeklyScheduledIntakes: PilloWeeklyScheduledIntakeView[];
 }) => {
   const t = useTranslations('Pillo');
@@ -23,6 +25,7 @@ export const WeeklyIntakeCalendar = ({
   const dateLocale = getDateFnsLocale(locale as AppLocale);
   const daySummaries = buildWeeklyDaySummaries({
     currentLocalDate,
+    historyEntries,
     weeklyScheduledIntakes
   });
   const totalPlanned = daySummaries.reduce((total, day) => total + day.plannedCount, 0);

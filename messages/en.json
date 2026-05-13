@@ -889,7 +889,7 @@
       "manualTakePreviousMonth": "Previous month",
       "manualTakeNextMonth": "Next month",
       "manualTakeDose": "Amount",
-      "manualTakeDoseHint": "Specify how many units you took right now.",
+      "manualTakeDoseHint": "Use a whole number or a fraction: 1/4, 1/3, 1/2.",
       "manualTakeAction": "Mark manually",
       "manualTakePending": "Marking...",
       "manualTakeSuccess": "Intake was marked manually.",
