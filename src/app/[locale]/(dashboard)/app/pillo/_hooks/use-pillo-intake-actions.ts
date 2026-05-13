@@ -5,7 +5,15 @@ import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
 import { skipPilloIntakeAction, takePilloIntakeAction, undoPilloIntakeAction } from '../actions';
-import { usePilloOptimistic } from './use-pillo-optimistic';
+import { type PilloOptimisticAction, usePilloOptimistic } from './use-pillo-optimistic';
+
+type IntakePendingAction = 'skip' | 'take' | 'undo';
+
+const optimisticActionByPendingAction = {
+  skip: 'skip_intake',
+  take: 'take_intake',
+  undo: 'undo_intake'
+} satisfies Record<IntakePendingAction, PilloOptimisticAction['type']>;
 
 /**
  * Хук для выполнения действий над приёмами (принять/пропустить).
@@ -26,14 +34,13 @@ export const usePilloIntakeActions = () => {
     id: string,
     action: () => Promise<{ error?: string; success?: boolean }>,
     fallbackErrorMessage: string,
-    nextPendingAction: 'skip' | 'take' | 'undo'
+    nextPendingAction: IntakePendingAction
   ) => {
     setPendingAction(nextPendingAction);
 
     startTransition(() => {
-      // Оптимистичное обновление интерфейса мгновенно
       if (addOptimisticAction) {
-        addOptimisticAction({ type: `${nextPendingAction}_intake` as any, id });
+        addOptimisticAction({ type: optimisticActionByPendingAction[nextPendingAction], id });
       }
 
       void action()

@@ -5,9 +5,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Pill } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import type { ReactNode } from 'react';
+import { toast } from 'sonner';
 import type { z } from 'zod';
 
-import { pilloManualIntakeSchema } from '@/modules/pillo/schemas';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -33,12 +34,12 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import { toast } from 'sonner';
+import { pilloManualIntakeSchema } from '@/modules/pillo/schemas';
 
 import { takePilloMedicationNowAction } from '../actions';
+import { usePilloOptimistic } from '../_hooks/use-pillo-optimistic';
 import { PilloPendingIndicator } from './pillo-pending-indicator';
 import type { PilloHistoryEntryView, PilloMedicationView } from './types';
-import { usePilloOptimistic } from '../_hooks/use-pillo-optimistic';
 
 type ManualIntakeFormValues = z.input<typeof pilloManualIntakeSchema>;
 
@@ -51,7 +52,7 @@ export const ManualIntakeDialog = ({
   children,
   medications
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   medications: PilloMedicationView[];
 }) => {
   const t = useTranslations('Pillo');

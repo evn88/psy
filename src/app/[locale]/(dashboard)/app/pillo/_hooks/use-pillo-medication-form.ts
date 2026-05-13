@@ -1,18 +1,46 @@
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
-import { toast } from 'sonner';
-import { useForm } from 'react-hook-form';
-import { useTranslations } from 'next-intl';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslations } from 'next-intl';
+import { useEffect, useState, useTransition } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
+import { toast } from 'sonner';
 import type { z } from 'zod';
+
+import { compressImage } from '@/lib/image-utils';
 import { pilloMedicationSchema } from '@/modules/pillo/schemas';
+
 import { savePilloMedicationAction, uploadPilloMedicationPhotoAction } from '../actions';
 import type { PilloMedicationView } from '../_components/types';
 import { usePilloOptimistic } from './use-pillo-optimistic';
-import { compressImage } from '@/lib/image-utils';
 
 type MedicationFormValues = z.input<typeof pilloMedicationSchema>;
+
+const normalizeMedicationForm = (form: string | null | undefined) => {
+  const normalizedForm = form?.toLowerCase().replace('.', '');
+
+  if (!normalizedForm) {
+    return 'tablet';
+  }
+
+  if (
+    [
+      'tablet',
+      'capsule',
+      'syrup',
+      'drops',
+      'injection',
+      'powder',
+      'ointment',
+      'spray',
+      'other'
+    ].includes(normalizedForm)
+  ) {
+    return normalizedForm;
+  }
+
+  return normalizedForm.includes('табл') ? 'tablet' : 'other';
+};
 
 /**
  * Хук для управления формой таблетки (создание/редактирование).
@@ -33,24 +61,8 @@ export const usePilloMedicationForm = (medication?: PilloMedicationView) => {
       photoUrl: medication?.photoUrl ?? null,
       description: medication?.description ?? null,
       dosageValue: medication?.dosageValue ?? 1,
-      dosageUnit: (medication?.dosageUnit?.replace('.', '') || 'mg') as any,
-      form: medication?.form
-        ? [
-            'tablet',
-            'capsule',
-            'syrup',
-            'drops',
-            'injection',
-            'powder',
-            'ointment',
-            'spray',
-            'other'
-          ].includes(medication.form.toLowerCase().replace('.', ''))
-          ? medication.form.toLowerCase().replace('.', '')
-          : medication.form.toLowerCase().includes('табл')
-            ? 'tablet'
-            : 'other'
-        : 'tablet',
+      dosageUnit: medication?.dosageUnit?.replace('.', '') || 'mg',
+      form: normalizeMedicationForm(medication?.form),
       packagesCount: medication?.packagesCount ?? 0,
       unitsPerPackage: medication?.unitsPerPackage ?? 20,
       stockUnits: medication?.stockUnits ?? 0,
@@ -59,8 +71,8 @@ export const usePilloMedicationForm = (medication?: PilloMedicationView) => {
     }
   });
 
-  const packagesCount = form.watch('packagesCount');
-  const unitsPerPackage = form.watch('unitsPerPackage');
+  const packagesCount = useWatch({ control: form.control, name: 'packagesCount' });
+  const unitsPerPackage = useWatch({ control: form.control, name: 'unitsPerPackage' });
 
   // Автоматический расчет остатка в единицах только при создании
   useEffect(() => {
@@ -76,7 +88,6 @@ export const usePilloMedicationForm = (medication?: PilloMedicationView) => {
 
     startTransition(async () => {
       try {
-        // Оптимизируем изображение перед загрузкой (макс 1280px, качество 0.8)
         const optimizedBlob = await compressImage(file);
         const optimizedFile = new File(
           [optimizedBlob],
@@ -94,9 +105,7 @@ export const usePilloMedicationForm = (medication?: PilloMedicationView) => {
         } else if ('error' in result) {
           toast.error(result.error);
         }
-      } catch (error) {
-        console.error('Image optimization or upload failed:', error);
-        // Резервный вариант: пробуем загрузить оригинал, если оптимизация не удалась
+      } catch {
         const formData = new FormData();
         formData.set('file', file);
         const result = await uploadPilloMedicationPhotoAction(formData);

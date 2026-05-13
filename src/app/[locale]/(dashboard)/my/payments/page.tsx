@@ -8,6 +8,10 @@ import { getTranslations } from 'next-intl/server';
 
 import { MyPaymentsHistory } from './_components/my-payments-history';
 import { PaymentCheckoutCard } from './_components/payment-checkout-card';
+import type {
+  LocalizedPaymentText,
+  PaymentServicePackage
+} from './_components/payment-checkout.types';
 
 interface MyPaymentsPageProps {
   params: Promise<{ locale: string }>;
@@ -72,6 +76,7 @@ export default async function MyPaymentsPage({ params }: Readonly<MyPaymentsPage
     })
   ]);
   type PaymentRecord = (typeof payments)[number];
+  type ServicePackageRecord = (typeof packages)[number];
 
   const displayCurrency = payments[0]?.currency || getPayPalDefaultCurrency();
   const paymentLocale =
@@ -101,7 +106,16 @@ export default async function MyPaymentsPage({ params }: Readonly<MyPaymentsPage
         clientId={clientId}
         currency={displayCurrency}
         balance={user.balance.toString()}
-        packages={packages.map((p: any) => ({ ...p, amount: p.amount.toString() }))}
+        packages={packages.map(
+          (pkg: ServicePackageRecord): PaymentServicePackage => ({
+            id: pkg.id,
+            amount: pkg.amount.toString(),
+            currency: pkg.currency,
+            title: pkg.title as LocalizedPaymentText,
+            description: pkg.description as LocalizedPaymentText | null,
+            coverImage: pkg.coverImage
+          })
+        )}
         locale={currentLocale}
       />
 

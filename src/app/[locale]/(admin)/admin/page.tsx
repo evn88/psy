@@ -27,18 +27,8 @@ import { AdminPaymentsLineChart } from './_components/admin-payments-line-chart'
  * Получает статистику пользователей и расписания для дашборда.
  */
 const getStats = async () => {
-  const userCount = await prisma.user.count();
-
   const OFFLINE_THRESHOLD = 5 * 60 * 1000;
   const activeThreshold = new Date(Date.now() - OFFLINE_THRESHOLD);
-
-  const activeSessionsCount = await prisma.user.count({
-    where: {
-      lastSeen: {
-        gt: activeThreshold
-      }
-    }
-  });
 
   const now = new Date();
   const currentMonthStart = startOfMonth(now);
@@ -47,40 +37,101 @@ const getStats = async () => {
   const currentWeekEnd = endOfWeek(now, { weekStartsOn: 1 });
   const currentYearStart = startOfYear(now);
 
-  // Users waiting for a session this month
-  const waitingUsers = await prisma.event.findMany({
-    where: {
-      status: { in: ['SCHEDULED', 'PENDING_CONFIRMATION'] },
-      type: 'CONSULTATION',
-      start: {
-        gte: currentMonthStart,
-        lte: currentMonthEnd
+  const [
+    userCount,
+    activeSessionsCount,
+    waitingUsers,
+    upcomingSlotsCount,
+    eventsThisWeek,
+    bookedUsers,
+    freeSlots,
+    cancelledEventsCount,
+    paymentsThisYear,
+    workflowBudgetSnapshot
+  ] = await Promise.all([
+    prisma.user.count(),
+    prisma.user.count({
+      where: {
+        lastSeen: {
+          gt: activeThreshold
+        }
       }
-    },
-    select: { userId: true },
-    distinct: ['userId']
-  });
+    }),
+    prisma.event.findMany({
+      where: {
+        status: { in: ['SCHEDULED', 'PENDING_CONFIRMATION'] },
+        type: 'CONSULTATION',
+        start: {
+          gte: currentMonthStart,
+          lte: currentMonthEnd
+        }
+      },
+      select: { userId: true },
+      distinct: ['userId']
+    }),
+    prisma.event.count({
+      where: {
+        status: { in: ['SCHEDULED', 'PENDING_CONFIRMATION'] },
+        type: 'CONSULTATION',
+        start: { gte: now }
+      }
+    }),
+    prisma.event.findMany({
+      where: {
+        status: { in: ['SCHEDULED', 'PENDING_CONFIRMATION'] },
+        type: 'CONSULTATION',
+        start: { gte: currentWeekStart, lte: currentWeekEnd }
+      }
+    }),
+    prisma.event.findMany({
+      where: {
+        status: { in: ['SCHEDULED', 'PENDING_CONFIRMATION'] },
+        type: 'CONSULTATION'
+      },
+      select: { userId: true },
+      distinct: ['userId']
+    }),
+    prisma.event.findMany({
+      where: {
+        type: 'FREE_SLOT',
+        status: { in: ['SCHEDULED', 'PENDING_CONFIRMATION'] },
+        start: { gte: now }
+      }
+    }),
+    prisma.event.count({
+      where: {
+        status: 'CANCELLED'
+      }
+    }),
+    prisma.payment.findMany({
+      where: {
+        OR: [
+          {
+            capturedAt: {
+              gte: currentYearStart
+            }
+          },
+          {
+            createdAt: {
+              gte: currentYearStart
+            }
+          }
+        ]
+      },
+      select: {
+        amount: true,
+        currency: true,
+        status: true,
+        createdAt: true,
+        capturedAt: true
+      }
+    }),
+    getWorkflowBudgetSnapshot()
+  ]);
   const waitingUsersCount = waitingUsers.filter(
     (e: { userId: string | null }) => e.userId !== null
   ).length;
 
-  // Upcoming scheduled slots
-  const upcomingSlotsCount = await prisma.event.count({
-    where: {
-      status: { in: ['SCHEDULED', 'PENDING_CONFIRMATION'] },
-      type: 'CONSULTATION',
-      start: { gte: now }
-    }
-  });
-
-  // Hours scheduled for this week
-  const eventsThisWeek = await prisma.event.findMany({
-    where: {
-      status: { in: ['SCHEDULED', 'PENDING_CONFIRMATION'] },
-      type: 'CONSULTATION',
-      start: { gte: currentWeekStart, lte: currentWeekEnd }
-    }
-  });
   const scheduledHoursThisWeek = eventsThisWeek.reduce(
     (acc: number, ev: (typeof eventsThisWeek)[number]) => {
       return acc + (ev.end.getTime() - ev.start.getTime()) / (1000 * 60 * 60);
@@ -88,67 +139,17 @@ const getStats = async () => {
     0
   );
 
-  // Users who booked time (all-time)
-  const bookedUsers = await prisma.event.findMany({
-    where: {
-      status: { in: ['SCHEDULED', 'PENDING_CONFIRMATION'] },
-      type: 'CONSULTATION'
-    },
-    select: { userId: true },
-    distinct: ['userId']
-  });
   const bookedUsersCount = bookedUsers.filter(
     (e: { userId: string | null }) => e.userId !== null
   ).length;
 
-  // Free hours for booking
-  const freeSlots = await prisma.event.findMany({
-    where: {
-      type: 'FREE_SLOT',
-      status: { in: ['SCHEDULED', 'PENDING_CONFIRMATION'] },
-      start: { gte: now }
-    }
-  });
   const freeHours = freeSlots.reduce((acc: number, ev: (typeof freeSlots)[number]) => {
     return acc + (ev.end.getTime() - ev.start.getTime()) / (1000 * 60 * 60);
   }, 0);
 
-  // Cancelled events
-  const cancelledEventsCount = await prisma.event.count({
-    where: {
-      status: 'CANCELLED'
-    }
-  });
-
-  const paymentsThisYear = await prisma.payment.findMany({
-    where: {
-      OR: [
-        {
-          capturedAt: {
-            gte: currentYearStart
-          }
-        },
-        {
-          createdAt: {
-            gte: currentYearStart
-          }
-        }
-      ]
-    },
-    select: {
-      amount: true,
-      currency: true,
-      status: true,
-      createdAt: true,
-      capturedAt: true
-    }
-  });
-
   const currentMonthPaymentsTotal = getCurrentMonthPaymentsTotal(paymentsThisYear, now);
   const paymentsYearlySeries = getYearlyPaymentsSeries(paymentsThisYear, now.getFullYear());
   const paymentsCurrency = paymentsThisYear[0]?.currency || getPayPalDefaultCurrency();
-
-  const workflowBudgetSnapshot = await getWorkflowBudgetSnapshot();
 
   return {
     userCount,

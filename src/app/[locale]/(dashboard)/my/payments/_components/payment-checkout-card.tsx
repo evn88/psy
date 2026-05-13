@@ -1,24 +1,26 @@
 'use client';
 
-import { useTransition, useState } from 'react';
-
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FUNDING, PayPalButtons, PayPalScriptProvider } from '@paypal/react-paypal-js';
 import { CreditCard, Wallet } from 'lucide-react';
+import { useState, useTransition } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
-import { z } from 'zod';
 import { toast } from 'sonner';
+import { z } from 'zod';
 
 import { useTheme } from '@/components/theme-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useRouter } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
 import { formatPaymentAmount } from '@/modules/payments';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+import type { PaymentServicePackage } from './payment-checkout.types';
+import { getPaymentPackageTitle, PaymentPackageCard } from './payment-package-card';
 
 const DEFAULT_DESCRIPTION = 'Оплата услуг';
 
@@ -38,7 +40,7 @@ interface PaymentCheckoutCardProps {
   clientId: string;
   currency: string;
   balance: string;
-  packages: any[];
+  packages: PaymentServicePackage[];
   locale: string;
 }
 
@@ -69,9 +71,9 @@ export const PaymentCheckoutCard = ({
     }
   });
 
-  const [watchedAmount, watchedDescription] = useWatch({
+  const [watchedAmount, watchedDescription, watchedPackageId] = useWatch({
     control: form.control,
-    name: ['amount', 'description']
+    name: ['amount', 'description', 'packageId']
   });
 
   const amountPreviewValue = watchedAmount ?? '';
@@ -178,8 +180,8 @@ export const PaymentCheckoutCard = ({
     toast.error('Checkout завершился с ошибкой');
   };
 
-  const selectPackage = (pkg: any) => {
-    const title = pkg.title[locale] || pkg.title.ru || 'Пакет услуг';
+  const selectPackage = (pkg: PaymentServicePackage) => {
+    const title = getPaymentPackageTitle(pkg, locale);
     form.setValue('amount', pkg.amount.toString(), { shouldValidate: true });
     form.setValue('description', title, { shouldValidate: true });
     form.setValue('packageId', pkg.id);
@@ -246,51 +248,15 @@ export const PaymentCheckoutCard = ({
                     Нет доступных пакетов для выбора.
                   </p>
                 )}
-                {packages.map(pkg => {
-                  const title = pkg.title[locale] || pkg.title.ru || 'Пакет услуг';
-                  const desc = pkg.description ? pkg.description[locale] || pkg.description.ru : '';
-                  const isSelected = form.watch('packageId') === pkg.id;
-
-                  return (
-                    <div
-                      key={pkg.id}
-                      onClick={() => selectPackage(pkg)}
-                      className={cn(
-                        'rounded-xl border p-4 cursor-pointer transition-all hover:border-primary shrink-0 relative flex flex-col',
-                        isSelected
-                          ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                          : 'border-border/60 bg-muted/10 text-muted-foreground'
-                      )}
-                    >
-                      {pkg.coverImage && (
-                        <div className="w-full h-24 mb-3 rounded-md overflow-hidden bg-muted">
-                          <img
-                            src={pkg.coverImage}
-                            alt={title}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      )}
-                      <h4
-                        className={cn(
-                          'font-semibold text-base mb-1',
-                          isSelected ? 'text-primary' : 'text-foreground'
-                        )}
-                      >
-                        {title}
-                      </h4>
-                      {desc && <p className="text-xs text-muted-foreground mb-3 flex-1">{desc}</p>}
-                      <p
-                        className={cn(
-                          'text-lg font-bold',
-                          isSelected ? 'text-primary' : 'text-foreground'
-                        )}
-                      >
-                        {formatPaymentAmount(pkg.amount, pkg.currency)}
-                      </p>
-                    </div>
-                  );
-                })}
+                {packages.map(pkg => (
+                  <PaymentPackageCard
+                    key={pkg.id}
+                    isSelected={watchedPackageId === pkg.id}
+                    locale={locale}
+                    onSelect={selectPackage}
+                    pkg={pkg}
+                  />
+                ))}
               </div>
             )}
 
