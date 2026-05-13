@@ -1,4 +1,5 @@
 import { PilloIntakeStatus, Role, type Prisma } from '@prisma/client';
+import { fromZonedTime } from 'date-fns-tz';
 
 import {
   generatePilloIntakesForRule,
@@ -459,15 +460,16 @@ export const takePilloIntake = async (userId: string, intakeId: string) => {
  * @param userId - идентификатор пользователя.
  * @param medicationId - идентификатор таблетки.
  * @param doseUnits - сколько единиц было принято.
+ * @param takenDate - локальная дата приёма в формате `yyyy-MM-dd`.
  * @returns Результат операции и актуальный остаток.
  */
 export const takePilloMedicationNow = async (
   userId: string,
   medicationId: string,
-  doseUnits: number
+  doseUnits: number,
+  takenDate: string
 ) => {
   const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    const takenAt = new Date();
     const manualIntakeDelegate = getPilloManualIntakeDelegate(tx);
     const medication = await tx.pilloMedication.findFirst({
       where: { id: medicationId, userId },
@@ -485,6 +487,9 @@ export const takePilloMedicationNow = async (
     }
 
     const timezone = medication.user.timezone || 'UTC';
+    const now = new Date();
+    const localTime = getPilloLocalTimeKey(now, timezone);
+    const takenAt = fromZonedTime(`${takenDate}T${localTime}:00`, timezone);
     const nextStock = Math.max(0, toNumber(medication.stockUnits) - doseUnits);
     const stockStatus = getPilloStockStatus({
       stockUnits: nextStock,
@@ -515,8 +520,8 @@ export const takePilloMedicationNow = async (
             medicationId: medication.id,
             doseUnits,
             takenAt,
-            localDate: getPilloLocalDateKey(takenAt, timezone),
-            localTime: getPilloLocalTimeKey(takenAt, timezone)
+            localDate: takenDate,
+            localTime
           }
         })
       );

@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { format, parseISO } from 'date-fns';
 import { Pill } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
@@ -38,10 +39,15 @@ import { pilloManualIntakeSchema } from '@/modules/pillo/schemas';
 
 import { takePilloMedicationNowAction } from '../actions';
 import { usePilloOptimistic } from '../_hooks/use-pillo-optimistic';
+import { ManualIntakeDateCalendar } from './manual-intake-date-calendar';
 import { PilloPendingIndicator } from './pillo-pending-indicator';
 import type { PilloHistoryEntryView, PilloMedicationView } from './types';
 
 type ManualIntakeFormValues = z.input<typeof pilloManualIntakeSchema>;
+
+const getTodayDateKey = () => format(new Date(), 'yyyy-MM-dd');
+
+const getManualIntakeLocalTime = () => format(new Date(), 'HH:mm');
 
 /**
  * Диалог ручной отметки приёма таблетки.
@@ -64,7 +70,8 @@ export const ManualIntakeDialog = ({
     resolver: zodResolver(pilloManualIntakeSchema),
     defaultValues: {
       medicationId: medications[0]?.id ?? '',
-      doseUnits: 1
+      doseUnits: 1,
+      takenDate: getTodayDateKey()
     }
   });
 
@@ -72,7 +79,8 @@ export const ManualIntakeDialog = ({
     startTransition(() => {
       if (addOptimisticAction) {
         const selectedMed = medications.find(m => m.id === values.medicationId);
-        const now = new Date();
+        const localTime = getManualIntakeLocalTime();
+        const takenAt = parseISO(`${values.takenDate}T${localTime}:00`);
         const optimisticEntry: PilloHistoryEntryView = {
           id: crypto.randomUUID(),
           medicationId: values.medicationId,
@@ -80,9 +88,9 @@ export const ManualIntakeDialog = ({
           medicationDosage: selectedMed?.dosage || '',
           medicationPhotoUrl: selectedMed?.photoUrl || null,
           doseUnits: Number(values.doseUnits),
-          takenAt: now.toISOString(),
-          localDate: now.toISOString().slice(0, 10),
-          localTime: now.toISOString().slice(11, 16),
+          takenAt: takenAt.toISOString(),
+          localDate: values.takenDate,
+          localTime,
           source: 'manual'
         };
 
@@ -100,7 +108,8 @@ export const ManualIntakeDialog = ({
             toast.success(t('today.manualTakeSuccess'));
             form.reset({
               medicationId: values.medicationId,
-              doseUnits: 1
+              doseUnits: 1,
+              takenDate: getTodayDateKey()
             });
             setOpen(false);
           }
@@ -119,7 +128,8 @@ export const ManualIntakeDialog = ({
         if (!nextOpen) {
           form.reset({
             medicationId: medications[0]?.id ?? '',
-            doseUnits: 1
+            doseUnits: 1,
+            takenDate: getTodayDateKey()
           });
         }
       }}
@@ -166,6 +176,21 @@ export const ManualIntakeDialog = ({
                       ))}
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="takenDate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('today.manualTakeDate')}</FormLabel>
+                  <FormControl>
+                    <ManualIntakeDateCalendar value={field.value} onChange={field.onChange} />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">{t('today.manualTakeDateHint')}</p>
                   <FormMessage />
                 </FormItem>
               )}

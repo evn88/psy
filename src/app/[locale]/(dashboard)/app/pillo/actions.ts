@@ -195,7 +195,7 @@ export const addPilloMedicationPackageAction = async (
 
 /**
  * Отмечает ручной приём таблетки вне расписания.
- * @param input - идентификатор таблетки и количество.
+ * @param input - идентификатор таблетки, количество и локальная дата приёма.
  * @returns Результат ручной отметки.
  */
 export const takePilloMedicationNowAction = async (input: unknown): Promise<PilloActionResult> => {
@@ -209,7 +209,8 @@ export const takePilloMedicationNowAction = async (input: unknown): Promise<Pill
   const result = await takePilloMedicationNow(
     userId,
     parsed.data.medicationId,
-    parsed.data.doseUnits
+    parsed.data.doseUnits,
+    parsed.data.takenDate
   );
 
   if (!result) {
