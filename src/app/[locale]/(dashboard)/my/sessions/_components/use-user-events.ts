@@ -30,7 +30,10 @@ export function useUserEvents(startStr: string, endStr: string) {
   const { data, error, isLoading, isValidating, mutate } = useSWR<UserEvent[]>(
     `/api/user/events?start=${startStr}&end=${endStr}`,
     fetcher,
-    { refreshInterval: 30000, keepPreviousData: true }
+    {
+      refreshWhenHidden: false,
+      keepPreviousData: true
+    }
   );
 
   const bookEvent = async (id: string, reminderMinutesBeforeStart: number) => {

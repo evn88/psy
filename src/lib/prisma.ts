@@ -7,7 +7,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
  * Создает экземпляр PrismaClient с поддержкой Prisma Accelerate.
  */
 const createPrismaClient = () => {
-  const url = process.env.DATABASE_URL;
+  const url = process.env.PRISMA_DATABASE_URL || process.env.DATABASE_URL;
 
   // Если URL начинается с prisma:// или prisma+postgres://, используем accelerateUrl
   if (url && (url.startsWith('prisma://') || url.startsWith('prisma+postgres://'))) {
@@ -22,6 +22,7 @@ const createPrismaClient = () => {
 
   const pool = new Pool({
     connectionString: poolUrl,
+    max: process.env.NODE_ENV === 'development' ? 1 : 5,
     ssl: process.env.NODE_ENV === 'development' ? { rejectUnauthorized: false } : true // true enforces SSL in production
   });
   const adapter = new PrismaPg(pool);

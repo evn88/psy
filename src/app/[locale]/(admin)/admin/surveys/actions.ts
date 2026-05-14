@@ -3,7 +3,7 @@
 import prisma from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { auth } from '@/auth';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag, unstable_cache } from 'next/cache';
 import { z } from 'zod';
 
 type SurveyAssignmentWithResult = {
@@ -34,6 +34,34 @@ const createSurveySchema = z.object({
   description: z.string().optional().or(z.literal('')),
   questions: z.array(questionSchema).min(1)
 });
+
+const ADMIN_UNREAD_SURVEYS_COUNT_TAG = 'admin-unread-surveys-count';
+const USER_UNREAD_SURVEYS_COUNT_TAG = 'user-unread-surveys-count';
+
+const getCachedAdminUnreadSurveysCount = unstable_cache(
+  async () => {
+    return prisma.survey.count({
+      where: {
+        assignments: {
+          some: {
+            result: {
+              comments: {
+                some: {
+                  isReadByAdmin: false
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+  },
+  ['admin-unread-surveys-count'],
+  {
+    revalidate: 15 * 60,
+    tags: [ADMIN_UNREAD_SURVEYS_COUNT_TAG]
+  }
+);
 
 /**
  * Создаёт новый опрос с вопросами.
@@ -170,6 +198,8 @@ export const addComment = async (resultId: string, text: string) => {
       }
     });
 
+    revalidateTag(ADMIN_UNREAD_SURVEYS_COUNT_TAG, 'max');
+    revalidateTag(USER_UNREAD_SURVEYS_COUNT_TAG, 'max');
     revalidatePath('/admin/surveys');
     return { success: true };
   } catch (error) {
@@ -219,6 +249,7 @@ export const markAsReadByAdmin = async (surveyId: string) => {
           isReadByAdmin: true
         }
       });
+      revalidateTag(ADMIN_UNREAD_SURVEYS_COUNT_TAG, 'max');
       revalidatePath('/admin', 'layout');
     }
 
@@ -239,23 +270,7 @@ export const getAdminUnreadSurveysCount = async () => {
   }
 
   try {
-    const unreadSurveys = await prisma.survey.count({
-      where: {
-        assignments: {
-          some: {
-            result: {
-              comments: {
-                some: {
-                  isReadByAdmin: false
-                }
-              }
-            }
-          }
-        }
-      }
-    });
-
-    return unreadSurveys;
+    return await getCachedAdminUnreadSurveysCount();
   } catch (error) {
     console.error('Ошибка получения кол-ва непрочитанных опросов:', error);
     return 0;

@@ -2,7 +2,32 @@
 
 import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag, unstable_cache } from 'next/cache';
+
+const USER_UNREAD_SURVEYS_COUNT_TAG = 'user-unread-surveys-count';
+const ADMIN_UNREAD_SURVEYS_COUNT_TAG = 'admin-unread-surveys-count';
+
+const getCachedUserUnreadSurveysCount = unstable_cache(
+  async (userId: string) => {
+    return prisma.surveyAssignment.count({
+      where: {
+        userId,
+        result: {
+          comments: {
+            some: {
+              isReadByUser: false
+            }
+          }
+        }
+      }
+    });
+  },
+  ['user-unread-surveys-count'],
+  {
+    revalidate: 15 * 60,
+    tags: [USER_UNREAD_SURVEYS_COUNT_TAG]
+  }
+);
 
 /**
  * Отправляет ответы пользователя на опрос.
@@ -46,6 +71,7 @@ export const submitSurveyResult = async (
       })
     ]);
 
+    revalidateTag(USER_UNREAD_SURVEYS_COUNT_TAG, 'max');
     revalidatePath('/my/surveys');
     return { success: true };
   } catch (error) {
@@ -128,6 +154,8 @@ export const markAsReadByUser = async (resultId: string) => {
       }
     });
 
+    revalidateTag(ADMIN_UNREAD_SURVEYS_COUNT_TAG, 'max');
+    revalidateTag(USER_UNREAD_SURVEYS_COUNT_TAG, 'max');
     revalidatePath('/my', 'layout');
 
     return { success: true };
@@ -147,20 +175,7 @@ export const getUserUnreadSurveysCount = async () => {
   }
 
   try {
-    const unreadSurveys = await prisma.surveyAssignment.count({
-      where: {
-        userId: session.user.id,
-        result: {
-          comments: {
-            some: {
-              isReadByUser: false
-            }
-          }
-        }
-      }
-    });
-
-    return unreadSurveys;
+    return await getCachedUserUnreadSurveysCount(session.user.id);
   } catch (error) {
     console.error('Ошибка получения кол-ва непрочитанных опросов:', error);
     return 0;

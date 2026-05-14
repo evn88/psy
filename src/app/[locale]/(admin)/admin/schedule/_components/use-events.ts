@@ -89,7 +89,7 @@ export const useEvents = (start?: Date, end?: Date) => {
 
   const { data, error, isLoading, isValidating, mutate } = useSWR<Event[]>(key, fetcher, {
     keepPreviousData: true,
-    refreshInterval: 30000
+    refreshWhenHidden: false
   });
   const {
     data: pendingRequestsData,
@@ -98,7 +98,7 @@ export const useEvents = (start?: Date, end?: Date) => {
     isValidating: isPendingRequestsValidating,
     mutate: mutatePendingRequests
   } = useSWR<Event[]>(pendingKey, fetcher, {
-    refreshInterval: 30000
+    refreshWhenHidden: false
   });
 
   /**

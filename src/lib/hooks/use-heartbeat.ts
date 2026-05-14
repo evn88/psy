@@ -4,7 +4,21 @@ import { useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { updateUserHeartbeat } from '@/lib/user-heartbeat';
 
-const HEARTBEAT_INTERVAL = 2 * 60 * 1000; // 2 minutes
+const HEARTBEAT_INTERVAL = 30 * 60 * 1000; // 30 минут
+const HEARTBEAT_STORAGE_KEY = 'lastHeartbeatAt';
+
+const getLastHeartbeatAt = () => {
+  const rawValue = window.localStorage.getItem(HEARTBEAT_STORAGE_KEY);
+  const timestamp = rawValue ? Number(rawValue) : 0;
+
+  return Number.isFinite(timestamp) ? timestamp : 0;
+};
+
+const shouldUpdateHeartbeat = () => Date.now() - getLastHeartbeatAt() >= HEARTBEAT_INTERVAL;
+
+const markHeartbeatUpdated = () => {
+  window.localStorage.setItem(HEARTBEAT_STORAGE_KEY, String(Date.now()));
+};
 
 export function useHeartbeat() {
   const { data: session } = useSession();
@@ -12,28 +26,24 @@ export function useHeartbeat() {
   useEffect(() => {
     if (!session?.user) return;
 
-    // Initial call
-    updateUserHeartbeat();
-
-    // Periodic call
-    const interval = setInterval(() => {
-      // Only update if tab is visible to save resources/requests
-      if (document.visibilityState === 'visible') {
-        updateUserHeartbeat();
+    const updateHeartbeatIfNeeded = () => {
+      if (document.visibilityState !== 'visible' || !shouldUpdateHeartbeat()) {
+        return;
       }
-    }, HEARTBEAT_INTERVAL);
 
-    // Listen for visibility change to update immediately when user returns
+      markHeartbeatUpdated();
+      updateUserHeartbeat();
+    };
+
+    updateHeartbeatIfNeeded();
+
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        updateUserHeartbeat();
-      }
+      updateHeartbeatIfNeeded();
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [session]);

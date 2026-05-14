@@ -23,7 +23,7 @@ interface ProvidersProps {
  */
 export const Providers = ({ children, defaultTheme }: ProvidersProps) => {
   return (
-    <SessionProvider>
+    <SessionProvider refetchInterval={0} refetchOnWindowFocus={false}>
       <ThemeProvider
         attribute="class"
         defaultTheme={defaultTheme}

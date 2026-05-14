@@ -106,7 +106,7 @@ export const EventDialog = ({
   const t = useTranslations('Schedule');
   const [loading, setLoading] = useState(false);
   const { data: users, isLoading: usersLoading } = useSWR<UserOption[]>(
-    '/api/admin/users',
+    open ? '/api/admin/users' : null,
     fetcher
   );
 
