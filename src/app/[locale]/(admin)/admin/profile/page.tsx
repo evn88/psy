@@ -1,7 +1,6 @@
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProfileForm } from '@/components/profile-form';
 import { getTranslations } from 'next-intl/server';
 
@@ -66,28 +65,23 @@ export default async function AdminProfilePage() {
   const hasPassword = !!dbUser?.password;
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">{t('title')}</h2>
-      <Card className="max-w-2xl">
-        <CardHeader>
-          <CardTitle>{t('title')}</CardTitle>
-          <CardDescription>{t('description')}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <ProfileForm
-            user={session.user}
-            passkeys={dbUser.Authenticator}
-            isGoogleLinked={isGoogleLinked}
-            googleLinkedAt={googleLinkedAt}
-            hasPassword={hasPassword}
-            lastLoginAt={lastLogin?.createdAt ?? null}
-            lastLoginIp={lastLogin?.ip ?? null}
-            timezone={dbUser?.timezone ?? 'UTC'}
-            role={session.user.role}
-            userEmail={session.user.email ?? ''}
-          />
-        </CardContent>
-      </Card>
+    <div className="mx-auto w-full max-w-6xl space-y-6 pb-6">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t('title')}</h1>
+        <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">{t('description')}</p>
+      </div>
+      <ProfileForm
+        user={session.user}
+        passkeys={dbUser.Authenticator}
+        isGoogleLinked={isGoogleLinked}
+        googleLinkedAt={googleLinkedAt}
+        hasPassword={hasPassword}
+        lastLoginAt={lastLogin?.createdAt ?? null}
+        lastLoginIp={lastLogin?.ip ?? null}
+        timezone={dbUser?.timezone ?? 'UTC'}
+        role={session.user.role}
+        userEmail={session.user.email ?? ''}
+      />
     </div>
   );
 }
