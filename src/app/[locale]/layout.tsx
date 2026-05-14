@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import { GoogleAnalytics } from '@next/third-parties/google';
 import { Dela_Gothic_One, Inter } from 'next/font/google';
 import localFont from 'next/font/local';
 import { type ReactNode } from 'react';
@@ -118,6 +119,7 @@ const RootLayout = async ({ children, params }: Readonly<MainLayoutProps>) => {
           </Providers>
         </NextIntlClientProvider>
       </body>
+      <GoogleAnalytics gaId={process.env.GOOGLE_ANALYTICS || ''} />
     </html>
   );
 };
