@@ -1,7 +1,18 @@
+import { type ComponentType } from 'react';
+import Link from 'next/link';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Activity, CalendarDays, ClipboardList } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Activity,
+  ArrowRight,
+  CalendarDays,
+  ClipboardList,
+  CreditCard,
+  FileText,
+  UserRound
+} from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 import { formatInTimeZone } from 'date-fns-tz';
 import { enUS, ru } from 'date-fns/locale';
@@ -11,6 +22,64 @@ import { redirect } from '@/i18n/navigation';
 interface MyDashboardPageProps {
   params: Promise<{ locale: string }>;
 }
+
+interface MyStatCardProps {
+  title: string;
+  value: string | number;
+  description: string;
+  icon: ComponentType<{ className?: string }>;
+  tone?: 'default' | 'accent';
+}
+
+interface MyActionCardProps {
+  href: string;
+  title: string;
+  description: string;
+  icon: ComponentType<{ className?: string }>;
+}
+
+const MyStatCard = ({
+  title,
+  value,
+  description,
+  icon: Icon,
+  tone = 'default'
+}: MyStatCardProps) => {
+  const iconClassName =
+    tone === 'accent' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground';
+
+  return (
+    <Card className="shadow-sm">
+      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
+        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+        <div className={`flex h-9 w-9 items-center justify-center rounded-md ${iconClassName}`}>
+          <Icon className="h-4 w-4" />
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-semibold tracking-tight">{value}</div>
+        <p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p>
+      </CardContent>
+    </Card>
+  );
+};
+
+const MyActionCard = ({ href, title, description, icon: Icon }: MyActionCardProps) => (
+  <Button asChild variant="outline" className="h-auto w-full justify-between whitespace-normal p-4">
+    <Link href={href} className="flex w-full items-center gap-3">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+        <Icon className="h-5 w-5" />
+      </span>
+      <span className="min-w-0 flex-1 text-left">
+        <span className="block text-sm font-medium">{title}</span>
+        <span className="mt-0.5 block text-xs font-normal leading-5 text-muted-foreground">
+          {description}
+        </span>
+      </span>
+      <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+    </Link>
+  </Button>
+);
 
 /**
  * Возвращает авторизованного пользователя или выполняет locale-aware redirect на вход.
@@ -48,40 +117,38 @@ export default async function MyDashboardPage({ params }: MyDashboardPageProps) 
     redirect({ href: '/my/profile', locale: currentLocale });
   }
 
-  // Статистика по опросам пользователя
-  const pendingSurveys = await prisma.surveyAssignment.count({
-    where: {
-      userId: user.id,
-      status: 'PENDING'
-    }
-  });
+  const now = new Date();
 
-  const completedSurveys = await prisma.surveyAssignment.count({
-    where: {
-      userId: user.id,
-      status: 'COMPLETED'
-    }
-  });
-
-  // Получаем ближайшую сессию
-  const nextSession = await prisma.event.findFirst({
-    where: {
-      userId: user.id,
-      status: { in: ['SCHEDULED', 'PENDING_CONFIRMATION'] },
-      start: {
-        gte: new Date()
+  const [pendingSurveys, completedSurveys, nextSession, dbUser] = await Promise.all([
+    prisma.surveyAssignment.count({
+      where: {
+        userId: user.id,
+        status: 'PENDING'
       }
-    },
-    orderBy: {
-      start: 'asc'
-    }
-  });
-
-  // Получаем полные данные пользователя для timezone и language
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { timezone: true, language: true }
-  });
+    }),
+    prisma.surveyAssignment.count({
+      where: {
+        userId: user.id,
+        status: 'COMPLETED'
+      }
+    }),
+    prisma.event.findFirst({
+      where: {
+        userId: user.id,
+        status: { in: ['SCHEDULED', 'PENDING_CONFIRMATION'] },
+        start: {
+          gte: now
+        }
+      },
+      orderBy: {
+        start: 'asc'
+      }
+    }),
+    prisma.user.findUnique({
+      where: { id: user.id },
+      select: { timezone: true, language: true }
+    })
+  ]);
 
   const userTimezone = dbUser?.timezone || 'UTC';
   const userLocale = dbUser?.language === 'en' ? enUS : ru;
@@ -89,54 +156,115 @@ export default async function MyDashboardPage({ params }: MyDashboardPageProps) 
   const formattedNextSession = nextSession
     ? formatInTimeZone(nextSession.start, userTimezone, 'd MMM, HH:mm', { locale: userLocale })
     : '—';
+  const nextSessionDescription = nextSession
+    ? nextSession.title ||
+      (userLocale === ru ? 'Консультация запланирована' : 'Consultation scheduled')
+    : t('nextSessionDesc');
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
-          {t('dashboardGreeting', { name: user.name || '' })}
-        </h2>
-        <p className="text-muted-foreground mt-1">{t('dashboardSubtitle')}</p>
+    <div className="mx-auto w-full max-w-6xl space-y-6 pb-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            {t('dashboardGreeting', { name: user.name || '' })}
+          </h1>
+          <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+            {t('dashboardSubtitle')}
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:flex">
+          <Button asChild variant="outline" className="w-full sm:w-auto">
+            <Link href="/my/sessions">{t('openSessions')}</Link>
+          </Button>
+          <Button asChild className="w-full sm:w-auto">
+            <Link href="/my/surveys">{t('openSurveys')}</Link>
+          </Button>
+        </div>
       </div>
 
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('pendingSurveys')}</CardTitle>
-            <ClipboardList className="h-4 w-4 text-muted-foreground" />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <MyStatCard
+          title={t('pendingSurveys')}
+          value={pendingSurveys}
+          description={t('pendingSurveysDesc')}
+          icon={ClipboardList}
+          tone={pendingSurveys > 0 ? 'accent' : 'default'}
+        />
+        <MyStatCard
+          title={t('nextSession')}
+          value={formattedNextSession}
+          description={nextSessionDescription}
+          icon={CalendarDays}
+          tone={nextSession ? 'accent' : 'default'}
+        />
+        <MyStatCard
+          title={t('completedSurveys')}
+          value={completedSurveys}
+          description={t('completedSurveysDesc')}
+          icon={Activity}
+        />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle>{t('nextStepsTitle')}</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{pendingSurveys}</div>
-            <p className="text-xs text-muted-foreground">{t('pendingSurveysDesc')}</p>
+          <CardContent className="grid gap-3 sm:grid-cols-2">
+            <MyActionCard
+              href="/my/surveys"
+              title={t('actionSurveysTitle')}
+              description={t('actionSurveysDesc')}
+              icon={ClipboardList}
+            />
+            <MyActionCard
+              href="/my/sessions"
+              title={t('actionSessionsTitle')}
+              description={t('actionSessionsDesc')}
+              icon={CalendarDays}
+            />
+            <MyActionCard
+              href="/my/payments"
+              title={t('actionPaymentsTitle')}
+              description={t('actionPaymentsDesc')}
+              icon={CreditCard}
+            />
+            <MyActionCard
+              href="/my/data"
+              title={t('actionDataTitle')}
+              description={t('actionDataDesc')}
+              icon={FileText}
+            />
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('completedSurveys')}</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{completedSurveys}</div>
-            <p className="text-xs text-muted-foreground">{t('completedSurveysDesc')}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('nextSession')}</CardTitle>
-            <CalendarDays className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formattedNextSession}</div>
-            <p className="text-xs text-muted-foreground">
-              {nextSession
-                ? nextSession.title ||
-                  (userLocale === ru ? 'Консультация запланирована' : 'Consultation scheduled')
-                : t('nextSessionDesc')}
-            </p>
-          </CardContent>
-        </Card>
+        <aside className="space-y-4">
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-base">{t('accountOverviewTitle')}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="rounded-lg border border-border bg-background p-3">
+                <div className="text-xs font-medium uppercase text-muted-foreground">
+                  {t('profileLabel')}
+                </div>
+                <div className="mt-1 text-sm font-medium">{user.name || user.email}</div>
+              </div>
+              <div className="rounded-lg border border-border bg-background p-3">
+                <div className="text-xs font-medium uppercase text-muted-foreground">
+                  {t('timezoneLabel')}
+                </div>
+                <div className="mt-1 text-sm font-medium">{userTimezone}</div>
+              </div>
+              <Button asChild variant="outline" className="w-full">
+                <Link href="/my/profile">
+                  <UserRound className="h-4 w-4" />
+                  {t('editProfile')}
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </aside>
       </div>
     </div>
   );
