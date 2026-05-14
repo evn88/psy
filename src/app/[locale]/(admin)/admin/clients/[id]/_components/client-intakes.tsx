@@ -28,9 +28,9 @@ interface PlainIntake {
   id: string;
   formId: string;
   status: string;
-  createdAt: Date;
-  updatedAt: Date;
-  plainAnswers: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+  plainAnswers: Record<string, unknown>;
 }
 
 const KEY_LABELS: Record<string, string> = {
@@ -43,7 +43,7 @@ const KEY_LABELS: Record<string, string> = {
 
 const FULL_WIDTH_KEYS = ['mainRequest', 'comment', 'requestChecklist'];
 
-function renderAnswer(key: string, value: any, tWizard: (key: string) => string) {
+function renderAnswer(key: string, value: unknown, tWizard: (key: string) => string) {
   if (value === null || value === undefined || value === '') {
     return <span className="text-muted-foreground italic font-normal text-sm">Не заполнено</span>;
   }
@@ -57,18 +57,18 @@ function renderAnswer(key: string, value: any, tWizard: (key: string) => string)
       return <span className="text-muted-foreground italic font-normal text-sm">Не выбрано</span>;
     return (
       <div className="flex flex-wrap gap-2 mt-1">
-        {value.map((v, i) => {
+        {value.map(v => {
           let label = String(v);
           if (key === 'requestChecklist') {
             try {
               label = tWizard(`checklist.${v}`);
-            } catch (e) {
+            } catch {
               label = String(v);
             }
           }
           return (
             <span
-              key={i}
+              key={String(v)}
               className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20"
             >
               {label}
@@ -165,7 +165,7 @@ export function ClientIntakes({ intakes }: { intakes: PlainIntake[] }) {
                         <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                           {label}
                         </h4>
-                        <div className="text-sm">{renderAnswer(key, value, tWizard as any)}</div>
+                        <div className="text-sm">{renderAnswer(key, value, tWizard)}</div>
                       </div>
                     );
                   })}

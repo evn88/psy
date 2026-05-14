@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import type { Prisma } from '@prisma/client';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,6 +10,43 @@ import { ClientIntakes } from './_components/client-intakes';
 import { ClientDocuments } from './_components/client-documents';
 import { ClientData } from './_components/client-data';
 import { ClientPayments } from './_components/client-payments';
+
+type ClientIntakeRow = {
+  id: string;
+  formId: string;
+  status: string;
+  answers: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type ClientConsentRow = {
+  id: string;
+  type: string;
+  agreedAt: Date;
+  ip: string | null;
+  userAgent: string | null;
+};
+
+const getStringMetadataField = (metadata: Prisma.JsonValue, key: string) => {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    return null;
+  }
+
+  const value = metadata[key];
+
+  return typeof value === 'string' ? value : null;
+};
+
+const parsePlainAnswers = (encryptedAnswers: string): Record<string, unknown> => {
+  const parsed = JSON.parse(decryptData(encryptedAnswers)) as unknown;
+
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return {};
+  }
+
+  return parsed as Record<string, unknown>;
+};
 
 export default async function AdminClientProfilePage({
   params
@@ -21,18 +59,38 @@ export default async function AdminClientProfilePage({
   const [user, documents] = await Promise.all([
     prisma.user.findUnique({
       where: { id },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        createdAt: true,
+        language: true,
+        theme: true,
+        timezone: true,
         clientProfile: {
-          include: {
+          select: {
+            metadata: true,
             intakes: {
+              select: {
+                id: true,
+                formId: true,
+                status: true,
+                answers: true,
+                createdAt: true,
+                updatedAt: true
+              },
               orderBy: { createdAt: 'desc' }
             }
           }
         },
-        consents: true,
-        loginHistory: {
-          orderBy: { createdAt: 'desc' },
-          take: 5
+        consents: {
+          select: {
+            id: true,
+            type: true,
+            agreedAt: true,
+            ip: true,
+            userAgent: true
+          }
         }
       }
     }),
@@ -58,34 +116,63 @@ export default async function AdminClientProfilePage({
   // Parse Metadata & Decrypt Notes if present
   let notesMarkdown = '';
   if (user.clientProfile?.metadata) {
-    const meta = user.clientProfile.metadata as any;
-    if (meta.encryptedNotes) {
+    const encryptedNotes = getStringMetadataField(user.clientProfile.metadata, 'encryptedNotes');
+    const legacyNotes = getStringMetadataField(user.clientProfile.metadata, 'notes');
+
+    if (encryptedNotes) {
       try {
-        const decryptedStr = decryptData(meta.encryptedNotes);
-        const parsed = JSON.parse(decryptedStr);
-        notesMarkdown = parsed.markdown || '';
+        const parsed = JSON.parse(decryptData(encryptedNotes)) as unknown;
+
+        if (
+          parsed &&
+          typeof parsed === 'object' &&
+          !Array.isArray(parsed) &&
+          typeof (parsed as Record<string, unknown>).markdown === 'string'
+        ) {
+          notesMarkdown = (parsed as Record<string, string>).markdown;
+        }
       } catch (e) {
         console.error('Failed to parse notes:', e);
       }
-    } else if (meta.notes) {
+    } else if (legacyNotes) {
       // Legacy support for non-encrypted
-      notesMarkdown = meta.notes;
+      notesMarkdown = legacyNotes;
     }
   }
 
   // Decrypt intakes
-  const decryptedIntakes = (user.clientProfile?.intakes || []).map((intake: any) => {
-    let plainAnswers = {};
+  const intakes = (user.clientProfile?.intakes || []) as ClientIntakeRow[];
+  const decryptedIntakes = intakes.map(intake => {
+    let plainAnswers: Record<string, unknown> = {};
     try {
-      plainAnswers = JSON.parse(decryptData(intake.answers));
+      plainAnswers = parsePlainAnswers(intake.answers);
     } catch (e) {
       console.error('Failed to decrypt intake id:', intake.id);
     }
     return {
-      ...intake,
+      id: intake.id,
+      formId: intake.formId,
+      status: intake.status,
+      createdAt: intake.createdAt.toISOString(),
+      updatedAt: intake.updatedAt.toISOString(),
       plainAnswers
     };
   });
+
+  const clientData = {
+    id: user.id,
+    createdAt: user.createdAt.toISOString(),
+    language: user.language,
+    theme: user.theme,
+    timezone: user.timezone,
+    consents: (user.consents as ClientConsentRow[]).map(consent => ({
+      id: consent.id,
+      type: consent.type,
+      agreedAt: consent.agreedAt.toISOString(),
+      ip: consent.ip,
+      userAgent: consent.userAgent
+    }))
+  };
 
   return (
     <div className="space-y-6">
@@ -128,7 +215,7 @@ export default async function AdminClientProfilePage({
         </TabsContent>
 
         <TabsContent value="data">
-          <ClientData user={user} />
+          <ClientData user={clientData} />
         </TabsContent>
       </Tabs>
     </div>

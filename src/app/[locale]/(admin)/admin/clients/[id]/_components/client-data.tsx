@@ -4,15 +4,14 @@ import { useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import {
-  Fingerprint,
   Calendar,
+  Fingerprint,
   Globe,
+  Info,
   Languages,
-  Palette,
-  ShieldCheck,
-  Trash2,
   Loader2,
-  Info
+  ShieldCheck,
+  Trash2
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,7 +31,7 @@ import { deleteClientConsent } from '../../_actions/clients.actions';
 interface Consent {
   id: string;
   type: string;
-  agreedAt: Date;
+  agreedAt: string;
   ip?: string | null;
   userAgent?: string | null;
 }
@@ -40,7 +39,7 @@ interface Consent {
 interface ClientDataProps {
   user: {
     id: string;
-    createdAt: Date;
+    createdAt: string;
     language: string;
     theme: string;
     timezone: string | null;
