@@ -5,10 +5,52 @@ import NextAuth from 'next-auth';
 import { defaultLocale, isLocale, type AppLocale } from './i18n/config';
 import { routing } from './i18n/routing';
 import { authConfig } from '@/auth.config';
+import {
+  isPilloGuestToken,
+  PILLO_GUEST_COOKIE_MAX_AGE_SECONDS,
+  PILLO_GUEST_COOKIE_NAME
+} from '@/modules/pillo/guest';
 
 // Инициализируем auth специально для Edge
 const { auth } = NextAuth(authConfig);
 const handleI18nRouting = createMiddleware(routing);
+
+/**
+ * Проверяет, что маршрут относится к публично доступным mini-app.
+ * @param pathname - pathname без locale-префикса.
+ * @returns true для mini-app, где разрешён гостевой доступ.
+ */
+const isPublicMiniAppRoute = (pathname: string): boolean => {
+  return pathname === '/app' || pathname.startsWith('/app/pillo');
+};
+
+/**
+ * Проверяет, что роль может открывать раздел mini-app.
+ * @param role - роль пользователя из сессии.
+ * @returns true для ролей, которым доступны mini-app.
+ */
+const canUseMiniApps = (role: string | null | undefined): boolean => {
+  return role === 'ADMIN' || role === 'USER' || role === 'GUEST';
+};
+
+/**
+ * Выдаёт гостевой cookie и перезапускает запрос, чтобы Server Components увидели токен.
+ * @param req - входящий запрос.
+ * @returns Redirect на тот же URL с гостевым cookie.
+ */
+const redirectWithPilloGuestCookie = (req: NextRequest): NextResponse => {
+  const response = NextResponse.redirect(req.nextUrl);
+
+  response.cookies.set(PILLO_GUEST_COOKIE_NAME, crypto.randomUUID(), {
+    httpOnly: true,
+    maxAge: PILLO_GUEST_COOKIE_MAX_AGE_SECONDS,
+    path: '/',
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production'
+  });
+
+  return response;
+};
 
 /**
  * Определяет предпочитаемую локаль по cookie и Accept-Language.
@@ -154,11 +196,23 @@ export default async function proxy(req: NextRequest) {
   }
 
   if (isMiniAppRoute) {
+    const isPublicMiniApp = isPublicMiniAppRoute(pathname);
+
+    if (!isLoggedIn && isPublicMiniApp) {
+      const guestToken = req.cookies.get(PILLO_GUEST_COOKIE_NAME)?.value;
+
+      if (!isPilloGuestToken(guestToken)) {
+        return redirectWithPilloGuestCookie(req);
+      }
+
+      return handleI18nRouting(req);
+    }
+
     if (!isLoggedIn) {
       return redirectToLocalePath(req, locale, '/auth');
     }
 
-    if (userRole !== 'ADMIN' && userRole !== 'USER') {
+    if (!canUseMiniApps(userRole)) {
       return redirectToLocalePath(req, locale, '/my/profile');
     }
   }

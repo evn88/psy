@@ -25,6 +25,7 @@ import {
 } from '@/lib/email';
 import prisma from '@/lib/prisma';
 import { sendPushToMany } from '@/lib/push';
+import { isPilloGuestEmail } from './guest';
 
 type PilloRuleWithUser = Prisma.PilloScheduleRuleGetPayload<{
   include: {
@@ -75,10 +76,12 @@ const getPilloManualIntakeDelegate = (
 /**
  * Возвращает роль пользователя, если он может пользоваться Pillo.
  * @param role - роль из сессии или БД.
- * @returns true для ADMIN и USER.
+ * @returns true для ADMIN, USER и гостевого Pillo-доступа.
  */
-export const isPilloAllowedRole = (role: string | null | undefined): role is 'ADMIN' | 'USER' => {
-  return role === Role.ADMIN || role === Role.USER;
+export const isPilloAllowedRole = (
+  role: string | null | undefined
+): role is 'ADMIN' | 'USER' | 'GUEST' => {
+  return role === Role.ADMIN || role === Role.USER || role === Role.GUEST;
 };
 
 /**
@@ -239,7 +242,7 @@ export const recoverPilloReminderWindow = async (now = new Date()) => {
       isActive: true,
       user: {
         isDisabled: false,
-        role: { in: [Role.ADMIN, Role.USER] }
+        role: { in: [Role.ADMIN, Role.USER, Role.GUEST] }
       },
       medication: { isActive: true }
     },
@@ -281,7 +284,7 @@ const dispatchPilloLowStockNotifications = async (params: {
     }
   });
 
-  if (!user || user.isDisabled || !isPilloAllowedRole(user.role)) {
+  if (!user || user.isDisabled) {
     return;
   }
 
@@ -289,7 +292,11 @@ const dispatchPilloLowStockNotifications = async (params: {
   const actionUrl = getPilloAppUrl(user.language);
   const isEmptyStock = params.stockStatus === 'empty';
 
-  if (user.pilloUserSettings?.lowStockEmailEnabled !== false && user.email) {
+  if (
+    user.pilloUserSettings?.lowStockEmailEnabled !== false &&
+    user.email &&
+    !isPilloGuestEmail(user.email)
+  ) {
     const sendEmail = isEmptyStock ? sendPilloEmptyStockEmail : sendPilloLowStockEmail;
     await sendEmail({
       email: user.email,
@@ -678,7 +685,7 @@ export const checkPilloCourseEndNotifications = async (): Promise<{ notified: nu
   for (const rule of expiredRules) {
     const { user } = rule;
 
-    if (user.isDisabled || !isPilloAllowedRole(user.role)) {
+    if (user.isDisabled) {
       // Помечаем как обработанное, чтобы не проверять повторно
       await prisma.pilloScheduleRule.update({
         where: { id: rule.id },
@@ -698,7 +705,11 @@ export const checkPilloCourseEndNotifications = async (): Promise<{ notified: nu
       : '';
 
     // Email-уведомление
-    if (user.pilloUserSettings?.emailRemindersEnabled !== false && user.email) {
+    if (
+      user.pilloUserSettings?.emailRemindersEnabled !== false &&
+      user.email &&
+      !isPilloGuestEmail(user.email)
+    ) {
       await sendPilloCourseEndEmail({
         email: user.email,
         name: user.name || 'User',

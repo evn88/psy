@@ -121,10 +121,12 @@ export type PilloPagePayload = {
   scheduleRules: PilloScheduleRuleView[];
   settings: PilloSettingsView;
   todayIntakes: PilloIntakeRecord[];
+  viewer: PilloViewerView;
   weeklyScheduledIntakes: PilloWeeklyScheduledIntakeView[];
 };
 
 export type PilloSettingsView = {
+  canUseEmailNotifications: boolean;
   emailRemindersEnabled: boolean;
   pushRemindersEnabled: boolean;
   lowStockEmailEnabled: boolean;
@@ -135,6 +137,11 @@ export type PilloSettingsView = {
 export type PilloAppearanceSettingsView = {
   language: string;
   theme: string;
+};
+
+export type PilloViewerView = {
+  displayName: string | null;
+  isAnonymousGuest: boolean;
 };
 
 export type PilloTab = 'home' | 'medications' | 'schedule' | 'settings';

@@ -867,6 +867,10 @@
       "title": "Otvaram Pillo",
       "description": "Pripremam lekove, raspored i istoriju uzimanja."
     },
+    "auth": {
+      "signIn": "Prijava",
+      "user": "Korisnik"
+    },
     "tabs": {
       "home": "Glavna",
       "medications": "Lekovi",
@@ -1011,6 +1015,12 @@
       "pushReminders": "Push podsetnici za uzimanje",
       "lowStockEmail": "Email kada je zaliha niska",
       "lowStockPush": "Push kada je zaliha niska",
+      "pushPermissionRequest": "Dozvola pregledača",
+      "pushPermissionDescription": "Ponovo zatražite dozvolu i osvežite push pretplatu za ovaj uređaj.",
+      "pushPermissionSubscribed": "Push pretplata je već aktivna na ovom uređaju. Dugme će je ponovo osvežiti.",
+      "pushPermissionDenied": "Obaveštenja su blokirana u pregledaču. Dozvolite ih u podešavanjima sajta i pokušajte ponovo.",
+      "pushPermissionUnsupported": "Ovaj uređaj ili pregledač ne podržava push obaveštenja.",
+      "pushPermissionButton": "Zatraži",
       "stock": "Zalihe",
       "lowStockWarningDays": "Koliko dana ranije preporučiti kupovinu",
       "lowStockWarningDaysDescription": "Pillo računa za koliko dana je dovoljna trenutna zaliha i prikazuje datum kupovine toliko dana pre nego što zaliha nestane. Podrazumevano je 7 dana.",

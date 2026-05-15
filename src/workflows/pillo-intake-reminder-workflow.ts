@@ -10,6 +10,7 @@ import {
   getPilloTakeUrl,
   interpolatePilloCopy
 } from '@/modules/pillo/notifications';
+import { isPilloGuestEmail } from '@/modules/pillo/guest';
 import {
   createPilloActionToken as createPilloActionTokenValue,
   getPilloActionTokenExpiresAt,
@@ -55,8 +56,6 @@ type PilloReminderDispatchResult = {
 };
 
 const PENDING_INTAKE_STATUS = 'PENDING';
-const ADMIN_ROLE = 'ADMIN';
-const USER_ROLE = 'USER';
 const PILLO_REMINDER_BATCH_SIZE = 100;
 
 /**
@@ -101,11 +100,8 @@ const getPilloReminderSkipReason = (intake: PilloReminderIntakeRecord): string |
     return 'medication-disabled';
   }
 
-  if (
-    intake.user.isDisabled ||
-    (intake.user.role !== ADMIN_ROLE && intake.user.role !== USER_ROLE)
-  ) {
-    return 'user-is-not-eligible';
+  if (intake.user.isDisabled) {
+    return 'user-is-disabled';
   }
 
   if (intake.reminderSentAt || (intake.reminderEmailSentAt && intake.reminderPushSentAt)) {
@@ -202,7 +198,12 @@ const dispatchPilloIntakeReminder = async (
   let isPushSent = false;
   let hasFailedChannel = false;
 
-  if (!intake.reminderEmailSentAt && isEmailEnabled && intake.user.email) {
+  if (
+    !intake.reminderEmailSentAt &&
+    isEmailEnabled &&
+    intake.user.email &&
+    !isPilloGuestEmail(intake.user.email)
+  ) {
     const emailResult = await sendPilloIntakeReminderEmail({
       email: intake.user.email,
       name: intake.user.name || 'User',

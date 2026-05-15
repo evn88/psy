@@ -98,6 +98,7 @@ export const PilloPageClient = ({ payload: initialPayload }: { payload: PilloPag
         medications={medications}
         scheduleRules={scheduleRules}
         settings={payload.settings}
+        viewer={payload.viewer}
         weeklyScheduledIntakes={weeklyScheduledIntakes}
       />
     </PilloOptimisticContext.Provider>

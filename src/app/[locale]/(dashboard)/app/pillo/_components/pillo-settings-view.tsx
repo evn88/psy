@@ -4,6 +4,7 @@ import {
   MessageSquare,
   PackagePlus,
   Palette,
+  BellRing,
   ShieldCheck,
   ShoppingBasket
 } from 'lucide-react';
@@ -23,6 +24,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { usePushNotifications } from '@/lib/hooks/use-push-notifications';
 import { usePilloSettingsForm } from '../_hooks/use-pillo-settings-form';
 import { PilloPendingIndicator } from './pillo-pending-indicator';
 import { PilloSwitchControl } from './pillo-switch-control';
@@ -55,6 +57,16 @@ const NOTIFICATIONS = [
   }
 ] as const;
 
+const getAvailableNotifications = (settings: PilloSettingsView) => {
+  return NOTIFICATIONS.filter(({ name }) => {
+    if (name === 'emailRemindersEnabled' || name === 'lowStockEmailEnabled') {
+      return settings.canUseEmailNotifications;
+    }
+
+    return true;
+  });
+};
+
 type AppearanceFormState = {
   isDirty: boolean;
   isPending: boolean;
@@ -76,6 +88,8 @@ export const SettingsView = ({
 }) => {
   const t = useTranslations('Pillo');
   const [appearanceFormState, setAppearanceFormState] = useState<AppearanceFormState | null>(null);
+  const [isPushPermissionPending, setIsPushPermissionPending] = useState(false);
+  const { isSupported, permission, isSubscribed, subscribe } = usePushNotifications();
   const {
     form,
     isPending,
@@ -91,6 +105,22 @@ export const SettingsView = ({
   const isAppearancePending = appearanceFormState?.isPending ?? false;
   const hasUnsavedChanges = isDirty || isAppearanceDirty;
   const isSaving = isPending || isAppearancePending;
+  const availableNotifications = getAvailableNotifications(settings);
+  const isPushPermissionDisabled = !isSupported || isPushPermissionPending;
+
+  const handlePushPermissionRequest = async () => {
+    if (isPushPermissionDisabled) {
+      return;
+    }
+
+    setIsPushPermissionPending(true);
+
+    try {
+      await subscribe();
+    } finally {
+      setIsPushPermissionPending(false);
+    }
+  };
 
   const handleSaveAll = async () => {
     if (isSaving || !hasUnsavedChanges) {
@@ -117,7 +147,7 @@ export const SettingsView = ({
         </div>
         <Card className="overflow-hidden rounded-[2rem] border-white/40 bg-white/40 shadow-[0_8px_32px_rgba(0,0,0,0.04)] backdrop-blur-2xl transition-all hover:shadow-[0_12px_40px_rgba(0,0,0,0.06)] dark:border-white/10 dark:bg-black/40">
           <CardContent className="divide-y divide-black/[0.04] p-0 dark:divide-white/[0.04]">
-            {NOTIFICATIONS.map(({ name, labelKey, icon: Icon, color }, index) => (
+            {availableNotifications.map(({ name, labelKey, icon: Icon, color }) => (
               <div
                 key={name}
                 className={cn(
@@ -144,6 +174,43 @@ export const SettingsView = ({
                 />
               </div>
             ))}
+            <div className="flex items-center justify-between gap-4 px-5 py-4">
+              <div className="flex items-center gap-4">
+                <div className="flex h-9 w-9 items-center justify-center rounded-[0.75rem] bg-violet-500 text-white shadow-sm ring-4 ring-white/10 dark:ring-white/5">
+                  <BellRing className="h-4.5 w-4.5" />
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-[16px] font-semibold tracking-tight text-foreground/90">
+                    {t('settings.pushPermissionRequest')}
+                  </p>
+                  <p className="text-[12px] font-medium leading-snug text-muted-foreground/60">
+                    {isSupported
+                      ? t(
+                          permission === 'denied'
+                            ? 'settings.pushPermissionDenied'
+                            : isSubscribed
+                              ? 'settings.pushPermissionSubscribed'
+                              : 'settings.pushPermissionDescription'
+                        )
+                      : t('settings.pushPermissionUnsupported')}
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isPushPermissionDisabled}
+                onClick={handlePushPermissionRequest}
+                className="shrink-0 rounded-full bg-white/50 px-4 font-bold dark:bg-white/5"
+              >
+                {isPushPermissionPending ? (
+                  <PilloPendingIndicator label={t('common.processing')} />
+                ) : (
+                  t('settings.pushPermissionButton')
+                )}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </section>

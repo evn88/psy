@@ -295,13 +295,18 @@ const PilloPage = async () => {
     referenceDateIso: new Date().toISOString(),
     scheduleRules,
     settings: {
-      emailRemindersEnabled: settings.emailRemindersEnabled,
+      canUseEmailNotifications: !user.isAnonymousGuest,
+      emailRemindersEnabled: !user.isAnonymousGuest && settings.emailRemindersEnabled,
       pushRemindersEnabled: settings.pushRemindersEnabled,
-      lowStockEmailEnabled: settings.lowStockEmailEnabled,
+      lowStockEmailEnabled: !user.isAnonymousGuest && settings.lowStockEmailEnabled,
       lowStockPushEnabled: settings.lowStockPushEnabled,
       lowStockWarningDays: settings.lowStockWarningDays
     },
     todayIntakes: intakeRecords,
+    viewer: {
+      displayName: user.isAnonymousGuest ? null : user.name || user.email || null,
+      isAnonymousGuest: user.isAnonymousGuest
+    },
     weeklyScheduledIntakes: weeklyIntakeRecords
   };
 

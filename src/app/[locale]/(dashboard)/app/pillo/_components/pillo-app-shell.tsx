@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarClock, Home, LayoutGrid, Pill, Settings } from 'lucide-react';
+import { CalendarClock, Home, LayoutGrid, LogIn, Pill, Settings, UserRound } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { Link } from '@/i18n/navigation';
@@ -16,6 +16,7 @@ import type {
   PilloScheduleRuleView,
   PilloSettingsView,
   PilloTab,
+  PilloViewerView,
   PilloWeeklyScheduledIntakeView
 } from './types';
 
@@ -32,6 +33,7 @@ interface PilloAppShellProps {
   medications: PilloMedicationView[];
   scheduleRules: PilloScheduleRuleView[];
   settings: PilloSettingsView;
+  viewer: PilloViewerView;
   weeklyScheduledIntakes: PilloWeeklyScheduledIntakeView[];
 }
 
@@ -55,6 +57,7 @@ export const PilloAppShell = ({
   medications,
   scheduleRules,
   settings,
+  viewer,
   weeklyScheduledIntakes
 }: PilloAppShellProps) => {
   const t = useTranslations('Pillo');
@@ -82,12 +85,32 @@ export const PilloAppShell = ({
                 </h1>
               </div>
             </div>
-            <Badge
-              variant="secondary"
-              className="rounded-full border border-primary/20 bg-primary/20 px-3 py-1 font-semibold text-primary shadow-sm shadow-primary/10"
-            >
-              {t('pendingCount', { count: todayPendingCount })}
-            </Badge>
+            <div className="flex min-w-0 items-center gap-2">
+              <Badge
+                variant="secondary"
+                className="hidden rounded-full border border-primary/20 bg-primary/20 px-3 py-1 font-semibold text-primary shadow-sm shadow-primary/10 min-[360px]:inline-flex"
+              >
+                {t('pendingCount', { count: todayPendingCount })}
+              </Badge>
+              {viewer.isAnonymousGuest ? (
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="h-9 shrink-0 rounded-full bg-white/50 px-3 font-bold dark:bg-white/5"
+                >
+                  <Link href="/auth">
+                    <LogIn className="mr-1.5 h-4 w-4" />
+                    {t('auth.signIn')}
+                  </Link>
+                </Button>
+              ) : (
+                <div className="flex min-w-0 max-w-[8.5rem] items-center gap-2 rounded-full border border-white/30 bg-white/45 px-3 py-2 text-sm font-bold text-foreground/80 shadow-sm dark:border-white/10 dark:bg-white/5">
+                  <UserRound className="h-4 w-4 shrink-0 text-primary" />
+                  <span className="truncate">{viewer.displayName ?? t('auth.user')}</span>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 

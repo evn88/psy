@@ -21,7 +21,7 @@ import {
   pilloScheduleRuleSchema,
   pilloSettingsSchema
 } from '@/modules/pillo/schemas';
-import { requirePilloUserId, canUsePillo } from '@/modules/pillo/access';
+import { requirePilloUser, requirePilloUserId, canUsePillo } from '@/modules/pillo/access';
 import { getPilloStockStatus, resolveStockUnits, toNumber } from '@/modules/pillo/stock';
 import { getPilloLocalDateKey } from '@/modules/pillo/schedule';
 import prisma from '@/lib/prisma';
@@ -398,17 +398,23 @@ export const undoPilloIntakeAction = async (intakeId: string): Promise<PilloActi
  * @returns Результат сохранения.
  */
 export const savePilloSettingsAction = async (input: unknown): Promise<PilloActionResult> => {
-  const userId = await requirePilloUserId();
+  const user = await requirePilloUser();
   const parsed = pilloSettingsSchema.safeParse(input);
 
   if (!parsed.success) {
     return { error: 'Некорректные настройки' };
   }
 
+  const settings = {
+    ...parsed.data,
+    emailRemindersEnabled: user.isAnonymousGuest ? false : parsed.data.emailRemindersEnabled,
+    lowStockEmailEnabled: user.isAnonymousGuest ? false : parsed.data.lowStockEmailEnabled
+  };
+
   await prisma.pilloUserSettings.upsert({
-    where: { userId },
-    update: parsed.data,
-    create: { userId, ...parsed.data }
+    where: { userId: user.id },
+    update: settings,
+    create: { userId: user.id, ...settings }
   });
 
   revalidatePilloPaths();

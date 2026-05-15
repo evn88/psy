@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
+import { resolvePilloUser } from '@/modules/pillo/access';
 import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 // POST /api/push/subscribe — сохранить подписку
 async function postHandler(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const user = await resolvePilloUser();
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -18,8 +18,8 @@ async function postHandler(request: Request) {
 
   await prisma.pushSubscription.upsert({
     where: { endpoint },
-    update: { p256dh, auth: authKey, userId: session.user.id },
-    create: { endpoint, p256dh, auth: authKey, userId: session.user.id }
+    update: { p256dh, auth: authKey, userId: user.id },
+    create: { endpoint, p256dh, auth: authKey, userId: user.id }
   });
 
   return NextResponse.json({ success: true });
@@ -27,8 +27,8 @@ async function postHandler(request: Request) {
 
 // DELETE /api/push/subscribe — удалить подписку
 async function deleteHandler(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const user = await resolvePilloUser();
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -39,7 +39,7 @@ async function deleteHandler(request: Request) {
   }
 
   await prisma.pushSubscription.deleteMany({
-    where: { endpoint, userId: session.user.id }
+    where: { endpoint, userId: user.id }
   });
 
   return NextResponse.json({ success: true });
