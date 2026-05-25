@@ -5,8 +5,10 @@ export default async function MySessionsPage() {
   const t = await getTranslations('My');
 
   return (
-    <div className="space-y-4 h-full">
-      <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">{t('sessionsTitle')}</h2>
+    <div className="mx-auto w-full max-w-[1600px] space-y-6 pb-6">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t('sessionsTitle')}</h1>
+      </div>
       <UserScheduleDashboard />
     </div>
   );

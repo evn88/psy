@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useState } from 'react';
 import {
   addDays,
   addMonths,
@@ -58,31 +58,6 @@ export function UserCalendarView({
     onDateSelect(new Date());
     onMonthChange(new Date());
   };
-
-  const accumulated = useRef(0);
-  const cooldown = useRef(false);
-  const handleWheel = useCallback(
-    (e: React.WheelEvent) => {
-      e.preventDefault();
-      if (cooldown.current) return;
-      accumulated.current += e.deltaY;
-      if (Math.abs(accumulated.current) < 120) return;
-      const goNext = accumulated.current > 0;
-      accumulated.current = 0;
-      cooldown.current = true;
-      setTimeout(() => {
-        cooldown.current = false;
-      }, 800);
-      if (goNext) {
-        setDirection('next');
-        onMonthChange(addMonths(currentDate, 1));
-      } else {
-        setDirection('prev');
-        onMonthChange(subMonths(currentDate, 1));
-      }
-    },
-    [currentDate, onMonthChange]
-  );
 
   const renderHeader = () => {
     return (
@@ -217,7 +192,7 @@ export function UserCalendarView({
                   return (
                     <span
                       key={event.id}
-                      className={`w-1.5 h-1.5 rounded-full ${isScheduled ? 'bg-green-500' : isFree ? 'bg-blue-500' : 'bg-gray-400'}`}
+                      className={`w-1.5 h-1.5 rounded-full ${isScheduled ? 'bg-emerald-500' : isFree ? 'bg-primary' : 'bg-muted-foreground/40'}`}
                     />
                   );
                 })}
@@ -234,10 +209,10 @@ export function UserCalendarView({
                   <div
                     key={event.id}
                     className={`
-                      text-xs p-1 rounded-sm truncate
-                      ${isScheduled ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : ''}
-                      ${isFree ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : ''}
-                      ${!isScheduled && !isFree ? 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300' : ''}
+                      text-xs p-1 rounded-sm truncate border
+                      ${isScheduled ? 'bg-emerald-500/10 text-emerald-800 border-emerald-500/15 dark:bg-emerald-500/20 dark:text-emerald-300' : ''}
+                      ${isFree ? 'bg-primary/10 text-primary-foreground border-primary/25 dark:bg-primary/20 dark:text-primary-foreground' : ''}
+                      ${!isScheduled && !isFree ? 'bg-muted text-muted-foreground border-border/40' : ''}
                     `}
                     title={event.title || t(`eventTypes.${event.type}` as never)}
                   >
@@ -274,7 +249,7 @@ export function UserCalendarView({
   };
 
   return (
-    <div className="flex flex-col h-full" onWheel={handleWheel}>
+    <div className="flex flex-col h-full">
       {renderHeader()}
       {renderDays()}
       {renderCells()}

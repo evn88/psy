@@ -580,6 +580,7 @@
     "sessionsTitle": "Moje sesije",
     "paymentsTitle": "Plaćanja",
     "dataTitle": "Fajlovi i dokumenti",
+    "dataDescription": "Lista vaših fajlova i dokumenata koje ste podelili sa stručnjakom",
     "comingSoon": "Odeljak u razvoju",
     "sessionsPlaceholder": "Ovde ćete videti raspored vaših sesija i moći da zakazujete termine.",
     "paymentsPlaceholder": "Ovde ćete videti istoriju plaćanja i moći da vršite uplate.",
@@ -658,7 +659,9 @@
   },
   "Surveys": {
     "myTitle": "Ankete i testovi",
+    "myDescription": "Sve vaše ankete, psihološki testovi i upitnici na jednom mestu",
     "noSurveys": "Trenutno nemate dodeljenih anketa.",
+    "noTestsDescription": "Dodatni testovi će se pojaviti ovde nakon razgovora na konsultaciji",
     "completed": "Završeno",
     "pending": "Čeka",
     "startSurvey": "Popuni anketu",
@@ -674,7 +677,14 @@
     "sendReply": "Pošalji",
     "noComments": "Još nema komentara.",
     "loading": "Učitavanje...",
-    "clearDraft": "Obriši nacrt"
+    "clearDraft": "Obriši nacrt",
+    "intakeSectionTitle": "Ulazni upitnik",
+    "intakeDescription": "Popunjavanje ovog upitnika je važan korak u pripremi za naš rad. Pomaže mi da unapred razumem vaš zahtev i pripremim se za prvu sesiju.",
+    "fillIntakeButton": "Popuni ulazni upitnik",
+    "refillIntakeButton": "Popuni ponovo",
+    "lastFilledLabel": "Poslednje popunjeno: {date}",
+    "testsSectionTitle": "Psihološki testovi i zadaci",
+    "newMessageBadge": "Nova poruka"
   },
   "AdminEventBooking": {
     "subject": "Nova rezervacija: {title}",
@@ -812,6 +822,7 @@
   },
   "Settings": {
     "title": "Podešavanja",
+    "description": "Upravljajte jezikom, izgledom i podešavanjima obaveštenja.",
     "appearanceTitle": "Izgled i jezik",
     "appearanceDescription": "Prilagodite izgled panela.",
     "languageLabel": "Jezik",

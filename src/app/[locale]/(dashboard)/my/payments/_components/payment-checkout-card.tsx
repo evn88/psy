@@ -190,15 +190,17 @@ export const PaymentCheckoutCard = ({
   return (
     <div className="space-y-6">
       {/* Баланс пользователя */}
-      <Card className="border-border/70 bg-gradient-to-r from-primary/10 via-card to-card shadow-sm">
+      <Card className="border-primary/25 bg-gradient-to-br from-primary/15 via-card/95 to-card/60 backdrop-blur-md shadow-sm rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-md hover:border-primary/35">
         <CardContent className="p-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20 text-primary">
-              <Wallet className="h-6 w-6" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/25 text-primary-foreground shadow-sm">
+              <Wallet className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Текущий баланс</p>
-              <h2 className="text-3xl font-bold tracking-tight">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                Текущий баланс
+              </p>
+              <h2 className="text-3xl font-extrabold tracking-tight mt-1 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
                 {formatPaymentAmount(balance, currency)}
               </h2>
             </div>

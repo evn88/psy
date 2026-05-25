@@ -2,23 +2,32 @@ import { getTranslations } from 'next-intl/server';
 import { MyDocuments } from './_components/my-documents';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
-import { redirect } from 'next/navigation';
+import { redirect } from '@/i18n/navigation';
+import { type AppLocale, defaultLocale, isLocale } from '@/i18n/config';
+
+interface MyDocumentsPageProps {
+  params: Promise<{ locale: string }>;
+}
 
 /**
  * Страница "Файлы и документы".
  * Отображает список загруженных пользователем файлов и позволяет загружать новые.
  */
-export default async function MyDocumentsPage() {
+export default async function MyDocumentsPage({ params }: MyDocumentsPageProps) {
+  const { locale } = await params;
+  const currentLocale: AppLocale = isLocale(locale) ? locale : defaultLocale;
   const t = await getTranslations('My');
   const session = await auth();
 
   if (!session?.user?.id) {
-    redirect('/auth');
+    redirect({ href: '/auth', locale: currentLocale });
   }
+
+  const userId = session!.user!.id!;
 
   // Получаем список документов пользователя
   const documents = await prisma.clientDocument.findMany({
-    where: { userId: session.user.id },
+    where: { userId },
     orderBy: { createdAt: 'desc' },
     select: {
       id: true,
@@ -31,17 +40,13 @@ export default async function MyDocumentsPage() {
   });
 
   return (
-    <div className="w-full max-w-none space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">{t('dataTitle')}</h2>
-        <p className="text-muted-foreground">
-          Список ваших файлов и документов, которыми вы поделились со специалистом
-        </p>
+    <div className="mx-auto w-full max-w-6xl space-y-6 pb-6">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t('dataTitle')}</h1>
+        <p className="max-w-2xl text-sm leading-6 text-muted-foreground">{t('dataDescription')}</p>
       </div>
 
-      <div className="w-full">
-        <MyDocuments userId={session.user.id} documents={documents} />
-      </div>
+      <MyDocuments userId={userId} documents={documents} />
     </div>
   );
 }

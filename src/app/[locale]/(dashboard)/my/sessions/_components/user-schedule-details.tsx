@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { isSameDay, isSameWeek } from 'date-fns';
 import { useTranslations } from 'next-intl';
-import { ListFilter, Loader2 } from 'lucide-react';
+import { ListFilter } from 'lucide-react';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { UserEvent } from './use-user-events';
@@ -62,8 +62,23 @@ export function UserScheduleDetails({
 
         <CardContent className="flex-1 overflow-y-auto px-4 sm:px-6 pb-6 max-h-[60vh] md:max-h-none">
           {isLoading ? (
-            <div className="flex justify-center items-center h-40">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <div className="space-y-4">
+              {[1, 2].map(i => (
+                <div
+                  key={i}
+                  className="p-4 rounded-xl border border-border/60 bg-card space-y-3 animate-pulse"
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="h-5 w-24 bg-muted rounded-full" />
+                    <div className="h-8 w-16 bg-muted rounded-lg" />
+                  </div>
+                  <div className="h-6 w-2/3 bg-muted rounded" />
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="h-4 w-4 bg-muted rounded-full" />
+                    <div className="h-4 w-32 bg-muted rounded" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : filteredEvents.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-40 text-center text-muted-foreground">

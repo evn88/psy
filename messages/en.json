@@ -580,6 +580,7 @@
     "sessionsTitle": "My Sessions",
     "paymentsTitle": "Payments",
     "dataTitle": "Files & Documents",
+    "dataDescription": "List of your files and documents shared with your specialist",
     "comingSoon": "Coming soon",
     "sessionsPlaceholder": "Here you will see your session schedule and book appointments.",
     "paymentsPlaceholder": "Here you will see your payment history and make payments.",
@@ -660,7 +661,9 @@
   },
   "Surveys": {
     "myTitle": "Forms & Tests",
+    "myDescription": "All your forms, psychological tests, and questionnaires in one place",
     "noSurveys": "You don't have any assigned surveys yet.",
+    "noTestsDescription": "Additional tests will appear here after discussion during a consultation",
     "completed": "Completed",
     "pending": "Pending",
     "startSurvey": "Take Survey",
@@ -676,7 +679,14 @@
     "sendReply": "Send",
     "noComments": "No comments yet.",
     "loading": "Loading...",
-    "clearDraft": "Clear Draft"
+    "clearDraft": "Clear draft",
+    "intakeSectionTitle": "Intake Questionnaire",
+    "intakeDescription": "Filling out this questionnaire is an important step in preparing for our work. It helps me understand your request in advance and prepare for the first session.",
+    "fillIntakeButton": "Fill out intake questionnaire",
+    "refillIntakeButton": "Fill out again",
+    "lastFilledLabel": "Last filled out: {date}",
+    "testsSectionTitle": "Psychological Tests & Assignments",
+    "newMessageBadge": "New message"
   },
   "AdminEventBooking": {
     "subject": "New Booking: {title}",
@@ -840,6 +850,7 @@
   },
   "Settings": {
     "title": "Settings",
+    "description": "Manage language, appearance, and notification preferences.",
     "appearanceTitle": "Appearance & Language",
     "appearanceDescription": "Customize how the panel looks and feels.",
     "languageLabel": "Language",

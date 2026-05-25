@@ -1,5 +1,5 @@
 import { auth } from '@/auth';
-import { redirect } from 'next/navigation';
+import { redirect } from '@/i18n/navigation';
 import prisma from '@/lib/prisma';
 import type { Prisma } from '@prisma/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +19,8 @@ import {
 import { getTranslations } from 'next-intl/server';
 import { IntakeWizardModal } from './_components/intake-wizard';
 import { IntakeResultsModal } from './_components/intake-results-modal';
+import { type AppLocale, defaultLocale, isLocale } from '@/i18n/config';
+import { cn } from '@/lib/utils';
 
 type AssignmentWithSurvey = Prisma.SurveyAssignmentGetPayload<{
   include: {
@@ -37,26 +39,32 @@ type AssignmentWithSurvey = Prisma.SurveyAssignmentGetPayload<{
   };
 }>;
 
+interface MySurveysPageProps {
+  params: Promise<{ locale: string }>;
+}
+
 /**
  * Страница "Анкеты и тесты" в личном кабинете.
  * Здесь собрана первичная анкета и все назначенные психологические тесты/опросы.
  */
-export default async function MySurveysPage() {
+export default async function MySurveysPage({ params }: MySurveysPageProps) {
+  const { locale } = await params;
+  const currentLocale: AppLocale = isLocale(locale) ? locale : defaultLocale;
   const session = await auth();
   const t = await getTranslations('Surveys');
   const ti = await getTranslations('IntakeWizard');
 
   if (!session?.user?.id) {
-    redirect('/auth');
+    redirect({ href: '/auth', locale: currentLocale });
   }
 
-  const userId = session.user.id;
+  const userId = session!.user!.id!;
 
   // 1. Получаем историю первичных анкет (Intake)
   const intakeHistory = await prisma.intakeResponse.findMany({
     where: {
       clientProfile: {
-        userId: userId
+        userId
       }
     },
     orderBy: { createdAt: 'desc' }
@@ -85,48 +93,44 @@ export default async function MySurveysPage() {
   });
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-500">
-      <div className="flex flex-col gap-2">
-        <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
-          {t('myTitle')}
-        </h2>
-        <p className="text-muted-foreground text-lg">
-          Все ваши анкеты, психологические тесты и опросники в одном месте
-        </p>
+    <div className="mx-auto w-full max-w-[1600px] space-y-6 pb-6">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t('myTitle')}</h1>
+        <p className="max-w-2xl text-sm leading-6 text-muted-foreground">{t('myDescription')}</p>
       </div>
 
       {/* Секция 1: Первичная анкета (Intake) */}
-      <section className="space-y-6">
+      <section className="space-y-4">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-primary/10 text-primary">
-            <Sparkles className="h-5 w-5" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary">
+            <Sparkles className="h-4 w-4" />
           </div>
-          <h3 className="text-xl font-bold tracking-tight">Первичная анкета</h3>
+          <h2 className="text-lg font-semibold tracking-tight">{t('intakeSectionTitle')}</h2>
         </div>
 
-        <Card className="overflow-hidden border-2 border-primary/10 hover:border-primary/20 transition-all shadow-md hover:shadow-xl bg-gradient-to-br from-background to-primary/5">
-          <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-            <FileQuestion className="h-24 w-24" />
-          </div>
+        <Card className="shadow-sm">
           <CardHeader className="pb-4">
-            <CardTitle className="text-2xl">{ti('title')}</CardTitle>
-            <CardDescription className="text-base max-w-2xl leading-relaxed">
-              Заполнение этой анкеты — самый важный этап подготовки к нашей работе. Она помогает мне
-              заранее понять ваш запрос и подготовиться к первой сессии.
+            <CardTitle className="text-xl">{ti('title')}</CardTitle>
+            <CardDescription className="text-sm leading-relaxed">
+              {t('intakeDescription')}
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-wrap items-center gap-4">
+          <CardContent className="flex flex-wrap items-center gap-3">
             {!latestIntake ? (
-              <IntakeWizardModal triggerText="Заполнить первичную анкету" />
+              <IntakeWizardModal triggerText={t('fillIntakeButton')} />
             ) : (
               <>
                 <IntakeResultsModal
                   intakeId={latestIntake.id}
                   completedAt={latestIntake.createdAt}
                 />
-                <IntakeWizardModal triggerText="Заполнить заново" />
-                <p className="text-sm text-muted-foreground w-full sm:w-auto italic">
-                  Последний раз заполнено: {latestIntake.createdAt.toLocaleDateString('ru-RU')}
+                <IntakeWizardModal triggerText={t('refillIntakeButton')} />
+                <p className="text-sm text-muted-foreground w-full sm:w-auto">
+                  {t('lastFilledLabel', {
+                    date: latestIntake.createdAt.toLocaleDateString(
+                      currentLocale === 'en' ? 'en-US' : currentLocale === 'sr' ? 'sr-RS' : 'ru-RU'
+                    )
+                  })}
                 </p>
               </>
             )}
@@ -135,34 +139,34 @@ export default async function MySurveysPage() {
       </section>
 
       {/* Секция 2: Назначенные тесты и опросники */}
-      <section className="space-y-6">
+      <section className="space-y-4">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-orange-500/10 text-orange-500">
-            <GraduationCap className="h-5 w-5" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-orange-500/10 text-orange-500">
+            <GraduationCap className="h-4 w-4" />
           </div>
-          <h3 className="text-xl font-bold tracking-tight">Психологические тесты и задания</h3>
+          <h2 className="text-lg font-semibold tracking-tight">{t('testsSectionTitle')}</h2>
         </div>
 
         {assignments.length === 0 ? (
-          <Card className="border-dashed border-2 bg-muted/20">
-            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <ClipboardList className="h-16 w-16 text-muted-foreground/30 mb-6" />
-              <p className="text-muted-foreground text-lg max-w-sm">{t('noSurveys')}</p>
-              <p className="text-sm text-muted-foreground/60 mt-2">
-                Дополнительные тесты появятся здесь после обсуждения на консультации
-              </p>
+          <Card className="border-dashed bg-muted/20 shadow-sm">
+            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+              <ClipboardList className="h-12 w-12 text-muted-foreground/30 mb-4" />
+              <p className="text-muted-foreground text-base max-w-sm">{t('noSurveys')}</p>
+              <p className="text-sm text-muted-foreground/60 mt-2">{t('noTestsDescription')}</p>
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {assignments.map(assignment => (
               <Card
                 key={assignment.id}
-                className="group relative flex flex-col hover:border-primary/40 transition-all hover:shadow-lg overflow-hidden"
+                className={cn(
+                  'group relative flex flex-col transition-all duration-250 shadow-sm rounded-xl overflow-hidden border border-border/60 hover:shadow-md hover:border-primary/40',
+                  assignment.status === 'COMPLETED'
+                    ? 'bg-gradient-to-br from-emerald-500/5 via-card to-card border-emerald-500/20'
+                    : 'bg-gradient-to-br from-orange-500/5 via-card to-card border-orange-500/20'
+                )}
               >
-                <div
-                  className={`absolute top-0 left-0 w-1 h-full transition-all ${assignment.status === 'COMPLETED' ? 'bg-emerald-500' : 'bg-orange-500'}`}
-                />
                 <CardHeader>
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-1.5 min-w-0">
@@ -186,15 +190,15 @@ export default async function MySurveysPage() {
                         {(assignment.result?._count?.comments ?? 0) > 0 && (
                           <Badge variant="destructive" className="flex items-center gap-1.5">
                             <MessageSquare className="h-3 w-3 fill-current" />
-                            Новое сообщение
+                            {t('newMessageBadge')}
                           </Badge>
                         )}
                       </div>
-                      <CardTitle className="text-xl group-hover:text-primary transition-colors">
+                      <CardTitle className="text-base group-hover:text-primary transition-colors">
                         {assignment.survey.title}
                       </CardTitle>
                       {assignment.survey.description && (
-                        <CardDescription className="line-clamp-2 text-sm leading-relaxed">
+                        <CardDescription className="line-clamp-2 text-sm">
                           {assignment.survey.description}
                         </CardDescription>
                       )}
@@ -217,7 +221,13 @@ export default async function MySurveysPage() {
                       <p className="text-xs text-muted-foreground font-medium">
                         {t('completedAt', {
                           date: assignment.result?.completedAt
-                            ? new Date(assignment.result.completedAt).toLocaleDateString('ru-RU')
+                            ? new Date(assignment.result.completedAt).toLocaleDateString(
+                                currentLocale === 'en'
+                                  ? 'en-US'
+                                  : currentLocale === 'sr'
+                                    ? 'sr-RS'
+                                    : 'ru-RU'
+                              )
                             : ''
                         })}
                       </p>

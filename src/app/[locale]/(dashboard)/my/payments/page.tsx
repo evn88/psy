@@ -5,6 +5,7 @@ import prisma from '@/lib/prisma';
 import { getPayPalClientId, getPayPalDefaultCurrency } from '@/modules/payments/paypal/config';
 import { formatPaymentAmount } from '@/modules/payments';
 import { getTranslations } from 'next-intl/server';
+import { requireAuthenticatedUser } from '@/lib/auth-helpers';
 
 import { MyPaymentsHistory } from './_components/my-payments-history';
 import { PaymentCheckoutCard } from './_components/payment-checkout-card';
@@ -16,25 +17,6 @@ import type {
 interface MyPaymentsPageProps {
   params: Promise<{ locale: string }>;
 }
-
-/**
- * Возвращает авторизованного пользователя или выполняет locale-aware redirect на вход.
- * Дополнительный `throw` нужен только для корректного сужения типов после redirect.
- * @param user - пользователь из сессии.
- * @param locale - активная locale.
- * @returns Авторизованный пользователь.
- */
-const requireAuthenticatedUser = <TUser,>(
-  user: TUser | null | undefined,
-  locale: AppLocale
-): TUser => {
-  if (!user) {
-    redirect({ href: '/auth', locale });
-    throw new Error('UNREACHABLE_AUTH_REDIRECT');
-  }
-
-  return user;
-};
 
 /**
  * Страница оплаты услуг для клиента.
@@ -93,14 +75,14 @@ export default async function MyPaymentsPage({ params }: Readonly<MyPaymentsPage
   const clientId = getPayPalClientId();
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 pb-10">
-      <section className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t('paymentsTitle')}</h1>
-        <p className="max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
+    <div className="mx-auto w-full max-w-[1600px] space-y-6 pb-6">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t('paymentsTitle')}</h1>
+        <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
           Укажите сумму, выберите PayPal или оплату картой и завершите платёж. После подтверждения
           операция появится в истории ниже.
         </p>
-      </section>
+      </div>
 
       <PaymentCheckoutCard
         clientId={clientId}

@@ -18,6 +18,9 @@ import { formatInTimeZone } from 'date-fns-tz';
 import { enUS, ru } from 'date-fns/locale';
 import { type AppLocale, defaultLocale, isLocale } from '@/i18n/config';
 import { redirect } from '@/i18n/navigation';
+import { requireAuthenticatedUser } from '@/lib/auth-helpers';
+
+import { cn } from '@/lib/utils';
 
 interface MyDashboardPageProps {
   params: Promise<{ locale: string }>;
@@ -49,10 +52,20 @@ const MyStatCard = ({
     tone === 'accent' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground';
 
   return (
-    <Card className="shadow-sm">
+    <Card
+      className={cn(
+        'shadow-sm transition-all duration-250 hover:shadow-md border-border/60 rounded-xl overflow-hidden',
+        tone === 'accent' && 'bg-gradient-to-br from-primary/8 via-card to-card border-primary/30'
+      )}
+    >
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
         <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-        <div className={`flex h-9 w-9 items-center justify-center rounded-md ${iconClassName}`}>
+        <div
+          className={cn(
+            'flex h-9 w-9 items-center justify-center rounded-xl transition-colors',
+            iconClassName
+          )}
+        >
           <Icon className="h-4 w-4" />
         </div>
       </CardHeader>
@@ -65,9 +78,13 @@ const MyStatCard = ({
 };
 
 const MyActionCard = ({ href, title, description, icon: Icon }: MyActionCardProps) => (
-  <Button asChild variant="outline" className="h-auto w-full justify-between whitespace-normal p-4">
+  <Button
+    asChild
+    variant="outline"
+    className="group h-auto w-full justify-between whitespace-normal p-4 rounded-xl border-border/60 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm hover:border-primary/40 hover:bg-accent/10"
+  >
     <Link href={href} className="flex w-full items-center gap-3">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors group-hover:bg-primary/20 group-hover:text-primary">
         <Icon className="h-5 w-5" />
       </span>
       <span className="min-w-0 flex-1 text-left">
@@ -76,29 +93,10 @@ const MyActionCard = ({ href, title, description, icon: Icon }: MyActionCardProp
           {description}
         </span>
       </span>
-      <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+      <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
     </Link>
   </Button>
 );
-
-/**
- * Возвращает авторизованного пользователя или выполняет locale-aware redirect на вход.
- * Дополнительный `throw` нужен только для корректного сужения типов после redirect.
- * @param user - пользователь из сессии.
- * @param locale - активная locale.
- * @returns Авторизованный пользователь.
- */
-const requireAuthenticatedUser = <TUser,>(
-  user: TUser | null | undefined,
-  locale: AppLocale
-): TUser => {
-  if (!user) {
-    redirect({ href: '/auth', locale });
-    throw new Error('UNREACHABLE_AUTH_REDIRECT');
-  }
-
-  return user;
-};
 
 /**
  * Дашборд личного кабинета пользователя.
@@ -162,7 +160,7 @@ export default async function MyDashboardPage({ params }: MyDashboardPageProps) 
     : t('nextSessionDesc');
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 pb-6">
+    <div className="mx-auto w-full max-w-[1600px] space-y-6 pb-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="space-y-2">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
@@ -205,12 +203,12 @@ export default async function MyDashboardPage({ params }: MyDashboardPageProps) 
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_24rem]">
         <Card className="shadow-sm">
           <CardHeader>
             <CardTitle>{t('nextStepsTitle')}</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-2">
+          <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <MyActionCard
               href="/my/surveys"
               title={t('actionSurveysTitle')}

@@ -10,6 +10,7 @@ import { type AppLocale, defaultLocale, isLocale } from '@/i18n/config';
 import { redirect } from '@/i18n/navigation';
 import { SidebarWorkspaceLayout } from '@/components/sidebar-workspace-layout';
 import { getUserUnreadSurveysCount } from './surveys/actions';
+import { requireAuthenticatedUser } from '@/lib/auth-helpers';
 
 export const metadata: Metadata = {
   robots: {
@@ -22,25 +23,6 @@ interface MyLayoutProps {
   children: ReactNode;
   params: Promise<{ locale: string }>;
 }
-
-/**
- * Возвращает авторизованного пользователя или выполняет locale-aware redirect на вход.
- * Дополнительный `throw` нужен только для корректного сужения типов после redirect.
- * @param user - пользователь из сессии.
- * @param locale - активная locale.
- * @returns Авторизованный пользователь.
- */
-const requireAuthenticatedUser = <TUser,>(
-  user: TUser | null | undefined,
-  locale: AppLocale
-): TUser => {
-  if (!user) {
-    redirect({ href: '/auth', locale });
-    throw new Error('UNREACHABLE_AUTH_REDIRECT');
-  }
-
-  return user;
-};
 
 /**
  * Layout для личного кабинета пользователя.

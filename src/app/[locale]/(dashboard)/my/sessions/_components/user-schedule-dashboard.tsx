@@ -41,7 +41,7 @@ export function UserScheduleDashboard() {
         />
       </div>
       {/* Details — second on mobile, first on desktop */}
-      <div className="order-2 md:order-1 md:w-80 lg:w-96 md:shrink-0 flex flex-col min-h-0">
+      <div className="order-2 md:order-1 md:w-80 lg:w-96 xl:w-[400px] 2xl:w-[480px] md:shrink-0 flex flex-col min-h-0">
         <UserScheduleDetails
           selectedDate={selectedDate}
           events={events}
