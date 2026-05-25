@@ -61,9 +61,9 @@ export function UserCalendarView({
 
   const renderHeader = () => {
     return (
-      <div className="flex justify-between items-center p-3 sm:p-4 border-b gap-2">
+      <div className="flex justify-between items-center p-3 sm:p-4 border-b border-border/50 gap-2 bg-muted/5">
         <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-          <h2 className="text-base sm:text-xl font-semibold capitalize truncate">
+          <h2 className="text-base sm:text-lg font-bold capitalize truncate">
             {format(currentDate, 'LLLL yyyy', { locale: dateLocale })}
           </h2>
           <div className="flex items-center gap-1 shrink-0">
@@ -71,7 +71,7 @@ export function UserCalendarView({
               variant="outline"
               size="icon"
               onClick={prevMonth}
-              className="h-7 w-7 sm:h-8 sm:w-8"
+              className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg hover:bg-background"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -79,7 +79,7 @@ export function UserCalendarView({
               variant="outline"
               size="icon"
               onClick={nextMonth}
-              className="h-7 w-7 sm:h-8 sm:w-8"
+              className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg hover:bg-background"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -89,7 +89,7 @@ export function UserCalendarView({
           variant="outline"
           size="sm"
           onClick={goToToday}
-          className="shrink-0 text-xs sm:text-sm h-7 sm:h-8"
+          className="shrink-0 text-xs sm:text-xs h-7 sm:h-8 rounded-lg font-bold hover:bg-background"
         >
           {t('today')}
         </Button>
@@ -105,12 +105,12 @@ export function UserCalendarView({
       days.push(
         <div
           key={i}
-          className="text-center font-medium text-muted-foreground py-2 border-b capitalize"
+          className="text-center font-bold text-muted-foreground/80 py-2 border-b border-border/50 bg-muted/5 capitalize"
         >
-          <span className="sm:hidden text-[10px]">
+          <span className="sm:hidden text-[9px] uppercase tracking-wider">
             {format(addDays(startDate, i), 'EEEEE', { locale: dateLocale })}
           </span>
-          <span className="hidden sm:inline text-xs md:text-sm">
+          <span className="hidden sm:inline text-xs uppercase tracking-wider">
             {format(addDays(startDate, i), 'EEE', { locale: dateLocale })}
           </span>
         </div>
@@ -146,7 +146,7 @@ export function UserCalendarView({
         const disabledStyle = isPastDay
           ? {
               backgroundImage:
-                'repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(150, 150, 150, 0.06) 8px, rgba(150, 150, 150, 0.06) 16px)'
+                'repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(150, 150, 150, 0.04) 8px, rgba(150, 150, 150, 0.04) 16px)'
             }
           : {};
 
@@ -158,10 +158,10 @@ export function UserCalendarView({
               onDateSelect(cloneDay);
             }}
             className={`
-              min-h-[60px] sm:min-h-[80px] lg:min-h-[100px] p-1 sm:p-2 border-b border-r transition-colors relative
-              ${!isPastDay ? 'hover:bg-muted/50 cursor-pointer' : 'cursor-not-allowed opacity-[0.85]'}
-              ${!isCurrentMonth ? 'bg-muted/20 text-muted-foreground' : ''}
-              ${isSelected && !isPastDay ? 'bg-primary/5 border-primary/20' : ''}
+              min-h-[60px] sm:min-h-[80px] lg:min-h-[100px] p-1 sm:p-2 border-b border-r border-border/40 transition-colors relative
+              ${!isPastDay ? 'hover:bg-primary/[0.02] cursor-pointer' : 'cursor-not-allowed opacity-[0.85]'}
+              ${!isCurrentMonth ? 'bg-muted/10 text-muted-foreground/60' : ''}
+              ${isSelected && !isPastDay ? 'bg-primary/[0.04] border-primary/10' : ''}
               ${i === 6 ? 'border-r-0' : ''}
             `}
             style={disabledStyle}
@@ -169,9 +169,9 @@ export function UserCalendarView({
             <div className="flex justify-between items-start">
               <span
                 className={`
-                inline-flex items-center justify-center w-5 h-5 sm:w-7 sm:h-7 rounded-full text-xs sm:text-sm
-                ${isToday ? 'bg-primary text-primary-foreground font-bold' : ''}
-                ${isSelected && !isToday ? 'bg-muted font-bold' : ''}
+                inline-flex items-center justify-center w-5 h-5 sm:w-7 sm:h-7 rounded-full text-xs sm:text-sm transition-all
+                ${isToday ? 'bg-primary text-primary-foreground font-bold shadow-md shadow-primary/20' : ''}
+                ${isSelected && !isToday ? 'bg-primary/10 text-primary font-bold border border-primary/20' : ''}
               `}
               >
                 {formattedDate}

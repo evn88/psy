@@ -79,19 +79,24 @@ const ProfileSection = ({
   children,
   variant = 'default'
 }: ProfileSectionProps) => {
-  const borderClass = variant === 'danger' ? 'border-destructive/40' : 'border-border';
+  const borderClass =
+    variant === 'danger'
+      ? 'border-destructive/30 hover:border-destructive/50'
+      : 'border-border/50 hover:border-primary/20';
 
   return (
-    <section className={`rounded-lg border ${borderClass} bg-card text-card-foreground shadow-sm`}>
-      <div className="flex flex-col gap-4 border-b border-border p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5">
-        <div className="flex min-w-0 gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+    <section
+      className={`rounded-2xl border ${borderClass} bg-card text-card-foreground shadow-sm transition-all duration-300 hover:shadow-md overflow-hidden`}
+    >
+      <div className="flex flex-col gap-4 border-b border-border/40 p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 gap-3.5">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-inner">
             {icon}
           </div>
-          <div className="min-w-0 space-y-1">
-            <h2 className="text-base font-semibold leading-6">{title}</h2>
+          <div className="min-w-0 space-y-0.5">
+            <h2 className="text-base font-bold leading-snug">{title}</h2>
             {description && (
-              <p className="text-sm leading-5 text-muted-foreground">{description}</p>
+              <p className="text-xs leading-relaxed text-muted-foreground">{description}</p>
             )}
           </div>
         </div>
@@ -99,15 +104,17 @@ const ProfileSection = ({
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">{actions}</div>
         )}
       </div>
-      <div className="p-4 sm:p-5">{children}</div>
+      <div className="p-5 sm:p-6">{children}</div>
     </section>
   );
 };
 
 const StatusItem = ({ label, value }: StatusItemProps) => (
-  <div className="rounded-lg border border-border bg-background p-3">
-    <div className="text-xs font-medium uppercase text-muted-foreground">{label}</div>
-    <div className="mt-1 min-w-0 break-words text-sm font-medium">{value}</div>
+  <div className="rounded-xl border border-border/60 bg-muted/10 p-3.5 shadow-inner">
+    <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/75">
+      {label}
+    </div>
+    <div className="mt-1 min-w-0 break-words text-sm font-semibold text-foreground/90">{value}</div>
   </div>
 );
 
@@ -534,14 +541,14 @@ export const ProfileForm = ({
                     variant="ghost"
                     onClick={handleCancelProfileChanges}
                     disabled={loading}
-                    className="w-full sm:w-auto"
+                    className="w-full sm:w-auto rounded-xl h-10 font-bold hover:bg-muted"
                   >
                     {t('cancel')}
                   </Button>
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90 sm:w-auto"
+                    className="w-full bg-primary text-primary-foreground hover:bg-primary/95 sm:w-auto rounded-xl h-10 font-bold shadow-md shadow-primary/10"
                   >
                     {loading ? t('saving') : t('save')}
                   </Button>
@@ -551,36 +558,46 @@ export const ProfileForm = ({
           >
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
-                <Label htmlFor="name">{t('nameLabel')}</Label>
+                <Label htmlFor="name" className="text-xs font-bold text-muted-foreground/80">
+                  {t('nameLabel')}
+                </Label>
                 <Input
                   id="name"
                   value={name}
                   onChange={e => setName(e.target.value)}
                   disabled={loading}
                   autoComplete="name"
+                  className="h-11 rounded-xl focus-visible:ring-primary/20 border-border/60"
                 />
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="email">{t('emailLabel')}</Label>
+                <Label htmlFor="email" className="text-xs font-bold text-muted-foreground/80">
+                  {t('emailLabel')}
+                </Label>
                 <Input
                   id="email"
                   value={user.email || ''}
                   disabled
-                  className="bg-muted"
+                  className="h-11 rounded-xl bg-muted/50 border-border/60 text-muted-foreground"
                   autoComplete="email"
                 />
               </div>
 
               <div className="grid gap-2 sm:col-span-2">
-                <Label htmlFor="timezone">{t('timezoneLabel')}</Label>
+                <Label htmlFor="timezone" className="text-xs font-bold text-muted-foreground/80">
+                  {t('timezoneLabel')}
+                </Label>
                 <Select value={timezone} onValueChange={setTimezone} disabled={loading}>
-                  <SelectTrigger id="timezone" className="w-full">
+                  <SelectTrigger
+                    id="timezone"
+                    className="w-full h-11 rounded-xl border-border/60 focus:ring-primary/20"
+                  >
                     <SelectValue placeholder={t('timezonePlaceholder')} />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="rounded-2xl border-border/50">
                     {timezones.map(tz => (
-                      <SelectItem key={tz} value={tz}>
+                      <SelectItem key={tz} value={tz} className="rounded-xl">
                         {tz}
                       </SelectItem>
                     ))}
@@ -603,9 +620,8 @@ export const ProfileForm = ({
                   <Button
                     type="button"
                     variant="outline"
-                    size="sm"
                     onClick={() => setShowPasswordForm(true)}
-                    className="w-full sm:w-auto"
+                    className="w-full sm:w-auto rounded-xl h-10 font-bold border-border/60 hover:bg-muted/10"
                   >
                     {t('changePassword')}
                   </Button>
@@ -615,7 +631,12 @@ export const ProfileForm = ({
               {showPasswordForm ? (
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="grid gap-2">
-                    <Label htmlFor="currentPassword">{t('currentPassword')}</Label>
+                    <Label
+                      htmlFor="currentPassword"
+                      className="text-xs font-bold text-muted-foreground/80"
+                    >
+                      {t('currentPassword')}
+                    </Label>
                     <Input
                       id="currentPassword"
                       type="password"
@@ -623,10 +644,16 @@ export const ProfileForm = ({
                       onChange={e => setCurrentPassword(e.target.value)}
                       disabled={passwordLoading}
                       autoComplete="current-password"
+                      className="h-11 rounded-xl focus-visible:ring-primary/20 border-border/60"
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="newPassword">{t('newPassword')}</Label>
+                    <Label
+                      htmlFor="newPassword"
+                      className="text-xs font-bold text-muted-foreground/80"
+                    >
+                      {t('newPassword')}
+                    </Label>
                     <Input
                       id="newPassword"
                       type="password"
@@ -635,6 +662,7 @@ export const ProfileForm = ({
                       disabled={passwordLoading}
                       minLength={6}
                       autoComplete="new-password"
+                      className="h-11 rounded-xl focus-visible:ring-primary/20 border-border/60"
                     />
                   </div>
                   <div className="flex flex-col gap-2 sm:col-span-2 sm:flex-row">
@@ -642,7 +670,7 @@ export const ProfileForm = ({
                       type="button"
                       disabled={passwordLoading || !currentPassword || !newPassword}
                       onClick={handlePasswordChange}
-                      className="w-full sm:w-auto"
+                      className="w-full sm:w-auto rounded-xl h-10 font-bold bg-primary text-primary-foreground hover:bg-primary/95 shadow-md shadow-primary/10"
                     >
                       {passwordLoading ? t('saving') : t('save')}
                     </Button>
@@ -654,14 +682,16 @@ export const ProfileForm = ({
                         setCurrentPassword('');
                         setNewPassword('');
                       }}
-                      className="w-full sm:w-auto"
+                      className="w-full sm:w-auto rounded-xl h-10 font-bold hover:bg-muted"
                     >
                       {t('cancel')}
                     </Button>
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">{t('passwordIdleDescription')}</p>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {t('passwordIdleDescription')}
+                </p>
               )}
             </ProfileSection>
           )}
@@ -677,7 +707,7 @@ export const ProfileForm = ({
                   type="button"
                   onClick={handleUnlinkGoogle}
                   disabled={loading}
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto rounded-xl h-10 font-bold border-border/60 hover:bg-muted/10"
                 >
                   {t('unlinkGoogle')}
                 </Button>
@@ -687,25 +717,28 @@ export const ProfileForm = ({
                   type="button"
                   onClick={handleLinkGoogle}
                   disabled={loading}
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto rounded-xl h-10 font-bold border-border/60 hover:bg-muted/10"
                 >
                   {t('linkGoogle')}
                 </Button>
               )
             }
           >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <div className="text-sm font-medium">
+                <div className="text-sm font-semibold text-foreground/90">
                   {isGoogleLinked ? t('googleLinkedStatus') : t('googleNotLinkedStatus')}
                 </div>
                 {isGoogleLinked && googleLinkedAt && (
-                  <div className="mt-1 text-sm text-muted-foreground">
+                  <div className="mt-1 text-xs text-muted-foreground leading-relaxed">
                     {t('linkedToGoogle', { date: formatGoogleLinkedDate(googleLinkedAt) })}
                   </div>
                 )}
               </div>
-              <Badge variant={isGoogleLinked ? 'secondary' : 'outline'} className="w-fit">
+              <Badge
+                variant={isGoogleLinked ? 'secondary' : 'outline'}
+                className={`w-fit rounded-lg px-2.5 py-0.5 ${isGoogleLinked ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' : 'border-border/60'}`}
+              >
                 {isGoogleLinked ? t('connectedStatus') : t('notConnectedStatus')}
               </Badge>
             </div>
@@ -716,15 +749,14 @@ export const ProfileForm = ({
             description={getProfileText('passkeysDescription')}
             icon={<Fingerprint className="h-5 w-5" aria-hidden />}
             actions={
-              <>
+              <div className="flex flex-col gap-2 sm:flex-row w-full sm:w-auto">
                 {passkeys.length > 0 && (
                   <Button
                     variant="outline"
                     type="button"
-                    size="sm"
                     onClick={() => setShowDeletePasskeysConfirm(true)}
                     disabled={passkeyLoading}
-                    className="w-full sm:w-auto"
+                    className="w-full sm:w-auto rounded-xl h-10 font-bold border-border/60 hover:bg-muted/10 text-destructive hover:text-destructive"
                   >
                     {getProfileText('clearPasskeys')}
                   </Button>
@@ -732,14 +764,13 @@ export const ProfileForm = ({
                 <Button
                   variant="outline"
                   type="button"
-                  size="sm"
                   onClick={handleCreatePasskey}
                   disabled={passkeyLoading}
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto rounded-xl h-10 font-bold border-border/60 hover:bg-muted/10"
                 >
                   {getProfileText('createPasskey')}
                 </Button>
-              </>
+              </div>
             }
           >
             {passkeys.length > 0 ? (
@@ -747,21 +778,22 @@ export const ProfileForm = ({
                 {passkeys.map(passkey => (
                   <div
                     key={passkey.credentialID}
-                    className="flex flex-col gap-3 rounded-lg border border-border bg-background p-3 sm:flex-row sm:items-center sm:justify-between"
+                    className="flex flex-col gap-3 rounded-xl border border-border/60 bg-muted/5 p-3.5 sm:flex-row sm:items-center sm:justify-between shadow-sm hover:border-primary/20 transition-colors"
                   >
                     <div className="min-w-0 space-y-1">
-                      <div className="text-sm font-medium">{getPasskeyLabel(passkey)}</div>
-                      <div className="truncate font-mono text-xs text-muted-foreground">
+                      <div className="text-sm font-semibold text-foreground/90">
+                        {getPasskeyLabel(passkey)}
+                      </div>
+                      <div className="truncate font-mono text-xs text-muted-foreground/80">
                         {passkey.credentialID.slice(0, 16)}...
                       </div>
                     </div>
                     <Button
                       variant="ghost"
                       type="button"
-                      size="sm"
                       onClick={() => setPendingDeleteId(passkey.credentialID)}
                       disabled={passkeyLoading}
-                      className="w-full shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive sm:w-auto"
+                      className="w-full shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive sm:w-auto rounded-xl h-9 font-bold"
                     >
                       {getProfileText('passkeyDeleteOne')}
                     </Button>
@@ -769,7 +801,7 @@ export const ProfileForm = ({
                 ))}
               </div>
             ) : (
-              <div className="rounded-lg border border-dashed border-border bg-background p-4 text-sm text-muted-foreground">
+              <div className="rounded-xl border border-dashed border-border/60 bg-muted/5 p-5 text-sm text-center text-muted-foreground/80">
                 {t('passkeysEmpty')}
               </div>
             )}
@@ -786,27 +818,27 @@ export const ProfileForm = ({
               type="button"
               onClick={() => setShowDeleteAccountConfirm(true)}
               disabled={deleteAccountLoading}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto rounded-xl h-10 font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-md shadow-destructive/10"
             >
               {t('deleteAccountButton')}
             </Button>
           </ProfileSection>
         </div>
 
-        <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
-          <section className="rounded-lg border border-border bg-card p-4 text-card-foreground shadow-sm sm:p-5">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+        <aside className="space-y-6 lg:sticky lg:top-6 lg:self-start">
+          <section className="rounded-2xl border border-border/50 bg-card p-5 text-card-foreground shadow-sm transition-all duration-300 hover:shadow-md">
+            <div className="flex items-start gap-3.5">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-inner">
                 <ShieldCheck className="h-5 w-5" aria-hidden />
               </div>
-              <div className="min-w-0">
-                <h2 className="text-base font-semibold leading-6">{t('accountSummaryTitle')}</h2>
-                <p className="text-sm leading-5 text-muted-foreground">
+              <div className="min-w-0 space-y-0.5">
+                <h2 className="text-base font-bold leading-snug">{t('accountSummaryTitle')}</h2>
+                <p className="text-xs leading-relaxed text-muted-foreground">
                   {t('accountSummaryDescription')}
                 </p>
               </div>
             </div>
-            <div className="mt-4 grid gap-3">
+            <div className="mt-5 grid gap-3">
               <StatusItem label={t('emailLabel')} value={user.email || userEmail} />
               <StatusItem
                 label={t('googleAccount')}
@@ -816,26 +848,33 @@ export const ProfileForm = ({
               {role === 'ADMIN' && (
                 <StatusItem
                   label={t('roleLabel')}
-                  value={<Badge variant="secondary">ADMIN</Badge>}
+                  value={
+                    <Badge
+                      variant="secondary"
+                      className="rounded-lg bg-primary/10 text-primary border-primary/20"
+                    >
+                      ADMIN
+                    </Badge>
+                  }
                 />
               )}
             </div>
           </section>
 
           {lastLoginAt && (
-            <section className="rounded-lg border border-border bg-card p-4 text-card-foreground shadow-sm sm:p-5">
-              <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+            <section className="rounded-2xl border border-border/50 bg-card p-5 text-card-foreground shadow-sm transition-all duration-300 hover:shadow-md">
+              <div className="flex items-start gap-3.5">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-inner">
                   <Clock className="h-5 w-5" aria-hidden />
                 </div>
-                <div className="min-w-0">
-                  <h2 className="text-base font-semibold leading-6">{t('lastLoginTitle')}</h2>
-                  <p className="text-sm leading-5 text-muted-foreground">
+                <div className="min-w-0 space-y-0.5">
+                  <h2 className="text-base font-bold leading-snug">{t('lastLoginTitle')}</h2>
+                  <p className="text-xs leading-relaxed text-muted-foreground">
                     {t('lastLoginDescription')}
                   </p>
                 </div>
               </div>
-              <div className="mt-4 grid gap-3">
+              <div className="mt-5 grid gap-3">
                 <StatusItem label={t('lastLoginDate')} value={formatLastLogin(lastLoginAt)} />
                 {lastLoginIp && (
                   <StatusItem

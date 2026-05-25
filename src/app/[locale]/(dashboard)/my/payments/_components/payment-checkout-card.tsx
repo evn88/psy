@@ -188,35 +188,41 @@ export const PaymentCheckoutCard = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Баланс пользователя */}
-      <Card className="border-primary/25 bg-gradient-to-br from-primary/15 via-card/95 to-card/60 backdrop-blur-md shadow-sm rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-md hover:border-primary/35">
-        <CardContent className="p-6 flex items-center justify-between">
+      <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card/95 to-card/70 p-6 backdrop-blur-md shadow-sm transition-all duration-300 hover:shadow-md hover:border-primary/30">
+        <div className="absolute right-0 top-0 -mr-16 -mt-16 h-36 w-36 rounded-full bg-primary/10 blur-2xl" />
+        <div className="absolute left-1/4 bottom-0 -ml-16 -mb-16 h-28 w-28 rounded-full bg-blue-500/5 blur-2xl" />
+
+        <div className="relative z-10 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/25 text-primary-foreground shadow-sm">
-              <Wallet className="h-6 w-6 text-primary" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-inner">
+              <Wallet className="h-6 w-6" aria-hidden />
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
                 Текущий баланс
               </p>
-              <h2 className="text-3xl font-extrabold tracking-tight mt-1 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
+              <h2 className="text-3xl font-extrabold tracking-tight mt-1 bg-gradient-to-r from-foreground to-foreground/85 bg-clip-text">
                 {formatPaymentAmount(balance, currency)}
               </h2>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <Card id="payment-checkout" className="border-border/70 bg-card shadow-sm">
-        <CardHeader className="space-y-4 border-b border-border/60 bg-gradient-to-b from-muted/20 to-card pb-5">
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-background text-foreground shadow-sm ring-1 ring-border/60">
-              <CreditCard className="h-5 w-5" />
+      <Card
+        id="payment-checkout"
+        className="border-border/50 bg-card shadow-sm rounded-2xl overflow-hidden"
+      >
+        <CardHeader className="space-y-5 border-b border-border/40 bg-gradient-to-b from-muted/20 to-card p-6 pb-5">
+          <div className="flex items-start gap-3.5">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-inner">
+              <CreditCard className="h-5 w-5" aria-hidden />
             </div>
-            <div className="space-y-1">
-              <CardTitle className="text-xl">Оплата услуг</CardTitle>
-              <CardDescription className="max-w-2xl">
+            <div className="space-y-1 min-w-0">
+              <CardTitle className="text-lg font-bold">Оплата услуг</CardTitle>
+              <CardDescription className="max-w-2xl text-xs leading-relaxed text-muted-foreground/80">
                 Выберите пакет консультаций или пополните баланс на произвольную сумму.
               </CardDescription>
             </div>
@@ -234,19 +240,23 @@ export const PaymentCheckoutCard = ({
               }
             }}
           >
-            <TabsList className="grid w-full grid-cols-2 max-w-sm">
-              <TabsTrigger value="package">Выбрать пакет</TabsTrigger>
-              <TabsTrigger value="topup">Пополнить баланс</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 max-w-sm rounded-xl bg-muted/60 p-1 border border-border/40">
+              <TabsTrigger value="package" className="rounded-lg text-xs font-semibold">
+                Выбрать пакет
+              </TabsTrigger>
+              <TabsTrigger value="topup" className="rounded-lg text-xs font-semibold">
+                Пополнить баланс
+              </TabsTrigger>
             </TabsList>
           </Tabs>
         </CardHeader>
 
-        <CardContent className="space-y-5 p-5 sm:p-6">
+        <CardContent className="space-y-6 p-6">
           <form className="grid gap-4">
             {selectionType === 'package' && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 mb-2">
                 {packages.length === 0 && (
-                  <p className="text-muted-foreground text-sm col-span-full">
+                  <p className="text-muted-foreground text-sm col-span-full py-4 text-center">
                     Нет доступных пакетов для выбора.
                   </p>
                 )}
@@ -263,58 +273,58 @@ export const PaymentCheckoutCard = ({
             )}
 
             {selectionType === 'topup' && (
-              <div className="grid gap-4 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-                <div className="rounded-2xl border border-border/60 bg-muted/10 p-4 shadow-sm">
-                  <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="grid gap-5 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                <div className="rounded-2xl border border-border/50 bg-muted/5 p-5 shadow-sm hover:border-primary/20 transition-colors">
+                  <div className="mb-3.5 flex items-center justify-between gap-3">
                     <Label
                       htmlFor="payment-amount"
-                      className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+                      className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80"
                     >
                       Сумма
                     </Label>
-                    <span className="text-xs font-medium text-muted-foreground">{currency}</span>
+                    <span className="text-xs font-bold text-primary">{currency}</span>
                   </div>
                   <Input
                     id="payment-amount"
                     inputMode="decimal"
                     placeholder="Например, 50.00"
                     autoComplete="off"
-                    className="h-14 border-border/60 bg-background/80 text-xl font-semibold tracking-tight shadow-none placeholder:text-muted-foreground/50"
+                    className="h-14 rounded-xl border-border/60 bg-muted/5 focus-visible:ring-primary/20 text-xl font-bold tracking-tight shadow-inner placeholder:text-muted-foreground/40 transition-all"
                     {...form.register('amount')}
                   />
-                  <div className="mt-3 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                  <div className="mt-3.5 flex items-center justify-between gap-3 text-[11px] text-muted-foreground/75 leading-relaxed">
                     <p>Введите сумму в формате `50.00`</p>
-                    <p className="whitespace-nowrap">{formatPaymentAmount(50, currency)}</p>
+                    <p className="font-semibold">{formatPaymentAmount(50, currency)}</p>
                   </div>
                   {form.formState.errors.amount && (
-                    <p className="mt-2 text-sm text-destructive">
+                    <p className="mt-2 text-xs font-bold text-destructive">
                       {form.formState.errors.amount.message}
                     </p>
                   )}
                 </div>
 
-                <div className="rounded-2xl border border-border/60 bg-muted/10 p-4 shadow-sm">
-                  <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="rounded-2xl border border-border/50 bg-muted/5 p-5 shadow-sm hover:border-primary/20 transition-colors">
+                  <div className="mb-3.5 flex items-center justify-between gap-3">
                     <Label
                       htmlFor="payment-description"
-                      className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+                      className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80"
                     >
                       Описание платежа
                     </Label>
-                    <span className="text-xs text-muted-foreground">До 127 символов</span>
+                    <span className="text-xs text-muted-foreground/70">До 127 символов</span>
                   </div>
                   <Textarea
                     id="payment-description"
                     rows={4}
                     placeholder="Пополнение баланса"
-                    className="min-h-32 resize-none border-border/60 bg-background/80 text-base shadow-none placeholder:text-muted-foreground/50"
+                    className="min-h-32 resize-none rounded-xl border-border/60 bg-muted/5 focus-visible:ring-primary/20 text-sm shadow-inner placeholder:text-muted-foreground/40 transition-all"
                     {...form.register('description')}
                   />
-                  <p className="mt-3 text-xs text-muted-foreground">
+                  <p className="mt-3.5 text-[11px] text-muted-foreground/75 leading-relaxed">
                     Короткое назначение платежа поможет быстрее найти операцию в истории.
                   </p>
                   {form.formState.errors.description && (
-                    <p className="mt-2 text-sm text-destructive">
+                    <p className="mt-2 text-xs font-bold text-destructive">
                       {form.formState.errors.description.message}
                     </p>
                   )}
@@ -323,20 +333,24 @@ export const PaymentCheckoutCard = ({
             )}
           </form>
 
-          <div className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-gradient-to-br from-muted/20 via-background to-muted/5 p-4 shadow-sm sm:flex-row sm:items-end sm:justify-between sm:p-5">
-            <div className="space-y-2">
-              <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+          <div className="flex flex-col gap-4 rounded-2xl border border-border/50 bg-gradient-to-br from-primary/5 via-card to-card p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between transition-all">
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
                 К оплате
               </p>
-              <p className="text-3xl font-semibold tracking-tight">{amountPreviewLabel}</p>
-              <p className="text-sm text-muted-foreground">{descriptionPreviewLabel}</p>
+              <p className="text-3xl font-extrabold tracking-tight text-primary">
+                {amountPreviewLabel}
+              </p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {descriptionPreviewLabel}
+              </p>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border/60 bg-muted/10 p-4 shadow-sm sm:p-5">
+          <div className="rounded-2xl border border-border/50 bg-muted/5 p-5 shadow-sm hover:border-primary/20 transition-colors">
             <div className="space-y-1">
-              <p className="text-sm font-medium">Способ оплаты</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm font-bold text-foreground/90">Способ оплаты</p>
+              <p className="text-xs text-muted-foreground/80 leading-relaxed">
                 При успешном подтверждении{' '}
                 {selectionType === 'topup'
                   ? 'ваш баланс будет пополнен автоматически'
@@ -353,7 +367,7 @@ export const PaymentCheckoutCard = ({
                 components: 'buttons,funding-eligibility'
               }}
             >
-              <div className="mt-4 grid gap-3">
+              <div className="mt-5 grid gap-3">
                 {paymentMethods.map(method => (
                   <div
                     key={method.key}

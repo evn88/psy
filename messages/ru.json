@@ -556,6 +556,7 @@
     }
   },
   "My": {
+    "dashboardTitle": "Личный кабинет",
     "dashboardGreeting": "Привет, {name}",
     "dashboardSubtitle": "Здесь собраны ближайшие сессии, анкеты, платежи и документы.",
     "openSessions": "Мои сессии",

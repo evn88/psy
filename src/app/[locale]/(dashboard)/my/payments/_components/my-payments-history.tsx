@@ -86,16 +86,22 @@ const PaymentHistoryEmptyState = ({
   title
 }: PaymentHistoryEmptyStateProps) => {
   return (
-    <div className="flex min-h-[220px] flex-col items-center justify-center rounded-2xl border border-dashed bg-muted/10 px-6 py-10 text-center">
-      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-muted text-foreground">
-        <Icon className="h-5 w-5" />
+    <div className="flex min-h-[220px] flex-col items-center justify-center rounded-2xl border border-dashed border-border/50 bg-muted/5 px-6 py-10 text-center">
+      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-inner">
+        <Icon className="h-5 w-5" aria-hidden />
       </div>
-      <h3 className="mt-4 text-lg font-semibold">{title}</h3>
-      <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">{description}</p>
-      <Button asChild variant="outline" className="mt-6">
+      <h3 className="mt-4 text-sm font-bold text-foreground/90">{title}</h3>
+      <p className="mt-2 max-w-xl text-xs leading-relaxed text-muted-foreground/80">
+        {description}
+      </p>
+      <Button
+        asChild
+        variant="outline"
+        className="mt-5 rounded-xl h-10 font-bold border-border/60 hover:bg-muted/10"
+      >
         <a href="#payment-checkout">
           {ctaLabel}
-          <ArrowRight className="h-4 w-4" />
+          <ArrowRight className="h-4 w-4 ml-1.5" />
         </a>
       </Button>
     </div>
@@ -109,45 +115,48 @@ const PaymentHistoryEmptyState = ({
  */
 const PaymentHistoryTable = ({ payments }: PaymentHistoryTableProps) => {
   return (
-    <div className="overflow-hidden rounded-3xl border bg-card/80 shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm">
       <Table className="min-w-[820px]">
-        <TableHeader className="bg-muted/30">
-          <TableRow className="hover:bg-transparent">
-            <TableHead className="h-11 whitespace-nowrap text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        <TableHeader className="bg-muted/40">
+          <TableRow className="hover:bg-transparent border-b border-border/40">
+            <TableHead className="h-11 whitespace-nowrap text-[10px] font-bold uppercase tracking-wider text-muted-foreground/85">
               Сумма
             </TableHead>
-            <TableHead className="h-11 whitespace-nowrap text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            <TableHead className="h-11 whitespace-nowrap text-[10px] font-bold uppercase tracking-wider text-muted-foreground/85">
               Статус
             </TableHead>
-            <TableHead className="h-11 whitespace-nowrap text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            <TableHead className="h-11 whitespace-nowrap text-[10px] font-bold uppercase tracking-wider text-muted-foreground/85">
               Order ID
             </TableHead>
-            <TableHead className="h-11 whitespace-nowrap text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            <TableHead className="h-11 whitespace-nowrap text-[10px] font-bold uppercase tracking-wider text-muted-foreground/85">
               Создан
             </TableHead>
-            <TableHead className="h-11 whitespace-nowrap text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            <TableHead className="h-11 whitespace-nowrap text-[10px] font-bold uppercase tracking-wider text-muted-foreground/85">
               Оплачен
             </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {payments.map(payment => (
-            <TableRow key={payment.id} className="hover:bg-muted/30">
-              <TableCell className="px-3 py-4 text-sm font-semibold">
+            <TableRow
+              key={payment.id}
+              className="hover:bg-primary/5 transition-colors border-b border-border/45"
+            >
+              <TableCell className="px-4 py-3.5 text-sm font-bold text-foreground/90">
                 {payment.amountLabel}
               </TableCell>
-              <TableCell className="px-3 py-4">
+              <TableCell className="px-4 py-3.5">
                 <PaymentStatusBadge status={payment.status} />
               </TableCell>
-              <TableCell className="px-3 py-4 font-mono text-xs text-muted-foreground">
+              <TableCell className="px-4 py-3.5 font-mono text-xs text-muted-foreground/80">
                 <span className="block max-w-[260px] break-all" title={payment.orderId}>
                   {payment.orderId}
                 </span>
               </TableCell>
-              <TableCell className="px-3 py-4 text-sm text-muted-foreground">
+              <TableCell className="px-4 py-3.5 text-xs text-muted-foreground/80">
                 {payment.createdAtLabel}
               </TableCell>
-              <TableCell className="px-3 py-4 text-sm text-muted-foreground">
+              <TableCell className="px-4 py-3.5 text-xs text-muted-foreground/80">
                 {payment.capturedAtLabel}
               </TableCell>
             </TableRow>
@@ -222,23 +231,26 @@ export const MyPaymentsHistory = ({ payments }: MyPaymentsHistoryProps) => {
   ] as const;
 
   return (
-    <Card id="payment-history" className="overflow-hidden border-border/70 shadow-sm">
-      <CardHeader className="space-y-1 border-b border-border/60">
-        <CardTitle className="text-2xl">История платежей</CardTitle>
-        <CardDescription className="max-w-2xl">
+    <Card
+      id="payment-history"
+      className="overflow-hidden border-border/50 bg-card shadow-sm rounded-2xl"
+    >
+      <CardHeader className="space-y-4 border-b border-border/40 bg-gradient-to-b from-muted/20 to-card p-6 pb-5">
+        <CardTitle className="text-lg font-bold">История платежей</CardTitle>
+        <CardDescription className="max-w-2xl text-xs leading-relaxed text-muted-foreground/80">
           Здесь появляются операции после capture и последующей синхронизации webhook. При
           необходимости список можно быстро отфильтровать по статусу.
         </CardDescription>
       </CardHeader>
 
       <CardContent className="p-6">
-        <Tabs defaultValue="all" className="space-y-5">
-          <TabsList className="flex h-auto w-full flex-wrap justify-start gap-2 bg-transparent p-0">
+        <Tabs defaultValue="all" className="space-y-6">
+          <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1.5 bg-muted/40 p-1.5 rounded-xl border border-border/40 max-w-fit">
             {paymentTabs.map(tab => (
               <TabsTrigger
                 key={tab.value}
                 value={tab.value}
-                className="rounded-lg border border-border/70 bg-background px-3 py-2 text-sm font-medium shadow-none transition-colors data-[state=active]:border-foreground/20 data-[state=active]:bg-muted data-[state=active]:text-foreground"
+                className="rounded-lg px-3 py-1.5 text-xs font-semibold shadow-none transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm border border-transparent data-[state=active]:border-border/40"
               >
                 {tab.value === 'all'
                   ? 'Все'
@@ -249,7 +261,9 @@ export const MyPaymentsHistory = ({ payments }: MyPaymentsHistoryProps) => {
                       : tab.value === 'refunded'
                         ? 'Возвраты'
                         : 'Проблемные'}
-                <span className="ml-2 text-xs text-muted-foreground">{tab.items.length}</span>
+                <span className="ml-1.5 text-[10px] text-muted-foreground/80 font-bold bg-muted px-1.5 py-0.5 rounded-md">
+                  {tab.items.length}
+                </span>
               </TabsTrigger>
             ))}
           </TabsList>
@@ -258,7 +272,11 @@ export const MyPaymentsHistory = ({ payments }: MyPaymentsHistoryProps) => {
             const TabIcon = tab.icon;
 
             return (
-              <TabsContent key={tab.value} value={tab.value} className="mt-0">
+              <TabsContent
+                key={tab.value}
+                value={tab.value}
+                className="mt-0 animate-in fade-in duration-200"
+              >
                 {tab.items.length > 0 ? (
                   <PaymentHistoryTable payments={tab.items} />
                 ) : (

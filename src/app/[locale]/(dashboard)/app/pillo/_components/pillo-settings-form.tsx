@@ -39,7 +39,7 @@ const LOCALE_FLAGS: Record<AppLocale, string> = {
   sr: '🇷🇸'
 } as const;
 
-interface SettingsFormProps {
+interface PilloSettingsFormProps {
   initialSettings: SettingsFormValues;
   hideSubmitButton?: boolean;
   onStateChange?: (state: {
@@ -51,15 +51,15 @@ interface SettingsFormProps {
 }
 
 /**
- * Форма настроек для Личного Кабинета: язык и тема.
- * Реализовано в премиальном стиле Safe Sanctuary с мягкими фиолетовыми акцентами.
+ * Специальная форма настроек внешнего вида и языка для мини-приложения Pillo.
+ * Оформлена в стиле iOS 26 (матовое стекло, внутренние паддинги px-5 py-4 для карточек).
  */
-export const SettingsForm = ({
+export const PilloSettingsForm = ({
   initialSettings,
   hideSubmitButton = false,
   onStateChange,
   variant = 'card'
-}: SettingsFormProps) => {
+}: PilloSettingsFormProps) => {
   const t = useTranslations('Settings');
 
   const { form, loading, onSubmit } = useSettingsForm({
@@ -74,33 +74,33 @@ export const SettingsForm = ({
         control={form.control}
         name="language"
         render={({ field }) => (
-          <FormItem className="space-y-4">
-            <div className="flex items-center gap-3.5">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-inner">
-                <Globe className="h-5 w-5" aria-hidden />
+          <FormItem className="space-y-4 px-5 py-4">
+            <div className="flex items-center gap-4">
+              <div className="flex h-9 w-9 items-center justify-center rounded-[0.75rem] bg-blue-500 text-white shadow-sm ring-4 ring-white/10 dark:ring-white/5">
+                <Globe className="h-4.5 w-4.5" />
               </div>
-              <FormLabel className="text-sm font-bold tracking-tight text-foreground/90">
+              <FormLabel className="text-[16px] font-semibold tracking-tight text-foreground/90">
                 {t('languageLabel')}
               </FormLabel>
             </div>
             <Select onValueChange={field.onChange} defaultValue={field.value}>
               <FormControl>
-                <SelectTrigger className="h-11 rounded-xl border border-border/60 bg-muted/5 px-4 text-sm font-semibold focus:ring-primary/20 transition-all hover:bg-muted/10">
+                <SelectTrigger className="h-12 rounded-2xl border-none bg-black/[0.03] px-4 text-[16px] font-medium ring-1 ring-black/[0.05] transition-all hover:bg-black/[0.05] dark:bg-white/[0.03] dark:ring-white/[0.05] dark:hover:bg-white/[0.05]">
                   <SelectValue placeholder={t('languagePlaceholder')} />
                 </SelectTrigger>
               </FormControl>
-              <SelectContent className="rounded-2xl border-border/40">
+              <SelectContent className="rounded-2xl border-white/40 bg-white/80 backdrop-blur-xl dark:border-white/10 dark:bg-black/80">
                 {locales.map(loc => (
-                  <SelectItem key={loc} value={loc} className="rounded-xl py-2.5 text-sm">
+                  <SelectItem key={loc} value={loc} className="rounded-xl py-3 text-[15px]">
                     <span className="flex items-center gap-3">
-                      <span className="text-base leading-none">{LOCALE_FLAGS[loc]}</span>
+                      <span className="text-lg leading-none">{LOCALE_FLAGS[loc]}</span>
                       {t(LOCALE_I18N_KEYS[loc])}
                     </span>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <FormDescription className="text-xs text-muted-foreground/80 leading-relaxed">
+            <FormDescription className="text-[13px] text-muted-foreground/60 leading-relaxed">
               {t('languageDescription')}
             </FormDescription>
             <FormMessage />
@@ -108,19 +108,19 @@ export const SettingsForm = ({
         )}
       />
 
-      <div className="h-px bg-border/40" />
+      <div className="h-px bg-black/[0.04] dark:bg-white/[0.04]" />
 
       {/* Выбор Темы */}
       <FormField
         control={form.control}
         name="theme"
         render={({ field }) => (
-          <FormItem className="space-y-4">
-            <div className="flex items-center gap-3.5">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-inner">
-                <Palette className="h-5 w-5" aria-hidden />
+          <FormItem className="space-y-4 px-5 py-4">
+            <div className="flex items-center gap-4">
+              <div className="flex h-9 w-9 items-center justify-center rounded-[0.75rem] bg-indigo-500 text-white shadow-sm ring-4 ring-white/10 dark:ring-white/5">
+                <Palette className="h-4.5 w-4.5" />
               </div>
-              <FormLabel className="text-sm font-bold tracking-tight text-foreground/90">
+              <FormLabel className="text-[16px] font-semibold tracking-tight text-foreground/90">
                 {t('themeLabel')}
               </FormLabel>
             </div>
@@ -139,9 +139,9 @@ export const SettingsForm = ({
                     <FormControl>
                       <RadioGroupItem value={item.value} className="peer sr-only" />
                     </FormControl>
-                    <FormLabel className="flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-transparent bg-muted/5 p-4 text-center ring-1 ring-border/60 transition-all hover:bg-muted/10 peer-data-[state=checked]:border-primary/40 peer-data-[state=checked]:bg-primary/5 dark:peer-data-[state=checked]:bg-primary/10 shadow-sm">
+                    <FormLabel className="flex cursor-pointer flex-col items-center gap-3 rounded-[1.25rem] border-2 border-transparent bg-black/[0.03] p-4 text-center ring-1 ring-black/[0.05] transition-all hover:bg-black/[0.05] peer-data-[state=checked]:bg-white peer-data-[state=checked]:shadow-[0_4px_12px_rgba(0,0,0,0.08)] peer-data-[state=checked]:ring-primary/40 dark:bg-white/[0.03] dark:ring-white/[0.05] dark:hover:bg-white/[0.05] dark:peer-data-[state=checked]:bg-white/10 dark:peer-data-[state=checked]:ring-white/20 shadow-sm">
                       <item.icon className={cn('h-6 w-6 transition-transform', item.color)} />
-                      <span className="text-[11px] font-bold tracking-tight text-foreground/80">
+                      <span className="text-[12px] font-bold tracking-tight text-foreground/70">
                         {t(item.label)}
                       </span>
                     </FormLabel>
@@ -149,7 +149,7 @@ export const SettingsForm = ({
                 ))}
               </RadioGroup>
             </FormControl>
-            <FormDescription className="text-xs text-muted-foreground/80 leading-relaxed">
+            <FormDescription className="text-[13px] text-muted-foreground/60 leading-relaxed">
               {t('themeDescription')}
             </FormDescription>
             <FormMessage />
@@ -158,11 +158,11 @@ export const SettingsForm = ({
       />
 
       {!hideSubmitButton && (
-        <div className="pt-2">
+        <div className="pt-2 px-5 pb-4">
           <Button
             type="submit"
             disabled={loading}
-            className="h-10 w-full rounded-xl bg-primary font-bold text-primary-foreground hover:bg-primary/95 shadow-md shadow-primary/10 transition-all active:scale-[0.98]"
+            className="h-12 w-full rounded-2xl bg-primary font-bold shadow-lg shadow-primary/20 transition-all active:scale-[0.98]"
           >
             {loading ? t('saving') : t('save')}
           </Button>
@@ -175,14 +175,16 @@ export const SettingsForm = ({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         {variant === 'card' ? (
-          <Card className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm transition-all duration-300 hover:shadow-md">
-            <CardHeader className="space-y-4 border-b border-border/40 bg-gradient-to-b from-muted/20 to-card p-6 pb-5">
-              <CardTitle className="text-lg font-bold">{t('appearanceTitle')}</CardTitle>
-              <CardDescription className="text-xs leading-relaxed text-muted-foreground/80">
+          <Card className="overflow-hidden rounded-[2rem] border-white/40 bg-white/40 shadow-xl backdrop-blur-2xl dark:border-white/10 dark:bg-black/40">
+            <CardHeader className="pb-2 px-5 pt-5">
+              <CardTitle className="text-xl font-bold tracking-tight">
+                {t('appearanceTitle')}
+              </CardTitle>
+              <CardDescription className="text-sm font-medium text-muted-foreground/60 leading-relaxed">
                 {t('appearanceDescription')}
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-6">{formContent}</CardContent>
+            <CardContent className="p-0">{formContent}</CardContent>
           </Card>
         ) : (
           formContent

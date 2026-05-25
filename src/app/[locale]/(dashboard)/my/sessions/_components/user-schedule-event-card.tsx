@@ -39,12 +39,12 @@ export function UserScheduleEventCard({
   return (
     <div
       className={`
-        relative p-4 rounded-xl border transition-all duration-200
-        ${isFreeSlot ? 'bg-primary/5 border-primary/20 hover:bg-primary/8 dark:bg-primary/8 dark:border-primary/25 shadow-sm' : ''}
-        ${isScheduled ? 'bg-emerald-500/5 border-emerald-500/15 dark:bg-emerald-500/10 dark:border-emerald-500/25 shadow-sm' : ''}
-        ${isPending ? 'bg-orange-500/5 border-orange-500/15 dark:bg-orange-500/10 dark:border-orange-500/25 shadow-sm' : ''}
-        ${isCancelled ? 'opacity-60 bg-muted/50' : ''}
-        ${!isFreeSlot && !isScheduled && !isPending && !isCancelled ? 'bg-card' : ''}
+        relative p-5 rounded-2xl border transition-all duration-300 hover:shadow-md
+        ${isFreeSlot ? 'bg-gradient-to-br from-primary/5 via-card/95 to-card border-primary/15 shadow-sm hover:border-primary/30' : ''}
+        ${isScheduled ? 'bg-gradient-to-br from-emerald-500/5 via-card/95 to-card border-emerald-500/15 shadow-sm hover:border-emerald-500/30' : ''}
+        ${isPending ? 'bg-gradient-to-br from-orange-500/5 via-card/95 to-card border-orange-500/15 shadow-sm hover:border-orange-500/30' : ''}
+        ${isCancelled ? 'opacity-60 bg-muted/40 border-border/40 shadow-none' : ''}
+        ${!isFreeSlot && !isScheduled && !isPending && !isCancelled ? 'bg-card border-border/60 shadow-sm' : ''}
       `}
     >
       <div className="flex justify-between items-start gap-4 mb-3">
@@ -52,16 +52,19 @@ export function UserScheduleEventCard({
           <Badge
             variant={isFreeSlot ? 'outline' : isCancelled ? 'secondary' : 'default'}
             className={`
-              font-medium
-              ${isFreeSlot ? 'text-primary border-primary/30 dark:text-primary dark:border-primary/50' : ''}
-              ${isScheduled ? 'bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-700 dark:hover:bg-emerald-800' : ''}
-              ${isPending ? 'bg-orange-500 hover:bg-orange-600 text-white dark:bg-orange-600 dark:hover:bg-orange-700' : ''}
+              font-bold text-[10px] px-2 py-0.5 rounded-lg border uppercase tracking-wider
+              ${isFreeSlot ? 'text-primary border-primary/30 bg-primary/5' : ''}
+              ${isScheduled ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/15' : ''}
+              ${isPending ? 'bg-orange-500/10 text-orange-600 border-orange-500/20 hover:bg-orange-500/15' : ''}
             `}
           >
             {t(`eventTypes.${event.type}` as never)}
           </Badge>
           {isCancelled && (
-            <Badge variant="destructive" className="text-[10px] px-1.5 h-5">
+            <Badge
+              variant="destructive"
+              className="text-[10px] px-2 py-0.5 rounded-lg border border-destructive/20 uppercase tracking-wider h-auto"
+            >
               {t(`eventStatuses.${event.status}` as never)}
             </Badge>
           )}
@@ -72,7 +75,7 @@ export function UserScheduleEventCard({
             <Button
               variant="outline"
               onClick={() => onBookClick(event.id)}
-              className="h-10 sm:h-8 px-4 sm:px-3 text-sm sm:text-xs rounded-xl font-medium"
+              className="h-11 sm:h-9 px-4 sm:px-4 text-xs rounded-xl font-bold shadow-sm hover:bg-background"
             >
               {t('bookButton')}
             </Button>
@@ -81,7 +84,7 @@ export function UserScheduleEventCard({
             <Button
               variant="destructive"
               onClick={() => onCancelClick(event.id)}
-              className="h-10 sm:h-8 px-4 sm:px-3 text-sm sm:text-xs rounded-xl font-medium"
+              className="h-11 sm:h-9 px-4 sm:px-4 text-xs rounded-xl font-bold shadow-sm"
             >
               {t('cancelButton')}
             </Button>

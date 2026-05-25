@@ -5,6 +5,7 @@ import type { Prisma } from '@prisma/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
 import {
   CheckCircle2,
@@ -14,7 +15,10 @@ import {
   ArrowRight,
   MessageSquare,
   FileQuestion,
-  GraduationCap
+  GraduationCap,
+  Calendar,
+  History,
+  AlertCircle
 } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 import { IntakeWizardModal } from './_components/intake-wizard';
@@ -44,8 +48,8 @@ interface MySurveysPageProps {
 }
 
 /**
- * Страница "Анкеты и тесты" в личном кабинете.
- * Здесь собрана первичная анкета и все назначенные психологические тесты/опросы.
+ * Переработанная страница "Анкеты и тесты" в личном кабинете.
+ * Концепция "Safe Sanctuary": мягкая иерархия, вкладки, премиальные карточки и микро-анимации.
  */
 export default async function MySurveysPage({ params }: MySurveysPageProps) {
   const { locale } = await params;
@@ -71,6 +75,7 @@ export default async function MySurveysPage({ params }: MySurveysPageProps) {
   });
 
   const latestIntake = intakeHistory[0];
+  const hasIntake = !!latestIntake;
 
   // 2. Получаем назначенные опросы/тесты
   const assignments: AssignmentWithSurvey[] = await prisma.surveyAssignment.findMany({
@@ -92,162 +97,366 @@ export default async function MySurveysPage({ params }: MySurveysPageProps) {
     orderBy: { createdAt: 'desc' }
   });
 
+  // Фильтруем тесты по статусам
+  const pendingAssignments = assignments.filter(a => a.status === 'PENDING');
+  const completedAssignments = assignments.filter(a => a.status === 'COMPLETED');
+
+  // Подсчет счетчиков для вкладок
+  const totalCount = (hasIntake ? 1 : 1) + assignments.length; // Intake всегда есть как карточка (активная или нет)
+  const pendingCount = (hasIntake ? 0 : 1) + pendingAssignments.length;
+  const completedCount = (hasIntake ? 1 : 0) + completedAssignments.length;
+
   return (
-    <div className="mx-auto w-full max-w-[1600px] space-y-6 pb-6">
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t('myTitle')}</h1>
-        <p className="max-w-2xl text-sm leading-6 text-muted-foreground">{t('myDescription')}</p>
+    <div className="mx-auto w-full max-w-[1600px] space-y-8 pb-12 px-4 sm:px-6 lg:px-8 animate-in fade-in duration-300">
+      {/* Premium Hero-блок */}
+      <div className="relative overflow-hidden rounded-2xl border border-primary/10 bg-gradient-to-br from-primary/5 via-card to-card p-6 sm:p-8 shadow-sm">
+        <div className="absolute right-0 top-0 -mr-16 -mt-16 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute left-1/3 bottom-0 -ml-16 -mb-16 h-32 w-32 rounded-full bg-blue-500/5 blur-3xl" />
+
+        <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-primary">
+              <Sparkles className="h-5 w-5 animate-pulse" />
+              <span className="text-xs font-bold uppercase tracking-wider">
+                {t('intakeSectionTitle')}
+              </span>
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{t('myTitle')}</h1>
+            <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+              {t('myDescription')}
+            </p>
+          </div>
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-inner">
+            <GraduationCap className="h-7 w-7" />
+          </div>
+        </div>
       </div>
 
-      {/* Секция 1: Первичная анкета (Intake) */}
-      <section className="space-y-4">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary">
-            <Sparkles className="h-4 w-4" />
-          </div>
-          <h2 className="text-lg font-semibold tracking-tight">{t('intakeSectionTitle')}</h2>
+      {/* Tabs Layout */}
+      <Tabs defaultValue="all" className="space-y-8">
+        <div className="flex items-center justify-between border-b pb-1">
+          <TabsList className="bg-transparent h-auto p-0 gap-6 rounded-none border-b-0">
+            <TabsTrigger
+              value="all"
+              className="rounded-none border-b-2 border-transparent px-1 pb-3 pt-2 text-sm font-medium bg-transparent shadow-none data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none transition-all"
+            >
+              Все{' '}
+              <span className="ml-1.5 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground font-semibold">
+                {totalCount}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="pending"
+              className="rounded-none border-b-2 border-transparent px-1 pb-3 pt-2 text-sm font-medium bg-transparent shadow-none data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none transition-all"
+            >
+              Ожидают прохождения{' '}
+              <span className="ml-1.5 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary font-bold">
+                {pendingCount}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="completed"
+              className="rounded-none border-b-2 border-transparent px-1 pb-3 pt-2 text-sm font-medium bg-transparent shadow-none data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none transition-all"
+            >
+              История ответов{' '}
+              <span className="ml-1.5 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-600 font-bold">
+                {completedCount}
+              </span>
+            </TabsTrigger>
+          </TabsList>
         </div>
 
-        <Card className="shadow-sm">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-xl">{ti('title')}</CardTitle>
-            <CardDescription className="text-sm leading-relaxed">
-              {t('intakeDescription')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-wrap items-center gap-3">
-            {!latestIntake ? (
-              <IntakeWizardModal triggerText={t('fillIntakeButton')} />
+        {/* Tab 1: Все */}
+        <TabsContent value="all" className="space-y-8 outline-none">
+          {/* Блок первичной анкеты всегда виден во вкладке "Все" */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Sparkles className="h-4 w-4" />
+              </div>
+              <h2 className="text-lg font-bold tracking-tight">{t('intakeSectionTitle')}</h2>
+            </div>
+            {renderIntakeCard()}
+          </div>
+
+          {/* Блок остальных тестов */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
+                <ClipboardList className="h-4 w-4" />
+              </div>
+              <h2 className="text-lg font-bold tracking-tight">{t('testsSectionTitle')}</h2>
+            </div>
+            {assignments.length === 0 ? renderEmptyState() : renderAssignmentsGrid(assignments)}
+          </div>
+        </TabsContent>
+
+        {/* Tab 2: Ожидают прохождения */}
+        <TabsContent value="pending" className="space-y-8 outline-none">
+          {!hasIntake && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Sparkles className="h-4 w-4" />
+                </div>
+                <h2 className="text-lg font-bold tracking-tight">{t('intakeSectionTitle')}</h2>
+              </div>
+              {renderIntakeCard()}
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
+                <Clock className="h-4 w-4" />
+              </div>
+              <h2 className="text-lg font-bold tracking-tight">{t('testsSectionTitle')}</h2>
+            </div>
+            {pendingAssignments.length === 0 && hasIntake ? (
+              <Card className="border-dashed bg-muted/10 shadow-none">
+                <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                  <CheckCircle2 className="h-10 w-10 text-emerald-500 mb-3" />
+                  <p className="text-muted-foreground text-sm font-medium">
+                    Все назначенные тесты пройдены!
+                  </p>
+                </CardContent>
+              </Card>
             ) : (
-              <>
+              renderAssignmentsGrid(pendingAssignments)
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Tab 3: История ответов */}
+        <TabsContent value="completed" className="space-y-8 outline-none">
+          {hasIntake && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Sparkles className="h-4 w-4" />
+                </div>
+                <h2 className="text-lg font-bold tracking-tight">{t('intakeSectionTitle')}</h2>
+              </div>
+              {renderIntakeCard()}
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
+                <History className="h-4 w-4" />
+              </div>
+              <h2 className="text-lg font-bold tracking-tight">{t('testsSectionTitle')}</h2>
+            </div>
+            {completedAssignments.length === 0 ? (
+              <Card className="border-dashed bg-muted/10 shadow-none">
+                <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                  <AlertCircle className="h-10 w-10 text-muted-foreground/30 mb-3" />
+                  <p className="text-muted-foreground text-sm font-medium">
+                    История пройденных тестов пока пуста.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              renderAssignmentsGrid(completedAssignments)
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+
+  // Рендеринг карточки первичной анкеты
+  function renderIntakeCard() {
+    return (
+      <Card className="relative overflow-hidden border border-primary/15 bg-gradient-to-br from-primary/5 via-card to-card shadow-sm hover:shadow-md transition-all duration-300 rounded-xl">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-1">
+              <CardTitle className="text-xl font-bold flex items-center gap-2">
+                {ti('title')}
+                {hasIntake && (
+                  <Badge
+                    variant="secondary"
+                    className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 font-medium text-xs"
+                  >
+                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                    Заполнено
+                  </Badge>
+                )}
+              </CardTitle>
+              <CardDescription className="text-sm leading-relaxed max-w-3xl text-muted-foreground/90">
+                {t('intakeDescription')}
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0 px-6 pb-6">
+          {!latestIntake ? (
+            <div className="pt-2">
+              <IntakeWizardModal triggerText={t('fillIntakeButton')} />
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-4 pt-4 border-t border-primary/10">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
+                <Calendar className="h-3.5 w-3.5 text-primary/70" />
+                <span>
+                  {t('lastFilledLabel', {
+                    date: latestIntake.createdAt.toLocaleDateString(
+                      currentLocale === 'en' ? 'en-US' : currentLocale === 'sr' ? 'sr-RS' : 'ru-RU',
+                      { day: 'numeric', month: 'long', year: 'numeric' }
+                    )
+                  })}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 w-full sm:w-auto">
                 <IntakeResultsModal
                   intakeId={latestIntake.id}
                   completedAt={latestIntake.createdAt}
                 />
                 <IntakeWizardModal triggerText={t('refillIntakeButton')} />
-                <p className="text-sm text-muted-foreground w-full sm:w-auto">
-                  {t('lastFilledLabel', {
-                    date: latestIntake.createdAt.toLocaleDateString(
-                      currentLocale === 'en' ? 'en-US' : currentLocale === 'sr' ? 'sr-RS' : 'ru-RU'
-                    )
-                  })}
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </section>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
 
-      {/* Секция 2: Назначенные тесты и опросники */}
-      <section className="space-y-4">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-orange-500/10 text-orange-500">
-            <GraduationCap className="h-4 w-4" />
+  // Рендеринг пустого состояния для тестов
+  function renderEmptyState() {
+    return (
+      <Card className="border-dashed bg-muted/10 shadow-none rounded-xl">
+        <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="p-4 rounded-full bg-muted/40 mb-4 text-muted-foreground/40">
+            <ClipboardList className="h-10 w-10" />
           </div>
-          <h2 className="text-lg font-semibold tracking-tight">{t('testsSectionTitle')}</h2>
-        </div>
+          <p className="text-foreground font-bold text-base max-w-sm">{t('noSurveys')}</p>
+          <p className="text-sm text-muted-foreground max-w-xs mt-1.5 leading-relaxed">
+            {t('noTestsDescription')}
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
-        {assignments.length === 0 ? (
-          <Card className="border-dashed bg-muted/20 shadow-sm">
-            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <ClipboardList className="h-12 w-12 text-muted-foreground/30 mb-4" />
-              <p className="text-muted-foreground text-base max-w-sm">{t('noSurveys')}</p>
-              <p className="text-sm text-muted-foreground/60 mt-2">{t('noTestsDescription')}</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {assignments.map(assignment => (
-              <Card
-                key={assignment.id}
-                className={cn(
-                  'group relative flex flex-col transition-all duration-250 shadow-sm rounded-xl overflow-hidden border border-border/60 hover:shadow-md hover:border-primary/40',
-                  assignment.status === 'COMPLETED'
-                    ? 'bg-gradient-to-br from-emerald-500/5 via-card to-card border-emerald-500/20'
-                    : 'bg-gradient-to-br from-orange-500/5 via-card to-card border-orange-500/20'
-                )}
-              >
-                <CardHeader>
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-1.5 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
+  // Рендеринг сетки назначенных тестов
+  function renderAssignmentsGrid(items: AssignmentWithSurvey[]) {
+    return (
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+        {items.map(assignment => {
+          const isCompleted = assignment.status === 'COMPLETED';
+          const hasNewMessages = (assignment.result?._count?.comments ?? 0) > 0;
+
+          return (
+            <Card
+              key={assignment.id}
+              className={cn(
+                'group relative flex flex-col transition-all duration-300 shadow-sm rounded-xl overflow-hidden border hover:-translate-y-1 hover:shadow-md',
+                isCompleted
+                  ? 'bg-gradient-to-br from-emerald-500/5 via-card to-card border-emerald-500/10 hover:border-emerald-500/30'
+                  : 'bg-gradient-to-br from-orange-500/5 via-card to-card border-orange-500/10 hover:border-orange-500/30'
+              )}
+            >
+              <CardHeader className="pb-4">
+                <div className="space-y-3 min-w-0">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    {isCompleted ? (
+                      <div className="flex items-center gap-2">
                         <Badge
-                          variant={assignment.status === 'COMPLETED' ? 'secondary' : 'default'}
-                          className="font-medium"
+                          variant="outline"
+                          className="font-medium text-[11px] px-2 py-0.5 border bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
                         >
-                          {assignment.status === 'COMPLETED' ? (
-                            <span className="flex items-center gap-1.5">
-                              <CheckCircle2 className="h-3.5 w-3.5" />
+                          <span className="flex items-center gap-1.5">
+                            <CheckCircle2 className="h-3 w-3" />
+                            <span>
                               {t('completed')}
+                              {assignment.result?.completedAt && (
+                                <>
+                                  {` `}
+                                  {new Date(assignment.result.completedAt).toLocaleDateString(
+                                    currentLocale === 'en'
+                                      ? 'en-US'
+                                      : currentLocale === 'sr'
+                                        ? 'sr-RS'
+                                        : 'ru-RU',
+                                    { day: 'numeric', month: 'short' }
+                                  )}
+                                </>
+                              )}
                             </span>
-                          ) : (
-                            <span className="flex items-center gap-1.5">
-                              <Clock className="h-3.5 w-3.5" />
-                              {t('pending')}
-                            </span>
-                          )}
+                          </span>
                         </Badge>
-                        {(assignment.result?._count?.comments ?? 0) > 0 && (
-                          <Badge variant="destructive" className="flex items-center gap-1.5">
-                            <MessageSquare className="h-3 w-3 fill-current" />
-                            {t('newMessageBadge')}
-                          </Badge>
-                        )}
                       </div>
-                      <CardTitle className="text-base group-hover:text-primary transition-colors">
-                        {assignment.survey.title}
-                      </CardTitle>
-                      {assignment.survey.description && (
-                        <CardDescription className="line-clamp-2 text-sm">
-                          {assignment.survey.description}
-                        </CardDescription>
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="mt-auto pt-4 flex items-center justify-between border-t bg-muted/5">
-                  {assignment.status === 'PENDING' ? (
-                    <Button asChild className="w-full sm:w-auto group/btn">
-                      <Link
-                        href={`/my/surveys/${assignment.id}`}
-                        className="flex items-center gap-2"
+                    ) : (
+                      <Badge
+                        variant="outline"
+                        className="font-medium text-[11px] px-2 py-0.5 border bg-orange-500/10 text-orange-600 border-orange-500/20"
                       >
-                        {t('startSurvey')}
-                        <ArrowRight className="h-4 w-4 group-hover/btn:translate-x-1 transition-transform" />
-                      </Link>
-                    </Button>
-                  ) : (
-                    <div className="flex w-full items-center justify-between gap-4">
-                      <p className="text-xs text-muted-foreground font-medium">
-                        {t('completedAt', {
-                          date: assignment.result?.completedAt
-                            ? new Date(assignment.result.completedAt).toLocaleDateString(
-                                currentLocale === 'en'
-                                  ? 'en-US'
-                                  : currentLocale === 'sr'
-                                    ? 'sr-RS'
-                                    : 'ru-RU'
-                              )
-                            : ''
-                        })}
-                      </p>
-                      <Button asChild variant="outline" className="group/btn">
-                        <Link
-                          href={`/my/surveys/${assignment.id}`}
-                          className="flex items-center gap-2"
-                        >
-                          {t('viewResults')}
-                          <ArrowRight className="h-4 w-4 group-hover/btn:translate-x-1 transition-transform" />
-                        </Link>
-                      </Button>
-                    </div>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {t('pending')}
+                        </span>
+                      </Badge>
+                    )}
+
+                    {hasNewMessages && (
+                      <Badge
+                        variant="destructive"
+                        className="flex items-center gap-1 text-[10px] px-2 py-0.5 animate-pulse font-bold"
+                      >
+                        <MessageSquare className="h-2.5 w-2.5 fill-current" />
+                        {t('newMessageBadge')}
+                      </Badge>
+                    )}
+                  </div>
+
+                  <CardTitle className="text-base font-bold group-hover:text-primary transition-colors duration-250 leading-snug">
+                    {assignment.survey.title}
+                  </CardTitle>
+
+                  {assignment.survey.description && (
+                    <CardDescription className="line-clamp-2 text-xs leading-relaxed text-muted-foreground/90">
+                      {assignment.survey.description}
+                    </CardDescription>
                   )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </section>
-    </div>
-  );
+                </div>
+              </CardHeader>
+
+              <CardContent className="mt-auto px-6 pb-6 pt-4 border-t bg-muted/10 group-hover:bg-muted/20 transition-colors duration-300">
+                {!isCompleted ? (
+                  <Button
+                    asChild
+                    className="w-full h-10 rounded-lg group/btn shadow-sm font-semibold transition-all"
+                  >
+                    <Link
+                      href={`/my/surveys/${assignment.id}`}
+                      className="flex items-center justify-center gap-2"
+                    >
+                      {t('startSurvey')}
+                      <ArrowRight className="h-4 w-4 group-hover/btn:translate-x-1 transition-transform duration-200" />
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="w-full h-10 rounded-lg group/btn text-xs font-semibold hover:bg-background shadow-sm"
+                  >
+                    <Link
+                      href={`/my/surveys/${assignment.id}`}
+                      className="flex items-center justify-center gap-1.5"
+                    >
+                      {t('viewResults')}
+                      <ArrowRight className="h-3.5 w-3.5 group-hover/btn:translate-x-1 transition-transform duration-200" />
+                    </Link>
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    );
+  }
 }

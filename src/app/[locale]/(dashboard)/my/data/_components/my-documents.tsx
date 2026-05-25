@@ -173,13 +173,13 @@ const FileRow = ({
 
   return (
     <>
-      <div className="group relative flex items-center gap-3 p-2.5 rounded-2xl border border-transparent hover:border-border hover:bg-muted/30 transition-all duration-300">
+      <div className="group relative flex items-center gap-3.5 p-3.5 rounded-xl border border-border/40 bg-card hover:bg-primary/5 hover:border-primary/20 hover:shadow-sm hover:translate-x-0.5 transition-all duration-300">
         {/* Иконка типа файла */}
         <div
           className={cn(
-            'h-11 w-11 rounded-xl flex items-center justify-center shrink-0 transition-all group-hover:scale-105 duration-500 shadow-sm border-2 border-transparent',
+            'h-11 w-11 rounded-xl flex items-center justify-center shrink-0 transition-all duration-500 border border-transparent shadow-inner',
             accent,
-            'group-hover:border-current/20 group-hover:shadow-md'
+            'group-hover:border-current/20'
           )}
         >
           {isDownloading ? (
@@ -190,23 +190,21 @@ const FileRow = ({
         </div>
 
         {/* Информация */}
-        <div className="flex-1 min-w-0 space-y-0.5">
+        <div className="flex-1 min-w-0 space-y-1">
           <a
             href={downloadUrl || `/api/documents/${doc.id}`}
             download={doc.name}
             onClick={handleDownload}
             className={cn(
-              'block text-sm font-bold leading-tight tracking-tight text-foreground/90 transition-colors line-clamp-2 word-break-break-all cursor-pointer',
-              isDownloading
-                ? 'opacity-50 pointer-events-none'
-                : 'group-hover:text-primary hover:underline'
+              'block text-sm font-semibold leading-snug tracking-tight text-foreground/90 transition-colors line-clamp-2 word-break-break-all cursor-pointer',
+              isDownloading ? 'opacity-50 pointer-events-none' : 'group-hover:text-primary'
             )}
           >
             {doc.name}
           </a>
           <a ref={downloadRef} href={downloadUrl} download={doc.name} className="hidden" />
-          <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-black uppercase tracking-[0.1em]">
-            <span className="bg-muted/50 px-1.5 py-0.5 rounded-md">{formatSize(doc.size)}</span>
+          <div className="flex items-center gap-2 text-[10px] text-muted-foreground/80 font-bold uppercase tracking-wider">
+            <span className="bg-muted px-1.5 py-0.5 rounded-md">{formatSize(doc.size)}</span>
             <span className="h-1 w-1 rounded-full bg-border" />
             <span>{formatDate(doc.createdAt)}</span>
           </div>
@@ -222,12 +220,12 @@ const FileRow = ({
                 className="h-8 w-8 rounded-lg data-[state=open]:bg-muted hover:bg-muted transition-colors"
                 disabled={isPending}
               >
-                <MoreHorizontal className="h-4 w-4" />
+                <MoreHorizontal className="h-4 w-4" aria-hidden />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="w-52 rounded-2xl shadow-2xl border-2 p-1.5 animate-in zoom-in-95 duration-200"
+              className="w-52 rounded-2xl shadow-2xl border border-border/40 p-1.5 animate-in zoom-in-95 duration-200"
             >
               <DropdownMenuItem
                 className="rounded-xl gap-3 py-2.5 px-3 focus:bg-primary/5 focus:text-primary transition-colors cursor-pointer"
@@ -256,7 +254,7 @@ const FileRow = ({
                         <span className="font-bold text-xs uppercase tracking-widest">Удалить</span>
                       </DropdownMenuItem>
                     </AlertDialogTrigger>
-                    <AlertDialogContent className="rounded-2xl border-2">
+                    <AlertDialogContent className="rounded-2xl border border-border/60">
                       <AlertDialogHeader>
                         <AlertDialogTitle>Удалить этот файл?</AlertDialogTitle>
                         <AlertDialogDescription className="text-sm">
@@ -284,7 +282,7 @@ const FileRow = ({
 
       {/* Диалог переименования */}
       <Dialog open={isRenaming} onOpenChange={setIsRenaming}>
-        <DialogContent className="sm:max-w-sm rounded-2xl border-2">
+        <DialogContent className="sm:max-w-sm rounded-2xl border border-border/60">
           <DialogHeader>
             <DialogTitle>Новое название</DialogTitle>
           </DialogHeader>
@@ -419,15 +417,17 @@ export const MyDocuments = ({ userId, documents: initialDocs }: Props) => {
       <div className="w-full max-w-none grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-700">
         {/* Левая колонка: Загрузка и безопасность */}
         <div className="lg:col-span-5 space-y-6">
-          <Card className="border-2 shadow-sm bg-gradient-to-b from-background to-muted/5">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <CloudUpload className="h-5 w-5 text-primary" />
+          <Card className="rounded-2xl border border-border/50 bg-card shadow-sm transition-all duration-300 hover:shadow-md overflow-hidden">
+            <CardHeader className="space-y-4 border-b border-border/40 bg-gradient-to-b from-muted/20 to-card p-6 pb-5">
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <CloudUpload className="h-5 w-5 text-primary animate-bounce-slow" />
                 Загрузка
               </CardTitle>
-              <CardDescription>Добавьте документы для специалиста</CardDescription>
+              <CardDescription className="text-xs leading-relaxed text-muted-foreground/80">
+                Добавьте документы для специалиста
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6 p-6">
               {/* Зона загрузки */}
               <div
                 onDrop={handleDrop}
@@ -436,11 +436,11 @@ export const MyDocuments = ({ userId, documents: initialDocs }: Props) => {
                 onClick={() => !isUploading && fileInputRef.current?.click()}
                 className={cn(
                   'relative flex cursor-pointer flex-col items-center justify-center gap-4',
-                  'rounded-3xl border-2 border-dashed px-4 py-10 text-center transition-all duration-500',
-                  'group overflow-hidden bg-muted/10',
+                  'rounded-3xl border border-dashed px-4 py-12 text-center transition-all duration-500',
+                  'group overflow-hidden bg-muted/5',
                   isDragging
-                    ? 'border-primary bg-primary/10 scale-[1.02] shadow-[0_0_40px_-10px_rgba(var(--primary),0.3)]'
-                    : 'border-muted-foreground/20 hover:border-primary/40 hover:bg-muted/20',
+                    ? 'border-primary bg-primary/10 scale-[1.02] shadow-[0_0_30px_rgba(183,142,246,0.2)]'
+                    : 'border-muted-foreground/25 hover:border-primary/40 hover:bg-primary/5',
                   isUploading && 'pointer-events-none opacity-50'
                 )}
               >
@@ -457,10 +457,10 @@ export const MyDocuments = ({ userId, documents: initialDocs }: Props) => {
 
                 <div
                   className={cn(
-                    'rounded-full p-4 transition-all duration-700 shadow-sm',
+                    'rounded-2xl p-4 transition-all duration-500 shadow-inner bg-primary/10 text-primary',
                     isDragging
-                      ? 'bg-primary text-primary-foreground scale-110 rotate-12'
-                      : 'bg-background border-2 border-muted text-muted-foreground group-hover:border-primary/40 group-hover:text-primary'
+                      ? 'scale-110 rotate-12 bg-primary/20'
+                      : 'group-hover:scale-105 group-hover:bg-primary/15'
                   )}
                 >
                   <CloudUpload className="h-8 w-8" />
@@ -468,18 +468,18 @@ export const MyDocuments = ({ userId, documents: initialDocs }: Props) => {
 
                 {isUploading ? (
                   <div className="w-full max-w-[200px] space-y-3">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary animate-pulse">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary animate-pulse">
                       Загрузка...
                     </p>
                     <Progress value={uploadProgress} className="h-1.5 shadow-inner" />
                   </div>
                 ) : (
-                  <div className="space-y-3 relative z-10">
+                  <div className="space-y-3.5 relative z-10">
                     <div className="space-y-1">
                       <p className="text-sm font-bold tracking-tight">
                         {isDragging ? 'Отпустите файл' : 'Выберите файл'}
                       </p>
-                      <p className="text-[11px] text-muted-foreground leading-relaxed max-w-[180px] mx-auto">
+                      <p className="text-[11px] text-muted-foreground/80 leading-relaxed max-w-[180px] mx-auto">
                         PDF, JPEG, WebP, DOCX до {MAX_DOCUMENT_SIZE_BYTES / (1024 * 1024)} МБ
                       </p>
                     </div>
@@ -487,9 +487,8 @@ export const MyDocuments = ({ userId, documents: initialDocs }: Props) => {
                       size="default"
                       variant="default"
                       className={cn(
-                        'mt-1 h-9 px-6 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300',
-                        'bg-primary text-primary-foreground shadow-[0_8px_15px_-8px_rgba(var(--primary),0.5)]',
-                        'group-hover:scale-105 group-hover:shadow-[0_12px_20px_-8px_rgba(var(--primary),0.6)] active:scale-95'
+                        'mt-1.5 h-10 px-6 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/95 transition-all shadow-md shadow-primary/10',
+                        'group-hover:scale-105 active:scale-95'
                       )}
                     >
                       Обзор
@@ -499,7 +498,7 @@ export const MyDocuments = ({ userId, documents: initialDocs }: Props) => {
               </div>
 
               {/* Баннер безопасности */}
-              <div className="relative overflow-hidden rounded-2xl border bg-card/50 p-5 group shadow-sm transition-all hover:shadow-md">
+              <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-muted/5 p-5 group shadow-sm transition-all hover:border-primary/20">
                 <div className="absolute top-0 right-0 p-4 opacity-[0.03] rotate-12 transition-transform group-hover:rotate-0 duration-700">
                   <ShieldCheck className="h-16 w-16" />
                 </div>
@@ -509,16 +508,16 @@ export const MyDocuments = ({ userId, documents: initialDocs }: Props) => {
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm font-bold">Безопасность AES-256</p>
-                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    <p className="text-[11px] text-muted-foreground/85 leading-relaxed">
                       Файлы зашифрованы до отправки. Доступ только у вас и специалиста.
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="flex gap-3 p-4 rounded-2xl bg-muted/20 border border-border/50 transition-colors hover:bg-muted/30">
-                <Info className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" />
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
+              <div className="flex gap-3 p-4 rounded-xl bg-muted/10 border border-border/60 transition-colors hover:bg-muted/15">
+                <Info className="h-4 w-4 shrink-0 text-muted-foreground/80 mt-0.5" />
+                <p className="text-[11px] text-muted-foreground/80 leading-relaxed">
                   Загружая файлы, вы соглашаетесь с нашей{' '}
                   <a
                     href="/documents/personal-data-consent.pdf"
@@ -536,19 +535,21 @@ export const MyDocuments = ({ userId, documents: initialDocs }: Props) => {
 
         {/* Правая колонка: Список файлов */}
         <div className="lg:col-span-7 space-y-6">
-          <Card className="border-2 shadow-sm flex flex-col h-full min-h-[600px] overflow-hidden">
-            <CardHeader className="border-b bg-muted/5 py-6">
+          <Card className="rounded-2xl border border-border/50 bg-card shadow-sm flex flex-col h-full min-h-[600px] overflow-hidden transition-all duration-300 hover:shadow-md">
+            <CardHeader className="border-b border-border/40 bg-gradient-to-b from-muted/20 to-card p-6 pb-5">
               <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <CardTitle className="text-xl flex items-center gap-2">
+                <div className="space-y-1 min-w-0">
+                  <CardTitle className="text-lg font-bold flex items-center gap-2">
                     <FileText className="h-5 w-5 text-primary" />
                     Хранилище документов
                   </CardTitle>
-                  <CardDescription>Все доступные документы и материалы</CardDescription>
+                  <CardDescription className="text-xs leading-relaxed text-muted-foreground/80">
+                    Все доступные документы и материалы
+                  </CardDescription>
                 </div>
                 <Badge
                   variant="outline"
-                  className="h-7 px-3 text-[10px] font-black uppercase tracking-wider bg-background shadow-xs"
+                  className="h-7 px-3 text-[10px] font-bold bg-primary/10 text-primary border-primary/20 rounded-lg shrink-0"
                 >
                   {docs.length} объектов
                 </Badge>
@@ -564,12 +565,12 @@ export const MyDocuments = ({ userId, documents: initialDocs }: Props) => {
                       {myFiles.length > 0 && (
                         <div className="space-y-4">
                           <div className="flex items-center gap-2 px-1">
-                            <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/70">
+                            <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
                               Мои загрузки
                             </span>
                           </div>
-                          <div className="grid gap-2">
+                          <div className="grid gap-3">
                             {myFiles.map(doc => (
                               <FileRow
                                 key={doc.id}
@@ -585,19 +586,19 @@ export const MyDocuments = ({ userId, documents: initialDocs }: Props) => {
 
                       {/* Линия разделения если есть оба типа */}
                       {myFiles.length > 0 && adminFiles.length > 0 && (
-                        <Separator className="opacity-50" />
+                        <Separator className="opacity-40" />
                       )}
 
                       {/* Файлы от специалиста */}
                       {adminFiles.length > 0 && (
                         <div className="space-y-4">
                           <div className="flex items-center gap-2 px-1">
-                            <div className="h-1.5 w-1.5 rounded-full bg-orange-500" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/70">
+                            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
                               От специалиста
                             </span>
                           </div>
-                          <div className="grid gap-2">
+                          <div className="grid gap-3">
                             {adminFiles.map(doc => (
                               <FileRow
                                 key={doc.id}
@@ -612,9 +613,9 @@ export const MyDocuments = ({ userId, documents: initialDocs }: Props) => {
                       )}
                     </>
                   ) : (
-                    <div className="flex flex-col items-center justify-center py-32 text-center text-muted-foreground space-y-4">
-                      <div className="p-6 rounded-full bg-muted/30">
-                        <FileText className="h-12 w-12 opacity-10" />
+                    <div className="flex flex-col items-center justify-center py-32 text-center text-muted-foreground/80 space-y-4">
+                      <div className="p-6 rounded-xl bg-primary/10 text-primary shadow-inner">
+                        <FileText className="h-12 w-12 opacity-80" />
                       </div>
                       <div className="space-y-1">
                         <p className="text-sm font-bold">Файлы не найдены</p>

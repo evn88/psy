@@ -168,7 +168,7 @@ body {
 @layer base {
   :root {
     /* ---- ЦВЕТА ---- */
-    --color-pink: #f1abc3; /* основной розовый */
+    --color-pink: #f1abc3; /* основной розовый — цвет фона лендинга */
     --color-pink-light: #fab1c9; /* розовый светлее */
     --color-pink-soft: rgba(255, 199, 218, 0.3); /* розовый 30% */
     --color-blue: #4278a6; /* синий основной */
@@ -220,27 +220,27 @@ body {
     --landing-border: rgba(0, 0, 0, 0.08);
 
     /* ---- Shadcn Variables (Светлая тема) ---- */
-    /* Основной цвет — брендовый розовый (#f1abc3) */
+    /* Основной цвет — брендовый фиолетовый (#B78EF6) */
     --background: 0 0% 100%;
     --foreground: 0 0% 15%;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 15%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 15%;
-    --primary: 339 74% 81%; /* Розовый #f1abc3 */
-    --primary-foreground: 0 0% 15%; /* Тёмный текст на розовом */
-    --secondary: 339 74% 81%; /* Тот же розовый для бейджей */
-    --secondary-foreground: 0 0% 15%;
+    --primary: 264 85% 76%; /* Фиолетовый #B78EF6 */
+    --primary-foreground: 264 50% 15%; /* Тёмный текст с фиолетовым отливом */
+    --secondary: 264 85% 76%; /* Тот же фиолетовый для бейджей */
+    --secondary-foreground: 264 50% 15%;
     --muted: 0 0% 96%;
     --muted-foreground: 0 0% 45%;
-    --accent: 339 80% 94%; /* Очень светлый розовый для ховеров */
-    --accent-foreground: 339 50% 30%;
+    --accent: 264 90% 96%; /* Очень светлый фиолетовый для ховеров */
+    --accent-foreground: 264 60% 30%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 88%;
     --input: 0 0% 88%;
-    --ring: 339 60% 70%; /* Средний розовый для фокус-колец */
-    --chart-1: 339 74% 81%;
+    --ring: 264 70% 68%; /* Средний фиолетовый для фокус-колец */
+    --chart-1: 264 85% 76%;
     --chart-2: 208 44% 45%;
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
@@ -250,12 +250,12 @@ body {
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 0 0% 15%;
-    --sidebar-primary: 339 74% 81%;
-    --sidebar-primary-foreground: 0 0% 15%;
-    --sidebar-accent: 339 80% 94%;
-    --sidebar-accent-foreground: 339 50% 30%;
+    --sidebar-primary: 264 85% 76%;
+    --sidebar-primary-foreground: 264 50% 15%;
+    --sidebar-accent: 264 90% 96%;
+    --sidebar-accent-foreground: 264 60% 30%;
     --sidebar-border: 0 0% 88%;
-    --sidebar-ring: 339 60% 70%;
+    --sidebar-ring: 264 70% 68%;
   }
 
   .dark {
@@ -266,17 +266,17 @@ body {
     --landing-border: rgba(255, 255, 255, 0.12);
 
     /* ---- Shadcn Variables (Тёмная тема) ---- */
-    /* Фон — тёмный сине-серый, розовый остаётся акцентом */
+    /* Фон — тёмный сине-серый, фиолетовый остаётся акцентом */
     --background: 220 15% 10%; /* Немного светлее, чем #0b0d12 */
     --foreground: 0 0% 93%; /* #ededed */
     --card: 220 13% 13%; /* Соответственно светлее */
     --card-foreground: 0 0% 93%;
     --popover: 220 13% 13%;
     --popover-foreground: 0 0% 93%;
-    --primary: 339 68% 74%; /* Розовый для тёмного фона: #d98fb4 */
-    --primary-foreground: 0 0% 8%; /* Тёмный текст на розовом */
-    --secondary: 339 55% 65%; /* Более насыщенный розовый для бейджей */
-    --secondary-foreground: 0 0% 8%;
+    --primary: 264 80% 72%; /* Фиолетовый для тёмного фона: #a97bf3 */
+    --primary-foreground: 264 50% 8%; /* Тёмный текст на фиолетовом */
+    --secondary: 264 65% 65%; /* Более насыщенный фиолетовый для бейджей */
+    --secondary-foreground: 264 50% 8%;
     --muted: 220 10% 16%; /* #222630 */
     --muted-foreground: 0 0% 60%;
     --accent: 220 10% 18%; /* #252a36 */
@@ -285,9 +285,9 @@ body {
     --destructive-foreground: 0 0% 98%;
     --border: 220 10% 20%; /* #282e3d */
     --input: 220 10% 20%;
-    --ring: 339 60% 68%; /* Розовое фокус-кольцо */
+    --ring: 264 70% 66%; /* Фиолетовое фокус-кольцо */
 
-    --chart-1: 339 68% 74%;
+    --chart-1: 264 80% 72%;
     --chart-2: 208 55% 60%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
@@ -295,12 +295,12 @@ body {
 
     --sidebar-background: 220 13% 11%;
     --sidebar-foreground: 0 0% 93%;
-    --sidebar-primary: 339 68% 74%;
-    --sidebar-primary-foreground: 0 0% 8%;
+    --sidebar-primary: 264 80% 72%;
+    --sidebar-primary-foreground: 264 50% 8%;
     --sidebar-accent: 220 10% 16%;
     --sidebar-accent-foreground: 0 0% 93%;
     --sidebar-border: 220 10% 20%;
-    --sidebar-ring: 339 60% 68%;
+    --sidebar-ring: 264 70% 66%;
   }
 }
 

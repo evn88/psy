@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { SettingsForm } from '@/components/settings-form';
+import { PilloSettingsForm } from './pillo-settings-form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -282,7 +282,7 @@ export const SettingsView = ({
           </h2>
         </div>
         <Card className="rounded-[2rem] border-white/40 bg-white/40 p-1 shadow-[0_8px_32px_rgba(0,0,0,0.04)] backdrop-blur-2xl dark:border-white/10 dark:bg-black/40">
-          <SettingsForm
+          <PilloSettingsForm
             hideSubmitButton
             initialSettings={appearanceSettings}
             onStateChange={setAppearanceFormState}
