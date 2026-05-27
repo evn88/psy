@@ -1,0 +1,258 @@
+.contact {
+  background-color: var(--color-bg-warm);
+  padding-top: clamp(5em, 9vw, 12em);
+  padding-bottom: clamp(5em, 9vw, 12em);
+  border-bottom: 1px solid var(--landing-border);
+}
+
+.contact__container {
+  max-width: var(--container-max);
+  margin-inline: auto;
+  padding-inline: var(--container-pad);
+}
+
+.contact__header {
+  text-align: center;
+  margin-bottom: clamp(4em, 6vw, 6em);
+}
+
+.contact__title {
+  font-family: var(--font-heading), serif;
+  font-size: clamp(3.2em, 5vw, 6.4em);
+  color: var(--color-dark);
+  line-height: 1.1;
+  margin-bottom: 0.5em;
+  font-weight: 500;
+  text-wrap: balance;
+}
+
+.contact__subtitle {
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--text-t1);
+  color: var(--color-dark);
+  opacity: 0.75;
+  max-width: 50ch;
+  margin-inline: auto;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+/* Форма — согласована с карточками */
+.contact__form {
+  max-width: 560px;
+  margin-inline: auto;
+  background-color: var(--color-white);
+  padding: clamp(2.8em, 4vw, 3.8em) clamp(2.2em, 3vw, 3em);
+  border-radius: 28px;
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.02),
+    0 12px 28px rgba(44, 62, 80, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 1.8em;
+}
+
+.contact__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  width: 100%;
+}
+
+.contact__label {
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--text-small);
+  font-weight: 600;
+  color: var(--color-dark);
+  display: flex;
+  align-items: center;
+  gap: 0.2em;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.7;
+}
+
+.contact__required {
+  color: #c25f5f;
+}
+
+/* Инпут — согласованный border-radius */
+.contact__input {
+  width: 100%;
+  height: 50px;
+  border-radius: 14px;
+  border: 1.5px solid var(--landing-border);
+  padding-inline: 1.4em;
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--text-t2);
+  color: var(--color-dark);
+  background-color: var(--color-bg-warm-dark);
+  transition:
+    border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  appearance: none;
+}
+
+select.contact__input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%232C3E50' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1.2em center;
+  background-size: 16px;
+  padding-right: 3em;
+}
+
+.contact__input:focus {
+  outline: none;
+  border-color: var(--color-blue);
+  background-color: var(--color-white);
+  box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.12);
+}
+
+.contact__input_error {
+  border-color: #c25f5f;
+  background-color: rgba(224, 130, 130, 0.03);
+}
+
+.contact__input_error:focus {
+  border-color: #c25f5f;
+  box-shadow: 0 0 0 4px rgba(194, 95, 95, 0.12);
+}
+
+.contact__error_container {
+  min-height: 20px;
+}
+
+.contact__error {
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.9em;
+  color: #c25f5f;
+  line-height: 1.2;
+}
+
+/* Кнопка — согласована с services__btn_highlight */
+.contact__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  background-color: var(--color-blue);
+  color: var(--color-white);
+  font-family: var(--font-body), sans-serif;
+  font-size: clamp(1.3em, 1.4vw, 1.6em);
+  font-weight: 500;
+  padding: 0.85em 2em;
+  border-radius: var(--radius-pill);
+  border: none;
+  cursor: pointer;
+  transition:
+    background-color 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 14px rgba(74, 144, 226, 0.25);
+  min-height: 48px;
+  gap: 0.6em;
+}
+
+.contact__btn:hover:not(:disabled) {
+  background-color: #3a82d4;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(74, 144, 226, 0.38);
+}
+
+.contact__btn:focus-visible {
+  outline: 2px solid var(--color-blue);
+  outline-offset: 3px;
+}
+
+.contact__btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.contact__btn_icon {
+  transition: transform 0.2s ease;
+}
+
+.contact__btn:hover:not(:disabled) .contact__btn_icon {
+  transform: translateX(2px) translateY(-1px);
+}
+
+.contact__btn_spinner {
+  animation: spin 1s linear infinite;
+}
+
+/* Экран успеха — согласован с формой */
+.contact__success {
+  max-width: 560px;
+  margin-inline: auto;
+  background-color: var(--color-white);
+  padding: clamp(3em, 6vw, 4.5em) clamp(2.2em, 4vw, 3em);
+  border-radius: 28px;
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.02),
+    0 12px 28px rgba(44, 62, 80, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.contact__success_icon {
+  color: var(--color-green);
+  margin-bottom: 1.5em;
+  animation: scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+.contact__success_title {
+  font-family: var(--font-heading), serif;
+  font-size: clamp(2.2rem, 3vw, 3.2rem);
+  color: var(--color-dark);
+  margin-bottom: 0.5em;
+  font-weight: 600;
+}
+
+.contact__success_desc {
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--text-t2);
+  color: var(--color-dark);
+  opacity: 0.75;
+  line-height: 1.65;
+  margin-bottom: 2.5em;
+  max-width: 36ch;
+  text-wrap: pretty;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0); }
+  to { transform: scale(1); }
+}
+
+@media (max-width: 480px) {
+  .contact__form {
+    padding: 2.2em 1.6em;
+  }
+  .contact__success {
+    padding: 2.6em 1.6em;
+  }
+}
+
+/* prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .contact__input,
+  .contact__btn,
+  .contact__btn_icon {
+    transition: none;
+  }
+
+  .contact__success_icon {
+    animation: none;
+  }
+}

@@ -30,7 +30,7 @@
       "closeMenu": "Zatvori meni"
     },
     "hero": {
-      "titleAccent": "da li si umoran?",
+      "titleAccent": "Da li si umoran?",
       "titleRest": "od beskrajne borbe sa prokrastinacijom, anksioznošću i sagorevanjem?",
       "subtitleLine1": "Ponovo sebi obećavaš da ćeš se „sabrati” — i ponovo",
       "subtitleLine2": "osećaš krivicu i stid kada ne uspe.",
@@ -56,8 +56,151 @@
       "instagramLabel": "Instagram",
       "privacyLabel": "Politika privatnosti",
       "consentLabel": "Saglasnost za obradu podataka",
-      "copyright": "@ Sva prava zadržana. {year}",
-      "credit": "Dizajn sajta uradila @akwebd"
+      "copyright": "© {year} Ana Verškova. Sva prava zadržana.",
+      "credit": "Dizajn sajta uradila @akwebd",
+      "associationsTitle": "Profesionalna udruženja",
+      "associationAkpn": "ACBS (Udruženje za kontekstualno-bihejvioralnu nauku)",
+      "associationIsst": "ISST (Međunarodno društvo za šema terapiju)",
+      "contactsTitle": "Kontakti",
+      "navTitle": "Navigacija"
+    },
+    "problems": {
+      "title": "Oblasti prakse",
+      "subtitle": "Pažljiva terapija i koučing prilagođeni vašim osobenostima",
+      "items": {
+        "avoidance": {
+          "title": "Blokada i izbegavanje",
+          "desc": "Kada je teško započeti čak i jednostavne zadatke, a prokrastinacija prerasta u snažan osećaj krivice."
+        },
+        "neurodiversity": {
+          "title": "ADHD i ASD kod odraslih",
+          "desc": "Pomoć u adaptaciji, uspostavljanju strukture bez samonasilja i prihvatanju svojih osobenosti."
+        },
+        "procrastination": {
+          "title": "Prokrastinacija",
+          "desc": "Analiza dubljih uzroka odlaganja i pronalaženje ekoloških načina za kretanje napred."
+        },
+        "rpp": {
+          "title": "Poremećaji u ishrani",
+          "desc": "Nežan rad sa kompulzivnim prejedanjem, slikom tela i izgradnjom zdravog odnosa sa hranom."
+        },
+        "anxiety": {
+          "title": "Anksioznost i perfekcionizam",
+          "desc": "Oslobađanje od stalne zabrinutosti, straha od greške i sindroma varalice."
+        },
+        "burnout": {
+          "title": "Emocionalno sagorevanje",
+          "desc": "Obnova resursa kod hroničnog umora, gubitka motivacije i jasnih orijentira."
+        }
+      }
+    },
+    "about": {
+      "title": "O meni i mom pristupu",
+      "introTitle": "Zdravo, ja sam Ana",
+      "p1": "Ja sam klinički psiholog i kouč. Moj put u profesiju počeo je ličnom pričom. Od detinjstva sam se suočavala sa prokrastinacijom i tim sindromom 'pametna, ali lenja'. Kasnije sam saznala za svoj ADHD i ASD, što mi je pomoglo da reorganizujem život i pronađem nežne, delotvorne metode.",
+      "p2": "U radu kombinujem naučno dokazane pravce: šema terapiju, terapiju prihvatanja i posvećenosti (ACT) i RO DBT. Ne predlažem da sebe 'lomite' prema društvenim standardima, već vam pomažem da izgradite život u kojem će vaše osobenosti biti prihvaćene i udobne.",
+      "p3": "Redovno prolazim superviziju i interviziju, član sam profesionalnih udruženja i strogo se pridržavam etičkog kodeksa psihologa.",
+      "educationTitle": "Obrazovanje i kvalifikacije",
+      "eduItems": [
+        {
+          "year": "2019-2023",
+          "title": "VolSU",
+          "desc": "Klinička psihologija (Osnovne studije)"
+        },
+        {
+          "year": "2023-2024",
+          "title": "Moskovski institut za šema terapiju",
+          "desc": "Međunarodni program obuke za šema terapeute (ISST akreditacija)"
+        },
+        {
+          "year": "2024",
+          "title": "Terapija prihvatanja i posvećenosti (ACT)",
+          "desc": "Osnovni praktički kurs iz ACT terapije"
+        },
+        {
+          "year": "2025",
+          "title": "Radikalno otvorena DBT (RO DBT)",
+          "desc": "Specifičnost rada sa prekomernom kontrolom i poremećajima u ishrani"
+        }
+      ]
+    },
+    "services": {
+      "title": "Formati rada i cene",
+      "subtitle": "Izaberite odgovarajući format saradnje. Sve sesije se održavaju onlajn u bezbednom formatu.",
+      "duration": "Trajanje",
+      "format": "Format",
+      "formatOnline": "Onlajn (Zoom / Telegram)",
+      "bookBtn": "Zakaži se",
+      "minutes": "min",
+      "currency": "RSD",
+      "items": {
+        "individual": {
+          "title": "Individualna terapija",
+          "desc": "Duboka obrada zahteva korišćenjem šema terapije i ACT-a. Pogodno za rad sa anksioznošću, sagorevanjem, poremećajima u ishrani i poteškoćama u odnosima.",
+          "price": "3.000",
+          "durationVal": "50 minuta"
+        },
+        "coaching": {
+          "title": "ADHD Koučing",
+          "desc": "Kratkoročni program za razvoj veština samoregulacije, upravljanja vremenom i organizacije prostora, prilagođen specifičnostima rada ADHD mozga.",
+          "price": "3.000",
+          "durationVal": "50 minuta"
+        },
+        "solanto": {
+          "title": "Solanto protokol",
+          "desc": "Specijalizovani program obuke veština za odrasle sa ADHD-om. Uključuje dijagnostičku sesiju, analizu kognitivnih barijera i korak-po-korak uvođenje praktičnih navika.",
+          "price": "10.000",
+          "durationVal": "4 sesije"
+        }
+      }
+    },
+    "faq": {
+      "title": "Često postavljana pitanja",
+      "subtitle": "Odgovori na popularna pitanja o procesu terapije, ADHD koučingu i organizacionim detaljima",
+      "items": {
+        "q1": {
+          "question": "Kako da razumem da li mi je potreban koučing ili terapija?",
+          "answer": "Koučing se fokusira na veštine samoorganizacije, upravljanje vremenom, strukturu dana i prevazilaženje prokrastinacije 'ovde i sada'. Terapija radi sa dubljim uzrocima: traumama, negativnim uverenjima o sebi, stidom, krivicom i emocionalnim stanjima. Kod ADHD-a je često najefikasnije kombinovati ih ili početi sa koučingom."
+        },
+        "q2": {
+          "question": "Da li je onlajn format pogodan za rad sa ADHD-om?",
+          "answer": "Da, onlajn format je odličan. Ne morate trošiti energiju na put i spremanje; sesija se odvija u vašem poznatom i bezbednom kućnom okruženju. Za održavanje fokusa koristimo interaktivne materijale i jasnu strukturu sesije."
+        },
+        "q3": {
+          "question": "Koliko sesija će mi biti potrebno?",
+          "answer": "To zavisi od vašeg zahteva. Za program obuke veština (ADHD koučing ili Solanto protokol) obično je potrebno od 4 do 12 sesija. Za dublje promene u okviru šema terapije, rad može trajati od 6 meseci do godinu dana. Ciljeve i okvirno trajanje dogovorićemo na prvoj sesiji."
+        },
+        "q4": {
+          "question": "Da li postavljate dijagnozu ADHD-a ili ASD-a?",
+          "answer": "Ne, klinički psiholog nema pravo da postavlja zvaničnu medicinsku dijagnozu niti da propisuje lekove (to radi psihijatar). Međutim, ja sprovodim detaljan klinički intervju i skrining, pomažem vam da razumete svoje osobine i mogu vam preporučiti ADHD-friendly psihijatra radi dijagnoze ako je potrebno."
+        },
+        "q5": {
+          "question": "Šta ako zakasnim ili zaboravim na sesiju?",
+          "answer": "Ljudi sa ADHD-om se često suočavaju sa slepilom za vreme (Time blindness). Prema tome se odnosim sa punim razumevanjem. Sistem automatski šalje podsetnike pre sesije. Ako ipak propustite sesiju, razgovaraćemo o nežnim načinima prevazilaženja toga i prilagoditi podsetnike."
+        }
+      }
+    },
+    "contact": {
+      "title": "Zakažite konsultaciju",
+      "subtitle": "Ostavite prijavu i kontaktiraću vas u najkraćem roku kako bismo razgovarali o detaljima i dogovorili vreme sesije.",
+      "nameLabel": "Vaše ime",
+      "namePlaceholder": "Petar",
+      "contactLabel": "Telefon, Telegram ili WhatsApp",
+      "contactPlaceholder": "+381 (999) 000-00-00 ili @username",
+      "timeLabel": "Željeno vreme za kontakt",
+      "timePlaceholder": "Izaberite vreme...",
+      "timeMorning": "Jutro (9:00 - 12:00)",
+      "timeAfternoon": "Dan (12:00 - 17:00)",
+      "timeEvening": "Veče (17:00 - 21:00)",
+      "submitBtn": "Pošaljite zahtev",
+      "sending": "Slanje...",
+      "successTitle": "Zahtev je uspešno poslat!",
+      "successDesc": "Hvala vam! Kontaktiraću vas u izabranom vremenskom periodu.",
+      "validation": {
+        "nameMin": "Molimo unesite vaše ime",
+        "contactMin": "Molimo ostavite vaše kontakt podatke",
+        "timeRequired": "Molimo izaberite željeno vreme za kontakt"
+      }
     }
   },
   "Auth": {

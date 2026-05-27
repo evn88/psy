@@ -1,122 +1,131 @@
-import Image from 'next/image';
 import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
+import { Mail, Send, MessageCircle, ArrowUpRight } from 'lucide-react';
 import styles from './footer.module.css';
 
-import psychoPhoto from '@/assets/images/adhd/Ann.jpeg';
-import { Link } from '@/i18n/navigation';
-
 /**
- * Футер лендинга: CTA-блок в стиле конверта, контакты, копирайт.
- * Сам загружает тексты футера, чтобы не получать большой объект через props.
- * @returns Нижняя секция лендинга.
+ * Минималистичный и профессиональный Footer.
+ * Включает навигацию, ссылки на профессиональные ассоциации, контакты и юридическую информацию.
+ * @returns Секция подвала.
  */
 export const Footer = () => {
-  const tHome = useTranslations('Home');
   const tFooter = useTranslations('Home.footer');
+  const tNav = useTranslations('Home.nav');
   const currentYear = new Date().getFullYear();
-  const socialLinks = [
+
+  const navLinks = [
+    { href: '#about', label: tNav('about') },
+    { href: '#services', label: tNav('services') },
+    { href: '#faq', label: tNav('faq') },
+    { href: '#contact', label: tNav('contact') },
+    { href: '/blog', label: tNav('blog') }
+  ];
+
+  const associations = [
     {
-      href: 'https://t.me/looking_dopamine',
-      label: tFooter('telegramLabel'),
-      variant: 'pink' as const
+      href: 'https://akpn.org',
+      label: tFooter('associationAkpn')
     },
     {
-      href: 'https://wa.me/79370843451',
-      label: tFooter('whatsappLabel'),
-      variant: 'pink' as const
-    },
-    {
-      href: 'https://www.instagram.com/ania_vverh/',
-      label: tFooter('instagramLabel'),
-      variant: 'blue' as const
+      href: 'https://www.schematherapysociety.org',
+      label: tFooter('associationIsst')
     }
+  ];
+
+  const contacts = [
+    { href: 'https://t.me/looking_dopamine', label: tFooter('telegramLabel'), icon: Send },
+    { href: 'https://wa.me/79370843451', label: tFooter('whatsappLabel'), icon: MessageCircle },
+    { href: 'mailto:anna@vershkov.com', label: 'anna@vershkov.com', icon: Mail }
   ];
 
   return (
     <footer className={styles.footer} id="footer">
-      {/* ── Конверт — дальний фон ────────────────────────────── */}
-      {/*<div*/}
-      {/*  className={styles.footer__envelop}*/}
-      {/*  style={{ backgroundImage: `url(${envelopImg.src})` }}*/}
-      {/*  aria-hidden="true"*/}
-      {/*/>*/}
+      <div className={styles.footer__container}>
+        <div className={styles.footer__grid}>
+          {/* Колонка 1: Лого/Описание */}
+          <div className={styles.footer__col}>
+            <Link href="/" className={styles.footer__logo}>
+              <span>
+                Анна Вершкова<span className={styles.footer__logo_dot}>.</span>
+              </span>
+            </Link>
+            <p className={styles.footer__description}>
+              Психолог, схема-терапевт, специалист по работе с СДВГ, РАС и нарушениями пищевого
+              поведения.
+            </p>
+          </div>
 
-      {/*/!* ── Треугольники по бокам (передний план) ───────────── *!/*/}
-      {/*<div*/}
-      {/*  className={styles.footer__triLeft}*/}
-      {/*  style={{ backgroundImage: `url(${envelopLeft.src})` }}*/}
-      {/*  aria-hidden="true"*/}
-      {/*/>*/}
-      {/*<div*/}
-      {/*  className={styles.footer__triRight}*/}
-      {/*  style={{ backgroundImage: `url(${envelopRight.src})` }}*/}
-      {/*  aria-hidden="true"*/}
-      {/*/>*/}
+          {/* Колонка 2: Навигация */}
+          <div className={styles.footer__col}>
+            <h3 className={styles.footer__col_title}>{tFooter('navTitle')}</h3>
+            <ul className={styles.footer__list}>
+              {navLinks.map(link => (
+                <li key={link.href}>
+                  {link.href.startsWith('#') ? (
+                    <a href={link.href} className={styles.footer__link}>
+                      {link.label}
+                    </a>
+                  ) : (
+                    <Link href={link.href} className={styles.footer__link}>
+                      {link.label}
+                    </Link>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
 
-      {/* ── Белая карточка-письмо ────────────────────────────── */}
-      <div className={styles.footer__card}>
-        {/* Поляроид с фото */}
-        <div className={styles.footer__polaroid} aria-hidden="true">
-          <div className={styles.footer__polaroidInner}>
-            <Image
-              src={psychoPhoto}
-              alt={tHome('photoAlt')}
-              className={styles.footer__photo}
-              placeholder="blur"
-            />
+          {/* Колонка 3: Сообщества */}
+          <div className={styles.footer__col}>
+            <h3 className={styles.footer__col_title}>{tFooter('associationsTitle')}</h3>
+            <ul className={styles.footer__list}>
+              {associations.map(assoc => (
+                <li key={assoc.href}>
+                  <a
+                    href={assoc.href}
+                    className={`${styles.footer__link} ${styles.footer__link_assoc}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <span className={styles.footer__assoc_text}>{assoc.label}</span>
+                    <ArrowUpRight size={14} className={styles.footer__assoc_icon} />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Колонка 4: Контакты */}
+          <div className={styles.footer__col}>
+            <h3 className={styles.footer__col_title}>{tFooter('contactsTitle')}</h3>
+            <ul className={styles.footer__list}>
+              {contacts.map(contact => (
+                <li key={contact.href}>
+                  <a
+                    href={contact.href}
+                    className={`${styles.footer__link} ${styles.footer__link_contact}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <contact.icon size={16} className={styles.footer__contact_icon} />
+                    <span>{contact.label}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
-        {/* Контентная область */}
-        <div className={styles.footer__cardContent}>
-          <h2 className={styles.footer__title}>
-            {tFooter('titleLine1')} <br />
-            <span className={styles.footer__accent}>{tFooter('titleAccent')}</span>
-          </h2>
-          <p className={styles.footer__sub}>
-            {tFooter('descriptionStart')}
-            <br />
-            <Link href="/blog" className={styles.footer__link}>
-              {tFooter('blogLabel')}
-            </Link>
-            &nbsp;{tFooter('descriptionEnd')}
-          </p>
-
-          {/* ── Кнопки соцсетей (паттерн oval из HeroNav) ───── */}
-          <div className={styles.footer__socials}>
-            {socialLinks.map(({ href, label, variant }) => (
-              <a
-                key={label}
-                href={href}
-                className={styles.footer__socialBtn}
-                data-variant={variant}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <span
-                  className={styles.footer__socialOval}
-                  data-variant={variant}
-                  aria-hidden="true"
-                />
-                {label}
-              </a>
-            ))}
-          </div>
-
-          {/* ── Юридические ссылки ───────────────────────────── */}
+        <div className={styles.footer__bottom}>
+          <div className={styles.footer__copy}>{tFooter('copyright', { year: currentYear })}</div>
           <div className={styles.footer__legal}>
-            <Link href="/privacy" className={styles.footer__legalLink}>
+            <Link href="/privacy" className={styles.footer__legal_link}>
               {tFooter('privacyLabel')}
             </Link>
-            <Link href="/consent" className={styles.footer__legalLink}>
+            <Link href="/consent" className={styles.footer__legal_link}>
               {tFooter('consentLabel')}
             </Link>
           </div>
-        </div>
-        {/* ── Нижняя строка ────────────────────────────────────── */}
-        <div className={styles.footer__bottom}>
-          <p className={styles.footer__copy}>{tFooter('copyright', { year: currentYear })}</p>
-          <p className={styles.footer__credit}>{tFooter('credit')}</p>
         </div>
       </div>
     </footer>

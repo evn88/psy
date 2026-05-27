@@ -79,35 +79,35 @@
 }
 
 /* ---- Типографика ---- */
-.landingWrapper h1 {
+.landingWrapper h1:not([class]) {
   font-family: var(--font-heading), serif;
   font-size: var(--text-h1);
   line-height: var(--lh-heading);
   font-weight: 400;
 }
 
-.landingWrapper h2 {
+.landingWrapper h2:not([class]) {
   font-family: var(--font-heading), serif;
   font-size: var(--text-h2);
   line-height: var(--lh-heading);
   font-weight: 400;
 }
 
-.landingWrapper h3 {
+.landingWrapper h3:not([class]) {
   font-family: var(--font-heading), serif;
   font-size: var(--text-h3);
   line-height: var(--lh-heading);
   font-weight: 400;
 }
 
-.landingWrapper h4 {
+.landingWrapper h4:not([class]) {
   font-family: var(--font-body), serif;
   font-size: var(--text-h4);
   line-height: var(--lh-heading);
   font-weight: 600;
 }
 
-.landingWrapper p {
+.landingWrapper p:not([class]) {
   font-family: var(--font-body), serif;
   font-size: var(--text-body);
   line-height: var(--lh-body);

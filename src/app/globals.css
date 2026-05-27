@@ -168,17 +168,16 @@ body {
 @layer base {
   :root {
     /* ---- ЦВЕТА ---- */
-    --color-pink: #f1abc3; /* основной розовый — цвет фона лендинга */
-    --color-pink-light: #fab1c9; /* розовый светлее */
-    --color-pink-soft: rgba(255, 199, 218, 0.3); /* розовый 30% */
-    --color-blue: #4278a6; /* синий основной */
-    --color-blue-soft: rgba(190, 224, 254, 0.3); /* синий 30% */
-    --color-dark: #343434; /* основной текст */
+    --color-bg-warm: #FAF9F6; /* теплый бежевый фон */
+    --color-bg-warm-dark: #F4F2EC; /* более темный теплый бежевый для разделов */
+    --color-blue: #4A90E2; /* мягкий природный синий для кнопок/акцентов */
+    --color-green: #9DC183; /* шалфейный зеленый для вторичных акцентов */
+    --color-dark: #2C3E50; /* темно-серый/сланцевый для текста */
     --color-white: #ffffff;
-    --color-grey: #eceaea; /* светло-серый фон */
+    --color-grey: #eceaea; /* светло-серый */
 
     /* ---- ШРИФТЫ ---- */
-    --font-heading: var(--font-dela, 'Dela Gothic', cursive);
+    --font-heading: var(--font-playfair, 'Playfair Display', serif);
     --font-accent: var(--font-sunless-day, 'Sunless Day', cursive);
     --font-body: var(--font-inter, 'Inter', sans-serif);
 
@@ -214,7 +213,7 @@ body {
     --radius-m: 1.2em;
 
     /* Landing Native Theme Tokens */
-    --landing-bg: var(--color-white);
+    --landing-bg: var(--color-bg-warm);
     --landing-text: var(--color-dark);
     --landing-surface: rgba(0, 0, 0, 0.03); /* slight dark tint for surface */
     --landing-border: rgba(0, 0, 0, 0.08);

@@ -1,4 +1,223 @@
 .about {
-  /* TODO: стили секции About */
-  background-color: var(--color-grey);
+  background-color: var(--color-bg-warm);
+  padding-top: clamp(5em, 9vw, 12em);
+  padding-bottom: clamp(5em, 9vw, 12em);
+  border-bottom: 1px solid var(--landing-border);
+}
+
+.about__container {
+  max-width: var(--container-max);
+  margin-inline: auto;
+  padding-inline: var(--container-pad);
+}
+
+.about__grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: clamp(3em, 6vw, 6em);
+  align-items: start;
+}
+
+/* Левая колонка: информация */
+.about__info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.about__title {
+  font-family: var(--font-heading), serif;
+  font-size: clamp(3.2em, 5vw, 6.4em);
+  color: var(--color-dark);
+  line-height: 1.1;
+  margin-bottom: 0.6em;
+  font-weight: 500;
+  text-wrap: balance;
+}
+
+.about__intro_title {
+  font-family: var(--font-heading), serif;
+  font-size: var(--text-h4);
+  color: var(--color-blue);
+  margin-bottom: 1em;
+  font-style: italic;
+}
+
+.about__text {
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--text-t2);
+  line-height: 1.65;
+  color: var(--color-dark);
+  opacity: 0.8;
+  margin-bottom: 1.2em;
+  max-width: 54ch;
+  text-wrap: pretty;
+}
+
+.about__text:last-of-type {
+  margin-bottom: 2em;
+}
+
+.about__tags_title {
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--text-small);
+  font-weight: 600;
+  color: var(--color-dark);
+  opacity: 0.5;
+  margin-bottom: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.about__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8em;
+}
+
+/* Тег — согласован с services__meta_tag */
+.about__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  background-color: var(--color-bg-warm-dark);
+  color: var(--color-dark);
+  font-family: var(--font-body), sans-serif;
+  font-size: 1.2em;
+  font-weight: 500;
+  padding: 0.45em 1em;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--landing-border);
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.about__tag:hover {
+  border-color: rgba(74, 144, 226, 0.3);
+  background-color: rgba(74, 144, 226, 0.04);
+}
+
+/* Правая колонка: Образование */
+.about__education {
+  background-color: var(--color-bg-warm-dark);
+  padding: clamp(2.4em, 4vw, 3.2em);
+  border-radius: 28px;
+  border: 1px solid var(--landing-border);
+  display: flex;
+  flex-direction: column;
+  gap: 2em;
+}
+
+.about__edu_title {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  font-family: var(--font-heading), serif;
+  font-size: clamp(1.8rem, 2vw, 2.4rem);
+  font-weight: 600;
+  color: var(--color-dark);
+}
+
+.about__edu_icon {
+  color: var(--color-blue);
+}
+
+/* Таймлайн */
+.about__timeline {
+  position: relative;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 2em;
+}
+
+.about__timeline::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: linear-gradient(
+    to bottom,
+    var(--color-blue) 0%,
+    var(--landing-border) 100%
+  );
+  border-radius: 2px;
+  opacity: 0.4;
+}
+
+.about__timeline_item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+}
+
+.about__timeline_dot {
+  position: absolute;
+  left: -20px;
+  top: 6px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--color-blue);
+  border: 2px solid var(--color-bg-warm-dark);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease;
+}
+
+.about__timeline_item:hover .about__timeline_dot {
+  transform: scale(1.4);
+  background-color: var(--color-green);
+}
+
+.about__timeline_year {
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--text-small);
+  font-weight: 700;
+  color: var(--color-blue);
+  letter-spacing: 0.06em;
+}
+
+.about__timeline_content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+}
+
+.about__timeline_title {
+  font-family: var(--font-heading), serif;
+  font-size: var(--text-t2);
+  font-weight: 600;
+  color: var(--color-dark);
+}
+
+.about__timeline_desc {
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--text-small);
+  color: var(--color-dark);
+  opacity: 0.75;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+/* Адаптив */
+@media (max-width: 1024px) {
+  .about__grid {
+    grid-template-columns: 1fr;
+    gap: 4em;
+  }
+}
+
+@media (max-width: 480px) {
+  .about__education {
+    padding: 1.8em;
+  }
+}
+
+/* prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .about__tag,
+  .about__timeline_dot {
+    transition: none;
+  }
 }

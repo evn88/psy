@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { GoogleAnalytics } from '@next/third-parties/google';
-import { Dela_Gothic_One, Inter } from 'next/font/google';
+import { Playfair_Display, Inter } from 'next/font/google';
 import localFont from 'next/font/local';
 import { type ReactNode } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
@@ -31,10 +31,12 @@ const inter = Inter({
   display: 'swap'
 });
 
-const delaGothicOne = Dela_Gothic_One({
+const playfairDisplay = Playfair_Display({
   subsets: ['latin', 'cyrillic'],
-  variable: '--font-dela',
-  weight: '400'
+  variable: '--font-playfair',
+  weight: ['400', '500', '600', '700'],
+  style: ['normal', 'italic'],
+  display: 'swap'
 });
 
 const sunlessDay = localFont({
@@ -93,7 +95,7 @@ const RootLayout = async ({ children, params }: Readonly<MainLayoutProps>) => {
   const htmlClassName = [
     inter.variable,
     sunlessDay.variable,
-    delaGothicOne.variable,
+    playfairDisplay.variable,
     themeClassName
   ]
     .filter(Boolean)

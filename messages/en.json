@@ -30,7 +30,7 @@
       "closeMenu": "Close menu"
     },
     "hero": {
-      "titleAccent": "are you tired?",
+      "titleAccent": "Are you tired?",
       "titleRest": "of the endless fight with procrastination, anxiety, and burnout?",
       "subtitleLine1": "You promise yourself to “pull it together” again and again,",
       "subtitleLine2": "and then feel guilt and shame when it still does not work.",
@@ -56,8 +56,151 @@
       "instagramLabel": "Instagram",
       "privacyLabel": "Privacy policy",
       "consentLabel": "Consent to data processing",
-      "copyright": "@ All rights reserved. {year}",
-      "credit": "Site design by @akwebd"
+      "copyright": "© {year} Anna Vershkova. All rights reserved.",
+      "credit": "Site design by @akwebd",
+      "associationsTitle": "Professional Associations",
+      "associationAkpn": "ACBS (Association for Contextual Behavioral Science)",
+      "associationIsst": "ISST (International Society of Schema Therapy)",
+      "contactsTitle": "Contacts",
+      "navTitle": "Navigation"
+    },
+    "problems": {
+      "title": "Areas of Practice",
+      "subtitle": "Mindful therapy and coaching tailored to your individual features",
+      "items": {
+        "avoidance": {
+          "title": "Stuckness & Avoidance",
+          "desc": "When it's hard to start even simple tasks, and procrastination leads to intense feelings of guilt."
+        },
+        "neurodiversity": {
+          "title": "Adult ADHD & ASD",
+          "desc": "Help with adaptation, structuring your life without self-violence, and accepting your features."
+        },
+        "procrastination": {
+          "title": "Procrastination",
+          "desc": "Exploring the root causes of putting things off and finding sustainable ways to move forward."
+        },
+        "rpp": {
+          "title": "Eating Disorders (ED)",
+          "desc": "Gentle work with emotional eating, body image, and building a healthy relationship with food."
+        },
+        "anxiety": {
+          "title": "Anxiety & Perfectionism",
+          "desc": "Freeing yourself from constant worry, fear of failure, and imposter syndrome."
+        },
+        "burnout": {
+          "title": "Emotional Burnout",
+          "desc": "Restoring resources in case of chronic fatigue, loss of motivation, and clear direction."
+        }
+      }
+    },
+    "about": {
+      "title": "About Me & My Approach",
+      "introTitle": "Hi, I'm Anna",
+      "p1": "I am a clinical psychologist and coach. My path into the profession began with a personal story. Since childhood, I faced procrastination and the typical 'smart but lazy' syndrome. Later, I learned about my ADHD and ASD, which helped me rebuild my life and find gentle, working methods.",
+      "p2": "In my work, I combine evidence-based approaches: schema therapy, acceptance and commitment therapy (ACT), and RO DBT. I don't suggest 'breaking' yourself to fit society's standards, but help you build a life where your features are comfortable.",
+      "p3": "I regularly undergo supervision and intervision, am a member of professional associations, and strictly adhere to the psychologist's ethical code.",
+      "educationTitle": "Education & Qualifications",
+      "eduItems": [
+        {
+          "year": "2019-2023",
+          "title": "VolSU",
+          "desc": "Clinical Psychology (Bachelor's Degree)"
+        },
+        {
+          "year": "2023-2024",
+          "title": "Moscow Institute of Schema Therapy",
+          "desc": "International training program for schema therapists (ISST accreditation)"
+        },
+        {
+          "year": "2024",
+          "title": "Acceptance and Commitment Therapy (ACT)",
+          "desc": "Basic practical course on ACT therapy"
+        },
+        {
+          "year": "2025",
+          "title": "Radically Open DBT (RO DBT)",
+          "desc": "Specifics of working with overcontrol and eating disorders"
+        }
+      ]
+    },
+    "services": {
+      "title": "Formats & Prices",
+      "subtitle": "Choose the format that works for you. All sessions are conducted online via a secure platform.",
+      "duration": "Duration",
+      "format": "Format",
+      "formatOnline": "Online (Zoom / Telegram)",
+      "bookBtn": "Book a session",
+      "minutes": "min",
+      "currency": "RUB",
+      "items": {
+        "individual": {
+          "title": "Individual Therapy",
+          "desc": "Deep processing of requests using schema therapy and ACT. Suitable for working with anxiety, burnout, eating disorders, and relationship difficulties.",
+          "price": "3,000",
+          "durationVal": "50 minutes"
+        },
+        "coaching": {
+          "title": "ADHD Coaching",
+          "desc": "A short-term program to develop self-regulation, time management, and organization skills, tailored specifically to how the ADHD brain works.",
+          "price": "3,000",
+          "durationVal": "50 minutes"
+        },
+        "solanto": {
+          "title": "Solanto Protocol",
+          "desc": "A specialized skills-training program for adults with ADHD. Includes a diagnostic session, identification of cognitive barriers, and step-by-step introduction of practical habits.",
+          "price": "10,000",
+          "durationVal": "4 sessions"
+        }
+      }
+    },
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "subtitle": "Answers to popular questions about the process of therapy, ADHD-coaching, and booking details",
+      "items": {
+        "q1": {
+          "question": "How do I know if I need coaching or therapy?",
+          "answer": "Coaching focuses on self-organization, time management, setting up a daily routine, and overcoming procrastination 'here and now'. Therapy works with deeper causes: trauma, negative core beliefs, shame, guilt, and emotional states. For ADHD, it is often most effective to combine them or start with coaching."
+        },
+        "q2": {
+          "question": "Is the online format suitable for ADHD clients?",
+          "answer": "Yes, the online format works great. You don't need to waste resources on travel and preparation; the session takes place in a familiar and safe home environment. To maintain focus, we use interactive materials and a clear session structure."
+        },
+        "q3": {
+          "question": "How many sessions will I need?",
+          "answer": "It depends on the request. For a skills-based program (ADHD coaching or Solanto protocol), 4 to 12 sessions are usually required. For deeper changes in schema therapy, work can last from 6 months to a year. We will agree on the goals and estimated duration during the first session."
+        },
+        "q4": {
+          "question": "Do you diagnose ADHD or ASD?",
+          "answer": "No, a clinical psychologist cannot make an official medical diagnosis or prescribe medication (this is done by a psychiatrist). However, I conduct a detailed clinical interview and screening, help you understand your traits, and can recommend an ADHD-friendly psychiatrist for diagnosis if needed."
+        },
+        "q5": {
+          "question": "What if I am late or forget about a session?",
+          "answer": "People with ADHD often experience time blindness. I treat this with full understanding. The system automatically sends reminders before the session. If you still miss a meeting, we will discuss gentle coping strategies and adjust reminders."
+        }
+      }
+    },
+    "contact": {
+      "title": "Book a Consultation",
+      "subtitle": "Leave a request and I will contact you shortly to discuss details and agree on the session time.",
+      "nameLabel": "Your Name",
+      "namePlaceholder": "John",
+      "contactLabel": "Phone, Telegram, or WhatsApp",
+      "contactPlaceholder": "+1 (999) 000-00-00 or @username",
+      "timeLabel": "Preferred contact time",
+      "timePlaceholder": "Select time...",
+      "timeMorning": "Morning (9:00 - 12:00)",
+      "timeAfternoon": "Afternoon (12:00 - 17:00)",
+      "timeEvening": "Evening (17:00 - 21:00)",
+      "submitBtn": "Send Request",
+      "sending": "Sending...",
+      "successTitle": "Request sent successfully!",
+      "successDesc": "Thank you! I will contact you during your preferred time window.",
+      "validation": {
+        "nameMin": "Please enter your name",
+        "contactMin": "Please leave your contact info",
+        "timeRequired": "Please select a preferred contact time"
+      }
     }
   },
   "Auth": {

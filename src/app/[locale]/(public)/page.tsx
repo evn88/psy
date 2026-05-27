@@ -1,9 +1,14 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import styles from '@/styles/landing/landing.module.css';
-import { DevBanner } from './_components/landing/dev-banner';
-import { Footer } from './_components/landing/footer';
+import Header from './_components/landing/header';
 import { Hero } from './_components/landing/hero';
+import { Problems } from './_components/landing/problems';
+import { About } from './_components/landing/about';
+import { Services } from './_components/landing/services';
+import { FAQ } from './_components/landing/faq';
+import { ContactForm } from './_components/landing/contact-form';
+import { Footer } from './_components/landing/footer';
 import { defaultLocale, isLocale } from '@/i18n/config';
 import { JsonLd } from '@/components/json-ld';
 import {
@@ -74,14 +79,13 @@ const HomePage = async ({ params }: HomePageProps) => {
     <div className={styles.landingWrapper}>
       <JsonLd data={structuredData} />
       {/*<ThemeToggle />*/}
+      <Header />
       <Hero />
-      {/*<About />*/}
-      {/*<Problems />*/}
-      {/*<Services />*/}
-      {/*<HowItWorks />*/}
-      {/*<Testimonials />*/}
-      {/*<FAQ />*/}
-      <DevBanner />
+      <Problems />
+      <About />
+      <Services />
+      <FAQ />
+      <ContactForm />
       <Footer />
     </div>
   );
