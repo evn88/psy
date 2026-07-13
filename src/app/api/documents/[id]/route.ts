@@ -37,6 +37,15 @@ async function getHandler(req: NextRequest, { params }: RouteContext) {
       headers: { Authorization: `Bearer ${process.env.PRIVATE_BLOB_READ_WRITE_TOKEN}` }
     });
 
+    if (response.status === 404 || response.status === 403) {
+      console.error('Vercel Blob fetch error: File missing in storage. Deleting DB record.');
+      await prisma.clientDocument.delete({ where: { id } });
+      return NextResponse.json(
+        { error: 'Файл не найден в хранилище. Запись удалена.' },
+        { status: 404 }
+      );
+    }
+
     if (!response.ok) {
       console.error('Vercel Blob fetch error:', response.statusText);
       return NextResponse.json({ error: 'Failed to access file' }, { status: 502 });

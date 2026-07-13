@@ -14,15 +14,21 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MoreHorizontal, Trash2, CalendarCheck } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { MoreHorizontal, Trash2, CalendarCheck, Users } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { useState, useTransition } from 'react';
-import { deleteClientUser } from '../_actions/clients.actions';
+import { deleteClientUser, assignClientToGroup } from '../_actions/clients.actions';
 import { toast } from 'sonner';
 
 interface ClientItem {
@@ -33,12 +39,26 @@ interface ClientItem {
   role: string;
   intakesCount: number;
   fmtCreatedAt: string;
+  clientGroupId: string | null;
+  clientGroup: { id: string; name: string; color: string | null } | null;
 }
 
-export function ClientsTable({ clients }: { clients: ClientItem[] }) {
+interface GroupItem {
+  id: string;
+  name: string;
+  color: string | null;
+}
+
+import { Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+
+export function ClientsTable({ clients, groups }: { clients: ClientItem[]; groups: GroupItem[] }) {
   const t = useTranslations('Admin.clients.table');
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleDelete = (id: string, name: string | null) => {
     if (
@@ -58,87 +78,190 @@ export function ClientsTable({ clients }: { clients: ClientItem[] }) {
     });
   };
 
+  const handleAssignGroup = (userId: string, groupId: string | null) => {
+    startTransition(async () => {
+      const res = await assignClientToGroup(userId, groupId);
+      if (res.success) {
+        toast.success('Группа изменена');
+        router.refresh();
+      } else {
+        toast.error(res.error || 'Ошибка при изменении группы');
+      }
+    });
+  };
+
+  const filteredClients = clients.filter(c => {
+    if (selectedGroupId && selectedGroupId !== 'none' && c.clientGroupId !== selectedGroupId)
+      return false;
+    if (selectedGroupId === 'none' && c.clientGroupId) return false;
+
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const matchesName = c.name?.toLowerCase().includes(q);
+      const matchesEmail = c.email?.toLowerCase().includes(q);
+      if (!matchesName && !matchesEmail) return false;
+    }
+
+    return true;
+  });
+
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[50px]"></TableHead>
-            <TableHead>{t('name')}</TableHead>
-            <TableHead>{t('email')}</TableHead>
-            <TableHead className="text-center">{t('intakesCount')}</TableHead>
-            <TableHead>{t('registeredAt')}</TableHead>
-            <TableHead className="text-right">{t('actions')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {clients.length === 0 ? (
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-wrap gap-2">
+          <Badge
+            variant={selectedGroupId === null ? 'default' : 'outline'}
+            className="cursor-pointer whitespace-nowrap"
+            onClick={() => setSelectedGroupId(null)}
+          >
+            Все
+          </Badge>
+          <Badge
+            variant={selectedGroupId === 'none' ? 'default' : 'outline'}
+            className="cursor-pointer whitespace-nowrap"
+            onClick={() => setSelectedGroupId('none')}
+          >
+            Без группы
+          </Badge>
+          {groups.map(g => (
+            <Badge
+              key={g.id}
+              variant={selectedGroupId === g.id ? 'default' : 'outline'}
+              className="cursor-pointer whitespace-nowrap"
+              onClick={() => setSelectedGroupId(g.id)}
+              style={{
+                borderColor: g.color || undefined,
+                backgroundColor: selectedGroupId === g.id ? g.color || undefined : undefined
+              }}
+            >
+              {g.name}
+            </Badge>
+          ))}
+        </div>
+
+        <div className="relative w-full sm:max-w-sm shrink-0">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder={t('searchPlaceholder') || 'Поиск...'}
+            className="pl-9"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
-                Нет данных
-              </TableCell>
+              <TableHead className="w-[50px]"></TableHead>
+              <TableHead>{t('name')}</TableHead>
+              <TableHead>{t('email')}</TableHead>
+              <TableHead>Группа</TableHead>
+              <TableHead className="text-center">{t('intakesCount')}</TableHead>
+              <TableHead>{t('registeredAt')}</TableHead>
+              <TableHead className="text-right">{t('actions')}</TableHead>
             </TableRow>
-          ) : (
-            clients.map(client => (
-              <TableRow key={client.id}>
-                <TableCell>
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={client.image || ''} />
-                    <AvatarFallback>{client.name?.[0]?.toUpperCase() || '?'}</AvatarFallback>
-                  </Avatar>
-                </TableCell>
-                <TableCell className="font-semibold cursor-pointer">
-                  <Link
-                    href={`/admin/clients/${client.id}`}
-                    className="hover:underline text-primary"
-                  >
-                    {client.name || 'Без имени'}
-                  </Link>
-                </TableCell>
-                <TableCell>{client.email}</TableCell>
-                <TableCell className="text-center">
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-semibold ${client.intakesCount > 0 ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}
-                  >
-                    {client.intakesCount}
-                  </span>
-                </TableCell>
-                <TableCell className="text-muted-foreground">{client.fmtCreatedAt}</TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0" disabled={isPending}>
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-
-                      {/* TODO: Implement real schedule logic later */}
-                      <DropdownMenuItem
-                        onClick={() => toast.info('Будет реализовано в модуле расписания')}
-                      >
-                        <CalendarCheck className="mr-2 h-4 w-4" />
-                        {t('schedule')}
-                      </DropdownMenuItem>
-
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => handleDelete(client.id, client.name)}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        {t('delete')}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+          </TableHeader>
+          <TableBody>
+            {filteredClients.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                  Нет данных
                 </TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            ) : (
+              filteredClients.map(client => (
+                <TableRow key={client.id}>
+                  <TableCell>
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={client.image || ''} />
+                      <AvatarFallback>{client.name?.[0]?.toUpperCase() || '?'}</AvatarFallback>
+                    </Avatar>
+                  </TableCell>
+                  <TableCell className="font-semibold cursor-pointer">
+                    <Link
+                      href={`/admin/clients/${client.id}`}
+                      className="hover:underline text-primary"
+                    >
+                      {client.name || 'Без имени'}
+                    </Link>
+                  </TableCell>
+                  <TableCell>{client.email}</TableCell>
+                  <TableCell>
+                    {client.clientGroup ? (
+                      <Badge
+                        variant="outline"
+                        style={{
+                          borderColor: client.clientGroup.color || undefined,
+                          color: client.clientGroup.color || undefined
+                        }}
+                      >
+                        {client.clientGroup.name}
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Нет</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-semibold ${client.intakesCount > 0 ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}
+                    >
+                      {client.intakesCount}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{client.fmtCreatedAt}</TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0" disabled={isPending}>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+
+                        <DropdownMenuSub>
+                          <DropdownMenuSubTrigger>
+                            <Users className="mr-2 h-4 w-4" />
+                            Группа
+                          </DropdownMenuSubTrigger>
+                          <DropdownMenuSubContent>
+                            <DropdownMenuRadioGroup
+                              value={client.clientGroupId || 'none'}
+                              onValueChange={val =>
+                                handleAssignGroup(client.id, val === 'none' ? null : val)
+                              }
+                            >
+                              <DropdownMenuRadioItem value="none">Без группы</DropdownMenuRadioItem>
+                              {groups.map(g => (
+                                <DropdownMenuRadioItem key={g.id} value={g.id}>
+                                  {g.name}
+                                </DropdownMenuRadioItem>
+                              ))}
+                            </DropdownMenuRadioGroup>
+                          </DropdownMenuSubContent>
+                        </DropdownMenuSub>
+
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => handleDelete(client.id, client.name)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          {t('delete')}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

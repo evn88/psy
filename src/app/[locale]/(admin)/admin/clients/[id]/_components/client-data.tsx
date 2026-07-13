@@ -43,6 +43,7 @@ interface ClientDataProps {
     language: string;
     theme: string;
     timezone: string | null;
+    lastLogin?: { timestamp: string; ip: string | null; userAgent: string | null } | null;
     consents: Consent[];
   };
 }
@@ -80,6 +81,13 @@ export function ClientData({ user }: ClientDataProps) {
               label={t('prefs')}
               value={`${user.language.toUpperCase()} / ${user.theme} / ${user.timezone || '—'}`}
             />
+            {user.lastLogin && (
+              <DataItem
+                icon={<Globe className="h-4 w-4 text-muted-foreground" />}
+                label="Последний вход"
+                value={`${new Date(user.lastLogin.timestamp).toLocaleString('ru-RU')} ${user.lastLogin.ip ? `(${user.lastLogin.ip})` : ''}`}
+              />
+            )}
           </div>
         </CardContent>
       </Card>

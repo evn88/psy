@@ -4,6 +4,7 @@ import { del } from '@vercel/blob';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
+import { EventType, EventStatus } from '@prisma/client';
 
 /**
  * Удалить все клиентские данные (но не самого пользователя) или удаляет и пользователя?
@@ -135,7 +136,11 @@ export async function deleteClientDocument(
     const document = await prisma.clientDocument.findUnique({ where: { id } });
     if (!document) return { success: false, error: 'Not found' };
 
-    await del(document.url, { token: process.env.PRIVATE_BLOB_READ_WRITE_TOKEN });
+    try {
+      await del(document.url, { token: process.env.PRIVATE_BLOB_READ_WRITE_TOKEN });
+    } catch (err) {
+      console.warn('Failed to delete file from Vercel Blob, it might be already missing:', err);
+    }
     await prisma.clientDocument.delete({ where: { id } });
 
     revalidatePath(`/admin/clients/${clientId}`);
@@ -167,6 +172,171 @@ export async function renameClientDocument(
     return { success: true };
   } catch (error) {
     console.error('Failed to rename client document:', error);
+    return { success: false, error: 'Internal Server Error' };
+  }
+}
+
+export async function updateClientAvatar(userId: string, imageUrl: string) {
+  try {
+    const session = await auth();
+    if (session?.user?.role !== 'ADMIN') throw new Error('Unauthorized');
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { image: imageUrl }
+    });
+
+    revalidatePath(`/admin/clients/${userId}`);
+    revalidatePath('/admin/clients');
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to update avatar:', error);
+    return { success: false, error: 'Internal Server Error' };
+  }
+}
+
+export async function assignClientToGroup(userId: string, groupId: string | null) {
+  try {
+    const session = await auth();
+    if (session?.user?.role !== 'ADMIN') throw new Error('Unauthorized');
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { clientGroupId: groupId }
+    });
+
+    revalidatePath(`/admin/clients/${userId}`);
+    revalidatePath('/admin/clients');
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to assign group:', error);
+    return { success: false, error: 'Internal Server Error' };
+  }
+}
+
+export async function createClientGroup(name: string, color: string | null) {
+  try {
+    const session = await auth();
+    if (session?.user?.role !== 'ADMIN') throw new Error('Unauthorized');
+
+    await prisma.clientGroup.create({
+      data: { name, color }
+    });
+
+    revalidatePath('/admin/clients');
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to create group:', error);
+    return { success: false, error: 'Internal Server Error' };
+  }
+}
+
+export async function addClientEvent(
+  userId: string,
+  data: { title: string; start: Date; end: Date; type: EventType; status: EventStatus }
+) {
+  try {
+    const session = await auth();
+    if (session?.user?.role !== 'ADMIN') throw new Error('Unauthorized');
+    const authorId = session.user.id;
+    if (!authorId) throw new Error('Unauthorized');
+
+    await prisma.event.create({
+      data: {
+        userId,
+        authorId,
+        title: data.title,
+        start: data.start,
+        end: data.end,
+        type: data.type,
+        status: data.status
+      }
+    });
+
+    revalidatePath(`/admin/clients/${userId}`);
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to add event:', error);
+    return { success: false, error: 'Internal Server Error' };
+  }
+}
+
+export async function updateClientEvent(
+  eventId: string,
+  userId: string,
+  data: { title: string; start: Date; end: Date; type: EventType; status: EventStatus }
+) {
+  try {
+    const session = await auth();
+    if (session?.user?.role !== 'ADMIN') throw new Error('Unauthorized');
+
+    await prisma.event.update({
+      where: { id: eventId },
+      data: {
+        title: data.title,
+        start: data.start,
+        end: data.end,
+        type: data.type,
+        status: data.status
+      }
+    });
+
+    revalidatePath(`/admin/clients/${userId}`);
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to update event:', error);
+    return { success: false, error: 'Internal Server Error' };
+  }
+}
+
+export async function deleteClientEvent(eventId: string, userId: string) {
+  try {
+    const session = await auth();
+    if (session?.user?.role !== 'ADMIN') throw new Error('Unauthorized');
+
+    await prisma.event.delete({
+      where: { id: eventId }
+    });
+
+    revalidatePath(`/admin/clients/${userId}`);
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to delete event:', error);
+    return { success: false, error: 'Internal Server Error' };
+  }
+}
+
+export async function updateClientGroup(id: string, name: string, color: string | null) {
+  try {
+    const session = await auth();
+    if (session?.user?.role !== 'ADMIN') throw new Error('Unauthorized');
+
+    await prisma.clientGroup.update({
+      where: { id },
+      data: { name, color }
+    });
+
+    revalidatePath('/admin/clients');
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to update group:', error);
+    return { success: false, error: 'Internal Server Error' };
+  }
+}
+
+export async function deleteClientGroup(id: string) {
+  try {
+    const session = await auth();
+    if (session?.user?.role !== 'ADMIN') throw new Error('Unauthorized');
+
+    await prisma.clientGroup.delete({
+      where: { id }
+    });
+
+    revalidatePath('/admin/clients');
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to delete group:', error);
     return { success: false, error: 'Internal Server Error' };
   }
 }
