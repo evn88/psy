@@ -63,7 +63,7 @@ export function IntakeResultsModal({ intakeId, completedAt }: IntakeResultsModal
       <UI_DialogTrigger asChild>
         <Button
           variant="outline"
-          className="h-11 rounded-xl px-5 font-semibold gap-2 border-border/80 hover:bg-background transition-all"
+          className="h-10 rounded-xl px-5 font-semibold gap-2 border-border/80 hover:bg-background transition-all"
         >
           <FileText className="h-4 w-4 text-primary" />
           {ts('viewResults')}

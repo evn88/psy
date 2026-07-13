@@ -214,7 +214,7 @@ export function IntakeWizardModal({ triggerText }: { triggerText?: string }) {
       <DialogTrigger asChild>
         <Button
           variant="default"
-          className="h-11 rounded-xl shadow-md hover:shadow-lg transition-all font-semibold"
+          className="h-10 rounded-xl shadow-md hover:shadow-lg transition-all font-semibold"
         >
           {triggerText || t('trigger')}
         </Button>

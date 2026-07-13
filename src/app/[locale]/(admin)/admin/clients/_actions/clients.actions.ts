@@ -136,7 +136,11 @@ export async function deleteClientDocument(
     const document = await prisma.clientDocument.findUnique({ where: { id } });
     if (!document) return { success: false, error: 'Not found' };
 
-    await del(document.url, { token: process.env.PRIVATE_BLOB_READ_WRITE_TOKEN });
+    try {
+      await del(document.url, { token: process.env.PRIVATE_BLOB_READ_WRITE_TOKEN });
+    } catch (err) {
+      console.warn('Failed to delete file from Vercel Blob, it might be already missing:', err);
+    }
     await prisma.clientDocument.delete({ where: { id } });
 
     revalidatePath(`/admin/clients/${clientId}`);

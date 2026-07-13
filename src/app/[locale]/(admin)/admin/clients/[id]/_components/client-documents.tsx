@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef, useTransition, useCallback } from 'react';
+import { useState, useEffect, useRef, useTransition, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -318,7 +319,14 @@ const FileRow = ({
 };
 
 export const ClientDocuments = ({ clientId, documents: initialDocs }: Props) => {
+  const router = useRouter();
   const [docs, setDocs] = useState(initialDocs);
+
+  // Синхронизация данных с сервера при возврате на вкладку или после router.refresh()
+  useEffect(() => {
+    setDocs(initialDocs);
+  }, [initialDocs]);
+
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -361,6 +369,7 @@ export const ClientDocuments = ({ clientId, documents: initialDocs }: Props) => 
         }
 
         toast.success('Файл загружен и зашифрован');
+        router.refresh(); // Refresh server data so it doesn't disappear on remount
         setDocs(prev => [
           {
             id: data.id,
@@ -382,7 +391,7 @@ export const ClientDocuments = ({ clientId, documents: initialDocs }: Props) => 
         if (fileInputRef.current) fileInputRef.current.value = '';
       }
     },
-    [clientId]
+    [clientId, router]
   );
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
