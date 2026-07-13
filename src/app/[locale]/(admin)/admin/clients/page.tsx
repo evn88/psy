@@ -63,39 +63,19 @@ export default async function AdminClientsPage() {
 
         <TabsContent value="clients">
           <Card>
-            <CardHeader className="pb-4">
-              <div className="flex justify-between items-center">
-                <CardTitle>{t('table.intakesCount')}</CardTitle>
-                {/* Simple visual search placeholder, actual client-side filtering can be added to clients-table if needed */}
-                <div className="relative w-64">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="search"
-                    placeholder={t('table.searchPlaceholder')}
-                    className="pl-9 h-9"
-                    disabled
-                  />
-                </div>
+            <CardHeader className="border-b pb-4">
+              <div className="flex h-10 items-center">
+                <CardTitle>Список клиентов</CardTitle>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               <ClientsTable clients={formattedClients} groups={groups} />
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="groups">
-          <Card>
-            <CardHeader>
-              <CardTitle>Управление группами</CardTitle>
-              <CardDescription>
-                Создавайте и редактируйте группы для удобной классификации клиентов.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ClientGroupsTable groups={groups} />
-            </CardContent>
-          </Card>
+          <ClientGroupsTable groups={groups} />
         </TabsContent>
       </Tabs>
     </div>

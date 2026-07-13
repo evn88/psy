@@ -34,6 +34,7 @@ import {
   FormMessage
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   createClientGroup,
   updateClientGroup,
@@ -126,139 +127,142 @@ export function ClientGroupsTable({ groups }: { groups: ClientGroup[] }) {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">Управление группами</h3>
-        <Button onClick={openAddDialog}>
-          <Plus className="h-4 w-4 mr-2" /> Создать группу
-        </Button>
-      </div>
-
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Цвет</TableHead>
-              <TableHead>Название группы</TableHead>
-              <TableHead className="text-right">Действия</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {groups.length === 0 ? (
+    <Card>
+      <CardHeader className="border-b pb-4">
+        <div className="flex h-10 justify-between items-center">
+          <CardTitle>Управление группами</CardTitle>
+          <Button onClick={openAddDialog}>
+            <Plus className="h-4 w-4 mr-2" /> Создать группу
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-6">
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                  Нет созданных групп.
-                </TableCell>
+                <TableHead>Цвет</TableHead>
+                <TableHead>Название группы</TableHead>
+                <TableHead className="text-right">Действия</TableHead>
               </TableRow>
-            ) : (
-              groups.map(group => (
-                <TableRow key={group.id}>
-                  <TableCell>
-                    {group.color && (
-                      <div
-                        className="w-4 h-4 rounded-full border border-border shadow-sm"
-                        style={{ backgroundColor: group.color }}
-                      />
-                    )}
-                  </TableCell>
-                  <TableCell className="font-medium">{group.name}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openEditDialog(group)}
-                        disabled={isPending}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => handleDelete(group.id)}
-                        disabled={isPending}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+            </TableHeader>
+            <TableBody>
+              {groups.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                    Нет созданных групп.
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>{editingGroup ? 'Редактировать группу' : 'Создать группу'}</DialogTitle>
-            <DialogDescription>
-              Задайте название и цвет для классификации клиентов.
-            </DialogDescription>
-          </DialogHeader>
-
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Название группы</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Например: VIP" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="color"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Цвет (HEX)</FormLabel>
-                    <FormControl>
-                      <div className="flex gap-2">
-                        <Input
-                          type="color"
-                          className="w-12 p-1 h-10"
-                          {...field}
-                          value={field.value || '#000000'}
+              ) : (
+                groups.map(group => (
+                  <TableRow key={group.id}>
+                    <TableCell>
+                      {group.color && (
+                        <div
+                          className="w-4 h-4 rounded-full border border-border shadow-sm"
+                          style={{ backgroundColor: group.color }}
                         />
-                        <Input
-                          type="text"
-                          placeholder="#3b82f6"
-                          {...field}
-                          value={field.value || ''}
-                        />
+                      )}
+                    </TableCell>
+                    <TableCell className="font-medium">{group.name}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEditDialog(group)}
+                          disabled={isPending}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => handleDelete(group.id)}
+                          disabled={isPending}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
 
-              <DialogFooter className="mt-6 flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setDialogOpen(false)}
-                  disabled={isPending}
-                >
-                  Отмена
-                </Button>
-                <Button type="submit" disabled={isPending}>
-                  {isPending ? 'Сохранение...' : 'Сохранить'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-    </div>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="sm:max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle>{editingGroup ? 'Редактировать группу' : 'Создать группу'}</DialogTitle>
+              <DialogDescription>
+                Задайте название и цвет для классификации клиентов.
+              </DialogDescription>
+            </DialogHeader>
+
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Название группы</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Например: VIP" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="color"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Цвет (HEX)</FormLabel>
+                      <FormControl>
+                        <div className="flex gap-2">
+                          <Input
+                            type="color"
+                            className="w-12 p-1 h-10"
+                            {...field}
+                            value={field.value || '#000000'}
+                          />
+                          <Input
+                            type="text"
+                            placeholder="#3b82f6"
+                            {...field}
+                            value={field.value || ''}
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <DialogFooter className="mt-6 flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setDialogOpen(false)}
+                    disabled={isPending}
+                  >
+                    Отмена
+                  </Button>
+                  <Button type="submit" disabled={isPending}>
+                    {isPending ? 'Сохранение...' : 'Сохранить'}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+      </CardContent>
+    </Card>
   );
 }
