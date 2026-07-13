@@ -4,7 +4,7 @@ import Credentials from 'next-auth/providers/credentials';
 import WebAuthn from 'next-auth/providers/webauthn';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import { Role } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import * as bcrypt from '@node-rs/bcrypt';
 import { cookies, headers } from 'next/headers';
 import type { Adapter } from 'next-auth/adapters';
 import { z } from 'zod';

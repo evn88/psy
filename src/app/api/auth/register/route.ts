@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { defaultLocale } from '@/i18n/config';
 import prisma from '@/lib/prisma';
-import bcrypt from 'bcryptjs';
+import * as bcrypt from '@node-rs/bcrypt';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
 import { headers } from 'next/headers';

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
-import bcrypt from 'bcryptjs';
+import * as bcrypt from '@node-rs/bcrypt';
 import { z } from 'zod';
 import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 

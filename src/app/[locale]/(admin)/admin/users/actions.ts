@@ -2,7 +2,7 @@
 
 import { auth } from '@/auth';
 import { Role } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import * as bcrypt from '@node-rs/bcrypt';
 import { revalidatePath } from 'next/cache';
 import prisma from '@/lib/prisma';
 import { isValidTimeZone } from '@/lib/timezone';
