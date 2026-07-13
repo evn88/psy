@@ -52,8 +52,6 @@ model User {
   surveyComments            SurveyComment[]
   systemLogs                SystemLogEntry[]
   loginHistory              UserLoginHistory[]
-  clientGroupId             String?
-  clientGroup               ClientGroup?             @relation(fields: [clientGroupId], references: [id])
 }
 
 /// Подписка на Web Push уведомления (PWA)
@@ -707,12 +705,4 @@ enum SystemLogLevel {
   INFO
   WARN
   ERROR
-}
-
-model ClientGroup {
-  id        String   @id @default(cuid())
-  name      String
-  color     String?
-  createdAt DateTime @default(now())
-  users     User[]
 }

@@ -14,15 +14,21 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MoreHorizontal, Trash2, CalendarCheck } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { MoreHorizontal, Trash2, CalendarCheck, Users } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { useState, useTransition } from 'react';
-import { deleteClientUser } from '../_actions/clients.actions';
+import { deleteClientUser, assignClientToGroup } from '../_actions/clients.actions';
 import { toast } from 'sonner';
 
 interface ClientItem {
@@ -33,12 +39,22 @@ interface ClientItem {
   role: string;
   intakesCount: number;
   fmtCreatedAt: string;
+  clientGroupId: string | null;
+  clientGroup: { id: string; name: string; color: string | null } | null;
 }
 
-export function ClientsTable({ clients }: { clients: ClientItem[] }) {
+interface GroupItem {
+  id: string;
+  name: string;
+  color: string | null;
+}
+
+export function ClientsTable({ clients, groups }: { clients: ClientItem[]; groups: GroupItem[] }) {
   const t = useTranslations('Admin.clients.table');
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
 
   const handleDelete = (id: string, name: string | null) => {
     if (
@@ -58,28 +74,77 @@ export function ClientsTable({ clients }: { clients: ClientItem[] }) {
     });
   };
 
+  const handleAssignGroup = (userId: string, groupId: string | null) => {
+    startTransition(async () => {
+      const res = await assignClientToGroup(userId, groupId);
+      if (res.success) {
+        toast.success('Группа изменена');
+        router.refresh();
+      } else {
+        toast.error(res.error || 'Ошибка при изменении группы');
+      }
+    });
+  };
+
+  const filteredClients = clients.filter(c => {
+    if (!selectedGroupId) return true;
+    if (selectedGroupId === 'none') return !c.clientGroupId;
+    return c.clientGroupId === selectedGroupId;
+  });
+
   return (
     <div className="rounded-md border">
+      <div className="p-4 border-b bg-muted/20 flex gap-2 overflow-x-auto">
+        <Badge
+          variant={selectedGroupId === null ? 'default' : 'outline'}
+          className="cursor-pointer"
+          onClick={() => setSelectedGroupId(null)}
+        >
+          Все
+        </Badge>
+        <Badge
+          variant={selectedGroupId === 'none' ? 'default' : 'outline'}
+          className="cursor-pointer"
+          onClick={() => setSelectedGroupId('none')}
+        >
+          Без группы
+        </Badge>
+        {groups.map(g => (
+          <Badge
+            key={g.id}
+            variant={selectedGroupId === g.id ? 'default' : 'outline'}
+            className="cursor-pointer"
+            onClick={() => setSelectedGroupId(g.id)}
+            style={{
+              borderColor: g.color || undefined,
+              backgroundColor: selectedGroupId === g.id ? g.color || undefined : undefined
+            }}
+          >
+            {g.name}
+          </Badge>
+        ))}
+      </div>
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead className="w-[50px]"></TableHead>
             <TableHead>{t('name')}</TableHead>
             <TableHead>{t('email')}</TableHead>
+            <TableHead>Группа</TableHead>
             <TableHead className="text-center">{t('intakesCount')}</TableHead>
             <TableHead>{t('registeredAt')}</TableHead>
             <TableHead className="text-right">{t('actions')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {clients.length === 0 ? (
+          {filteredClients.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+              <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
                 Нет данных
               </TableCell>
             </TableRow>
           ) : (
-            clients.map(client => (
+            filteredClients.map(client => (
               <TableRow key={client.id}>
                 <TableCell>
                   <Avatar className="h-8 w-8">
@@ -96,6 +161,21 @@ export function ClientsTable({ clients }: { clients: ClientItem[] }) {
                   </Link>
                 </TableCell>
                 <TableCell>{client.email}</TableCell>
+                <TableCell>
+                  {client.clientGroup ? (
+                    <Badge
+                      variant="outline"
+                      style={{
+                        borderColor: client.clientGroup.color || undefined,
+                        color: client.clientGroup.color || undefined
+                      }}
+                    >
+                      {client.clientGroup.name}
+                    </Badge>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Нет</span>
+                  )}
+                </TableCell>
                 <TableCell className="text-center">
                   <span
                     className={`px-2 py-1 rounded-full text-xs font-semibold ${client.intakesCount > 0 ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}
@@ -115,13 +195,27 @@ export function ClientsTable({ clients }: { clients: ClientItem[] }) {
                       <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
                       <DropdownMenuSeparator />
 
-                      {/* TODO: Implement real schedule logic later */}
-                      <DropdownMenuItem
-                        onClick={() => toast.info('Будет реализовано в модуле расписания')}
-                      >
-                        <CalendarCheck className="mr-2 h-4 w-4" />
-                        {t('schedule')}
-                      </DropdownMenuItem>
+                      <DropdownMenuSub>
+                        <DropdownMenuSubTrigger>
+                          <Users className="mr-2 h-4 w-4" />
+                          Группа
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent>
+                          <DropdownMenuRadioGroup
+                            value={client.clientGroupId || 'none'}
+                            onValueChange={val =>
+                              handleAssignGroup(client.id, val === 'none' ? null : val)
+                            }
+                          >
+                            <DropdownMenuRadioItem value="none">Без группы</DropdownMenuRadioItem>
+                            {groups.map(g => (
+                              <DropdownMenuRadioItem key={g.id} value={g.id}>
+                                {g.name}
+                              </DropdownMenuRadioItem>
+                            ))}
+                          </DropdownMenuRadioGroup>
+                        </DropdownMenuSubContent>
+                      </DropdownMenuSub>
 
                       <DropdownMenuSeparator />
                       <DropdownMenuItem

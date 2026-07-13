@@ -1,0 +1,23 @@
+--- prisma/schema.prisma
++++ prisma/schema.prisma
+@@ -52,6 +52,8 @@
+   surveyComments            SurveyComment[]
+   systemLogs                SystemLogEntry[]
+   loginHistory              UserLoginHistory[]
++  clientGroupId             String?
++  clientGroup               ClientGroup?             @relation(fields: [clientGroupId], references: [id])
+ }
+ 
+ /// Подписка на Web Push уведомления (PWA)
+@@ -707,3 +709,10 @@
+   WARN
+   ERROR
+ }
++
++model ClientGroup {
++  id        String   @id @default(cuid())
++  name      String
++  color     String?
++  createdAt DateTime @default(now())
++  users     User[]
++}
