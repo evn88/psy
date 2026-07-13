@@ -301,3 +301,38 @@ export async function deleteClientEvent(eventId: string, userId: string) {
     return { success: false, error: 'Internal Server Error' };
   }
 }
+
+export async function updateClientGroup(id: string, name: string, color: string | null) {
+  try {
+    const session = await auth();
+    if (session?.user?.role !== 'ADMIN') throw new Error('Unauthorized');
+
+    await prisma.clientGroup.update({
+      where: { id },
+      data: { name, color }
+    });
+
+    revalidatePath('/admin/clients');
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to update group:', error);
+    return { success: false, error: 'Internal Server Error' };
+  }
+}
+
+export async function deleteClientGroup(id: string) {
+  try {
+    const session = await auth();
+    if (session?.user?.role !== 'ADMIN') throw new Error('Unauthorized');
+
+    await prisma.clientGroup.delete({
+      where: { id }
+    });
+
+    revalidatePath('/admin/clients');
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to delete group:', error);
+    return { success: false, error: 'Internal Server Error' };
+  }
+}

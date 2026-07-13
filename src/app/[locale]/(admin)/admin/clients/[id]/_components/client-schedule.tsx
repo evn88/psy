@@ -13,13 +13,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { deleteClientEvent } from '../../_actions/clients.actions';
 import { useTransition } from 'react';
 import { useRouter } from '@/i18n/navigation';
-// Note: In a complete implementation, a real dialog form would be used here.
-// For now, we will add basic functionality.
 
 interface ClientEvent {
   id: string;
@@ -60,22 +58,16 @@ import {
 import { addClientEvent, updateClientEvent } from '../../_actions/clients.actions';
 import type { EventStatus, EventType } from '@prisma/client';
 
-const eventTypeOptions = [
-  'CONSULTATION',
-  'FREE_SLOT',
-  'DAY_OFF',
-  'VACATION',
-  'SICK_LEAVE',
-  'OTHER'
-] as const;
+const eventTypeOptions = ['CONSULTATION', 'OTHER'] as const;
 const eventStatusOptions = ['SCHEDULED', 'CANCELLED', 'COMPLETED', 'PENDING_CONFIRMATION'] as const;
 
 const eventSchema = z.object({
   title: z.string().optional(),
   type: z.enum(eventTypeOptions),
   status: z.enum(eventStatusOptions),
-  start: z.string().min(1, 'Обязательно'),
-  end: z.string().min(1, 'Обязательно')
+  date: z.string().min(1, 'Обязательно'),
+  startTime: z.string().min(1, 'Обязательно'),
+  duration: z.number().min(15, 'Минимум 15 минут')
 });
 
 type EventFormValues = z.infer<typeof eventSchema>;
@@ -93,8 +85,9 @@ export function ClientSchedule({ userId, events }: { userId: string; events: Cli
       title: '',
       type: 'CONSULTATION',
       status: 'SCHEDULED',
-      start: '',
-      end: ''
+      date: '',
+      startTime: '',
+      duration: 60
     }
   });
 
@@ -103,20 +96,28 @@ export function ClientSchedule({ userId, events }: { userId: string; events: Cli
       title: '',
       type: 'CONSULTATION',
       status: 'SCHEDULED',
-      start: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
-      end: format(new Date(Date.now() + 60 * 60 * 1000), "yyyy-MM-dd'T'HH:mm")
+      date: format(new Date(), 'yyyy-MM-dd'),
+      startTime: format(new Date(), 'HH:mm'),
+      duration: 60
     });
     setEditingEvent(null);
     setDialogOpen(true);
   };
 
   const openEditDialog = (event: ClientEvent) => {
+    const d = new Date(event.start);
+    const e = new Date(event.end);
+    const diffMins = Math.round((e.getTime() - d.getTime()) / 60000);
+
     form.reset({
       title: event.title || '',
-      type: event.type as EventType,
+      type: (['CONSULTATION', 'OTHER'].includes(event.type) ? event.type : 'OTHER') as
+        | 'CONSULTATION'
+        | 'OTHER',
       status: event.status as EventStatus,
-      start: format(new Date(event.start), "yyyy-MM-dd'T'HH:mm"),
-      end: format(new Date(event.end), "yyyy-MM-dd'T'HH:mm")
+      date: format(d, 'yyyy-MM-dd'),
+      startTime: format(d, 'HH:mm'),
+      duration: diffMins > 0 ? diffMins : 60
     });
     setEditingEvent(event);
     setDialogOpen(true);
@@ -125,12 +126,15 @@ export function ClientSchedule({ userId, events }: { userId: string; events: Cli
   const onSubmit = (data: EventFormValues) => {
     startTransition(async () => {
       try {
+        const startDate = new Date(`${data.date}T${data.startTime}`);
+        const endDate = new Date(startDate.getTime() + data.duration * 60000);
+
         const payload = {
           title: data.title || '',
           type: data.type as EventType,
           status: data.status as EventStatus,
-          start: new Date(data.start),
-          end: new Date(data.end)
+          start: startDate,
+          end: endDate
         };
 
         if (editingEvent) {
@@ -172,6 +176,25 @@ export function ClientSchedule({ userId, events }: { userId: string; events: Cli
     });
   };
 
+  const handleApprove = (event: ClientEvent) => {
+    startTransition(async () => {
+      const payload = {
+        title: event.title || '',
+        type: event.type as EventType,
+        status: 'SCHEDULED' as EventStatus,
+        start: new Date(event.start),
+        end: new Date(event.end)
+      };
+      const res = await updateClientEvent(event.id, userId, payload);
+      if (res.success) {
+        toast.success('Запись подтверждена');
+        router.refresh();
+      } else {
+        toast.error('Ошибка при подтверждении записи');
+      }
+    });
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'SCHEDULED':
@@ -199,6 +222,14 @@ export function ClientSchedule({ userId, events }: { userId: string; events: Cli
     switch (type) {
       case 'CONSULTATION':
         return 'Консультация';
+      case 'FREE_SLOT':
+        return 'Свободное окно';
+      case 'DAY_OFF':
+        return 'Выходной';
+      case 'VACATION':
+        return 'Отпуск';
+      case 'SICK_LEAVE':
+        return 'Больничный';
       case 'OTHER':
         return 'Другое';
       default:
@@ -206,13 +237,34 @@ export function ClientSchedule({ userId, events }: { userId: string; events: Cli
     }
   };
 
+  const [showPastEvents, setShowPastEvents] = React.useState(false);
+
+  const filteredEvents = React.useMemo(() => {
+    return events.filter(event => {
+      if (showPastEvents) return true;
+      const isPast = new Date(event.end) < new Date();
+      const isCompletedOrCancelled = event.status === 'COMPLETED' || event.status === 'CANCELLED';
+      return !isPast && !isCompletedOrCancelled;
+    });
+  }, [events, showPastEvents]);
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-medium">Записи клиента</h3>
-        <Button onClick={openAddDialog}>
-          <Plus className="h-4 w-4 mr-2" /> Добавить запись
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowPastEvents(!showPastEvents)}
+            className="text-muted-foreground"
+          >
+            {showPastEvents ? 'Скрыть прошедшие' : 'Показать все'}
+          </Button>
+          <Button size="sm" onClick={openAddDialog}>
+            <Plus className="h-4 w-4 mr-2" /> Добавить запись
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-md border">
@@ -227,15 +279,20 @@ export function ClientSchedule({ userId, events }: { userId: string; events: Cli
             </TableRow>
           </TableHeader>
           <TableBody>
-            {events.length === 0 ? (
+            {filteredEvents.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                  У клиента пока нет записей в расписании.
+                  {events.length === 0
+                    ? 'У клиента пока нет записей в расписании.'
+                    : 'Нет активных записей. Нажмите «Показать все», чтобы увидеть историю.'}
                 </TableCell>
               </TableRow>
             ) : (
-              events.map(event => (
-                <TableRow key={event.id}>
+              filteredEvents.map(event => (
+                <TableRow
+                  key={event.id}
+                  className={new Date(event.end) < new Date() ? 'opacity-60 bg-muted/30' : ''}
+                >
                   <TableCell>
                     {format(new Date(event.start), 'd MMM yyyy, HH:mm', { locale: ru })}
                     <span className="text-muted-foreground text-xs ml-2">
@@ -248,6 +305,18 @@ export function ClientSchedule({ userId, events }: { userId: string; events: Cli
                   <TableCell>{getStatusBadge(event.status)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
+                      {event.status === 'PENDING_CONFIRMATION' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-green-600 border-green-600 hover:bg-green-50"
+                          onClick={() => handleApprove(event)}
+                          disabled={isPending}
+                        >
+                          <CheckCircle2 className="h-4 w-4 mr-1" />
+                          Подтвердить
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="icon"
@@ -359,15 +428,15 @@ export function ClientSchedule({ userId, events }: { userId: string; events: Cli
                 )}
               />
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
-                  name="start"
+                  name="date"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Начало</FormLabel>
+                    <FormItem className="col-span-1">
+                      <FormLabel>Дата</FormLabel>
                       <FormControl>
-                        <Input type="datetime-local" {...field} />
+                        <Input type="date" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -376,13 +445,41 @@ export function ClientSchedule({ userId, events }: { userId: string; events: Cli
 
                 <FormField
                   control={form.control}
-                  name="end"
+                  name="startTime"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Окончание</FormLabel>
+                    <FormItem className="col-span-1">
+                      <FormLabel>Время начала</FormLabel>
                       <FormControl>
-                        <Input type="datetime-local" {...field} />
+                        <Input type="time" {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="duration"
+                  render={({ field }) => (
+                    <FormItem className="col-span-1">
+                      <FormLabel>Длительность</FormLabel>
+                      <Select
+                        onValueChange={val => field.onChange(parseInt(val))}
+                        value={field.value.toString()}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Длительность" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="30">30 мин</SelectItem>
+                          <SelectItem value="45">45 мин</SelectItem>
+                          <SelectItem value="60">1 час</SelectItem>
+                          <SelectItem value="90">1.5 часа</SelectItem>
+                          <SelectItem value="120">2 часа</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
