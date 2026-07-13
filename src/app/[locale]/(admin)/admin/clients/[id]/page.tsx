@@ -192,27 +192,43 @@ export default async function AdminClientProfilePage({
 
   const displayName = user.name || 'Без имени';
 
+  const latestIntake = decryptedIntakes[0];
+  const mainRequest = latestIntake?.plainAnswers?.mainRequest as string | undefined;
+
   return (
     <div className="space-y-6">
       <BreadcrumbSetter segment={user.id} title={displayName} />
-      <div className="flex flex-col md:flex-row md:items-center gap-4">
-        <ClientAvatar userId={user.id} name={user.name} image={user.image} />
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">{displayName}</h2>
-          <p className="text-muted-foreground">{user.email}</p>
-          {lastLogin && (
-            <p className="text-xs text-muted-foreground mt-1">
-              Последний вход: {new Date(lastLogin.createdAt).toLocaleString('ru-RU')}
-              {lastLogin.ip && ` (IP: ${lastLogin.ip})`}
-            </p>
-          )}
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <ClientAvatar userId={user.id} name={user.name} image={user.image} />
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">{displayName}</h2>
+            <p className="text-muted-foreground">{user.email}</p>
+            {lastLogin && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Последний вход: {new Date(lastLogin.createdAt).toLocaleString('ru-RU')}
+                {lastLogin.ip && ` (IP: ${lastLogin.ip})`}
+              </p>
+            )}
+          </div>
         </div>
+
+        {mainRequest && (
+          <div className="md:max-w-md w-full bg-muted/30 border rounded-lg p-4 flex flex-col justify-center min-h-[5rem]">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
+              Основной запрос
+            </h4>
+            <p className="text-sm italic text-foreground line-clamp-3" title={mainRequest}>
+              «{mainRequest}»
+            </p>
+          </div>
+        )}
       </div>
 
-      <Tabs defaultValue="intakes" className="space-y-4">
+      <Tabs defaultValue="notes" className="space-y-4">
         <TabsList className="bg-muted flex-wrap h-auto">
-          <TabsTrigger value="intakes">{t('tabs.intakes')}</TabsTrigger>
           <TabsTrigger value="notes">{t('tabs.notes')}</TabsTrigger>
+          <TabsTrigger value="intakes">{t('tabs.intakes')}</TabsTrigger>
           <TabsTrigger value="documents">Документы</TabsTrigger>
           <TabsTrigger value="payments">Платежи</TabsTrigger>
           <TabsTrigger value="schedule">Расписание</TabsTrigger>
@@ -220,11 +236,7 @@ export default async function AdminClientProfilePage({
           <TabsTrigger value="data">{t('tabs.data')}</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="intakes" className="space-y-4">
-          <ClientIntakes intakes={decryptedIntakes} />
-        </TabsContent>
-
-        <TabsContent value="notes">
+        <TabsContent value="notes" className="space-y-4">
           <Card>
             <CardHeader className="pb-4 border-b">
               <CardTitle className="text-xl">{t('notes.title')}</CardTitle>
@@ -234,6 +246,10 @@ export default async function AdminClientProfilePage({
               <ClientNotes userId={user.id} initialMarkdown={notesMarkdown} />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="intakes" className="space-y-4">
+          <ClientIntakes intakes={decryptedIntakes} />
         </TabsContent>
 
         <TabsContent value="documents" className="mt-4">
