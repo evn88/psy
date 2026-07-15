@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import useSWR from 'swr';
 
 import { useTranslations } from 'next-intl';
@@ -9,7 +9,9 @@ import {
   saveAdminDashboardConfig
 } from '@/app/api/actions/dashboard-actions';
 import { DashboardGrid } from '@/components/dashboard/dashboard-grid';
+import { DashboardPeriodFilter } from '@/components/dashboard/dashboard-period-filter';
 import type { WidgetConfig } from '@/lib/dashboard-config';
+import { getDashboardPeriod, type DashboardPeriod } from '@/lib/dashboard-period';
 import {
   ScheduleOverviewWidget,
   PaymentsOverviewWidget,
@@ -51,7 +53,10 @@ const DEFAULT_LAYOUT: WidgetConfig[] = [
 
 export default function AdminDashboardPage() {
   const t = useTranslations('Admin');
-  const { data, isLoading } = useSWR('adminDashboardStats', () => getAdminDashboardStats());
+  const [period, setPeriod] = useState<DashboardPeriod>(() => getDashboardPeriod('week'));
+  const { data, isLoading } = useSWR(['adminDashboardStats', period], () =>
+    getAdminDashboardStats(period)
+  );
 
   const widgetLabels = {
     scheduleOverview: t('scheduleOverviewTitle'),
@@ -73,6 +78,7 @@ export default function AdminDashboardPage() {
     <div className="mx-auto w-full max-w-7xl space-y-6 pb-6 animate-in fade-in duration-300">
       <div className={isLoading ? 'opacity-50 pointer-events-none' : ''}>
         <DashboardGrid
+          toolbarStart={<DashboardPeriodFilter onChange={setPeriod} />}
           initialLayout={data?.dashboardConfig}
           onSave={saveAdminDashboardConfig}
           defaultLayout={DEFAULT_LAYOUT}

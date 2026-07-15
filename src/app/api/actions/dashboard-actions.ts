@@ -2,10 +2,9 @@
 
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
-import { getCurrentMonthPaymentsTotal, getYearlyPaymentsSeries } from '@/modules/payments';
+import { getPaymentsSeriesForPeriod, getPaymentsTotalForPeriod } from '@/modules/payments';
 import { getPayPalDefaultCurrency } from '@/modules/payments/paypal/config';
 import { getWorkflowBudgetSnapshot } from '@/lib/workflow-budget';
-import { endOfMonth, endOfWeek, startOfMonth, startOfWeek, startOfYear } from 'date-fns';
 import { requireAuthenticatedUser } from '@/lib/auth-helpers';
 import { defaultLocale } from '@/i18n/config';
 import { Prisma } from '@prisma/client';
@@ -17,8 +16,9 @@ import {
   setScopedDashboardConfig,
   type DashboardScope
 } from '@/lib/dashboard-config';
+import { parseDashboardPeriod } from '@/lib/dashboard-period';
 
-export async function getAdminDashboardStats() {
+export async function getAdminDashboardStats(periodInput: unknown) {
   const session = await auth();
   const user = requireAuthenticatedUser(session?.user, defaultLocale);
 
@@ -29,14 +29,7 @@ export async function getAdminDashboardStats() {
   const OFFLINE_THRESHOLD = 5 * 60 * 1000;
   const activeThreshold = new Date(Date.now() - OFFLINE_THRESHOLD);
 
-  const now = new Date();
-  const currentMonthStart = startOfMonth(now);
-  const currentMonthEnd = endOfMonth(now);
-  const currentWeekStart = startOfWeek(now, { weekStartsOn: 1 });
-  const currentWeekEnd = endOfWeek(now, { weekStartsOn: 1 });
-  const currentYearStart = startOfYear(now);
-
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const { from, to } = parseDashboardPeriod(periodInput);
 
   const [
     userCount,
@@ -67,10 +60,7 @@ export async function getAdminDashboardStats() {
       where: {
         status: { in: ['SCHEDULED', 'PENDING_CONFIRMATION'] },
         type: 'CONSULTATION',
-        start: {
-          gte: currentMonthStart,
-          lte: currentMonthEnd
-        }
+        start: { gte: from, lte: to }
       },
       select: { userId: true },
       distinct: ['userId']
@@ -79,20 +69,21 @@ export async function getAdminDashboardStats() {
       where: {
         status: { in: ['SCHEDULED', 'PENDING_CONFIRMATION'] },
         type: 'CONSULTATION',
-        start: { gte: now }
+        start: { gte: from, lte: to }
       }
     }),
     prisma.event.findMany({
       where: {
         status: { in: ['SCHEDULED', 'PENDING_CONFIRMATION'] },
         type: 'CONSULTATION',
-        start: { gte: currentWeekStart, lte: currentWeekEnd }
+        start: { gte: from, lte: to }
       }
     }),
     prisma.event.findMany({
       where: {
         status: { in: ['SCHEDULED', 'PENDING_CONFIRMATION'] },
-        type: 'CONSULTATION'
+        type: 'CONSULTATION',
+        start: { gte: from, lte: to }
       },
       select: { userId: true },
       distinct: ['userId']
@@ -101,12 +92,13 @@ export async function getAdminDashboardStats() {
       where: {
         type: 'FREE_SLOT',
         status: { in: ['SCHEDULED', 'PENDING_CONFIRMATION'] },
-        start: { gte: now }
+        start: { gte: from, lte: to }
       }
     }),
     prisma.event.count({
       where: {
-        status: 'CANCELLED'
+        status: 'CANCELLED',
+        start: { gte: from, lte: to }
       }
     }),
     prisma.payment.findMany({
@@ -114,12 +106,14 @@ export async function getAdminDashboardStats() {
         OR: [
           {
             capturedAt: {
-              gte: currentYearStart
+              gte: from,
+              lte: to
             }
           },
           {
             createdAt: {
-              gte: currentYearStart
+              gte: from,
+              lte: to
             }
           }
         ]
@@ -139,13 +133,13 @@ export async function getAdminDashboardStats() {
     }),
     prisma.user.count({
       where: {
-        createdAt: { gte: sevenDaysAgo }
+        createdAt: { gte: from, lte: to }
       }
     }),
     prisma.systemLogEntry.count({
       where: {
         level: 'ERROR',
-        createdAt: { gte: sevenDaysAgo }
+        createdAt: { gte: from, lte: to }
       }
     }),
     prisma.paymentDispute.count({
@@ -156,7 +150,7 @@ export async function getAdminDashboardStats() {
     prisma.surveyAssignment.count({
       where: {
         status: 'COMPLETED',
-        updatedAt: { gte: sevenDaysAgo }
+        result: { completedAt: { gte: from, lte: to } }
       }
     })
   ]);
@@ -180,8 +174,8 @@ export async function getAdminDashboardStats() {
     return acc + (ev.end.getTime() - ev.start.getTime()) / (1000 * 60 * 60);
   }, 0);
 
-  const currentMonthPaymentsTotal = getCurrentMonthPaymentsTotal(paymentsThisYear, now);
-  const paymentsYearlySeries = getYearlyPaymentsSeries(paymentsThisYear, now.getFullYear());
+  const periodPaymentsTotal = getPaymentsTotalForPeriod(paymentsThisYear, from, to);
+  const paymentsPeriodSeries = getPaymentsSeriesForPeriod(paymentsThisYear, from, to);
   const paymentsCurrency = paymentsThisYear[0]?.currency || getPayPalDefaultCurrency();
 
   return {
@@ -193,8 +187,8 @@ export async function getAdminDashboardStats() {
     bookedUsersCount,
     freeHours,
     cancelledEventsCount,
-    currentMonthPaymentsTotal,
-    paymentsYearlySeries,
+    periodPaymentsTotal,
+    paymentsPeriodSeries,
     paymentsCurrency,
     workflowBudgetSnapshot,
     newUsersCount,
@@ -206,7 +200,7 @@ export async function getAdminDashboardStats() {
   };
 }
 
-export async function getClientDashboardStats() {
+export async function getClientDashboardStats(periodInput: unknown) {
   const session = await auth();
   const user = requireAuthenticatedUser(session?.user, defaultLocale);
 
@@ -214,7 +208,9 @@ export async function getClientDashboardStats() {
     throw new Error('Unauthorized');
   }
 
+  const { from, to } = parseDashboardPeriod(periodInput);
   const now = new Date();
+  const nextSessionFrom = from > now ? from : now;
 
   const [pendingSurveys, completedSurveys, nextSession, dbUser] = await Promise.all([
     prisma.surveyAssignment.count({
@@ -226,7 +222,8 @@ export async function getClientDashboardStats() {
     prisma.surveyAssignment.count({
       where: {
         userId: user.id,
-        status: 'COMPLETED'
+        status: 'COMPLETED',
+        result: { completedAt: { gte: from, lte: to } }
       }
     }),
     prisma.event.findFirst({
@@ -234,7 +231,8 @@ export async function getClientDashboardStats() {
         userId: user.id,
         status: { in: ['SCHEDULED', 'PENDING_CONFIRMATION'] },
         start: {
-          gte: now
+          gte: nextSessionFrom,
+          lte: to
         }
       },
       orderBy: {

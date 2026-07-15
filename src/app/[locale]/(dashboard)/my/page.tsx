@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import useSWR from 'swr';
 import { useTranslations } from 'next-intl';
 import {
@@ -8,10 +8,9 @@ import {
   saveClientDashboardConfig
 } from '@/app/api/actions/dashboard-actions';
 import { DashboardGrid } from '@/components/dashboard/dashboard-grid';
+import { DashboardPeriodFilter } from '@/components/dashboard/dashboard-period-filter';
 import type { WidgetConfig } from '@/lib/dashboard-config';
-import { Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
+import { getDashboardPeriod, type DashboardPeriod } from '@/lib/dashboard-period';
 import {
   PendingSurveysWidget,
   NextSessionWidget,
@@ -42,7 +41,10 @@ const DEFAULT_LAYOUT: WidgetConfig[] = [
 
 export default function MyDashboardPage() {
   const t = useTranslations('My');
-  const { data, isLoading } = useSWR('clientDashboardStats', () => getClientDashboardStats());
+  const [period, setPeriod] = useState<DashboardPeriod>(() => getDashboardPeriod('week'));
+  const { data, isLoading } = useSWR(['clientDashboardStats', period], () =>
+    getClientDashboardStats(period)
+  );
 
   const widgetLabels = {
     pendingSurveys: t('pendingSurveys'),
@@ -56,39 +58,21 @@ export default function MyDashboardPage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] space-y-8 pb-12 px-4 sm:px-6 lg:px-8 animate-in fade-in duration-300">
-      {/* Cleaner, purposeful header replacing the old overloaded block */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between border-b border-border/50 pb-6">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-primary/80">
-            <Sparkles className="h-4 w-4" />
-            <span className="text-xs font-bold uppercase tracking-wider">
-              {t('dashboardTitle')}
-            </span>
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl text-foreground">
-            {t('dashboardGreeting', { name: data?.userName || '' })}
-          </h1>
-          <p className="max-w-xl text-sm leading-relaxed text-muted-foreground/90">
-            {t('dashboardSubtitle')}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
-          <Button
-            asChild
-            variant="outline"
-            className="h-9 px-4 rounded-lg text-xs font-semibold shadow-sm hover:bg-primary/5 hover:border-primary/30 transition-colors"
-          >
-            <Link href="/my/sessions">{t('openSessions')}</Link>
-          </Button>
-          <Button asChild className="h-9 px-4 rounded-lg text-xs font-semibold shadow-md">
-            <Link href="/my/surveys">{t('openSurveys')}</Link>
-          </Button>
-        </div>
-      </div>
+    <div className="mx-auto w-full max-w-[1600px] space-y-6 px-4 pb-12 sm:px-6 lg:px-8">
+      <header className="flex flex-col gap-1.5">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+          {data?.userName
+            ? t('dashboardGreeting', { name: data.userName })
+            : t('dashboardFallbackTitle')}
+        </h1>
+        <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+          {t('dashboardSubtitle')}
+        </p>
+      </header>
 
       <div className={isLoading ? 'opacity-50 pointer-events-none' : ''}>
         <DashboardGrid
+          toolbarStart={<DashboardPeriodFilter onChange={setPeriod} />}
           initialLayout={data?.dashboardConfig}
           onSave={saveClientDashboardConfig}
           defaultLayout={DEFAULT_LAYOUT}

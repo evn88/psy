@@ -1,6 +1,11 @@
 import { Prisma } from '@prisma/client';
 import { describe, expect, it } from 'vitest';
-import { getCurrentMonthPaymentsTotal, getYearlyPaymentsSeries } from '@/modules/payments';
+import {
+  getCurrentMonthPaymentsTotal,
+  getPaymentsSeriesForPeriod,
+  getPaymentsTotalForPeriod,
+  getYearlyPaymentsSeries
+} from '@/modules/payments';
 
 describe('payments analytics helpers', () => {
   it('корректно считает сумму подтверждённых платежей за текущий месяц', () => {
@@ -78,5 +83,32 @@ describe('payments analytics helpers', () => {
     expect(series[0]).toMatchObject({ monthLabel: 'Янв', total: 100 });
     expect(series[3]).toMatchObject({ monthLabel: 'Апр', total: 50 });
     expect(series[5]).toMatchObject({ monthLabel: 'Июн', total: 0 });
+  });
+
+  it('считает оплаты и ряд только внутри выбранного периода', () => {
+    const payments = [
+      {
+        amount: new Prisma.Decimal('100.00'),
+        currency: 'EUR',
+        status: 'COMPLETED',
+        createdAt: new Date('2026-05-10T09:00:00.000Z'),
+        capturedAt: new Date('2026-05-10T09:05:00.000Z')
+      },
+      {
+        amount: new Prisma.Decimal('75.00'),
+        currency: 'EUR',
+        status: 'COMPLETED',
+        createdAt: new Date('2026-07-10T09:00:00.000Z'),
+        capturedAt: new Date('2026-07-10T09:05:00.000Z')
+      }
+    ];
+    const from = new Date('2026-05-01T00:00:00.000Z');
+    const to = new Date('2026-06-30T23:59:59.999Z');
+
+    expect(getPaymentsTotalForPeriod(payments, from, to)).toBe(100);
+    expect(getPaymentsSeriesForPeriod(payments, from, to)).toMatchObject([
+      { monthKey: '2026-05', total: 100 },
+      { monthKey: '2026-06', total: 0 }
+    ]);
   });
 });

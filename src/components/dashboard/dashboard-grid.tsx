@@ -44,8 +44,8 @@ interface DashboardWidgetData {
   bookedUsersCount?: number;
   freeHours?: number;
   cancelledEventsCount?: number;
-  currentMonthPaymentsTotal?: number;
-  paymentsYearlySeries?: Array<{ monthKey: string; monthLabel: string; total: number }>;
+  periodPaymentsTotal?: number;
+  paymentsPeriodSeries?: Array<{ monthKey: string; monthLabel: string; total: number }>;
   paymentsCurrency?: string;
   workflowBudgetSnapshot?: WorkflowBudgetSnapshot;
   newUsersCount?: number;
@@ -80,6 +80,7 @@ interface DashboardGridProps {
   onSave?: (layout: WidgetConfig[]) => Promise<unknown>;
   defaultLayout: WidgetConfig[];
   data?: DashboardWidgetData;
+  toolbarStart?: React.ReactNode;
 }
 
 export function DashboardGrid({
@@ -88,7 +89,8 @@ export function DashboardGrid({
   widgetLabels,
   onSave,
   defaultLayout,
-  data
+  data,
+  toolbarStart
 }: DashboardGridProps) {
   const t = useTranslations('DashboardGrid');
   const [layout, setLayout] = useState<WidgetConfig[]>(defaultLayout);
@@ -191,74 +193,77 @@ export function DashboardGrid({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap justify-end gap-2">
-        {isEditing ? (
-          <>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="min-h-10 border-primary/30 text-primary shadow-none hover:bg-primary/5"
-                >
-                  <Plus className="size-4" /> {t('add')}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                {unusedWidgetKeys.length === 0 ? (
-                  <DropdownMenuItem disabled>{t('noWidgets')}</DropdownMenuItem>
-                ) : (
-                  unusedWidgetKeys.map(key => (
-                    <DropdownMenuItem
-                      key={key}
-                      onClick={() => addWidget(key)}
-                      className="cursor-pointer"
-                    >
-                      {widgetLabels?.[key] || key}
-                    </DropdownMenuItem>
-                  ))
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        {toolbarStart}
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {isEditing ? (
+            <>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="min-h-10 border-primary/30 text-primary shadow-none hover:bg-primary/5"
+                  >
+                    <Plus className="size-4" /> {t('add')}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {unusedWidgetKeys.length === 0 ? (
+                    <DropdownMenuItem disabled>{t('noWidgets')}</DropdownMenuItem>
+                  ) : (
+                    unusedWidgetKeys.map(key => (
+                      <DropdownMenuItem
+                        key={key}
+                        onClick={() => addWidget(key)}
+                        className="cursor-pointer"
+                      >
+                        {widgetLabels?.[key] || key}
+                      </DropdownMenuItem>
+                    ))
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button
+                variant="outline"
+                onClick={resetLayout}
+                size="sm"
+                className="min-h-10 shadow-none"
+              >
+                <RefreshCcw className="size-4" /> {t('reset')}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleCancelEdit}
+                size="sm"
+                disabled={isSaving}
+                className="min-h-10 shadow-none"
+              >
+                <X className="size-4" /> {t('cancel')}
+              </Button>
+              <Button
+                onClick={handleSave}
+                size="sm"
+                disabled={isSaving}
+                className="min-h-10 shadow-none"
+              >
+                <Save className="size-4" /> {isSaving ? t('saving') : t('save')}
+              </Button>
+            </>
+          ) : (
             <Button
               variant="outline"
-              onClick={resetLayout}
+              onClick={() => {
+                setPreEditLayout(layout);
+                setIsEditing(true);
+              }}
               size="sm"
-              className="min-h-10 shadow-none"
+              className="min-h-10 shadow-none transition-colors hover:border-primary/30 hover:bg-primary/5"
             >
-              <RefreshCcw className="size-4" /> {t('reset')}
+              <Edit3 className="size-4 text-primary" /> {t('edit')}
             </Button>
-            <Button
-              variant="outline"
-              onClick={handleCancelEdit}
-              size="sm"
-              disabled={isSaving}
-              className="min-h-10 shadow-none"
-            >
-              <X className="size-4" /> {t('cancel')}
-            </Button>
-            <Button
-              onClick={handleSave}
-              size="sm"
-              disabled={isSaving}
-              className="min-h-10 shadow-none"
-            >
-              <Save className="size-4" /> {isSaving ? t('saving') : t('save')}
-            </Button>
-          </>
-        ) : (
-          <Button
-            variant="outline"
-            onClick={() => {
-              setPreEditLayout(layout);
-              setIsEditing(true);
-            }}
-            size="sm"
-            className="min-h-10 shadow-none transition-colors hover:border-primary/30 hover:bg-primary/5"
-          >
-            <Edit3 className="size-4 text-primary" /> {t('edit')}
-          </Button>
-        )}
+          )}
+        </div>
       </div>
 
       <DndContext

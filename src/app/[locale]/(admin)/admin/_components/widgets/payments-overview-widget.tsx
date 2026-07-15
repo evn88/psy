@@ -16,7 +16,7 @@ export const PaymentsOverviewWidget: WidgetComponentType = ({ data, isEditing, i
   if (!data) return <div className="h-full min-h-80 animate-pulse rounded-xl bg-muted/30" />;
 
   const monthlyTotal = formatPaymentAmount(
-    data.currentMonthPaymentsTotal ?? 0,
+    data.periodPaymentsTotal ?? 0,
     data.paymentsCurrency ?? ''
   );
   const disputesCount = data.paymentDisputesCount ?? 0;
@@ -46,7 +46,7 @@ export const PaymentsOverviewWidget: WidgetComponentType = ({ data, isEditing, i
           ) : (
             <AdminPaymentsLineChart
               currency={data.paymentsCurrency ?? ''}
-              data={data.paymentsYearlySeries ?? []}
+              data={data.paymentsPeriodSeries ?? []}
             />
           )}
         </div>
