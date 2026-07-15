@@ -198,6 +198,8 @@
     "registerButton": "Registrujte se ponovo"
   },
   "Admin": {
+    "notesTitle": "Beleške",
+    "notesPlaceholder": "Napišite svoje misli ovde...",
     "dashboardTitle": "Kontrolna tabla",
     "dashboardSubtitle": "Ključni pokazatelji rasporeda, klijenata, plaćanja i sistemskih obaveštenja.",
     "openSchedule": "Otvori raspored",
@@ -554,6 +556,12 @@
     }
   },
   "My": {
+    "currentBalance": "Trenutni balans",
+    "balanceDesc": "Vaš sistemski balans",
+    "myFiles": "Moji fajlovi",
+    "filesDesc": "Otpremljeni dokumenti",
+    "notesTitle": "Beleške",
+    "notesPlaceholder": "Napišite svoje misli ovde...",
     "dashboardGreeting": "Zdravo, {name}",
     "dashboardSubtitle": "Ovde su objedinjene sesije, ankete, plaćanja i dokumenti.",
     "openSessions": "Moje sesije",
@@ -1235,5 +1243,14 @@
     "fillAgain": "Popunite ponovo",
     "historyTitle": "Istorija anketa",
     "completedAt": "Završeno"
+  },
+  "DashboardGrid": {
+    "reset": "Poništi",
+    "cancel": "Otkaži",
+    "save": "Sačuvaj",
+    "saving": "Čuvanje...",
+    "edit": "Uredi kontrolnu tablu",
+    "add": "Dodaj vidžet",
+    "noWidgets": "Nema dostupnih vidžeta"
   }
 }

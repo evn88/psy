@@ -198,6 +198,8 @@
     "registerButton": "Зарегистрироваться снова"
   },
   "Admin": {
+    "notesTitle": "Заметки",
+    "notesPlaceholder": "Напишите здесь свои мысли...",
     "dashboardTitle": "Дашборд",
     "dashboardSubtitle": "Ключевые показатели расписания, клиентов, оплат и системных уведомлений.",
     "openSchedule": "Открыть расписание",
@@ -556,6 +558,12 @@
     }
   },
   "My": {
+    "currentBalance": "Текущий баланс",
+    "balanceDesc": "Ваш баланс в системе",
+    "myFiles": "Мои файлы",
+    "filesDesc": "Загруженные документы",
+    "notesTitle": "Заметки",
+    "notesPlaceholder": "Напишите здесь свои мысли...",
     "dashboardTitle": "Личный кабинет",
     "dashboardGreeting": "Привет, {name}",
     "dashboardSubtitle": "Здесь собраны ближайшие сессии, анкеты, платежи и документы.",
@@ -1303,5 +1311,14 @@
     "fillAgain": "Заполнить анкету заново",
     "historyTitle": "История анкет",
     "completedAt": "Заполнена"
+  },
+  "DashboardGrid": {
+    "reset": "Сбросить",
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "saving": "Сохраняю...",
+    "edit": "Настроить дашборд",
+    "add": "Добавить виджет",
+    "noWidgets": "Нет доступных виджетов"
   }
 }
