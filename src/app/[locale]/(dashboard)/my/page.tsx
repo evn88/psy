@@ -17,7 +17,7 @@ import {
   BalanceWidget,
   FilesWidget,
   NotesWidget
-} from './_components/client-widgets';
+} from './_components/widgets';
 
 const AVAILABLE_WIDGETS = {
   pendingSurveys: PendingSurveysWidget,

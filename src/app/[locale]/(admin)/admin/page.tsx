@@ -22,7 +22,7 @@ import {
   WorkflowBudgetWidget,
   SentNotificationsWidget,
   AdminNotesWidget
-} from './_components/admin-widgets';
+} from './_components/widgets';
 
 const AVAILABLE_WIDGETS = {
   usersWaiting: UsersWaitingWidget,
