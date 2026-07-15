@@ -4,6 +4,7 @@ import {
   CLIENT_WIDGET_TYPES,
   getScopedDashboardConfig,
   parseDashboardConfig,
+  reorderDashboardWidgets,
   setScopedDashboardConfig
 } from '@/lib/dashboard-config';
 
@@ -27,6 +28,27 @@ describe('parseDashboardConfig', () => {
     ];
 
     expect(parseDashboardConfig(config, CLIENT_WIDGET_TYPES)).toBeNull();
+  });
+});
+
+describe('reorderDashboardWidgets', () => {
+  const layout = [
+    { id: 'first', type: 'pendingSurveys' },
+    { id: 'second', type: 'nextSession' },
+    { id: 'third', type: 'notes' }
+  ];
+
+  it('перемещает виджет на выбранную позицию', () => {
+    expect(reorderDashboardWidgets(layout, 'first', 'third')).toEqual([
+      layout[1],
+      layout[2],
+      layout[0]
+    ]);
+  });
+
+  it('сохраняет ссылку на раскладку, когда перестановка не требуется', () => {
+    expect(reorderDashboardWidgets(layout, 'first', 'first')).toBe(layout);
+    expect(reorderDashboardWidgets(layout, 'missing', 'second')).toBe(layout);
   });
 });
 

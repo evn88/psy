@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
-import type { WidgetConfig } from '@/lib/dashboard-config';
+import { reorderDashboardWidgets, type WidgetConfig } from '@/lib/dashboard-config';
 import type { WorkflowBudgetSnapshot } from '@/lib/workflow-budget';
 
 import {
@@ -14,12 +14,10 @@ import {
   useSensors,
   DragEndEvent,
   DragStartEvent,
-  DragOverEvent,
   DragOverlay,
   defaultDropAnimationSideEffects
 } from '@dnd-kit/core';
 import {
-  arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   rectSortingStrategy
@@ -119,18 +117,13 @@ export function DashboardGrid({
     setPreDragLayout(layout);
   };
 
-  const handleDragOver = (event: DragOverEvent) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    if (over && active.id !== over.id) {
-      setLayout((items: WidgetConfig[]) => {
-        const oldIndex = items.findIndex((i: WidgetConfig) => i.id === active.id);
-        const newIndex = items.findIndex((i: WidgetConfig) => i.id === over.id);
-        return arrayMove(items, oldIndex, newIndex);
-      });
-    }
-  };
 
-  const handleDragEnd = () => {
+    if (over) {
+      setLayout(items => reorderDashboardWidgets(items, String(active.id), String(over.id)));
+    }
+
     setActiveId(null);
     setPreDragLayout(null);
   };
@@ -270,27 +263,21 @@ export function DashboardGrid({
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
       >
-        <SortableContext
-          items={layout.map((i: WidgetConfig, idx: number) => i.id || `fallback-${idx}-${i.type}`)}
-          strategy={rectSortingStrategy}
-        >
+        <SortableContext items={layout.map(widget => widget.id)} strategy={rectSortingStrategy}>
           <div className="grid auto-rows-min gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {layout.map((widget: WidgetConfig, index: number) => {
+            {layout.map((widget: WidgetConfig) => {
               const WidgetComponent = availableWidgets[widget.type];
               if (!WidgetComponent) return null;
 
-              const widgetId = widget.id || `fallback-${index}-${widget.type}`;
-
               return (
                 <SortableWidget
-                  key={widgetId}
-                  id={widgetId}
+                  key={widget.id}
+                  id={widget.id}
                   isEditing={isEditing}
-                  onRemove={() => removeWidget(widgetId)}
+                  onRemove={() => removeWidget(widget.id)}
                   dragLabel={t('moveWidget')}
                   removeLabel={t('removeWidget')}
                   className={WidgetComponent.defaultClassName}
