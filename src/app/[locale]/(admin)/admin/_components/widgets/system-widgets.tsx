@@ -1,12 +1,22 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Users, CalendarCheck, Send, Settings, Gauge, BellRing } from 'lucide-react';
+import {
+  Users,
+  CalendarCheck,
+  Send,
+  Settings,
+  Gauge,
+  BellRing,
+  Bug,
+  ClipboardList
+} from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { WidgetComponentType } from '@/components/dashboard/dashboard-grid';
+import { AdminStatCard } from './admin-stat-card';
 
 export const QuickActionsWidget: WidgetComponentType = ({ isEditing }) => {
   const t = useTranslations('Admin');
@@ -165,5 +175,37 @@ export const SentNotificationsWidget: WidgetComponentType = ({ data, isEditing }
         </CardContent>
       </Card>
     </CardWrapper>
+  );
+};
+
+export const SystemErrorsWidget: WidgetComponentType = ({ data, isEditing }) => {
+  const t = useTranslations('Admin');
+  const hasErrors = (data?.systemErrorsCount ?? 0) > 0;
+  return (
+    <AdminStatCard
+      title={t('systemErrorsTitle')}
+      value={data?.systemErrorsCount ?? '-'}
+      description={t('systemErrorsDesc')}
+      icon={Bug}
+      tone={hasErrors ? 'warning' : 'default'}
+      href="/admin/logs"
+      isEditing={isEditing}
+    />
+  );
+};
+
+export const CompletedSurveysAdminWidget: WidgetComponentType = ({ data, isEditing }) => {
+  const t = useTranslations('Admin');
+  const count = data?.completedSurveysCount ?? 0;
+  return (
+    <AdminStatCard
+      title={t('completedSurveysAdminTitle')}
+      value={count}
+      description={t('completedSurveysAdminDesc')}
+      icon={ClipboardList}
+      tone={count > 0 ? 'accent' : 'default'}
+      href="/admin/surveys"
+      isEditing={isEditing}
+    />
   );
 };

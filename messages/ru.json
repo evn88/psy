@@ -198,6 +198,16 @@
     "registerButton": "Зарегистрироваться снова"
   },
   "Admin": {
+    "scheduleOverviewTitle": "Обзор расписания",
+    "paymentsOverviewTitle": "Финансовая сводка",
+    "newUsersTitle": "Новые пользователи",
+    "newUsersDesc": "За последние 7 дней",
+    "systemErrorsTitle": "Ошибки системы",
+    "systemErrorsDesc": "Ошибки в логах (7 дн)",
+    "paymentDisputesTitle": "Спорные платежи",
+    "paymentDisputesDesc": "Требуют внимания",
+    "completedSurveysAdminTitle": "Завершенные опросы",
+    "completedSurveysAdminDesc": "Ждут проверки",
     "notesTitle": "Заметки",
     "notesPlaceholder": "Напишите здесь свои мысли...",
     "dashboardTitle": "Дашборд",

@@ -8,54 +8,51 @@ import { useTranslations } from 'next-intl';
 import { getAdminDashboardStats, saveDashboardConfig } from '@/app/api/actions/dashboard-actions';
 import { DashboardGrid, WidgetConfig } from '@/components/dashboard/dashboard-grid';
 import {
-  UsersWaitingWidget,
-  UpcomingSlotsWidget,
-  ScheduledHoursWidget,
-  FreeHoursWidget,
-  PaymentsChartWidget,
-  MonthlyPaymentsWidget,
+  ScheduleOverviewWidget,
+  PaymentsOverviewWidget,
   BookedUsersWidget,
   CancelledStatsWidget,
   TotalUsersWidget,
   OnlineNowWidget,
+  NewUsersWidget,
   QuickActionsWidget,
   WorkflowBudgetWidget,
   SentNotificationsWidget,
+  SystemErrorsWidget,
+  CompletedSurveysAdminWidget,
   AdminNotesWidget
 } from './_components/widgets';
 
 const AVAILABLE_WIDGETS = {
-  usersWaiting: UsersWaitingWidget,
-  upcomingSlots: UpcomingSlotsWidget,
-  scheduledHours: ScheduledHoursWidget,
-  freeHours: FreeHoursWidget,
-  paymentsChart: PaymentsChartWidget,
-  monthlyPayments: MonthlyPaymentsWidget,
+  scheduleOverview: ScheduleOverviewWidget,
+  paymentsOverview: PaymentsOverviewWidget,
   bookedUsers: BookedUsersWidget,
   cancelledStats: CancelledStatsWidget,
   totalUsers: TotalUsersWidget,
   onlineNow: OnlineNowWidget,
+  newUsers: NewUsersWidget,
   quickActions: QuickActionsWidget,
   workflowBudget: WorkflowBudgetWidget,
   sentNotifications: SentNotificationsWidget,
+  systemErrors: SystemErrorsWidget,
+  completedSurveysAdmin: CompletedSurveysAdminWidget,
   notes: AdminNotesWidget
 };
 
 const DEFAULT_LAYOUT: WidgetConfig[] = [
-  { id: '1', type: 'usersWaiting' },
-  { id: '2', type: 'upcomingSlots' },
-  { id: '3', type: 'scheduledHours' },
-  { id: '4', type: 'freeHours' },
-  { id: '5', type: 'paymentsChart' },
-  { id: '6', type: 'quickActions' },
-  { id: '7', type: 'monthlyPayments' },
-  { id: '8', type: 'bookedUsers' },
-  { id: '9', type: 'cancelledStats' },
-  { id: '10', type: 'totalUsers' },
-  { id: '11', type: 'onlineNow' },
-  { id: '12', type: 'workflowBudget' },
-  { id: '13', type: 'sentNotifications' },
-  { id: '14', type: 'notes' }
+  { id: '1', type: 'scheduleOverview' },
+  { id: '2', type: 'paymentsOverview' },
+  { id: '3', type: 'systemErrors' },
+  { id: '4', type: 'quickActions' },
+  { id: '5', type: 'newUsers' },
+  { id: '6', type: 'completedSurveysAdmin' },
+  { id: '7', type: 'totalUsers' },
+  { id: '8', type: 'onlineNow' },
+  { id: '9', type: 'bookedUsers' },
+  { id: '10', type: 'cancelledStats' },
+  { id: '11', type: 'workflowBudget' },
+  { id: '12', type: 'sentNotifications' },
+  { id: '13', type: 'notes' }
 ];
 
 export default function AdminDashboardPage() {
@@ -63,19 +60,18 @@ export default function AdminDashboardPage() {
   const { data, isLoading } = useSWR('adminDashboardStats', () => getAdminDashboardStats());
 
   const widgetLabels = {
-    usersWaiting: t('usersWaitingTitle'),
-    upcomingSlots: t('upcomingSlotsTitle'),
-    scheduledHours: t('scheduledHoursTitle'),
-    freeHours: t('freeHoursTitle'),
-    paymentsChart: t('paymentsChartTitle'),
-    monthlyPayments: t('monthlyPaymentsTitle'),
+    scheduleOverview: t('scheduleOverviewTitle'),
+    paymentsOverview: t('paymentsOverviewTitle'),
     bookedUsers: t('bookedUsersTitle'),
     cancelledStats: t('cancelledStatsTitle'),
     totalUsers: t('totalUsers'),
     onlineNow: t('onlineNow'),
+    newUsers: t('newUsersTitle'),
     quickActions: t('quickActionsTitle'),
     workflowBudget: t('workflowRemainingStepsTitle'),
     sentNotifications: t('workflowSentNotificationsTitle'),
+    systemErrors: t('systemErrorsTitle'),
+    completedSurveysAdmin: t('completedSurveysAdminTitle'),
     notes: t('notesTitle')
   };
 

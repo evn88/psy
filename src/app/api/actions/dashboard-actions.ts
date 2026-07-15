@@ -27,6 +27,8 @@ export async function getAdminDashboardStats() {
   const currentWeekEnd = endOfWeek(now, { weekStartsOn: 1 });
   const currentYearStart = startOfYear(now);
 
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
   const [
     userCount,
     activeSessionsCount,
@@ -38,7 +40,11 @@ export async function getAdminDashboardStats() {
     cancelledEventsCount,
     paymentsThisYear,
     workflowBudgetSnapshot,
-    dbUser
+    dbUser,
+    newUsersCount,
+    systemErrorsCount,
+    paymentDisputesCount,
+    completedSurveysCount
   ] = await Promise.all([
     prisma.user.count(),
     prisma.user.count({
@@ -121,6 +127,28 @@ export async function getAdminDashboardStats() {
     prisma.user.findUnique({
       where: { id: user.id },
       select: { dashboardConfig: true }
+    }),
+    prisma.user.count({
+      where: {
+        createdAt: { gte: sevenDaysAgo }
+      }
+    }),
+    prisma.systemLogEntry.count({
+      where: {
+        level: 'ERROR',
+        createdAt: { gte: sevenDaysAgo }
+      }
+    }),
+    prisma.paymentDispute.count({
+      where: {
+        status: { in: ['OPEN', 'UNDER_REVIEW', 'REQUIRES_ACTION'] }
+      }
+    }),
+    prisma.surveyAssignment.count({
+      where: {
+        status: 'COMPLETED',
+        updatedAt: { gte: sevenDaysAgo }
+      }
     })
   ]);
 
@@ -160,6 +188,10 @@ export async function getAdminDashboardStats() {
     paymentsYearlySeries,
     paymentsCurrency,
     workflowBudgetSnapshot,
+    newUsersCount,
+    systemErrorsCount,
+    paymentDisputesCount,
+    completedSurveysCount,
     dashboardConfig: dbUser?.dashboardConfig || null,
     userId: user.id
   };

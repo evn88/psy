@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Users, Ban, Activity } from 'lucide-react';
+import { Users, UserPlus, Ban, Activity } from 'lucide-react';
 import { WidgetComponentType } from '@/components/dashboard/dashboard-grid';
 import { AdminStatCard } from './admin-stat-card';
 
@@ -56,6 +56,21 @@ export const OnlineNowWidget: WidgetComponentType = ({ data, isEditing }) => {
       value={data?.activeSessionsCount ?? '-'}
       description={t('activeSessions')}
       icon={Activity}
+      href="/admin/users"
+      isEditing={isEditing}
+    />
+  );
+};
+
+export const NewUsersWidget: WidgetComponentType = ({ data, isEditing }) => {
+  const t = useTranslations('Admin');
+  return (
+    <AdminStatCard
+      title={t('newUsersTitle')}
+      value={data?.newUsersCount ?? '-'}
+      description={t('newUsersDesc')}
+      icon={UserPlus}
+      tone="accent"
       href="/admin/users"
       isEditing={isEditing}
     />

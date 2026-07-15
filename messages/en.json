@@ -198,6 +198,16 @@
     "registerButton": "Register again"
   },
   "Admin": {
+    "scheduleOverviewTitle": "Schedule Overview",
+    "paymentsOverviewTitle": "Financial Overview",
+    "newUsersTitle": "New Users",
+    "newUsersDesc": "Last 7 days",
+    "systemErrorsTitle": "System Errors",
+    "systemErrorsDesc": "Log errors (7d)",
+    "paymentDisputesTitle": "Payment Disputes",
+    "paymentDisputesDesc": "Require attention",
+    "completedSurveysAdminTitle": "Completed Surveys",
+    "completedSurveysAdminDesc": "Pending review",
     "notesTitle": "Notes",
     "notesPlaceholder": "Write your thoughts here...",
     "dashboardTitle": "Dashboard",

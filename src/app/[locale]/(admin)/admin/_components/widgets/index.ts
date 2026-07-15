@@ -1,15 +1,17 @@
-export { UsersWaitingWidget } from './users-waiting-widget';
-export { UpcomingSlotsWidget, ScheduledHoursWidget, FreeHoursWidget } from './schedule-widgets';
-export { PaymentsChartWidget, MonthlyPaymentsWidget } from './payments-widgets';
+export { ScheduleOverviewWidget } from './schedule-overview-widget';
+export { PaymentsOverviewWidget } from './payments-overview-widget';
 export {
   BookedUsersWidget,
   CancelledStatsWidget,
   TotalUsersWidget,
-  OnlineNowWidget
+  OnlineNowWidget,
+  NewUsersWidget
 } from './users-widgets';
 export {
   QuickActionsWidget,
   WorkflowBudgetWidget,
-  SentNotificationsWidget
+  SentNotificationsWidget,
+  SystemErrorsWidget,
+  CompletedSurveysAdminWidget
 } from './system-widgets';
 export { AdminNotesWidget } from './admin-notes-widget';
