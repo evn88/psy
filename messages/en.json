@@ -198,6 +198,8 @@
     "registerButton": "Register again"
   },
   "Admin": {
+    "notesTitle": "Notes",
+    "notesPlaceholder": "Write your thoughts here...",
     "dashboardTitle": "Dashboard",
     "dashboardSubtitle": "Key indicators for schedule, clients, payments, and system notifications.",
     "openSchedule": "Open schedule",
@@ -554,6 +556,12 @@
     }
   },
   "My": {
+    "currentBalance": "Current Balance",
+    "balanceDesc": "Your system balance",
+    "myFiles": "My Files",
+    "filesDesc": "Uploaded documents",
+    "notesTitle": "Notes",
+    "notesPlaceholder": "Write your thoughts here...",
     "dashboardGreeting": "Hi, {name}",
     "dashboardSubtitle": "Your sessions, forms, payments, and documents are collected here.",
     "openSessions": "My sessions",
@@ -1292,5 +1300,14 @@
     "fillAgain": "Fill Out Again",
     "historyTitle": "Intakes History",
     "completedAt": "Completed"
+  },
+  "DashboardGrid": {
+    "reset": "Reset",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving...",
+    "edit": "Edit Dashboard",
+    "add": "Add Widget",
+    "noWidgets": "No available widgets"
   }
 }

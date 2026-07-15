@@ -28,6 +28,7 @@ model User {
   workHourStart             Int                      @default(9)
   blogNotifications         Boolean                  @default(false)
   notificationSettings      Json?
+  dashboardConfig           Json?
   balance                   Decimal                  @default(0) @db.Decimal(12, 2)
   accounts                  Account[]
   Authenticator             Authenticator[]
