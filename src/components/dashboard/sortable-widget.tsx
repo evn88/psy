@@ -11,6 +11,8 @@ interface SortableWidgetProps {
   id: string;
   isEditing: boolean;
   onRemove: () => void;
+  dragLabel: string;
+  removeLabel: string;
   children: React.ReactNode;
   className?: string;
 }
@@ -19,6 +21,8 @@ export function SortableWidget({
   id,
   isEditing,
   onRemove,
+  dragLabel,
+  removeLabel,
   children,
   className
 }: SortableWidgetProps) {
@@ -45,17 +49,23 @@ export function SortableWidget({
       )}
     >
       {isEditing && (
-        <div className="absolute top-2 right-2 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-background/90 backdrop-blur-md p-1 rounded-lg shadow-sm border border-border/50">
-          <div
-            {...attributes}
-            {...listeners}
-            className="cursor-grab active:cursor-grabbing p-1.5 hover:bg-muted rounded-md transition-colors"
-          >
-            <GripHorizontal className="w-4 h-4 text-muted-foreground" />
-          </div>
+        <div className="absolute top-2 right-2 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity bg-background/90 backdrop-blur-md p-1 rounded-lg shadow-sm border border-border/50">
           <Button
+            type="button"
             variant="ghost"
             size="icon"
+            aria-label={dragLabel}
+            {...attributes}
+            {...listeners}
+            className="h-7 w-7 cursor-grab active:cursor-grabbing rounded-md transition-colors"
+          >
+            <GripHorizontal className="w-4 h-4 text-muted-foreground" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label={removeLabel}
             className="h-7 w-7 rounded-md hover:bg-destructive/10 hover:text-destructive transition-colors"
             onClick={onRemove}
           >

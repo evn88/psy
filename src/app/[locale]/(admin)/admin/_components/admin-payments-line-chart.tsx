@@ -21,16 +21,21 @@ interface AdminPaymentsLineChartProps {
   }>;
 }
 
+type TooltipValue = number | string | readonly (number | string)[] | undefined;
+
 /**
  * Линейный график ежемесячных оплат для админского дашборда.
  */
 export const AdminPaymentsLineChart = ({ currency, data }: AdminPaymentsLineChartProps) => {
   const formatTooltipValue = useCallback(
-    (value: any) => formatPaymentAmount(Number(value), currency),
+    (value: TooltipValue) => {
+      const numericValue = Array.isArray(value) ? value[0] : value;
+      return formatPaymentAmount(Number(numericValue ?? 0), currency);
+    },
     [currency]
   );
-  const formatTooltipLabel = useCallback((label: any) => `Месяц: ${label}`, []);
-  const formatYAxisTick = useCallback((value: any) => `${Math.round(Number(value))}`, []);
+  const formatTooltipLabel = useCallback((label: React.ReactNode) => `Месяц: ${label}`, []);
+  const formatYAxisTick = useCallback((value: number) => `${Math.round(value)}`, []);
 
   return (
     <div className="h-[320px] w-full">

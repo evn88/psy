@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
+import type { WidgetConfig } from '@/lib/dashboard-config';
+import type { WorkflowBudgetSnapshot } from '@/lib/workflow-budget';
 
 import {
   DndContext,
@@ -26,7 +28,6 @@ import { SortableWidget } from './sortable-widget';
 import { Button } from '@/components/ui/button';
 import { Save, Edit3, X, RefreshCcw, Plus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { animate, stagger } from 'animejs';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,26 +35,55 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 
-export interface WidgetConfig {
-  id: string;
-  type: string;
+interface DashboardWidgetData {
+  userCount?: number;
+  activeSessionsCount?: number;
+  waitingUsersCount?: number;
+  upcomingSlotsCount?: number;
+  scheduledHoursThisWeek?: number;
+  bookedUsersCount?: number;
+  freeHours?: number;
+  cancelledEventsCount?: number;
+  currentMonthPaymentsTotal?: number;
+  paymentsYearlySeries?: Array<{ monthKey: string; monthLabel: string; total: number }>;
+  paymentsCurrency?: string;
+  workflowBudgetSnapshot?: WorkflowBudgetSnapshot;
+  newUsersCount?: number;
+  systemErrorsCount?: number;
+  paymentDisputesCount?: number;
+  completedSurveysCount?: number;
+  pendingSurveys?: number;
+  completedSurveys?: number;
+  nextSessionTitle?: string | null;
+  nextSessionStart?: string | null;
+  userTimezone?: string;
+  userLanguage?: string;
+  userName?: string;
+  userEmail?: string;
+  balance?: number;
+  filesCount?: number;
+  userId?: string;
 }
 
-export type WidgetComponentType = React.FC<any> & { defaultClassName?: string };
+interface WidgetComponentProps {
+  data?: DashboardWidgetData;
+  isEditing?: boolean;
+  isOverlay?: boolean;
+}
+
+export type WidgetComponentType = React.FC<WidgetComponentProps> & { defaultClassName?: string };
 
 interface DashboardGridProps {
   initialLayout?: WidgetConfig[] | null;
-  storageKey?: string;
   availableWidgets: Record<string, WidgetComponentType>;
   widgetLabels?: Record<string, string>;
-  onSave?: (layout: WidgetConfig[]) => Promise<void>;
+  onSave?: (layout: WidgetConfig[]) => Promise<unknown>;
   defaultLayout: WidgetConfig[];
-  data: any;
+  data?: DashboardWidgetData;
 }
 
 export function DashboardGrid({
   initialLayout,
-  storageKey,
   availableWidgets,
   widgetLabels,
   onSave,
@@ -65,53 +95,22 @@ export function DashboardGrid({
   const [isLoaded, setIsLoaded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [preDragLayout, setPreDragLayout] = useState<WidgetConfig[] | null>(null);
   const [preEditLayout, setPreEditLayout] = useState<WidgetConfig[] | null>(null);
 
-  const initialLayoutStr = initialLayout !== undefined ? JSON.stringify(initialLayout) : undefined;
-
   useEffect(() => {
-    if (storageKey) {
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (parsed && Array.isArray(parsed) && parsed.length > 0) {
-            setLayout(parsed);
-            setIsLoaded(true);
-            return;
-          }
-        } catch (e) {
-          console.error('Failed to parse saved layout from localStorage');
-        }
-      }
-      setLayout(defaultLayout);
-    } else if (initialLayoutStr !== undefined && !isEditing) {
-      const parsedLayout = JSON.parse(initialLayoutStr);
-      setLayout(parsedLayout && parsedLayout.length > 0 ? parsedLayout : defaultLayout);
+    if (initialLayout !== undefined) {
+      setLayout(initialLayout ?? defaultLayout);
+      setIsLoaded(true);
     }
-    setIsLoaded(true);
-    // We intentionally only depend on the stringified layout and storageKey
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialLayoutStr, storageKey]);
+  }, [defaultLayout, initialLayout]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
-
-  useEffect(() => {
-    if (isEditing) {
-      animate('.widget-wrapper', {
-        scale: [0.98, 1],
-        opacity: [0.8, 1],
-        duration: 300,
-        ease: 'outQuart',
-        delay: stagger(40)
-      });
-    }
-  }, [isEditing]);
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -142,15 +141,17 @@ export function DashboardGrid({
 
   const handleSave = async () => {
     setIsSaving(true);
-    if (storageKey) {
-      localStorage.setItem(storageKey, JSON.stringify(layout));
+    setSaveError(null);
+
+    try {
+      await onSave?.(layout);
+      setPreEditLayout(null);
+      setIsEditing(false);
+    } catch {
+      setSaveError(t('saveError'));
+    } finally {
+      setIsSaving(false);
     }
-    if (onSave) {
-      await onSave(layout);
-    }
-    setPreEditLayout(null);
-    setIsSaving(false);
-    setIsEditing(false);
   };
 
   const handleCancelEdit = () => {
@@ -168,7 +169,7 @@ export function DashboardGrid({
   };
 
   const addWidget = (type: string) => {
-    setLayout([...layout, { id: Math.random().toString(36).substring(7), type }]);
+    setLayout([...layout, { id: crypto.randomUUID(), type }]);
   };
 
   const availableWidgetKeys = Object.keys(availableWidgets);
@@ -180,17 +181,17 @@ export function DashboardGrid({
 
   if (!isLoaded) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 auto-rows-min opacity-50 pointer-events-none">
-        {defaultLayout.map((w, idx) => (
-          <div key={idx} className="h-48 w-full bg-muted/20 animate-pulse rounded-xl" />
+      <div className="grid auto-rows-min gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {defaultLayout.map(widget => (
+          <div key={widget.id} className="h-48 w-full animate-pulse rounded-xl bg-muted/30" />
         ))}
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-end gap-2 mb-4">
+    <div className="space-y-4">
+      <div className="flex flex-wrap justify-end gap-2">
         {isEditing ? (
           <>
             <DropdownMenu>
@@ -198,16 +199,14 @@ export function DashboardGrid({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="shadow-sm border-dashed border-primary/50 text-primary hover:bg-primary/5"
+                  className="min-h-10 border-primary/30 text-primary shadow-none hover:bg-primary/5"
                 >
-                  <Plus className="w-4 h-4 mr-2" /> {t('add') || 'Добавить виджет'}
+                  <Plus className="size-4" /> {t('add')}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 {unusedWidgetKeys.length === 0 ? (
-                  <DropdownMenuItem disabled>
-                    {t('noWidgets') || 'Нет доступных виджетов'}
-                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled>{t('noWidgets')}</DropdownMenuItem>
                 ) : (
                   unusedWidgetKeys.map(key => (
                     <DropdownMenuItem
@@ -221,21 +220,30 @@ export function DashboardGrid({
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button variant="outline" onClick={resetLayout} size="sm" className="shadow-sm">
-              <RefreshCcw className="w-4 h-4 mr-2" /> {t('reset') || 'Reset'}
+            <Button
+              variant="outline"
+              onClick={resetLayout}
+              size="sm"
+              className="min-h-10 shadow-none"
+            >
+              <RefreshCcw className="size-4" /> {t('reset')}
             </Button>
             <Button
               variant="outline"
               onClick={handleCancelEdit}
               size="sm"
               disabled={isSaving}
-              className="shadow-sm"
+              className="min-h-10 shadow-none"
             >
-              <X className="w-4 h-4 mr-2" /> {t('cancel') || 'Cancel'}
+              <X className="size-4" /> {t('cancel')}
             </Button>
-            <Button onClick={handleSave} size="sm" disabled={isSaving} className="shadow-sm">
-              <Save className="w-4 h-4 mr-2" />{' '}
-              {isSaving ? t('saving') || 'Saving...' : t('save') || 'Save'}
+            <Button
+              onClick={handleSave}
+              size="sm"
+              disabled={isSaving}
+              className="min-h-10 shadow-none"
+            >
+              <Save className="size-4" /> {isSaving ? t('saving') : t('save')}
             </Button>
           </>
         ) : (
@@ -246,9 +254,9 @@ export function DashboardGrid({
               setIsEditing(true);
             }}
             size="sm"
-            className="shadow-sm hover:border-primary/30 hover:bg-primary/5 transition-colors"
+            className="min-h-10 shadow-none transition-colors hover:border-primary/30 hover:bg-primary/5"
           >
-            <Edit3 className="w-4 h-4 mr-2 text-primary" /> {t('edit') || 'Edit Dashboard'}
+            <Edit3 className="size-4 text-primary" /> {t('edit')}
           </Button>
         )}
       </div>
@@ -265,7 +273,7 @@ export function DashboardGrid({
           items={layout.map((i: WidgetConfig, idx: number) => i.id || `fallback-${idx}-${i.type}`)}
           strategy={rectSortingStrategy}
         >
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 auto-rows-min">
+          <div className="grid auto-rows-min gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {layout.map((widget: WidgetConfig, index: number) => {
               const WidgetComponent = availableWidgets[widget.type];
               if (!WidgetComponent) return null;
@@ -278,6 +286,8 @@ export function DashboardGrid({
                   id={widgetId}
                   isEditing={isEditing}
                   onRemove={() => removeWidget(widgetId)}
+                  dragLabel={t('moveWidget')}
+                  removeLabel={t('removeWidget')}
                   className={WidgetComponent.defaultClassName}
                 >
                   <WidgetComponent isEditing={isEditing} data={data} />
@@ -295,7 +305,7 @@ export function DashboardGrid({
           {activeWidget && ActiveWidgetComponent ? (
             <div
               className={cn(
-                'widget-wrapper scale-105 opacity-90 shadow-2xl ring-2 ring-primary/40 rounded-xl',
+                'widget-wrapper scale-[1.02] rounded-xl opacity-95 shadow-lg ring-2 ring-primary/30',
                 ActiveWidgetComponent.defaultClassName
               )}
             >
@@ -304,6 +314,11 @@ export function DashboardGrid({
           ) : null}
         </DragOverlay>
       </DndContext>
+      {saveError ? (
+        <p role="alert" className="text-sm text-destructive">
+          {saveError}
+        </p>
+      ) : null}
     </div>
   );
 }

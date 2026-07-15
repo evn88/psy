@@ -2,45 +2,38 @@
 
 import { useTranslations } from 'next-intl';
 import { UserRound } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { WidgetComponentType } from '@/components/dashboard/dashboard-grid';
+import { DashboardWidget, DashboardWidgetHeader } from '@/components/dashboard/dashboard-widget';
 
 export const AccountOverviewWidget: WidgetComponentType = ({ data, isEditing }) => {
   const t = useTranslations('My');
 
   return (
-    <Card className="border border-border/50 shadow-sm rounded-xl overflow-hidden h-full flex flex-col">
-      <CardHeader className="border-b bg-muted/5 pb-4">
-        <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
-          {t('accountOverviewTitle')}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4 p-5 flex-1 flex flex-col justify-between">
-        <div className="space-y-3">
-          <div className="rounded-xl border border-border/60 bg-muted/10 p-3 shadow-inner">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/75">
-              {t('profileLabel')}
-            </div>
-            <div className="mt-1 text-sm font-semibold text-foreground/90 truncate">
+    <DashboardWidget>
+      <DashboardWidgetHeader title={t('accountOverviewTitle')} icon={UserRound} />
+      <CardContent className="flex flex-1 flex-col justify-between gap-5 p-5">
+        <dl className="divide-y divide-border/50">
+          <div className="pb-3">
+            <dt className="text-xs font-medium text-muted-foreground">{t('profileLabel')}</dt>
+            <dd className="mt-1 truncate text-sm font-semibold text-foreground">
               {data?.userName || data?.userEmail || '-'}
-            </div>
+            </dd>
           </div>
-          <div className="rounded-xl border border-border/60 bg-muted/10 p-3 shadow-inner">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/75">
-              {t('timezoneLabel')}
-            </div>
-            <div className="mt-1 text-sm font-semibold text-foreground/90">
+          <div className="pt-3">
+            <dt className="text-xs font-medium text-muted-foreground">{t('timezoneLabel')}</dt>
+            <dd className="mt-1 text-sm font-semibold text-foreground">
               {data?.userTimezone || '-'}
-            </div>
+            </dd>
           </div>
-        </div>
+        </dl>
         <Button
           asChild
           variant="outline"
           disabled={isEditing}
-          className="w-full h-10 rounded-xl font-semibold shadow-sm hover:bg-background pointer-events-auto"
+          className="h-11 w-full rounded-lg shadow-none"
         >
           <Link href="/my/profile">
             <UserRound className="h-4 w-4 mr-2 text-muted-foreground/70" />
@@ -48,6 +41,6 @@ export const AccountOverviewWidget: WidgetComponentType = ({ data, isEditing }) 
           </Link>
         </Button>
       </CardContent>
-    </Card>
+    </DashboardWidget>
   );
 };

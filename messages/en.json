@@ -1318,6 +1318,9 @@
     "saving": "Saving...",
     "edit": "Edit Dashboard",
     "add": "Add Widget",
-    "noWidgets": "No available widgets"
+    "noWidgets": "No available widgets",
+    "moveWidget": "Move widget",
+    "removeWidget": "Remove widget",
+    "saveError": "Could not save the dashboard settings. Please try again."
   }
 }

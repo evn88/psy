@@ -13,7 +13,7 @@ export const BalanceWidget: WidgetComponentType = ({ data, isEditing }) => {
       value={data?.balance != null ? new Intl.NumberFormat().format(data.balance) : '-'}
       description={t('balanceDesc')}
       icon={CreditCard}
-      tone={data?.balance > 0 ? 'accent' : 'default'}
+      tone={(data?.balance ?? 0) > 0 ? 'accent' : 'default'}
       href="/my/payments"
       isEditing={isEditing}
     />

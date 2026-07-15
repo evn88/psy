@@ -4,8 +4,12 @@ import React from 'react';
 import useSWR from 'swr';
 
 import { useTranslations } from 'next-intl';
-import { getAdminDashboardStats, saveDashboardConfig } from '@/app/api/actions/dashboard-actions';
-import { DashboardGrid, WidgetConfig } from '@/components/dashboard/dashboard-grid';
+import {
+  getAdminDashboardStats,
+  saveAdminDashboardConfig
+} from '@/app/api/actions/dashboard-actions';
+import { DashboardGrid } from '@/components/dashboard/dashboard-grid';
+import type { WidgetConfig } from '@/lib/dashboard-config';
 import {
   ScheduleOverviewWidget,
   PaymentsOverviewWidget,
@@ -42,16 +46,7 @@ const DEFAULT_LAYOUT: WidgetConfig[] = [
   { id: '1', type: 'scheduleOverview' },
   { id: '2', type: 'paymentsOverview' },
   { id: '3', type: 'systemErrors' },
-  { id: '4', type: 'quickActions' },
-  { id: '5', type: 'newUsers' },
-  { id: '6', type: 'completedSurveysAdmin' },
-  { id: '7', type: 'totalUsers' },
-  { id: '8', type: 'onlineNow' },
-  { id: '9', type: 'bookedUsers' },
-  { id: '10', type: 'cancelledStats' },
-  { id: '11', type: 'workflowBudget' },
-  { id: '12', type: 'sentNotifications' },
-  { id: '13', type: 'notes' }
+  { id: '4', type: 'quickActions' }
 ];
 
 export default function AdminDashboardPage() {
@@ -78,7 +73,8 @@ export default function AdminDashboardPage() {
     <div className="mx-auto w-full max-w-7xl space-y-6 pb-6 animate-in fade-in duration-300">
       <div className={isLoading ? 'opacity-50 pointer-events-none' : ''}>
         <DashboardGrid
-          storageKey="admin_dashboard_layout"
+          initialLayout={data?.dashboardConfig}
+          onSave={saveAdminDashboardConfig}
           defaultLayout={DEFAULT_LAYOUT}
           availableWidgets={AVAILABLE_WIDGETS}
           widgetLabels={widgetLabels}

@@ -13,7 +13,7 @@ export const PendingSurveysWidget: WidgetComponentType = ({ data, isEditing }) =
       value={data?.pendingSurveys ?? '-'}
       description={t('pendingSurveysDesc')}
       icon={ClipboardList}
-      tone={data?.pendingSurveys > 0 ? 'accent' : 'default'}
+      tone={(data?.pendingSurveys ?? 0) > 0 ? 'accent' : 'default'}
       href="/my/surveys"
       isEditing={isEditing}
     />

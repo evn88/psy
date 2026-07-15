@@ -8,6 +8,15 @@ import { getWorkflowBudgetSnapshot } from '@/lib/workflow-budget';
 import { endOfMonth, endOfWeek, startOfMonth, startOfWeek, startOfYear } from 'date-fns';
 import { requireAuthenticatedUser } from '@/lib/auth-helpers';
 import { defaultLocale } from '@/i18n/config';
+import { Prisma } from '@prisma/client';
+import {
+  ADMIN_WIDGET_TYPES,
+  CLIENT_WIDGET_TYPES,
+  getScopedDashboardConfig,
+  parseDashboardConfig,
+  setScopedDashboardConfig,
+  type DashboardScope
+} from '@/lib/dashboard-config';
 
 export async function getAdminDashboardStats() {
   const session = await auth();
@@ -192,7 +201,7 @@ export async function getAdminDashboardStats() {
     systemErrorsCount,
     paymentDisputesCount,
     completedSurveysCount,
-    dashboardConfig: dbUser?.dashboardConfig || null,
+    dashboardConfig: getScopedDashboardConfig(dbUser?.dashboardConfig, 'admin'),
     userId: user.id
   };
 }
@@ -255,26 +264,48 @@ export async function getClientDashboardStats() {
     userLanguage: dbUser?.language || 'ru',
     userName: dbUser?.name || dbUser?.email || '',
     userEmail: dbUser?.email || '',
-    dashboardConfig: dbUser?.dashboardConfig || null,
+    dashboardConfig: getScopedDashboardConfig(dbUser?.dashboardConfig, 'client'),
     balance: dbUser?.balance ? Number(dbUser.balance) : 0,
     filesCount: dbUser?._count?.documents || 0,
     userId: user.id
   };
 }
 
-export async function saveDashboardConfig(config: unknown) {
+const saveDashboardConfig = async (scope: DashboardScope, config: unknown) => {
   const session = await auth();
   const user = requireAuthenticatedUser(session?.user, defaultLocale);
 
-  if (!user || user.role === 'GUEST') {
+  if (user.role === 'GUEST' || (scope === 'admin' && user.role !== 'ADMIN')) {
     throw new Error('Unauthorized');
   }
 
-  // Type validation could be added here
+  const allowedTypes = scope === 'admin' ? ADMIN_WIDGET_TYPES : CLIENT_WIDGET_TYPES;
+  const parsedConfig = parseDashboardConfig(config, allowedTypes);
+
+  if (!parsedConfig) {
+    throw new Error('Invalid dashboard config');
+  }
+
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { dashboardConfig: true }
+  });
+  const dashboardConfig = setScopedDashboardConfig(dbUser?.dashboardConfig, scope, parsedConfig);
+
   await prisma.user.update({
     where: { id: user.id },
-    data: { dashboardConfig: config as any }
+    data: { dashboardConfig: dashboardConfig as Prisma.InputJsonValue }
   });
 
   return { success: true };
+};
+
+/** Сохраняет раскладку административного дашборда. */
+export async function saveAdminDashboardConfig(config: unknown) {
+  return saveDashboardConfig('admin', config);
+}
+
+/** Сохраняет раскладку личного кабинета. */
+export async function saveClientDashboardConfig(config: unknown) {
+  return saveDashboardConfig('client', config);
 }

@@ -1251,6 +1251,9 @@
     "saving": "Čuvanje...",
     "edit": "Uredi kontrolnu tablu",
     "add": "Dodaj vidžet",
-    "noWidgets": "Nema dostupnih vidžeta"
+    "noWidgets": "Nema dostupnih vidžeta",
+    "moveWidget": "Premesti vidžet",
+    "removeWidget": "Ukloni vidžet",
+    "saveError": "Nije moguće sačuvati podešavanja kontrolne table. Pokušajte ponovo."
   }
 }

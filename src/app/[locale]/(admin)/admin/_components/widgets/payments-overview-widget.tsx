@@ -1,69 +1,63 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Activity, CreditCard, AlertTriangle, ChevronRight } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { CreditCard, AlertTriangle, ChevronRight } from 'lucide-react';
+import { CardContent } from '@/components/ui/card';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { WidgetComponentType } from '@/components/dashboard/dashboard-grid';
 import { AdminPaymentsLineChart } from '../admin-payments-line-chart';
 import { formatPaymentAmount } from '@/modules/payments';
+import { DashboardWidget, DashboardWidgetHeader } from '@/components/dashboard/dashboard-widget';
 
 export const PaymentsOverviewWidget: WidgetComponentType = ({ data, isEditing, isOverlay }) => {
   const t = useTranslations('Admin');
 
-  if (!data)
-    return (
-      <Card className="h-[300px] flex items-center justify-center">
-        <Activity className="animate-spin text-muted-foreground" />
-      </Card>
-    );
+  if (!data) return <div className="h-full min-h-80 animate-pulse rounded-xl bg-muted/30" />;
 
-  const monthlyTotal = formatPaymentAmount(data.currentMonthPaymentsTotal, data.paymentsCurrency);
+  const monthlyTotal = formatPaymentAmount(
+    data.currentMonthPaymentsTotal ?? 0,
+    data.paymentsCurrency ?? ''
+  );
   const disputesCount = data.paymentDisputesCount ?? 0;
 
   return (
-    <Card className="shadow-sm h-full flex flex-col group overflow-hidden border border-border/50">
-      <CardHeader className="border-b bg-muted/5 pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">
-            {t('paymentsOverviewTitle')}
-          </CardTitle>
-          {!isEditing && (
+    <DashboardWidget>
+      <DashboardWidgetHeader
+        title={t('paymentsOverviewTitle')}
+        icon={CreditCard}
+        action={
+          !isEditing ? (
             <Link
               href="/admin/payments"
-              className="flex items-center text-xs font-medium text-primary hover:underline"
+              className="flex min-h-11 items-center rounded-md px-2 text-xs font-medium text-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               Все платежи
               <ChevronRight className="ml-1 h-3 w-3" />
             </Link>
-          )}
-        </div>
-      </CardHeader>
+          ) : null
+        }
+      />
 
       <CardContent className="flex-1 p-0 flex flex-col lg:flex-row">
-        {/* Left Side: Chart */}
-        <div className="flex-1 p-4 lg:border-r border-border/50 min-h-[250px] relative pointer-events-none">
+        <div className="relative min-h-64 flex-1 p-4 lg:border-r lg:border-border/50">
           {isOverlay ? (
-            <div className="w-full h-full flex items-center justify-center bg-muted/10 rounded-lg border border-dashed border-border/50 text-muted-foreground/60">
-              <Activity className="w-8 h-8 animate-spin" />
-            </div>
+            <div className="h-full min-h-64 animate-pulse rounded-lg bg-muted/30" />
           ) : (
             <AdminPaymentsLineChart
-              currency={data.paymentsCurrency}
-              data={data.paymentsYearlySeries}
+              currency={data.paymentsCurrency ?? ''}
+              data={data.paymentsYearlySeries ?? []}
             />
           )}
         </div>
 
-        {/* Right Side: Stats */}
-        <div className="w-full lg:w-1/3 flex flex-row lg:flex-col divide-x lg:divide-x-0 lg:divide-y divide-border/50 border-t lg:border-t-0 border-border/50">
+        <div className="flex w-full flex-row divide-x divide-border/50 border-t border-border/50 lg:w-1/3 lg:flex-col lg:divide-x-0 lg:divide-y lg:border-l-0 lg:border-t-0">
           <div className="flex-1 p-5 flex flex-col justify-center">
             <div className="flex items-center gap-2 mb-2 text-muted-foreground">
               <CreditCard className="h-4 w-4" />
-              <span className="text-xs font-semibold">{t('monthlyPaymentsTitle')}</span>
+              <span className="text-xs font-medium">{t('monthlyPaymentsTitle')}</span>
             </div>
-            <div className="text-2xl font-bold tracking-tight text-foreground truncate">
+            <div className="truncate text-2xl font-semibold tracking-tight text-foreground">
               {monthlyTotal}
             </div>
             <div className="text-[10px] sm:text-xs text-muted-foreground/80 mt-1">
@@ -84,11 +78,11 @@ export const PaymentsOverviewWidget: WidgetComponentType = ({ data, isEditing, i
               )}
             >
               <AlertTriangle className="h-4 w-4" />
-              <span className="text-xs font-semibold">{t('paymentDisputesTitle')}</span>
+              <span className="text-xs font-medium">{t('paymentDisputesTitle')}</span>
             </div>
             <div
               className={cn(
-                'text-2xl font-bold tracking-tight truncate',
+                'truncate text-2xl font-semibold tracking-tight',
                 disputesCount > 0 ? 'text-destructive' : 'text-foreground'
               )}
             >
@@ -100,7 +94,7 @@ export const PaymentsOverviewWidget: WidgetComponentType = ({ data, isEditing, i
           </div>
         </div>
       </CardContent>
-    </Card>
+    </DashboardWidget>
   );
 };
 

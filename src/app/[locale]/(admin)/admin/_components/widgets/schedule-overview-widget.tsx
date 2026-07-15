@@ -2,16 +2,20 @@
 
 import { useTranslations } from 'next-intl';
 import { CalendarCheck, Clock, UserCheck, CalendarClock, ChevronRight } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { CardContent } from '@/components/ui/card';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { WidgetComponentType } from '@/components/dashboard/dashboard-grid';
+import { DashboardWidget, DashboardWidgetHeader } from '@/components/dashboard/dashboard-widget';
 
 export const ScheduleOverviewWidget: WidgetComponentType = ({ data, isEditing }) => {
   const t = useTranslations('Admin');
 
-  const scheduledHours = data ? Math.round(data.scheduledHoursThisWeek * 10) / 10 : '-';
-  const freeHours = data ? Math.round(data.freeHours * 10) / 10 : '-';
+  const scheduledHours =
+    data?.scheduledHoursThisWeek !== undefined
+      ? Math.round(data.scheduledHoursThisWeek * 10) / 10
+      : '-';
+  const freeHours = data?.freeHours !== undefined ? Math.round(data.freeHours * 10) / 10 : '-';
 
   const metrics = [
     {
@@ -45,55 +49,52 @@ export const ScheduleOverviewWidget: WidgetComponentType = ({ data, isEditing })
   ];
 
   return (
-    <Card className="shadow-sm h-full flex flex-col group overflow-hidden border border-border/50">
-      <CardHeader className="border-b bg-muted/5 pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">
-            {t('scheduleOverviewTitle')}
-          </CardTitle>
-          {!isEditing && (
+    <DashboardWidget>
+      <DashboardWidgetHeader
+        title={t('scheduleOverviewTitle')}
+        icon={CalendarCheck}
+        action={
+          !isEditing ? (
             <Link
               href="/admin/schedule"
-              className="flex items-center text-xs font-medium text-primary hover:underline"
+              className="flex min-h-11 items-center rounded-md px-2 text-xs font-medium text-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               Подробнее
               <ChevronRight className="ml-1 h-3 w-3" />
             </Link>
-          )}
-        </div>
-      </CardHeader>
+          ) : null
+        }
+      />
       <CardContent className="flex-1 p-0">
-        <div className="grid grid-cols-2 divide-x divide-y divide-border/50 h-full">
-          {metrics.map((metric, idx) => {
+        <div className="grid h-full grid-cols-2 divide-x divide-y divide-border/50">
+          {metrics.map(metric => {
             const Icon = metric.icon;
             return (
               <div
-                key={idx}
+                key={metric.title}
                 className={cn(
-                  'flex flex-col justify-center p-4 transition-colors',
-                  !isEditing && 'hover:bg-primary/5'
+                  'flex min-h-32 flex-col justify-center p-4 sm:p-5',
+                  !isEditing && 'transition-colors duration-200 hover:bg-muted/20'
                 )}
               >
                 <div className="flex items-center gap-2 mb-2">
-                  <div className={cn('p-1.5 rounded-md', metric.colorClass)}>
+                  <div className={cn('rounded-lg p-2', metric.colorClass)}>
                     <Icon className="h-4 w-4" />
                   </div>
-                  <span className="text-xs font-semibold text-muted-foreground truncate">
+                  <span className="truncate text-xs font-medium text-muted-foreground">
                     {metric.title}
                   </span>
                 </div>
-                <div className="text-2xl font-bold tracking-tight text-foreground">
+                <div className="text-2xl font-semibold tracking-tight text-foreground">
                   {metric.value}
                 </div>
-                <div className="text-[10px] sm:text-xs text-muted-foreground/80 mt-1 truncate">
-                  {metric.desc}
-                </div>
+                <div className="mt-1 truncate text-xs text-muted-foreground">{metric.desc}</div>
               </div>
             );
           })}
         </div>
       </CardContent>
-    </Card>
+    </DashboardWidget>
   );
 };
 

@@ -3,8 +3,12 @@
 import React from 'react';
 import useSWR from 'swr';
 import { useTranslations } from 'next-intl';
-import { getClientDashboardStats, saveDashboardConfig } from '@/app/api/actions/dashboard-actions';
-import { DashboardGrid, WidgetConfig } from '@/components/dashboard/dashboard-grid';
+import {
+  getClientDashboardStats,
+  saveClientDashboardConfig
+} from '@/app/api/actions/dashboard-actions';
+import { DashboardGrid } from '@/components/dashboard/dashboard-grid';
+import type { WidgetConfig } from '@/lib/dashboard-config';
 import { Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -33,12 +37,7 @@ const AVAILABLE_WIDGETS = {
 const DEFAULT_LAYOUT: WidgetConfig[] = [
   { id: '1', type: 'pendingSurveys' },
   { id: '2', type: 'nextSession' },
-  { id: '3', type: 'completedSurveys' },
-  { id: '4', type: 'nextSteps' },
-  { id: '5', type: 'accountOverview' },
-  { id: '6', type: 'balance' },
-  { id: '7', type: 'files' },
-  { id: '8', type: 'notes' }
+  { id: '3', type: 'nextSteps' }
 ];
 
 export default function MyDashboardPage() {
@@ -90,7 +89,8 @@ export default function MyDashboardPage() {
 
       <div className={isLoading ? 'opacity-50 pointer-events-none' : ''}>
         <DashboardGrid
-          storageKey="client_dashboard_layout"
+          initialLayout={data?.dashboardConfig}
+          onSave={saveClientDashboardConfig}
           defaultLayout={DEFAULT_LAYOUT}
           availableWidgets={AVAILABLE_WIDGETS}
           widgetLabels={widgetLabels}
