@@ -1,5 +1,8 @@
 'use client';
 
+import React from 'react';
+import { useTranslations } from 'next-intl';
+import { useBreadcrumbContext } from '@/components/breadcrumb-context';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -8,21 +11,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator
 } from '@/components/ui/breadcrumb';
-import React from 'react';
-import { useBreadcrumbContext } from '@/components/breadcrumb-context';
 import { Link, usePathname } from '@/i18n/navigation';
-
-const routeNameMap: Record<string, string> = {
-  admin: 'Dashboard',
-  users: 'Users',
-  settings: 'Settings',
-  surveys: 'Surveys',
-  payments: 'Payments',
-  backups: 'Backups',
-  logs: 'System Logs',
-  profile: 'Profile',
-  create: 'Create'
-};
 
 /**
  * Breadcrumbs для админ-панели.
@@ -30,21 +19,43 @@ const routeNameMap: Record<string, string> = {
  */
 export const AdminBreadcrumbs = () => {
   const pathname = usePathname();
+  const t = useTranslations('Admin.sidebarMenu');
+  const tSurveys = useTranslations('AdminSurveys');
   const { dynamicSegments } = useBreadcrumbContext();
   const segments = (pathname || '').split('/').filter(Boolean);
 
   const adminIndex = segments.indexOf('admin');
   const displaySegments = segments.slice(adminIndex + 1);
+  const routeNameMap: Record<string, string> = {
+    users: t('users'),
+    settings: t('settings'),
+    surveys: t('surveys'),
+    clients: t('clients'),
+    schedule: t('schedule'),
+    payments: t('payments'),
+    packages: t('packages'),
+    blog: t('blog'),
+    'send-email': t('sendEmail'),
+    backups: t('backups'),
+    logs: t('logs'),
+    apps: t('apps'),
+    profile: t('profile'),
+    create: tSurveys('createSurveyTitle')
+  };
 
   return (
-    <Breadcrumb>
-      <BreadcrumbList>
-        <BreadcrumbItem className="hidden md:block">
-          <BreadcrumbLink asChild>
-            <Link href="/admin">Admin Panel</Link>
-          </BreadcrumbLink>
-        </BreadcrumbItem>
-        {displaySegments.length > 0 && <BreadcrumbSeparator className="hidden md:block" />}
+    <Breadcrumb className="min-w-0">
+      <BreadcrumbList className="flex-nowrap overflow-hidden">
+        {displaySegments.length > 0 && (
+          <>
+            <BreadcrumbItem className="hidden md:inline-flex">
+              <BreadcrumbLink asChild className="whitespace-nowrap">
+                <Link href="/admin">{t('adminPanel')}</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator className="hidden md:block" />
+          </>
+        )}
         {displaySegments.map((segment, index) => {
           const isLast = index === displaySegments.length - 1;
           const href = `/admin/${displaySegments.slice(0, index + 1).join('/')}`;
@@ -55,22 +66,22 @@ export const AdminBreadcrumbs = () => {
 
           return (
             <React.Fragment key={`${segment}-${index}`}>
-              <BreadcrumbItem>
+              <BreadcrumbItem className={isLast ? 'min-w-0' : 'hidden md:inline-flex'}>
                 {isLast ? (
-                  <BreadcrumbPage>{name}</BreadcrumbPage>
+                  <BreadcrumbPage className="truncate font-medium">{name}</BreadcrumbPage>
                 ) : (
-                  <BreadcrumbLink asChild>
+                  <BreadcrumbLink asChild className="whitespace-nowrap">
                     <Link href={href}>{name}</Link>
                   </BreadcrumbLink>
                 )}
               </BreadcrumbItem>
-              {!isLast && <BreadcrumbSeparator />}
+              {!isLast && <BreadcrumbSeparator className="hidden md:block" />}
             </React.Fragment>
           );
         })}
         {displaySegments.length === 0 && (
-          <BreadcrumbItem>
-            <BreadcrumbPage>Dashboard</BreadcrumbPage>
+          <BreadcrumbItem className="min-w-0">
+            <BreadcrumbPage className="truncate font-medium">{t('dashboard')}</BreadcrumbPage>
           </BreadcrumbItem>
         )}
       </BreadcrumbList>

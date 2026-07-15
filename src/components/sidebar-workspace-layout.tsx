@@ -2,7 +2,6 @@
 
 import type { ReactNode } from 'react';
 import { BreadcrumbProvider } from '@/components/breadcrumb-context';
-import { Separator } from '@/components/ui/separator';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 
 interface SidebarWorkspaceLayoutProps {
@@ -31,14 +30,13 @@ export const SidebarWorkspaceLayout = ({
       {sidebar}
       <SidebarInset>
         <BreadcrumbProvider>
-          <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border/60 px-4 transition-[width,height] duration-200 group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-            <div className="flex min-w-0 items-center gap-2">
-              <SidebarTrigger className="-ml-1 size-10 md:size-8" />
-              <Separator orientation="vertical" className="mr-2 h-4" />
-              {breadcrumbs}
+          <header className="sticky top-0 z-10 shrink-0 bg-background p-2 md:rounded-t-xl">
+            <div className="flex h-12 min-w-0 items-center gap-2 rounded-xl bg-muted/50 px-1.5 sm:px-2">
+              <SidebarTrigger className="size-10 shrink-0 rounded-lg hover:bg-background/80 md:size-9" />
+              <div className="min-w-0 flex-1 px-1">{breadcrumbs}</div>
             </div>
           </header>
-          <div className="flex flex-1 flex-col gap-4 p-4 pt-6">{children}</div>
+          <div className="flex flex-1 flex-col gap-4 p-4 pt-5 md:p-6">{children}</div>
         </BreadcrumbProvider>
         {afterContent}
       </SidebarInset>

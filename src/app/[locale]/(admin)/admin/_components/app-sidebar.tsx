@@ -172,7 +172,7 @@ export function AppSidebar({ user, unreadSurveysCount = 0, ...props }: AppSideba
 
   return (
     <Sidebar variant="inset" collapsible="icon" {...props}>
-      <SidebarHeader className="border-b border-sidebar-border/70 p-3">
+      <SidebarHeader className="p-3">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild className="h-12 rounded-xl px-2">
