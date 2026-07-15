@@ -2,8 +2,7 @@
 
 import React from 'react';
 import useSWR from 'swr';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+
 import { useTranslations } from 'next-intl';
 import { getAdminDashboardStats, saveDashboardConfig } from '@/app/api/actions/dashboard-actions';
 import { DashboardGrid, WidgetConfig } from '@/components/dashboard/dashboard-grid';
@@ -77,29 +76,6 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 pb-6 animate-in fade-in duration-300">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between border-b border-border/50 pb-4">
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl text-foreground">
-            {t('dashboardTitle')}
-          </h1>
-          <p className="max-w-2xl text-sm leading-6 text-muted-foreground/80">
-            {t('dashboardSubtitle')}
-          </p>
-        </div>
-        <div className="grid grid-cols-2 gap-2 sm:flex">
-          <Button
-            asChild
-            variant="outline"
-            className="w-full sm:w-auto shadow-sm hover:bg-primary/5 hover:border-primary/30 transition-colors"
-          >
-            <Link href="/admin/schedule">{t('openSchedule')}</Link>
-          </Button>
-          <Button asChild className="w-full sm:w-auto shadow-md">
-            <Link href="/admin/users">{t('manageUsers')}</Link>
-          </Button>
-        </div>
-      </div>
-
       <div className={isLoading ? 'opacity-50 pointer-events-none' : ''}>
         <DashboardGrid
           storageKey="admin_dashboard_layout"
