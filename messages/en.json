@@ -306,6 +306,12 @@
     "detailsRegIp": "Registration IP",
     "detailsLoginHistory": "Recent logins (last 3)",
     "sidebarMenu": {
+      "adminPanel": "Admin workspace",
+      "groupOverview": "Overview",
+      "groupPeople": "People",
+      "groupOperations": "Operations",
+      "groupContent": "Content",
+      "groupSystem": "System",
       "dashboard": "Dashboard",
       "users": "Users",
       "surveys": "Surveys",
@@ -605,6 +611,9 @@
     "paymentsPlaceholder": "Here you will see your payment history and make payments.",
     "dataPlaceholder": "Here you will fill out your personal questionnaire.",
     "sidebarMenu": {
+      "groupMain": "Main",
+      "groupResources": "Resources",
+      "groupAccount": "Account",
       "title": "My Account",
       "dashboard": "Dashboard",
       "surveys": "Forms & Tests",

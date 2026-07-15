@@ -5,7 +5,7 @@ import { type ReactNode } from 'react';
 import { auth } from '@/auth';
 import { AdminBreadcrumbs } from './_components/admin-breadcrumbs';
 import { AppSidebar } from './_components/app-sidebar';
-import { SIDEBAR_COOKIE_NAME } from '@/components/ui/sidebar';
+import { getDefaultSidebarOpen, SIDEBAR_COOKIE_NAME } from '@/lib/sidebar-state';
 import { SidebarWorkspaceLayout } from '@/components/sidebar-workspace-layout';
 import { getAdminUnreadSurveysCount } from './surveys/actions';
 
@@ -29,9 +29,9 @@ interface AdminLayoutProps {
 const AdminLayout = async ({ children }: Readonly<AdminLayoutProps>) => {
   const session = await auth();
   const cookieStore = await cookies();
-  const defaultSidebarOpen =
-    cookieStore.get(SIDEBAR_COOKIE_NAME)?.value === 'true' ||
-    cookieStore.get('sidebar:state')?.value === 'true';
+  const sidebarCookieValue =
+    cookieStore.get(SIDEBAR_COOKIE_NAME)?.value ?? cookieStore.get('sidebar:state')?.value;
+  const defaultSidebarOpen = getDefaultSidebarOpen(sidebarCookieValue);
 
   if (!session?.user) {
     redirect('/auth');

@@ -296,6 +296,12 @@
     "detailsRegIp": "IP registracije",
     "detailsLoginHistory": "Poslednje prijave (3)",
     "sidebarMenu": {
+      "adminPanel": "Administracija",
+      "groupOverview": "Pregled",
+      "groupPeople": "Korisnici",
+      "groupOperations": "Rad",
+      "groupContent": "Sadržaj",
+      "groupSystem": "Sistem",
       "dashboard": "Kontrolna tabla",
       "users": "Korisnici",
       "surveys": "Ankete",
@@ -595,6 +601,9 @@
     "paymentsPlaceholder": "Ovde ćete videti istoriju plaćanja i moći da vršite uplate.",
     "dataPlaceholder": "Ovde ćete popuniti vaš lični upitnik.",
     "sidebarMenu": {
+      "groupMain": "Glavno",
+      "groupResources": "Resursi",
+      "groupAccount": "Nalog",
       "title": "Lični nalog",
       "dashboard": "Kontrolna tabla",
       "surveys": "Ankete i testovi",

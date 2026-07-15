@@ -306,6 +306,12 @@
     "detailsRegIp": "IP регистрации",
     "detailsLoginHistory": "Последние входы (3)",
     "sidebarMenu": {
+      "adminPanel": "Панель управления",
+      "groupOverview": "Обзор",
+      "groupPeople": "Люди",
+      "groupOperations": "Работа",
+      "groupContent": "Контент",
+      "groupSystem": "Система",
       "dashboard": "Дашборд",
       "users": "Пользователи",
       "surveys": "Опросы",
@@ -609,6 +615,9 @@
     "dataPlaceholder": "Здесь будет ваша персональная анкета.",
     "sidebarMenu": {
       "title": "Личный кабинет",
+      "groupMain": "Главное",
+      "groupResources": "Ресурсы",
+      "groupAccount": "Аккаунт",
       "dashboard": "Дашборд",
       "surveys": "Анкеты и тесты",
       "sessions": "Мои сессии",

@@ -31,9 +31,9 @@ export const SidebarWorkspaceLayout = ({
       {sidebar}
       <SidebarInset>
         <BreadcrumbProvider>
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-            <div className="flex items-center gap-2 px-4">
-              <SidebarTrigger className="-ml-1 h-9 w-9 md:h-7 md:w-7" />
+          <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border/60 px-4 transition-[width,height] duration-200 group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+            <div className="flex min-w-0 items-center gap-2">
+              <SidebarTrigger className="-ml-1 size-10 md:size-8" />
               <Separator orientation="vertical" className="mr-2 h-4" />
               {breadcrumbs}
             </div>

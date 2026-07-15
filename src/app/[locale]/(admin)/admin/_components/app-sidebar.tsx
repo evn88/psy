@@ -12,6 +12,7 @@ import {
   Home,
   LayoutDashboard,
   LogOut,
+  Package,
   ScrollText,
   Send,
   Settings,
@@ -21,8 +22,11 @@ import {
   Users
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
-import { cn } from '@/lib/utils';
 import { Link, usePathname } from '@/i18n/navigation';
+import {
+  WorkspaceSidebarNav,
+  type WorkspaceSidebarGroup
+} from '@/components/workspace-sidebar-nav';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -70,146 +74,144 @@ export function AppSidebar({ user, unreadSurveysCount = 0, ...props }: AppSideba
     if (isMobile) setOpenMobile(false);
   };
 
-  const routes = [
-    {
+  const routes = {
+    dashboard: {
       title: tItems('dashboard'),
       url: '/admin',
       icon: LayoutDashboard,
       isActive: pathname === '/admin'
     },
-    {
+    users: {
       title: tItems('users'),
       url: '/admin/users',
       icon: Users,
       isActive: pathname.startsWith('/admin/users')
     },
-    {
+    clients: {
       title: tItems('clients'),
       url: '/admin/clients',
       icon: UserCircle,
       isActive: pathname.startsWith('/admin/clients')
     },
-    {
+    surveys: {
       title: tItems('surveys'),
       url: '/admin/surveys',
       icon: ClipboardList,
-      isActive: pathname.startsWith('/admin/surveys')
+      isActive: pathname.startsWith('/admin/surveys'),
+      badge: unreadSurveysCount
     },
-    {
+    schedule: {
       title: tItems('schedule'),
       url: '/admin/schedule',
       icon: Calendar,
       isActive: pathname.startsWith('/admin/schedule')
     },
-    {
+    payments: {
       title: tItems('payments'),
       url: '/admin/payments',
       icon: CreditCard,
       isActive: pathname === '/admin/payments'
     },
-    {
+    packages: {
       title: tItems('packages'),
       url: '/admin/payments/packages',
-      icon: CreditCard, // We can reuse icon or use another later
+      icon: Package,
       isActive: pathname.startsWith('/admin/payments/packages')
     },
-    {
+    blog: {
       title: tItems('blog'),
       url: '/admin/blog',
       icon: BookOpen,
       isActive: pathname.startsWith('/admin/blog')
     },
-    {
+    sendEmail: {
       title: tItems('sendEmail'),
       url: '/admin/send-email',
       icon: Send,
       isActive: pathname.startsWith('/admin/send-email')
     },
-    {
+    backups: {
       title: tItems('backups'),
       url: '/admin/backups',
       icon: ShieldEllipsis,
       isActive: pathname.startsWith('/admin/backups')
     },
-    {
+    logs: {
       title: tItems('logs'),
       url: '/admin/logs',
       icon: ScrollText,
       isActive: pathname.startsWith('/admin/logs')
     },
-    {
+    apps: {
       title: tItems('apps'),
       url: '/app',
       icon: AppWindow,
       isActive: pathname.startsWith('/app')
     },
-    {
+    profile: {
       title: tItems('profile'),
       url: '/admin/profile',
       icon: User,
       isActive: pathname.startsWith('/admin/profile')
     }
+  } satisfies Record<string, WorkspaceSidebarGroup['routes'][number]>;
+
+  const navigationGroups: WorkspaceSidebarGroup[] = [
+    { label: tItems('groupOverview'), routes: [routes.dashboard] },
+    {
+      label: tItems('groupPeople'),
+      routes: [routes.users, routes.clients, routes.surveys]
+    },
+    {
+      label: tItems('groupOperations'),
+      routes: [routes.schedule, routes.payments, routes.packages, routes.sendEmail]
+    },
+    { label: tItems('groupContent'), routes: [routes.blog, routes.apps] },
+    { label: tItems('groupSystem'), routes: [routes.backups, routes.logs, routes.profile] }
   ];
 
   return (
-    <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader>
+    <Sidebar variant="inset" collapsible="icon" {...props}>
+      <SidebarHeader className="border-b border-sidebar-border/70 p-3">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
+            <SidebarMenuButton size="lg" asChild className="h-12 rounded-xl px-2">
               <Link href="/admin">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                   <Brain className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:!hidden">
-                  <span className="truncate font-semibold">Vershkov Admin</span>
+                  <span className="truncate font-semibold">Vershkov</span>
+                  <span className="truncate text-xs text-sidebar-foreground/60">
+                    {tItems('adminPanel')}
+                  </span>
                 </div>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
-        <SidebarMenu>
-          {routes.map(item => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton
-                asChild
-                isActive={item.isActive}
-                tooltip={item.title}
-                className="h-11 pl-4 md:h-8 md:pl-2"
-              >
-                <Link href={item.url} onClick={closeMobileSidebar}>
-                  <item.icon />
-                  <div
-                    className={cn(
-                      'absolute right-2 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-destructive animate-pulse group-data-[collapsible=icon]:right-1.5 group-data-[collapsible=icon]:top-1.5 group-data-[collapsible=icon]:translate-y-0',
-                      item.url === '/admin/surveys' && unreadSurveysCount > 0 ? 'block' : 'hidden'
-                    )}
-                  />
-                  <span>{item.title}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
+      <SidebarContent className="px-1 py-1">
+        <WorkspaceSidebarNav groups={navigationGroups} />
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="border-t border-sidebar-border/70 p-3">
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton
                   size="lg"
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                  className="h-12 rounded-xl px-2 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                 >
-                  <Avatar className="h-8 w-8 rounded-lg">
+                  <Avatar className="size-8 rounded-lg">
                     <AvatarImage src={user.image || ''} alt={user.name || ''} />
                     <AvatarFallback className="rounded-lg">{user.name?.[0] || 'U'}</AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:!hidden">
                     <span className="truncate font-semibold">{user.name}</span>
-                    <span className="truncate text-xs">{user.email}</span>
+                    <span className="truncate text-xs text-sidebar-foreground/60">
+                      {user.email}
+                    </span>
                   </div>
                   <ChevronsUpDown className="ml-auto size-4 group-data-[collapsible=icon]:!hidden" />
                 </SidebarMenuButton>
@@ -222,7 +224,7 @@ export function AppSidebar({ user, unreadSurveysCount = 0, ...props }: AppSideba
               >
                 <DropdownMenuLabel className="p-0 font-normal">
                   <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                    <Avatar className="h-8 w-8 rounded-lg">
+                    <Avatar className="size-8 rounded-lg">
                       <AvatarImage src={user.image || ''} alt={user.name || ''} />
                       <AvatarFallback className="rounded-lg">
                         {user.name?.[0] || 'U'}
@@ -271,7 +273,7 @@ export function AppSidebar({ user, unreadSurveysCount = 0, ...props }: AppSideba
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => signOut({ callbackUrl: '/' })}
-                  className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                  className="text-destructive focus:bg-destructive/10 focus:text-destructive"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   {tAuth('signOut')}
