@@ -15,7 +15,7 @@ interface DashboardWidgetProps extends ComponentProps<typeof Card> {
 export const DashboardWidget = ({ className, children, ...props }: DashboardWidgetProps) => (
   <Card
     className={cn(
-      'flex h-full flex-col overflow-hidden border-border/60 bg-card shadow-sm',
+      'flex h-full flex-col overflow-hidden border-border/70 bg-card shadow-sm',
       className
     )}
     {...props}
@@ -35,7 +35,7 @@ export const DashboardWidgetHeader = ({
   icon: Icon,
   action
 }: DashboardWidgetHeaderProps) => (
-  <CardHeader className="flex min-h-14 flex-row items-center justify-between gap-3 space-y-0 border-b border-border/50 px-5 py-3.5">
+  <CardHeader className="flex min-h-14 flex-row items-center justify-between gap-3 space-y-0 border-b border-border/50 bg-muted/30 px-5 py-3.5 dark:bg-transparent">
     <div className="flex min-w-0 items-center gap-2.5">
       {Icon ? (
         <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
@@ -76,7 +76,8 @@ export const DashboardStatWidget = ({
         'transition-[border-color,background-color,box-shadow] duration-200',
         isInteractive &&
           'group-hover:border-primary/35 group-hover:bg-muted/20 group-hover:shadow-md group-focus-visible:border-primary/50 group-focus-visible:ring-2 group-focus-visible:ring-ring group-focus-visible:ring-offset-2',
-        tone === 'warning' && 'border-destructive/25'
+        tone === 'accent' && 'bg-primary/[0.045] dark:bg-card',
+        tone === 'warning' && 'border-destructive/25 bg-destructive/[0.025] dark:bg-card'
       )}
     >
       <CardContent className="flex h-full min-h-40 flex-col justify-between p-5">

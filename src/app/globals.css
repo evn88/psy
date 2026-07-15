@@ -324,6 +324,26 @@ body {
     --sidebar-border: 220 10% 20%;
     --sidebar-ring: 264 70% 66%;
   }
+
+  html:not(.dark) .workspace-shell {
+    --background: 255 32% 95%;
+    --foreground: 255 18% 20%;
+    --card: 255 30% 98%;
+    --card-foreground: 255 18% 20%;
+    --secondary: 255 26% 90%;
+    --secondary-foreground: 255 28% 25%;
+    --muted: 252 24% 91%;
+    --muted-foreground: 252 10% 42%;
+    --accent: 264 45% 92%;
+    --accent-foreground: 264 55% 30%;
+    --border: 253 20% 84%;
+    --input: 253 20% 82%;
+    --sidebar-background: 255 28% 94%;
+    --sidebar-foreground: 255 18% 20%;
+    --sidebar-accent: 264 42% 90%;
+    --sidebar-accent-foreground: 264 50% 28%;
+    --sidebar-border: 253 18% 82%;
+  }
 }
 
 @layer base {
