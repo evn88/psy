@@ -33,11 +33,11 @@ export const AccountOverviewWidget: WidgetComponentType = ({ data, isEditing }) 
           asChild
           variant="outline"
           disabled={isEditing}
-          className="h-11 w-full rounded-lg shadow-none"
+          className="h-auto min-h-11 w-full justify-start whitespace-normal rounded-lg px-4 py-2.5 text-left leading-5 shadow-none"
         >
           <Link href="/my/profile">
-            <UserRound className="h-4 w-4 mr-2 text-muted-foreground/70" />
-            {t('editProfile')}
+            <UserRound className="size-4 shrink-0 text-muted-foreground/70" />
+            <span className="min-w-0">{t('editProfile')}</span>
           </Link>
         </Button>
       </CardContent>

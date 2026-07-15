@@ -176,7 +176,7 @@ export function DashboardGrid({
 
   if (!isLoaded) {
     return (
-      <div className="grid auto-rows-min gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid auto-rows-min gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
         {defaultLayout.map(widget => (
           <div key={widget.id} className="h-48 w-full animate-pulse rounded-xl bg-muted/30" />
         ))}
@@ -267,7 +267,7 @@ export function DashboardGrid({
         onDragCancel={handleDragCancel}
       >
         <SortableContext items={layout.map(widget => widget.id)} strategy={rectSortingStrategy}>
-          <div className="grid auto-rows-min gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid auto-rows-min gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             {layout.map((widget: WidgetConfig) => {
               const WidgetComponent = availableWidgets[widget.type];
               if (!WidgetComponent) return null;
