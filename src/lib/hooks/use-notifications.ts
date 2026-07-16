@@ -1,11 +1,29 @@
 'use client';
 
+import { useSyncExternalStore } from 'react';
 import useSWR from 'swr';
 
 import type { AppNotificationDto, UseNotificationsResult } from '@/modules/notifications/types';
 
 const NOTIFICATIONS_API_URL = '/api/notifications';
-const NOTIFICATIONS_REFRESH_INTERVAL_MS = 5_000;
+const NOTIFICATIONS_REFRESH_INTERVAL_MS = 30_000;
+
+const subscribeToPageActivity = (onStoreChange: () => void): (() => void) => {
+  window.addEventListener('focus', onStoreChange);
+  window.addEventListener('blur', onStoreChange);
+  document.addEventListener('visibilitychange', onStoreChange);
+
+  return () => {
+    window.removeEventListener('focus', onStoreChange);
+    window.removeEventListener('blur', onStoreChange);
+    document.removeEventListener('visibilitychange', onStoreChange);
+  };
+};
+
+const getPageActivitySnapshot = (): boolean =>
+  document.visibilityState === 'visible' && document.hasFocus();
+
+const getServerPageActivitySnapshot = (): boolean => false;
 
 const fetchNotifications = async (url: string): Promise<AppNotificationDto[]> => {
   const response = await fetch(url, { cache: 'no-store' });
@@ -28,11 +46,16 @@ const requestOrThrow = async (url: string, init: RequestInit): Promise<void> => 
  * @returns Список, счётчик и optimistic-действия чтения/очистки.
  */
 export const useNotifications = (): UseNotificationsResult => {
+  const isPageActive = useSyncExternalStore(
+    subscribeToPageActivity,
+    getPageActivitySnapshot,
+    getServerPageActivitySnapshot
+  );
   const { data, error, isLoading, isValidating, mutate } = useSWR<AppNotificationDto[]>(
-    NOTIFICATIONS_API_URL,
+    isPageActive ? NOTIFICATIONS_API_URL : null,
     fetchNotifications,
     {
-      refreshInterval: NOTIFICATIONS_REFRESH_INTERVAL_MS,
+      refreshInterval: isPageActive ? NOTIFICATIONS_REFRESH_INTERVAL_MS : 0,
       refreshWhenHidden: false,
       refreshWhenOffline: false,
       revalidateOnFocus: true,
