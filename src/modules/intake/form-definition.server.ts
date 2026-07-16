@@ -1,14 +1,34 @@
 import { Prisma } from '@prisma/client';
 import prisma from '@/lib/prisma';
 import {
-  defaultIntakeFormSteps,
+  getDefaultIntakeFormSteps,
   intakeFormStepsSchema,
+  type DefaultIntakeFormMessages,
   type IntakeFormSteps
 } from './form-definition';
+import englishMessages from '../../../messages/en.json';
+import russianMessages from '../../../messages/ru.json';
+import serbianMessages from '../../../messages/sr.json';
+import { type AppLocale, defaultLocale, isLocale } from '@/i18n/config';
 
 export type IntakeFormDefinition = {
   version: number;
   steps: IntakeFormSteps;
+};
+
+const defaultMessagesByLocale: Record<AppLocale, DefaultIntakeFormMessages> = {
+  ru: russianMessages.IntakeWizard,
+  en: englishMessages.IntakeWizard,
+  sr: serbianMessages.IntakeWizard
+};
+
+const getFallbackDefinition = (locale: string): IntakeFormDefinition => {
+  const normalizedLocale = isLocale(locale) ? locale : defaultLocale;
+
+  return {
+    version: 1,
+    steps: getDefaultIntakeFormSteps(defaultMessagesByLocale[normalizedLocale])
+  };
 };
 
 /** Возвращает опубликованную форму или безопасную стартовую структуру. */
@@ -19,12 +39,12 @@ export const getIntakeFormDefinition = async (locale: string): Promise<IntakeFor
   });
 
   if (!configuration) {
-    return { version: 1, steps: defaultIntakeFormSteps };
+    return getFallbackDefinition(locale);
   }
 
   const parsedSteps = intakeFormStepsSchema.safeParse(configuration.steps);
   if (!parsedSteps.success) {
-    return { version: 1, steps: defaultIntakeFormSteps };
+    return getFallbackDefinition(locale);
   }
 
   return { version: configuration.version, steps: parsedSteps.data };

@@ -1242,7 +1242,14 @@
       "commentHelper": "Ovde možete navesti prethodno iskustvo u terapiji, prisustvo psihijatrijskih dijagnoza, uzimanje lekova ili bilo koje druge detalje.",
       "securityNotice": "Vaši odgovori su zaštićeni \"end-to-end\" (AES-256-GCM) enkripcijom. To osigurava da se podaci prenose i čuvaju u šifrovanom formatu: pristup podacima ima isključivo psiholog.",
       "digitalSignatureNote": "Potvrđujem da sam upoznat(a) sa Politikom privatnosti. Klik na dugme \"Dalje\" predstavlja moj elektronski potpis u skladu sa Zakonom o elektronskom dokumentu i ZZPL-om Republike Srbije. Autentičnost moje saglasnosti se potvrđuje jedinstvenim serverskim HMAC otiskom moje sesije.",
-      "consentLabel": "Dajem izričitu saglasnost za obradu mojih podataka o ličnosti, uključujući podatke o mom psihološkom stanju."
+      "consentLabel": "Dajem izričitu saglasnost za obradu mojih podataka o ličnosti, uključujući podatke o mom psihološkom stanju.",
+      "consentRequired": "Potrebno je da date saglasnost za obradu podataka o ličnosti."
+    },
+    "steps": {
+      "personalData": "Upoznavanje",
+      "mainRequest": "Vaš upit",
+      "topics": "Aktuelne teme",
+      "comment": "Dodatno"
     },
     "checklist": {
       "masking_identity": "Maskiranje zbog kojeg se gubi osećaj sopstvenog identiteta",

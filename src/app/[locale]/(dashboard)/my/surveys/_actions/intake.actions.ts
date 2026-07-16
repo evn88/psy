@@ -6,7 +6,11 @@ import { sendAdminIntakeNotificationToAdmin } from '@/lib/email';
 import { headers } from 'next/headers';
 import { auth } from '@/auth';
 import { Prisma } from '@prisma/client';
-import { intakeFormStepsSchema, isValidIntakeAnswer } from '@/modules/intake/form-definition';
+import {
+  intakeFormStepsSchema,
+  isIntakeConsentAccepted,
+  isValidIntakeAnswer
+} from '@/modules/intake/form-definition';
 import { getIntakeFormDefinition } from '@/modules/intake/form-definition.server';
 import { defaultLocale, isLocale } from '@/i18n/config';
 import {
@@ -24,14 +28,19 @@ const hasNewIntakeNotificationsDisabled = (value: unknown): boolean => {
 /**
  * Отправка ответов анкеты Intake.
  * @param locale - Локаль опубликованной формы.
- * @param answers - Объект с ответами.
+ * @param values - Объект с ответами и согласием на обработку персональных данных.
  * @returns Объект с результатом операции.
  */
-export async function submitIntake(locale: string, answers: Record<string, unknown>) {
+export async function submitIntake(locale: string, values: Record<string, unknown>) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
       throw new Error('Unauthorized');
+    }
+
+    const { consent, ...answers } = values;
+    if (!isIntakeConsentAccepted(consent)) {
+      return { success: false, error: 'Необходимо согласие на обработку персональных данных' };
     }
 
     const userId = session.user.id;

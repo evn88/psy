@@ -99,8 +99,7 @@ export const IntakeWizardModal = ({ definition, locale, triggerText }: IntakeWiz
 
   const handleSubmit = (values: IntakeValues) => {
     startTransition(async () => {
-      const { consent: _consent, ...answers } = values;
-      const result = await submitIntake(locale, answers);
+      const result = await submitIntake(locale, values);
       if (!result.success) {
         toast.error(t('error'));
         return;

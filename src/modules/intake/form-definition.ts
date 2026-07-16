@@ -96,27 +96,68 @@ export const intakeFormStepsSchema = z
 export type IntakeFormSteps = z.infer<typeof intakeFormStepsSchema>;
 export type IntakeQuestion = z.infer<typeof intakeQuestionSchema>;
 
+type DefaultIntakeChecklistOptionId =
+  | 'masking_identity'
+  | 'self_comparison'
+  | 'self_acceptance'
+  | 'self_esteem'
+  | 'loneliness'
+  | 'anxiety'
+  | 'sleep_issues'
+  | 'emigration'
+  | 'career_lost'
+  | 'work_cycle'
+  | 'procrastination'
+  | 'loneliness_people'
+  | 'emotional_outbursts'
+  | 'negative_loop'
+  | 'burnout'
+  | 'motivation'
+  | 'goals'
+  | 'daily_load'
+  | 'adhd'
+  | 'asd'
+  | 'binge_eating'
+  | 'bulimia'
+  | 'other';
+
+export type DefaultIntakeFormMessages = {
+  fields: {
+    nameLabel: string;
+    nameHelper: string;
+    ageLabel: string;
+    ageHelper: string;
+    mainRequestLabel: string;
+    mainRequestHelper: string;
+    checklistLabel: string;
+    checklistHelper: string;
+    commentLabel: string;
+    commentHelper: string;
+  };
+  steps: Record<'personalData' | 'mainRequest' | 'topics' | 'comment', string>;
+  checklist: Record<DefaultIntakeChecklistOptionId, string>;
+};
+
 /**
- * Структура анкеты по умолчанию. Она сохраняет прежние вопросы и служит стартовой точкой
- * в редакторе, пока администратор не опубликует свою версию.
+ * Собирает локализованную структуру анкеты по умолчанию для редактора и клиентского мастера.
  */
-export const defaultIntakeFormSteps: IntakeFormSteps = [
+export const getDefaultIntakeFormSteps = (messages: DefaultIntakeFormMessages): IntakeFormSteps => [
   {
     id: 'personal-data',
-    title: 'Знакомство',
+    title: messages.steps.personalData,
     questions: [
       {
         id: 'name',
-        label: 'Как к вам обращаться?',
-        helperText: 'Укажите имя, которым вам комфортно, чтобы я к вам обращалась.',
+        label: messages.fields.nameLabel,
+        helperText: messages.fields.nameHelper,
         type: 'SHORT_TEXT',
         required: true,
         options: []
       },
       {
         id: 'age',
-        label: 'Возраст',
-        helperText: 'Это помогает лучше учитывать жизненный контекст.',
+        label: messages.fields.ageLabel,
+        helperText: messages.fields.ageHelper,
         type: 'NUMBER',
         required: true,
         options: []
@@ -125,12 +166,12 @@ export const defaultIntakeFormSteps: IntakeFormSteps = [
   },
   {
     id: 'main-request',
-    title: 'Ваш запрос',
+    title: messages.steps.mainRequest,
     questions: [
       {
         id: 'mainRequest',
-        label: 'Опишите ваш запрос на терапию',
-        helperText: 'Можно тезисно — основные темы, с которыми вы хотите поработать.',
+        label: messages.fields.mainRequestLabel,
+        helperText: messages.fields.mainRequestHelper,
         type: 'LONG_TEXT',
         required: true,
         options: []
@@ -139,68 +180,68 @@ export const defaultIntakeFormSteps: IntakeFormSteps = [
   },
   {
     id: 'topics',
-    title: 'Актуальные темы',
+    title: messages.steps.topics,
     questions: [
       {
         id: 'requestChecklist',
-        label: 'Какие темы актуальны для вас сейчас?',
-        helperText: 'Можно выбрать несколько пунктов.',
+        label: messages.fields.checklistLabel,
+        helperText: messages.fields.checklistHelper,
         type: 'MULTI_CHOICE',
         required: false,
         options: [
           {
             id: 'masking_identity',
-            label: 'Маскинг, за которым теряется ощущение своей идентичности'
+            label: messages.checklist.masking_identity
           },
           {
             id: 'self_comparison',
-            label: 'Постоянное сравнение себя с другими, мысли: «что со мной не так?»'
+            label: messages.checklist.self_comparison
           },
-          { id: 'self_acceptance', label: 'Трудности с принятием себя' },
-          { id: 'self_esteem', label: 'Трудности с самооценкой' },
-          { id: 'loneliness', label: 'Одиночество' },
-          { id: 'anxiety', label: 'Тревожность' },
-          { id: 'sleep_issues', label: 'Проблемы со сном' },
-          { id: 'emigration', label: 'Эмиграция и адаптация к жизни в другой стране' },
-          { id: 'career_lost', label: 'Чувство растерянности в выборе пути' },
+          { id: 'self_acceptance', label: messages.checklist.self_acceptance },
+          { id: 'self_esteem', label: messages.checklist.self_esteem },
+          { id: 'loneliness', label: messages.checklist.loneliness },
+          { id: 'anxiety', label: messages.checklist.anxiety },
+          { id: 'sleep_issues', label: messages.checklist.sleep_issues },
+          { id: 'emigration', label: messages.checklist.emigration },
+          { id: 'career_lost', label: messages.checklist.career_lost },
           {
             id: 'work_cycle',
-            label: 'Частая смена работы по циклу: переработки → выгорание → увольнение'
+            label: messages.checklist.work_cycle
           },
           {
             id: 'procrastination',
-            label: 'Прокрастинация и ощущение, что невозможно заставить себя делать дела'
+            label: messages.checklist.procrastination
           },
-          { id: 'loneliness_people', label: 'Чувство одиночества даже рядом с людьми' },
+          { id: 'loneliness_people', label: messages.checklist.loneliness_people },
           {
             id: 'emotional_outbursts',
-            label: 'Сильные эмоциональные вспышки, которые мешают отношениям'
+            label: messages.checklist.emotional_outbursts
           },
-          { id: 'negative_loop', label: 'Зацикливание на негативе, трудность переключиться' },
-          { id: 'burnout', label: 'Выгорание' },
-          { id: 'motivation', label: 'Поиск внутренней мотивации' },
-          { id: 'goals', label: 'Трудности с целеполаганием' },
+          { id: 'negative_loop', label: messages.checklist.negative_loop },
+          { id: 'burnout', label: messages.checklist.burnout },
+          { id: 'motivation', label: messages.checklist.motivation },
+          { id: 'goals', label: messages.checklist.goals },
           {
             id: 'daily_load',
-            label: 'Сложность адаптироваться к нагрузке и повседневным требованиям'
+            label: messages.checklist.daily_load
           },
-          { id: 'adhd', label: 'Трудности, связанные с СДВГ' },
-          { id: 'asd', label: 'Трудности, связанные с РАС' },
-          { id: 'binge_eating', label: 'Компульсивное переедание' },
-          { id: 'bulimia', label: 'Нервная булимия' },
-          { id: 'other', label: 'Другое' }
+          { id: 'adhd', label: messages.checklist.adhd },
+          { id: 'asd', label: messages.checklist.asd },
+          { id: 'binge_eating', label: messages.checklist.binge_eating },
+          { id: 'bulimia', label: messages.checklist.bulimia },
+          { id: 'other', label: messages.checklist.other }
         ]
       }
     ]
   },
   {
     id: 'comment',
-    title: 'Дополнительно',
+    title: messages.steps.comment,
     questions: [
       {
         id: 'comment',
-        label: 'Комментарий',
-        helperText: 'Напишите всё, что считаете важным.',
+        label: messages.fields.commentLabel,
+        helperText: messages.fields.commentHelper,
         type: 'LONG_TEXT',
         required: false,
         options: []
@@ -208,6 +249,9 @@ export const defaultIntakeFormSteps: IntakeFormSteps = [
     ]
   }
 ];
+
+/** Проверяет, что пользователь явно подтвердил согласие на обработку персональных данных. */
+export const isIntakeConsentAccepted = (value: unknown): value is true => value === true;
 
 /** Валидирует ответ пользователя по опубликованной структуре вопроса. */
 export const isValidIntakeAnswer = (question: IntakeQuestion, value: unknown): boolean => {

@@ -84,6 +84,9 @@ export function ConsentSection({
         <FormField
           control={control}
           name={name}
+          rules={{
+            validate: value => value === true || t('fields.consentRequired')
+          }}
           render={({ field }) => (
             <FormItem className="space-y-4">
               <div className="flex flex-row items-start space-x-3 space-y-0 rounded-xl border p-5 shadow-sm bg-card/50 transition-colors hover:bg-accent/5">
