@@ -506,6 +506,7 @@ model ClientProfile {
 model IntakeResponse {
   id              String        @id @default(cuid())
   clientProfileId String
+  consentId       String?       @unique
   formId          String
   formVersion     Int?
   formSnapshot    Json?
@@ -514,6 +515,7 @@ model IntakeResponse {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   clientProfile   ClientProfile @relation(fields: [clientProfileId], references: [id], onDelete: Cascade)
+  consent         ClientConsent? @relation("IntakeConsentResponse", fields: [consentId], references: [id], onDelete: SetNull)
 }
 
 /// Настраиваемая структура первичной анкеты для выбранной локали.
@@ -527,14 +529,17 @@ model IntakeFormConfiguration {
 }
 
 model ClientConsent {
-  id        String   @id @default(cuid())
-  userId    String
-  type      String
-  ip        String?
-  userAgent String?
-  signature String
-  agreedAt  DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id               String          @id @default(cuid())
+  userId           String
+  type             String
+  ip               String?
+  userAgent        String?
+  signature        String
+  signatureKeyId   String?
+  signaturePayload Json?
+  agreedAt         DateTime        @default(now())
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  intakeResponse   IntakeResponse? @relation("IntakeConsentResponse")
 }
 
 model ClientDocument {

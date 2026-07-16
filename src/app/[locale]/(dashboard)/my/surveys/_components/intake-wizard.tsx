@@ -27,7 +27,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import type { IntakeFormDefinition } from '@/modules/intake/form-definition.server';
 import type { IntakeQuestion } from '@/modules/intake/form-definition';
-import { recordConsent, submitIntake } from '../_actions/intake.actions';
+import { submitIntake } from '../_actions/intake.actions';
 
 type IntakeValues = Record<string, unknown> & { consent: boolean };
 
@@ -99,12 +99,6 @@ export const IntakeWizardModal = ({ definition, locale, triggerText }: IntakeWiz
 
   const handleSubmit = (values: IntakeValues) => {
     startTransition(async () => {
-      const consentResult = await recordConsent('INTAKE_SUBMIT');
-      if (!consentResult.success) {
-        toast.error(t('error'));
-        return;
-      }
-
       const { consent: _consent, ...answers } = values;
       const result = await submitIntake(locale, answers);
       if (!result.success) {

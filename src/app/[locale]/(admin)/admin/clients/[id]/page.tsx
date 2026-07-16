@@ -32,6 +32,7 @@ type ClientConsentRow = {
   agreedAt: Date;
   ip: string | null;
   userAgent: string | null;
+  intakeResponse: { id: string } | null;
 };
 
 const getStringMetadataField = (metadata: Prisma.JsonValue, key: string) => {
@@ -97,7 +98,8 @@ export default async function AdminClientProfilePage({
             type: true,
             agreedAt: true,
             ip: true,
-            userAgent: true
+            userAgent: true,
+            intakeResponse: { select: { id: true } }
           }
         }
       }
@@ -169,6 +171,9 @@ export default async function AdminClientProfilePage({
       questionMetadata: getQuestionMetadata(intake.formSnapshot)
     };
   });
+  const intakeNumberById = new Map(
+    intakes.map((intake, index) => [intake.id, intakes.length - index])
+  );
 
   const lastLogin = user.loginHistory?.[0];
 
@@ -190,7 +195,10 @@ export default async function AdminClientProfilePage({
       type: consent.type,
       agreedAt: consent.agreedAt.toISOString(),
       ip: consent.ip,
-      userAgent: consent.userAgent
+      userAgent: consent.userAgent,
+      intakeNumber: consent.intakeResponse
+        ? intakeNumberById.get(consent.intakeResponse.id) || null
+        : null
     }))
   };
 
