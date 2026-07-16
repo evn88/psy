@@ -14,12 +14,14 @@ import { ClientAvatar } from './_components/client-avatar';
 import { ClientSchedule } from './_components/client-schedule';
 import { ClientMessages } from './_components/client-messages';
 import { BreadcrumbSetter } from '@/components/breadcrumb-setter';
+import { intakeFormStepsSchema } from '@/modules/intake/form-definition';
 
 type ClientIntakeRow = {
   id: string;
   formId: string;
   status: string;
   answers: string;
+  formSnapshot: Prisma.JsonValue | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -81,6 +83,7 @@ export default async function AdminClientProfilePage({
                 formId: true,
                 status: true,
                 answers: true,
+                formSnapshot: true,
                 createdAt: true,
                 updatedAt: true
               },
@@ -162,7 +165,8 @@ export default async function AdminClientProfilePage({
       status: intake.status,
       createdAt: intake.createdAt.toISOString(),
       updatedAt: intake.updatedAt.toISOString(),
-      plainAnswers
+      plainAnswers,
+      questionMetadata: getQuestionMetadata(intake.formSnapshot)
     };
   });
 
@@ -275,3 +279,23 @@ export default async function AdminClientProfilePage({
     </div>
   );
 }
+
+const getQuestionMetadata = (snapshot: Prisma.JsonValue | null) => {
+  const parsedSteps = intakeFormStepsSchema.safeParse(snapshot);
+  if (!parsedSteps.success) return {};
+
+  return Object.fromEntries(
+    parsedSteps.data.flatMap(step =>
+      step.questions.map(question => [
+        question.id,
+        {
+          label: question.label,
+          isFullWidth: question.type === 'LONG_TEXT' || question.type === 'MULTI_CHOICE',
+          optionLabels: Object.fromEntries(
+            question.options.map(option => [option.id, option.label])
+          )
+        }
+      ])
+    )
+  );
+};

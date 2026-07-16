@@ -305,6 +305,7 @@
       "dashboard": "Kontrolna tabla",
       "users": "Korisnici",
       "surveys": "Ankete",
+      "intake": "Početni upitnik",
       "clients": "Klijenti",
       "schedule": "Raspored",
       "payments": "Plaćanja",
@@ -795,6 +796,10 @@
     "saving": "Čuvam...",
     "surveyUpdated": "Promene su sačuvane"
   },
+  "AdminIntake": {
+    "title": "Početni upitnik",
+    "description": "Podesite korake, pitanja i opcije odgovora. Objavljena verzija će odmah biti dostupna klijentima."
+  },
   "Blog": {
     "title": "Blog",
     "accountLink": "Lični kabinet",
@@ -1249,6 +1254,7 @@
       "other": "Drugo"
     },
     "success": "Anketa je uspešno poslata!",
+    "resultsScrollHint": "Anketa ima {count} koraka — skrolujte nadole da vidite sve odgovore.",
     "error": "Došlo je do greške. Molimo pokušajte ponovo.",
     "fillAgain": "Popunite ponovo",
     "historyTitle": "Istorija anketa",

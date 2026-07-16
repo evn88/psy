@@ -5,14 +5,23 @@ import { encryptData, decryptData, createHmacSignature } from '@/lib/crypto';
 import { sendAdminIntakeNotificationToAdmin } from '@/lib/email';
 import { headers } from 'next/headers';
 import { auth } from '@/auth';
+import { Prisma } from '@prisma/client';
+import { intakeFormStepsSchema, isValidIntakeAnswer } from '@/modules/intake/form-definition';
+import { getIntakeFormDefinition } from '@/modules/intake/form-definition.server';
+import { defaultLocale, isLocale } from '@/i18n/config';
+
+const hasNewIntakeNotificationsDisabled = (value: unknown): boolean => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  return (value as Record<string, unknown>).newIntake === false;
+};
 
 /**
  * Отправка ответов анкеты Intake.
- * @param formId - Идентификатор формы.
+ * @param locale - Локаль опубликованной формы.
  * @param answers - Объект с ответами.
  * @returns Объект с результатом операции.
  */
-export async function submitIntake(formId: string, answers: any) {
+export async function submitIntake(locale: string, answers: Record<string, unknown>) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -20,6 +29,17 @@ export async function submitIntake(formId: string, answers: any) {
     }
 
     const userId = session.user.id;
+    const definition = await getIntakeFormDefinition(isLocale(locale) ? locale : defaultLocale);
+    const questions = definition.steps.flatMap(step => step.questions);
+    const normalizedAnswers = Object.fromEntries(
+      questions.map(question => [question.id, answers[question.id]])
+    );
+
+    if (
+      !questions.every(question => isValidIntakeAnswer(question, normalizedAnswers[question.id]))
+    ) {
+      return { success: false, error: 'Некорректные ответы' };
+    }
 
     let profile = await prisma.clientProfile.findUnique({
       where: { userId }
@@ -31,12 +51,14 @@ export async function submitIntake(formId: string, answers: any) {
       });
     }
 
-    const encryptedAnswers = encryptData(JSON.stringify(answers));
+    const encryptedAnswers = encryptData(JSON.stringify(normalizedAnswers));
 
     const intake = await prisma.intakeResponse.create({
       data: {
         clientProfileId: profile.id,
-        formId,
+        formId: `intake_v${definition.version}`,
+        formVersion: definition.version,
+        formSnapshot: definition.steps as unknown as Prisma.InputJsonValue,
         status: 'COMPLETED',
         answers: encryptedAnswers
       }
@@ -48,10 +70,13 @@ export async function submitIntake(formId: string, answers: any) {
     });
 
     for (const admin of admins) {
-      const settings = admin.notificationSettings as any;
-      if (!settings || settings.newIntake !== false) {
+      if (!hasNewIntakeNotificationsDisabled(admin.notificationSettings)) {
         if (admin.email) {
-          await sendAdminIntakeNotificationToAdmin(admin.email, userId, formId);
+          await sendAdminIntakeNotificationToAdmin(
+            admin.email,
+            userId,
+            `intake_v${definition.version}`
+          );
         }
       }
     }
@@ -93,9 +118,18 @@ export async function getIntakeAnswers(intakeId: string) {
     }
 
     const decryptedJson = decryptData(intake.answers);
-    const answers = JSON.parse(decryptedJson);
+    const parsedAnswers = JSON.parse(decryptedJson) as unknown;
+    const answers =
+      parsedAnswers && typeof parsedAnswers === 'object' && !Array.isArray(parsedAnswers)
+        ? (parsedAnswers as Record<string, unknown>)
+        : {};
+    const parsedSnapshot = intakeFormStepsSchema.safeParse(intake.formSnapshot);
 
-    return { success: true, answers };
+    return {
+      success: true,
+      answers,
+      formSnapshot: parsedSnapshot.success ? parsedSnapshot.data : null
+    };
   } catch (error) {
     console.error('Failed to get intake answers:', error);
     return { success: false, error: 'Internal Server Error' };

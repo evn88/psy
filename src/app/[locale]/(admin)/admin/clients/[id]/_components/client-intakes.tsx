@@ -31,6 +31,10 @@ interface PlainIntake {
   createdAt: string;
   updatedAt: string;
   plainAnswers: Record<string, unknown>;
+  questionMetadata: Record<
+    string,
+    { label: string; isFullWidth: boolean; optionLabels: Record<string, string> }
+  >;
 }
 
 const KEY_LABELS: Record<string, string> = {
@@ -43,7 +47,12 @@ const KEY_LABELS: Record<string, string> = {
 
 const FULL_WIDTH_KEYS = ['mainRequest', 'comment', 'requestChecklist'];
 
-function renderAnswer(key: string, value: unknown, tWizard: (key: string) => string) {
+function renderAnswer(
+  key: string,
+  value: unknown,
+  tWizard: (key: string) => string,
+  optionLabels?: Record<string, string>
+) {
   if (value === null || value === undefined || value === '') {
     return <span className="text-muted-foreground italic font-normal text-sm">Не заполнено</span>;
   }
@@ -59,7 +68,9 @@ function renderAnswer(key: string, value: unknown, tWizard: (key: string) => str
       <div className="flex flex-wrap gap-2 mt-1">
         {value.map(v => {
           let label = String(v);
-          if (key === 'requestChecklist') {
+          if (optionLabels?.[label]) {
+            label = optionLabels[label];
+          } else if (key === 'requestChecklist') {
             try {
               label = tWizard(`checklist.${v}`);
             } catch {
@@ -149,8 +160,10 @@ export function ClientIntakes({ intakes }: { intakes: PlainIntake[] }) {
               <AccordionContent className="px-6 py-4 bg-muted/10 border-t">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
                   {Object.entries(intake.plainAnswers).map(([key, value]) => {
-                    const isFullWidth = FULL_WIDTH_KEYS.includes(key);
+                    const metadata = intake.questionMetadata[key];
+                    const isFullWidth = metadata?.isFullWidth ?? FULL_WIDTH_KEYS.includes(key);
                     const label =
+                      metadata?.label ||
                       KEY_LABELS[key] ||
                       key
                         .replace(/([A-Z])/g, ' $1')
@@ -165,7 +178,9 @@ export function ClientIntakes({ intakes }: { intakes: PlainIntake[] }) {
                         <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                           {label}
                         </h4>
-                        <div className="text-sm">{renderAnswer(key, value, tWizard)}</div>
+                        <div className="text-sm">
+                          {renderAnswer(key, value, tWizard, metadata?.optionLabels)}
+                        </div>
                       </div>
                     );
                   })}

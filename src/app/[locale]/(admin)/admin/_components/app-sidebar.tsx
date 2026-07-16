@@ -100,6 +100,12 @@ export function AppSidebar({ user, unreadSurveysCount = 0, ...props }: AppSideba
       isActive: pathname.startsWith('/admin/surveys'),
       badge: unreadSurveysCount
     },
+    intake: {
+      title: tItems('intake'),
+      url: '/admin/intake',
+      icon: ClipboardList,
+      isActive: pathname.startsWith('/admin/intake')
+    },
     schedule: {
       title: tItems('schedule'),
       url: '/admin/schedule',
@@ -160,7 +166,7 @@ export function AppSidebar({ user, unreadSurveysCount = 0, ...props }: AppSideba
     { label: tItems('groupOverview'), routes: [routes.dashboard] },
     {
       label: tItems('groupPeople'),
-      routes: [routes.users, routes.clients, routes.surveys]
+      routes: [routes.users, routes.clients, routes.intake, routes.surveys]
     },
     {
       label: tItems('groupOperations'),

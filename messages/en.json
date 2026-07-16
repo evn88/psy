@@ -315,6 +315,7 @@
       "dashboard": "Dashboard",
       "users": "Users",
       "surveys": "Surveys",
+      "intake": "Primary intake",
       "clients": "Clients",
       "schedule": "Schedule",
       "payments": "Payments",
@@ -833,6 +834,10 @@
     "collapseDetails": "Collapse",
     "expandDetails": "Expand"
   },
+  "AdminIntake": {
+    "title": "Primary intake",
+    "description": "Configure steps, questions, and answer options. The published version will be available to clients immediately."
+  },
   "Blog": {
     "title": "Blog",
     "accountLink": "Personal account",
@@ -1316,6 +1321,7 @@
       "other": "Other"
     },
     "success": "Intake successfully submitted!",
+    "resultsScrollHint": "This form has {count} steps — scroll down to see every answer.",
     "error": "An error occurred. Please try again.",
     "fillAgain": "Fill Out Again",
     "historyTitle": "Intakes History",
