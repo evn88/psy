@@ -10,6 +10,7 @@ import {
   YAxis
 } from 'recharts';
 import { formatPaymentAmount } from '@/modules/payments';
+import { useCallback } from 'react';
 
 interface AdminPaymentsLineChartProps {
   currency: string;
@@ -20,10 +21,22 @@ interface AdminPaymentsLineChartProps {
   }>;
 }
 
+type TooltipValue = number | string | readonly (number | string)[] | undefined;
+
 /**
  * Линейный график ежемесячных оплат для админского дашборда.
  */
 export const AdminPaymentsLineChart = ({ currency, data }: AdminPaymentsLineChartProps) => {
+  const formatTooltipValue = useCallback(
+    (value: TooltipValue) => {
+      const numericValue = Array.isArray(value) ? value[0] : value;
+      return formatPaymentAmount(Number(numericValue ?? 0), currency);
+    },
+    [currency]
+  );
+  const formatTooltipLabel = useCallback((label: React.ReactNode) => `Месяц: ${label}`, []);
+  const formatYAxisTick = useCallback((value: number) => `${Math.round(value)}`, []);
+
   return (
     <div className="h-[320px] w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -39,11 +52,11 @@ export const AdminPaymentsLineChart = ({ currency, data }: AdminPaymentsLineChar
             tickLine={false}
             axisLine={false}
             tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-            tickFormatter={value => `${Math.round(Number(value))}`}
+            tickFormatter={formatYAxisTick}
           />
           <Tooltip
-            formatter={value => formatPaymentAmount(Number(value), currency)}
-            labelFormatter={label => `Месяц: ${label}`}
+            formatter={formatTooltipValue}
+            labelFormatter={formatTooltipLabel}
             contentStyle={{
               borderRadius: '0.75rem',
               border: '1px solid hsl(var(--border))',

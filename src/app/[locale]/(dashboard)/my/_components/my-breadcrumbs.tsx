@@ -1,5 +1,8 @@
 'use client';
 
+import React from 'react';
+import { useTranslations } from 'next-intl';
+import { useBreadcrumbContext } from '@/components/breadcrumb-context';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -8,9 +11,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator
 } from '@/components/ui/breadcrumb';
-import React from 'react';
-import { useTranslations } from 'next-intl';
-import { useBreadcrumbContext } from '@/components/breadcrumb-context';
 import { Link, usePathname } from '@/i18n/navigation';
 
 /**
@@ -36,14 +36,18 @@ export const MyBreadcrumbs = () => {
   };
 
   return (
-    <Breadcrumb>
-      <BreadcrumbList>
-        <BreadcrumbItem className="hidden md:block">
-          <BreadcrumbLink asChild>
-            <Link href="/my">{t('home')}</Link>
-          </BreadcrumbLink>
-        </BreadcrumbItem>
-        {displaySegments.length > 0 && <BreadcrumbSeparator className="hidden md:block" />}
+    <Breadcrumb className="min-w-0">
+      <BreadcrumbList className="flex-nowrap overflow-hidden">
+        {displaySegments.length > 0 && (
+          <>
+            <BreadcrumbItem className="hidden md:inline-flex">
+              <BreadcrumbLink asChild className="whitespace-nowrap">
+                <Link href="/my">{t('home')}</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator className="hidden md:block" />
+          </>
+        )}
         {displaySegments.map((segment, index) => {
           const isLast = index === displaySegments.length - 1;
           const href = `/my/${displaySegments.slice(0, index + 1).join('/')}`;
@@ -54,22 +58,22 @@ export const MyBreadcrumbs = () => {
 
           return (
             <React.Fragment key={`${segment}-${index}`}>
-              <BreadcrumbItem>
+              <BreadcrumbItem className={isLast ? 'min-w-0' : 'hidden md:inline-flex'}>
                 {isLast ? (
-                  <BreadcrumbPage>{name}</BreadcrumbPage>
+                  <BreadcrumbPage className="truncate font-medium">{name}</BreadcrumbPage>
                 ) : (
-                  <BreadcrumbLink asChild>
+                  <BreadcrumbLink asChild className="whitespace-nowrap">
                     <Link href={href}>{name}</Link>
                   </BreadcrumbLink>
                 )}
               </BreadcrumbItem>
-              {!isLast && <BreadcrumbSeparator />}
+              {!isLast && <BreadcrumbSeparator className="hidden md:block" />}
             </React.Fragment>
           );
         })}
         {displaySegments.length === 0 && (
-          <BreadcrumbItem>
-            <BreadcrumbPage>{t('dashboard')}</BreadcrumbPage>
+          <BreadcrumbItem className="min-w-0">
+            <BreadcrumbPage className="truncate font-medium">{t('dashboard')}</BreadcrumbPage>
           </BreadcrumbItem>
         )}
       </BreadcrumbList>

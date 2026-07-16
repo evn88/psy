@@ -118,3 +118,54 @@ export const getYearlyPaymentsSeries = (
     total: monthTotals.get(monthIndex) ?? 0
   }));
 };
+
+/** Возвращает сумму успешных платежей за произвольный период. */
+export const getPaymentsTotalForPeriod = (
+  payments: PaymentAmountLike[],
+  from: Date,
+  to: Date
+): number =>
+  payments.reduce((total, payment) => {
+    const paymentDate = payment.capturedAt ?? payment.createdAt;
+    return isSuccessfulPaymentStatus(payment.status) && paymentDate >= from && paymentDate <= to
+      ? total + toPaymentNumber(payment.amount)
+      : total;
+  }, 0);
+
+/** Строит помесячный ряд успешных платежей за произвольный период. */
+export const getPaymentsSeriesForPeriod = (
+  payments: PaymentAmountLike[],
+  from: Date,
+  to: Date
+): MonthlyRevenuePoint[] => {
+  const months: Date[] = [];
+  const cursor = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), 1));
+  const lastMonth = Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), 1);
+
+  while (cursor.getTime() <= lastMonth) {
+    months.push(new Date(cursor));
+    cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+  }
+  const totals = new Map<string, number>();
+
+  payments.forEach(payment => {
+    const paymentDate = payment.capturedAt ?? payment.createdAt;
+    if (!isSuccessfulPaymentStatus(payment.status) || paymentDate < from || paymentDate > to)
+      return;
+
+    const key = `${paymentDate.getUTCFullYear()}-${paymentDate.getUTCMonth()}`;
+    totals.set(key, (totals.get(key) ?? 0) + toPaymentNumber(payment.amount));
+  });
+
+  return months.map(month => {
+    const monthIndex = month.getUTCMonth();
+    const year = month.getUTCFullYear();
+    const monthKey = `${year}-${String(monthIndex + 1).padStart(2, '0')}`;
+    return {
+      monthIndex,
+      monthKey,
+      monthLabel: `${MONTH_LABELS_RU[monthIndex]} ${String(year).slice(-2)}`,
+      total: totals.get(`${year}-${monthIndex}`) ?? 0
+    };
+  });
+};

@@ -1,5 +1,5 @@
 import prisma from '@/lib/prisma';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { CreateUserDialog } from './_components/create-user-dialog';
 import { AdminUserList } from './_components/admin-user-list';
 
@@ -87,10 +87,7 @@ export default async function AdminPage() {
         <CreateUserDialog />
       </div>
       <Card>
-        <CardHeader>
-          <CardTitle>Users</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <AdminUserList users={formattedUsers} />
         </CardContent>
       </Card>
