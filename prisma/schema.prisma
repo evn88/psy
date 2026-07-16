@@ -24,6 +24,11 @@ model User {
   timezone                  String?                  @default("UTC")
   googleCalendarSyncEnabled Boolean                  @default(false)
   googleCalendarSyncUrl     String?
+  googleCalendarAccessToken String?
+  googleCalendarRefreshToken String?
+  googleCalendarTokenExpiresAt DateTime?
+  googleCalendarId          String?
+  googleCalendarName        String?
   workHourEnd               Int                      @default(20)
   workHourStart             Int                      @default(9)
   blogNotifications         Boolean                  @default(false)

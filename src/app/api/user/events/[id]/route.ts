@@ -335,8 +335,7 @@ async function patchHandler(req: Request, props: { params: Promise<{ id: string 
       }
     }
 
-    // Trigger Google Calendar sync hook
-    syncEventWithGoogle(updatedEvent.id, 'UPDATE');
+    await syncEventWithGoogle(updatedEvent.id, 'UPDATE');
 
     return NextResponse.json(updatedEvent);
   } catch (error) {

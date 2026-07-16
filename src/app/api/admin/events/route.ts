@@ -8,6 +8,7 @@ import { fetchGoogleEvents, syncEventWithGoogle } from '@/lib/google-sync';
 import { doesDateRangeOverlap, isValidDateRange } from '@/lib/event-utils';
 import { optionalMeetingUrlSchema } from '@/lib/safe-url';
 import { startSessionReminderWorkflow } from '@/lib/session-reminder-workflow';
+import { isValidTimeZone } from '@/lib/timezone';
 import {
   DEFAULT_SESSION_REMINDER_MINUTES,
   MAX_SESSION_REMINDER_MINUTES,
@@ -86,7 +87,7 @@ async function getHandler(req: Request) {
     const events = await prisma.event.findMany({
       where: whereClause,
       include: {
-        user: { select: { id: true, name: true, email: true } }
+        user: { select: { id: true, name: true, email: true, timezone: true } }
       },
       orderBy: { start: 'asc' }
     });
@@ -119,6 +120,11 @@ const createEventSchema = z.object({
   title: z.string().optional(),
   meetLink: optionalMeetingUrlSchema,
   userId: z.string().nullable().optional(),
+  clientTimezone: z
+    .string()
+    .trim()
+    .refine(isValidTimeZone, { message: 'Invalid client timezone' })
+    .optional(),
   reminderMinutesBeforeStart: z.coerce
     .number()
     .int()
@@ -149,13 +155,37 @@ async function postHandler(req: Request) {
       );
     }
 
-    const { type, start, end, status, title, meetLink, userId, reminderMinutesBeforeStart } =
-      result.data;
+    const {
+      type,
+      start,
+      end,
+      status,
+      title,
+      meetLink,
+      userId,
+      clientTimezone,
+      reminderMinutesBeforeStart
+    } = result.data;
     const startDate = new Date(start);
     const endDate = new Date(end);
 
     if (!isValidDateRange({ start: startDate, end: endDate })) {
       return NextResponse.json({ message: 'Invalid date range' }, { status: 400 });
+    }
+
+    let selectedUser: { id: string; timezone: string | null } | null = null;
+    if (userId) {
+      selectedUser = await prisma.user.findFirst({
+        where: {
+          id: userId,
+          role: { in: ['USER', 'ADMIN'] }
+        },
+        select: { id: true, timezone: true }
+      });
+
+      if (!selectedUser) {
+        return NextResponse.json({ message: 'Client not found' }, { status: 400 });
+      }
     }
 
     if (status !== 'CANCELLED') {
@@ -186,6 +216,13 @@ async function postHandler(req: Request) {
           { status: 409 }
         );
       }
+    }
+
+    if (selectedUser && clientTimezone && clientTimezone !== selectedUser.timezone) {
+      await prisma.user.update({
+        where: { id: selectedUser.id },
+        data: { timezone: clientTimezone }
+      });
     }
 
     const newEvent = await prisma.event.create({
@@ -228,10 +265,12 @@ async function postHandler(req: Request) {
       reminderWorkflowVersion: newEvent.reminderWorkflowVersion
     });
 
-    // Trigger Google Calendar sync hook
-    syncEventWithGoogle(newEvent.id, 'CREATE');
+    const googleSyncResult = await syncEventWithGoogle(newEvent.id, 'CREATE');
 
-    return NextResponse.json(newEvent, { status: 201 });
+    return NextResponse.json(
+      { ...newEvent, isGoogleSynced: googleSyncResult.success },
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Failed to create event:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
