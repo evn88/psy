@@ -18,6 +18,7 @@ import {
   FormMessage
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { TimezoneCombobox } from '@/components/timezone-combobox';
 import {
   Select,
   SelectContent,
@@ -80,11 +81,9 @@ export const EditUserDialog = ({ user, open, onOpenChange }: EditUserDialogProps
       email: user.email,
       role: user.role,
       password: '',
-      timezone: user.timezone || 'UTC'
+      timezone: user.timezone || ''
     }
   });
-
-  const timezones = Intl.supportedValuesOf('timeZone');
 
   /**
    * Отправляет форму редактирования пользователя.
@@ -92,7 +91,10 @@ export const EditUserDialog = ({ user, open, onOpenChange }: EditUserDialogProps
    */
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
-    const result = await updateUser(values);
+    const result = await updateUser({
+      ...values,
+      timezone: values.timezone || undefined
+    });
     setLoading(false);
 
     if (result.success) {
@@ -179,20 +181,13 @@ export const EditUserDialog = ({ user, open, onOpenChange }: EditUserDialogProps
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('timezoneLabel')}</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select timezone" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {timezones.map(tz => (
-                        <SelectItem key={tz} value={tz}>
-                          {tz}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <TimezoneCombobox
+                      value={field.value || ''}
+                      onValueChange={field.onChange}
+                      disabled={loading}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

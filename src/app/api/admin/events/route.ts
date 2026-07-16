@@ -8,7 +8,6 @@ import { fetchGoogleEvents, syncEventWithGoogle } from '@/lib/google-sync';
 import { doesDateRangeOverlap, isValidDateRange } from '@/lib/event-utils';
 import { optionalMeetingUrlSchema } from '@/lib/safe-url';
 import { startSessionReminderWorkflow } from '@/lib/session-reminder-workflow';
-import { isValidTimeZone } from '@/lib/timezone';
 import {
   DEFAULT_SESSION_REMINDER_MINUTES,
   MAX_SESSION_REMINDER_MINUTES,
@@ -120,11 +119,6 @@ const createEventSchema = z.object({
   title: z.string().optional(),
   meetLink: optionalMeetingUrlSchema,
   userId: z.string().nullable().optional(),
-  clientTimezone: z
-    .string()
-    .trim()
-    .refine(isValidTimeZone, { message: 'Invalid client timezone' })
-    .optional(),
   reminderMinutesBeforeStart: z.coerce
     .number()
     .int()
@@ -155,17 +149,8 @@ async function postHandler(req: Request) {
       );
     }
 
-    const {
-      type,
-      start,
-      end,
-      status,
-      title,
-      meetLink,
-      userId,
-      clientTimezone,
-      reminderMinutesBeforeStart
-    } = result.data;
+    const { type, start, end, status, title, meetLink, userId, reminderMinutesBeforeStart } =
+      result.data;
     const startDate = new Date(start);
     const endDate = new Date(end);
 
@@ -173,14 +158,13 @@ async function postHandler(req: Request) {
       return NextResponse.json({ message: 'Invalid date range' }, { status: 400 });
     }
 
-    let selectedUser: { id: string; timezone: string | null } | null = null;
     if (userId) {
-      selectedUser = await prisma.user.findFirst({
+      const selectedUser = await prisma.user.findFirst({
         where: {
           id: userId,
           role: { in: ['USER', 'ADMIN'] }
         },
-        select: { id: true, timezone: true }
+        select: { id: true }
       });
 
       if (!selectedUser) {
@@ -216,13 +200,6 @@ async function postHandler(req: Request) {
           { status: 409 }
         );
       }
-    }
-
-    if (selectedUser && clientTimezone && clientTimezone !== selectedUser.timezone) {
-      await prisma.user.update({
-        where: { id: selectedUser.id },
-        data: { timezone: clientTimezone }
-      });
     }
 
     const newEvent = await prisma.event.create({

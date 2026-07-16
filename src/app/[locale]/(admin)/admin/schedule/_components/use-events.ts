@@ -13,7 +13,6 @@ export type EventMutationInput = {
   title: string;
   meetLink?: string;
   userId: string | null;
-  clientTimezone: string;
   reminderMinutesBeforeStart: number;
 };
 

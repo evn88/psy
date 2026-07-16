@@ -15,6 +15,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { getPathname, Link, useRouter } from '@/i18n/navigation';
 import { type AppLocale, defaultLocale, isLocale } from '@/i18n/config';
+import { detectBrowserTimeZone } from '@/lib/browser-timezone';
 
 /**
  * Определяет язык браузера пользователя и возвращает поддерживаемый locale.
@@ -168,13 +169,10 @@ export default function AuthPage() {
     const errorParam = searchParams.get('error');
     const verified = searchParams.get('verified');
 
-    // Auto-detect and set timezone cookie
-    try {
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      document.cookie = `NEXT_TIMEZONE=${tz}; path=/; max-age=31536000; SameSite=Lax`;
-    } catch {
-      // Ignore if not supported
-    }
+    const timezone = detectBrowserTimeZone();
+    document.cookie = timezone
+      ? `NEXT_TIMEZONE=${timezone}; path=/; max-age=31536000; SameSite=Lax`
+      : 'NEXT_TIMEZONE=; path=/; max-age=0; SameSite=Lax';
 
     if (verified === 'true') {
       toast.success(t('emailVerifiedSuccess'));
@@ -249,12 +247,7 @@ export default function AuthPage() {
 
     try {
       const locale = getCurrentLocale();
-      let detectedTimezone = 'UTC';
-      try {
-        detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      } catch {
-        // Fallback to UTC
-      }
+      const detectedTimezone = detectBrowserTimeZone();
 
       const res = await fetch('/api/auth/register', {
         method: 'POST',

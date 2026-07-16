@@ -78,7 +78,7 @@ export default async function AdminProfilePage() {
         hasPassword={hasPassword}
         lastLoginAt={lastLogin?.createdAt ?? null}
         lastLoginIp={lastLogin?.ip ?? null}
-        timezone={dbUser?.timezone ?? 'UTC'}
+        timezone={dbUser.timezone}
         role={session.user.role}
         userEmail={session.user.email ?? ''}
       />

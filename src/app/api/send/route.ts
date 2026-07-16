@@ -46,6 +46,7 @@ async function postHandler(request: Request) {
     if (sendToAll) {
       // 1. Fetch all users
       const users = await prisma.user.findMany({
+        where: { role: { not: 'GUEST' } },
         select: { email: true }
       });
 

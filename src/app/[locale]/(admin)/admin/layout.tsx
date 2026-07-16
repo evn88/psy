@@ -8,6 +8,7 @@ import { AppSidebar } from './_components/app-sidebar';
 import { getDefaultSidebarOpen, SIDEBAR_COOKIE_NAME } from '@/lib/sidebar-state';
 import { SidebarWorkspaceLayout } from '@/components/sidebar-workspace-layout';
 import { getAdminUnreadSurveysCount } from './surveys/actions';
+import { AccountNotificationCenter } from '@/components/account-notification-center';
 
 export const metadata: Metadata = {
   robots: {
@@ -48,6 +49,7 @@ const AdminLayout = async ({ children }: Readonly<AdminLayoutProps>) => {
       defaultSidebarOpen={defaultSidebarOpen}
       sidebar={<AppSidebar user={session.user} unreadSurveysCount={unreadSurveysCount} />}
       breadcrumbs={<AdminBreadcrumbs />}
+      headerActions={<AccountNotificationCenter historyHref="/admin/notifications" />}
     >
       {children}
     </SidebarWorkspaceLayout>

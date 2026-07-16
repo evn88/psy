@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ChevronDown, Trash2 } from 'lucide-react';
+import { ChevronDown, Clock3, Trash2, TriangleAlert } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -45,6 +45,7 @@ import {
 } from '@/lib/session-reminders';
 import { optionalMeetingUrlSchema } from '@/lib/safe-url';
 import { isValidTimeZone } from '@/lib/timezone';
+import { detectBrowserTimeZone } from '@/lib/browser-timezone';
 
 import { getEventDateRange, getEventTemporalValues } from './event-form-utils';
 import type { Event, EventMutationInput } from './use-events';
@@ -74,10 +75,6 @@ const eventSchema = z.object({
     .max(8 * 60, 'Максимум 8 часов'),
   meetLink: optionalMeetingUrlSchema,
   userId: z.string().optional().nullable(),
-  clientTimezone: z
-    .string()
-    .trim()
-    .refine(isValidTimeZone, { message: 'Некорректный часовой пояс' }),
   reminderMinutesBeforeStart: z
     .number()
     .int()
@@ -114,8 +111,7 @@ const fetchUsers = async (url: string): Promise<UserOption[]> => {
 };
 
 const getBrowserTimezone = (): string => {
-  const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  return isValidTimeZone(browserTimezone) ? browserTimezone : 'UTC';
+  return detectBrowserTimeZone() || 'UTC';
 };
 
 const getInitialValues = (params: {
@@ -125,7 +121,11 @@ const getInitialValues = (params: {
   fallbackTimezone: string;
 }): EventFormValues => {
   const { event, selectedDate, selectedEndDate, fallbackTimezone } = params;
-  const clientTimezone = event?.user?.timezone || fallbackTimezone;
+  const clientTimezone = event?.user
+    ? event.user.timezone && isValidTimeZone(event.user.timezone)
+      ? event.user.timezone
+      : 'UTC'
+    : fallbackTimezone;
   const fallbackStart = selectedDate ? new Date(selectedDate) : new Date();
 
   if (selectedDate && selectedDate.getHours() === 0) {
@@ -146,7 +146,6 @@ const getInitialValues = (params: {
     ...temporalValues,
     meetLink: event?.meetLink || '',
     userId: event?.userId || null,
-    clientTimezone,
     reminderMinutesBeforeStart:
       event?.reminderMinutesBeforeStart ?? DEFAULT_SESSION_REMINDER_MINUTES
   };
@@ -170,14 +169,6 @@ export const EventDialog = ({
     open ? '/api/admin/users?roles=USER,ADMIN' : null,
     fetchUsers
   );
-  const timezones = useMemo(() => {
-    try {
-      return ['UTC', ...Intl.supportedValuesOf('timeZone').filter(timezone => timezone !== 'UTC')];
-    } catch {
-      return ['UTC'];
-    }
-  }, []);
-
   const form = useForm<EventFormValues>({
     resolver: zodResolver(eventSchema),
     defaultValues: getInitialValues({
@@ -188,6 +179,18 @@ export const EventDialog = ({
     })
   });
   const currentDuration = form.watch('duration');
+  const selectedUserId = form.watch('userId');
+  const selectedUser =
+    users?.find(user => user.id === selectedUserId) ??
+    (event?.user && event.user.id === selectedUserId ? event.user : null);
+  const selectedUserHasTimezone = Boolean(
+    selectedUser?.timezone && isValidTimeZone(selectedUser.timezone)
+  );
+  const clientTimezone = selectedUserId
+    ? selectedUserHasTimezone
+      ? selectedUser?.timezone || 'UTC'
+      : 'UTC'
+    : browserTimezone;
   const durationOptions = useMemo(
     () => Array.from(new Set([...defaultDurationOptions, currentDuration])).sort((a, b) => a - b),
     [currentDuration]
@@ -215,7 +218,7 @@ export const EventDialog = ({
         date: values.date,
         startTime: values.startTime,
         duration: values.duration,
-        timeZone: values.clientTimezone
+        timeZone: clientTimezone
       });
       const payload: EventMutationInput = {
         type: values.type,
@@ -225,7 +228,6 @@ export const EventDialog = ({
         title: values.title?.trim() || '',
         meetLink: values.meetLink || undefined,
         userId: values.userId ?? null,
-        clientTimezone: values.clientTimezone,
         reminderMinutesBeforeStart: values.reminderMinutesBeforeStart
       };
 
@@ -272,17 +274,7 @@ export const EventDialog = ({
                 <FormItem>
                   <FormLabel>{t('client')}</FormLabel>
                   <Select
-                    onValueChange={value => {
-                      const nextUserId = value === 'none' ? null : value;
-                      field.onChange(nextUserId);
-                      const selectedUser = users?.find(user => user.id === nextUserId);
-                      if (selectedUser?.timezone && isValidTimeZone(selectedUser.timezone)) {
-                        form.setValue('clientTimezone', selectedUser.timezone, {
-                          shouldDirty: true,
-                          shouldValidate: true
-                        });
-                      }
-                    }}
+                    onValueChange={value => field.onChange(value === 'none' ? null : value)}
                     value={field.value || 'none'}
                     disabled={usersLoading}
                   >
@@ -308,33 +300,31 @@ export const EventDialog = ({
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="clientTimezone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('clientTimezone')}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t('clientTimezonePlaceholder')} />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectGroup>
-                        {timezones.map(timezone => (
-                          <SelectItem key={timezone} value={timezone}>
-                            {timezone}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>{t('clientTimezoneDescription')}</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5">
+              <div className="flex items-start gap-2.5">
+                {selectedUserId && !selectedUserHasTimezone ? (
+                  <TriangleAlert
+                    className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400"
+                    aria-hidden
+                  />
+                ) : (
+                  <Clock3 className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
+                )}
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-muted-foreground">{t('clientTimezone')}</p>
+                  <p className="mt-0.5 text-sm font-medium">
+                    {selectedUserId && !selectedUserHasTimezone
+                      ? t('clientTimezoneMissing')
+                      : clientTimezone}
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    {selectedUserId
+                      ? t('clientTimezoneReadOnlyDescription')
+                      : t('browserTimezoneDescription')}
+                  </p>
+                </div>
+              </div>
+            </div>
 
             <div className="grid gap-4 sm:grid-cols-3">
               <FormField

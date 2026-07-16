@@ -8,7 +8,6 @@ import { syncEventWithGoogle } from '@/lib/google-sync';
 import { doesDateRangeOverlap, isValidDateRange } from '@/lib/event-utils';
 import { optionalMeetingUrlSchema } from '@/lib/safe-url';
 import { startSessionReminderWorkflow } from '@/lib/session-reminder-workflow';
-import { isValidTimeZone } from '@/lib/timezone';
 import {
   MAX_SESSION_REMINDER_MINUTES,
   MIN_SESSION_REMINDER_MINUTES
@@ -32,11 +31,6 @@ const updateEventSchema = z.object({
   title: z.string().optional().nullable(),
   meetLink: optionalMeetingUrlSchema,
   userId: z.string().optional().nullable(),
-  clientTimezone: z
-    .string()
-    .trim()
-    .refine(isValidTimeZone, { message: 'Invalid client timezone' })
-    .optional(),
   reminderMinutesBeforeStart: z.coerce
     .number()
     .int()
@@ -104,7 +98,7 @@ async function patchHandler(req: Request, props: { params: Promise<{ id: string 
       return NextResponse.json({ message: 'Event not found' }, { status: 404 });
     }
 
-    const { start, end, status, cancelReason, clientTimezone, ...restData } = result.data;
+    const { start, end, status, cancelReason, ...restData } = result.data;
     const nextStart = start ? new Date(start) : event.start;
     const nextEnd = end ? new Date(end) : event.end;
     const nextStatus = status ?? event.status;
@@ -142,14 +136,13 @@ async function patchHandler(req: Request, props: { params: Promise<{ id: string 
       return NextResponse.json({ message: 'Invalid date range' }, { status: 400 });
     }
 
-    let selectedUser: { id: string; timezone: string | null } | null = null;
     if (targetUserId) {
-      selectedUser = await prisma.user.findFirst({
+      const selectedUser = await prisma.user.findFirst({
         where: {
           id: targetUserId,
           role: { in: ['USER', 'ADMIN'] }
         },
-        select: { id: true, timezone: true }
+        select: { id: true }
       });
 
       if (!selectedUser) {
@@ -182,13 +175,6 @@ async function patchHandler(req: Request, props: { params: Promise<{ id: string 
           { status: 409 }
         );
       }
-    }
-
-    if (selectedUser && clientTimezone && clientTimezone !== selectedUser.timezone) {
-      await prisma.user.update({
-        where: { id: selectedUser.id },
-        data: { timezone: clientTimezone }
-      });
     }
 
     const updateData: Prisma.EventUncheckedUpdateInput = {

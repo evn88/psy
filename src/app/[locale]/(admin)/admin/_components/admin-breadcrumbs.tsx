@@ -36,6 +36,7 @@ export const AdminBreadcrumbs = () => {
     packages: t('packages'),
     blog: t('blog'),
     'send-email': t('sendEmail'),
+    notifications: t('notifications'),
     backups: t('backups'),
     logs: t('logs'),
     apps: t('apps'),

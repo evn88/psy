@@ -25,6 +25,7 @@ async function postHandler(request: Request) {
 
   if (sendToAll) {
     subscriptions = await prisma.pushSubscription.findMany({
+      where: { user: { role: { not: 'GUEST' } } },
       select: { endpoint: true, p256dh: true, auth: true, user: { select: { email: true } } }
     });
   } else {

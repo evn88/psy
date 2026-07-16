@@ -15,6 +15,9 @@ export async function getUsersForEmail(): Promise<EmailUser[]> {
     }
 
     const users = await prisma.user.findMany({
+      where: {
+        role: { not: 'GUEST' }
+      },
       select: {
         id: true,
         name: true,

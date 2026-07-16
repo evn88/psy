@@ -12,6 +12,7 @@ import { getRPID } from '@/app/api/profile/passkeys/register/config';
 import { defaultLocale, isLocale } from '@/i18n/config';
 import prisma from '@/lib/prisma';
 import { sendWelcomeGoogleEmail } from '@/lib/email';
+import { isValidTimeZone } from '@/lib/timezone';
 import { authConfig } from './auth.config';
 import {
   MAX_LOGIN_HISTORY,
@@ -349,11 +350,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
      */
     async createUser({ user }) {
       if (user.id) {
-        let timezone = 'UTC';
+        let timezone: string | null = null;
         let language = defaultLocale;
         try {
           const cookieStore = await cookies();
-          timezone = cookieStore.get('NEXT_TIMEZONE')?.value || 'UTC';
+          const cookieTimezone = cookieStore.get('NEXT_TIMEZONE')?.value;
+          timezone = cookieTimezone && isValidTimeZone(cookieTimezone) ? cookieTimezone : null;
           const cookieLocale = cookieStore.get('NEXT_LOCALE')?.value;
           language = cookieLocale && isLocale(cookieLocale) ? cookieLocale : defaultLocale;
         } catch {

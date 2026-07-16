@@ -20,13 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@/components/ui/alert-dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
+import { TimezoneCombobox } from '@/components/timezone-combobox';
 
 interface PasskeyInfo {
   credentialID: string;
@@ -50,7 +44,7 @@ interface ProfileFormProps {
   /** IP последнего входа */
   lastLoginIp?: string | null;
   /** Таймзона пользователя */
-  timezone: string;
+  timezone: string | null;
   /** Роль пользователя — отображается только для ADMIN */
   role?: string | null;
   /** Email пользователя для отображения куда придёт письмо */
@@ -139,13 +133,10 @@ export const ProfileForm = ({
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState(user.name || '');
-  const [timezone, setTimezone] = useState(initialTimezone || 'UTC');
+  const [timezone, setTimezone] = useState(initialTimezone || '');
   const [isGoogleLinked, setIsGoogleLinked] = useState(initialIsGoogleLinked);
   const [showAlertOpen, setShowAlertOpen] = useState(false);
   const [alertConfig, setAlertConfig] = useState({ title: '', message: '' });
-
-  // Доступные таймзоны
-  const timezones = Intl.supportedValuesOf('timeZone');
 
   // Состояние формы смены пароля
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -281,7 +272,7 @@ export const ProfileForm = ({
     try {
       const res = await fetch('/api/profile/update', {
         method: 'PUT',
-        body: JSON.stringify({ name, timezone }),
+        body: JSON.stringify({ name, ...(timezone && { timezone }) }),
         headers: { 'Content-Type': 'application/json' }
       });
 
@@ -499,7 +490,7 @@ export const ProfileForm = ({
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      timeZone: timezone
+      timeZone: timezone || 'UTC'
     }).format(d);
   };
 
@@ -514,15 +505,15 @@ export const ProfileForm = ({
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      timeZone: timezone
+      timeZone: timezone || 'UTC'
     }).format(new Date(date));
   };
 
-  const hasProfileChanges = name !== (user.name || '') || timezone !== initialTimezone;
+  const hasProfileChanges = name !== (user.name || '') || timezone !== (initialTimezone || '');
 
   const handleCancelProfileChanges = () => {
     setName(user.name || '');
-    setTimezone(initialTimezone);
+    setTimezone(initialTimezone || '');
   };
 
   return (
@@ -588,21 +579,12 @@ export const ProfileForm = ({
                 <Label htmlFor="timezone" className="text-xs font-bold text-muted-foreground/80">
                   {t('timezoneLabel')}
                 </Label>
-                <Select value={timezone} onValueChange={setTimezone} disabled={loading}>
-                  <SelectTrigger
-                    id="timezone"
-                    className="w-full h-11 rounded-xl border-border/60 focus:ring-primary/20"
-                  >
-                    <SelectValue placeholder={t('timezonePlaceholder')} />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-2xl border-border/50">
-                    {timezones.map(tz => (
-                      <SelectItem key={tz} value={tz} className="rounded-xl">
-                        {tz}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <TimezoneCombobox
+                  id="timezone"
+                  value={timezone}
+                  onValueChange={setTimezone}
+                  disabled={loading}
+                />
                 <p className="text-xs leading-5 text-muted-foreground">
                   {t('timezoneDescription')}
                 </p>
