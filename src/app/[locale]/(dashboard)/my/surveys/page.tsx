@@ -28,6 +28,7 @@ import { IntakeResultsModal } from './_components/intake-results-modal';
 import { SurveysTabs } from './_components/surveys-tabs';
 import { type AppLocale, defaultLocale, isLocale } from '@/i18n/config';
 import { cn } from '@/lib/utils';
+import { getIntakeFormDefinition } from '@/modules/intake/form-definition.server';
 
 type AssignmentWithSurvey = Prisma.SurveyAssignmentGetPayload<{
   include: {
@@ -75,6 +76,7 @@ export default async function MySurveysPage({ params }: MySurveysPageProps) {
 
   const latestIntake = intakeHistory[0];
   const hasIntake = !!latestIntake;
+  const intakeDefinition = await getIntakeFormDefinition(currentLocale);
 
   // 2. Получаем назначенные опросы/тесты
   const assignments: AssignmentWithSurvey[] = await prisma.surveyAssignment.findMany({
@@ -203,7 +205,11 @@ export default async function MySurveysPage({ params }: MySurveysPageProps) {
           {!latestIntake ? (
             <div className="pt-2">
               <div className="[&>button]:h-10 [&>button]:px-6">
-                <IntakeWizardModal triggerText={t('fillIntakeButton')} />
+                <IntakeWizardModal
+                  definition={intakeDefinition}
+                  locale={currentLocale}
+                  triggerText={t('fillIntakeButton')}
+                />
               </div>
             </div>
           ) : (
@@ -222,10 +228,15 @@ export default async function MySurveysPage({ params }: MySurveysPageProps) {
               {/* Обертка для кнопок, чтобы они имели одинаковую высоту h-10 */}
               <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto [&_button]:h-10 [&_button]:!h-10 [&_button]:!py-0">
                 <IntakeResultsModal
+                  key={latestIntake.id}
                   intakeId={latestIntake.id}
                   completedAt={latestIntake.createdAt}
                 />
-                <IntakeWizardModal triggerText={t('refillIntakeButton')} />
+                <IntakeWizardModal
+                  definition={intakeDefinition}
+                  locale={currentLocale}
+                  triggerText={t('refillIntakeButton')}
+                />
               </div>
             </div>
           )}

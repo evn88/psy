@@ -305,6 +305,7 @@
       "dashboard": "Kontrolna tabla",
       "users": "Korisnici",
       "surveys": "Ankete",
+      "intake": "Početni upitnik",
       "clients": "Klijenti",
       "schedule": "Raspored",
       "payments": "Plaćanja",
@@ -552,6 +553,22 @@
           "metadataTitle": "Metapodaci profila",
           "consentsTitle": "Potpisane saglasnosti",
           "noConsents": "Nisu pronađeni potpisani dokumenti",
+          "intakeConsentTitle": "Saglasnost za obradu podataka početnog upitnika",
+          "intakeConsentDetails": "Odjeljak: početni upitnik · lokalizacija: {locale} · verzija: v{version}",
+          "intakeNumber": "Povezano sa upitnikom br. {number}",
+          "legacyIntakeConsentTitle": "Saglasnost za obradu podataka početnog upitnika",
+          "legacyIntakeConsentDetails": "Verzija upitnika nije sačuvana",
+          "signatureTitle": "Elektronski potpis saglasnosti",
+          "signatureLoadError": "Potpis nije moguće učitati",
+          "signatureConsentType": "Tip saglasnosti",
+          "signatureAgreedAt": "Datum i vreme",
+          "signatureIp": "IP-adresa",
+          "signatureUserAgent": "User-Agent",
+          "signatureValue": "HMAC potpis",
+          "signatureVerifying": "Proveravamo potpis",
+          "signatureValid": "Potpis je validan; podaci nisu izmijenjeni",
+          "signatureInvalid": "Potpis nije validan ili su podaci izmijenjeni",
+          "signatureUnverifiable": "Ovaj stari zapis nije moguće provjeriti: nema dovoljno podataka",
           "deleteConsent": "Obriši",
           "deleteConfirmTitle": "Obrisati zapis o saglasnosti?",
           "deleteConfirmDescription": "Ova radnja se ne može poništiti. Zapis o saglasnosti će biti trajno obrisan.",
@@ -794,6 +811,10 @@
     "saveChanges": "Sačuvaj promene",
     "saving": "Čuvam...",
     "surveyUpdated": "Promene su sačuvane"
+  },
+  "AdminIntake": {
+    "title": "Početni upitnik",
+    "description": "Podesite korake, pitanja i opcije odgovora. Objavljena verzija će odmah biti dostupna klijentima."
   },
   "Blog": {
     "title": "Blog",
@@ -1221,7 +1242,14 @@
       "commentHelper": "Ovde možete navesti prethodno iskustvo u terapiji, prisustvo psihijatrijskih dijagnoza, uzimanje lekova ili bilo koje druge detalje.",
       "securityNotice": "Vaši odgovori su zaštićeni \"end-to-end\" (AES-256-GCM) enkripcijom. To osigurava da se podaci prenose i čuvaju u šifrovanom formatu: pristup podacima ima isključivo psiholog.",
       "digitalSignatureNote": "Potvrđujem da sam upoznat(a) sa Politikom privatnosti. Klik na dugme \"Dalje\" predstavlja moj elektronski potpis u skladu sa Zakonom o elektronskom dokumentu i ZZPL-om Republike Srbije. Autentičnost moje saglasnosti se potvrđuje jedinstvenim serverskim HMAC otiskom moje sesije.",
-      "consentLabel": "Dajem izričitu saglasnost za obradu mojih podataka o ličnosti, uključujući podatke o mom psihološkom stanju."
+      "consentLabel": "Dajem izričitu saglasnost za obradu mojih podataka o ličnosti, uključujući podatke o mom psihološkom stanju.",
+      "consentRequired": "Potrebno je da date saglasnost za obradu podataka o ličnosti."
+    },
+    "steps": {
+      "personalData": "Upoznavanje",
+      "mainRequest": "Vaš upit",
+      "topics": "Aktuelne teme",
+      "comment": "Dodatno"
     },
     "checklist": {
       "masking_identity": "Maskiranje zbog kojeg se gubi osećaj sopstvenog identiteta",
@@ -1249,6 +1277,7 @@
       "other": "Drugo"
     },
     "success": "Anketa je uspešno poslata!",
+    "resultsScrollHint": "Anketa ima {count} koraka — skrolujte nadole da vidite sve odgovore.",
     "error": "Došlo je do greške. Molimo pokušajte ponovo.",
     "fillAgain": "Popunite ponovo",
     "historyTitle": "Istorija anketa",

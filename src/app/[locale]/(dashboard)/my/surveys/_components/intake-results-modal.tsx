@@ -1,22 +1,10 @@
 'use client';
 
-import * as React from 'react';
 import { useState, useTransition } from 'react';
+import { Calendar, ClipboardCheck, FileText, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { Button } from '@/components/ui/button';
-import {
-  Loader2,
-  FileText,
-  ClipboardCheck,
-  Calendar,
-  User,
-  Clock,
-  MessageCircle
-} from 'lucide-react';
-import { getIntakeAnswers } from '../_actions/intake.actions';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-
+import { Button } from '@/components/ui/button';
 import {
   Dialog as UI_Dialog,
   DialogContent as UI_DialogContent,
@@ -25,37 +13,52 @@ import {
   DialogTitle as UI_DialogTitle,
   DialogTrigger as UI_DialogTrigger
 } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import type { IntakeFormSteps, IntakeQuestion } from '@/modules/intake/form-definition';
+import { getIntakeAnswers } from '../_actions/intake.actions';
 
 interface IntakeResultsModalProps {
   intakeId: string;
   completedAt: Date;
 }
 
-/**
- * Переработанное модальное окно для просмотра результатов заполненной анкеты.
- * Концепция "Safe Sanctuary": структурированные блоки, пастельные тона, гармоничные иконки.
- */
-export function IntakeResultsModal({ intakeId, completedAt }: IntakeResultsModalProps) {
+type IntakeResultData = {
+  answers: Record<string, unknown>;
+  formSnapshot: IntakeFormSteps | null;
+};
+
+const getOptionLabel = (question: IntakeQuestion, value: string) =>
+  question.options.find(option => option.id === value)?.label ?? value;
+
+const isFullWidthQuestion = (question: IntakeQuestion) =>
+  question.type === 'LONG_TEXT' || question.type === 'MULTI_CHOICE';
+
+const formatLegacyKey = (key: string) =>
+  key
+    .replace(/([A-Z])/g, ' $1')
+    .trim()
+    .replace(/^./, letter => letter.toUpperCase());
+
+/** Показывает ответы именно в той структуре, которая была опубликована при заполнении анкеты. */
+export const IntakeResultsModal = ({ intakeId, completedAt }: IntakeResultsModalProps) => {
   const t = useTranslations('IntakeWizard');
   const ts = useTranslations('Surveys');
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<IntakeResultData | null>(null);
 
   const fetchAnswers = () => {
     startTransition(async () => {
-      const res = await getIntakeAnswers(intakeId);
-      if (res.success) {
-        setData(res.answers);
+      const result = await getIntakeAnswers(intakeId);
+      if (result.success && result.answers) {
+        setData({ answers: result.answers, formSnapshot: result.formSnapshot ?? null });
       }
     });
   };
 
-  const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen);
-    if (newOpen && !data) {
-      fetchAnswers();
-    }
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (nextOpen && !data) fetchAnswers();
   };
 
   return (
@@ -63,125 +66,54 @@ export function IntakeResultsModal({ intakeId, completedAt }: IntakeResultsModal
       <UI_DialogTrigger asChild>
         <Button
           variant="outline"
-          className="h-10 rounded-xl px-5 font-semibold gap-2 border-border/80 hover:bg-background transition-all"
+          className="h-10 gap-2 rounded-xl border-border/80 px-5 font-semibold transition-all hover:bg-background"
         >
-          <FileText className="h-4 w-4 text-primary" />
+          <FileText className="size-4 text-primary" />
           {ts('viewResults')}
         </Button>
       </UI_DialogTrigger>
-      <UI_DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden border-border/40 shadow-2xl rounded-2xl bg-background">
-        {/* Заголовок */}
-        <UI_DialogHeader className="p-6 border-b border-border/40 bg-gradient-to-br from-primary/5 via-card to-card shrink-0">
+      <UI_DialogContent className="flex h-[85vh] max-h-[85vh] flex-col gap-0 overflow-hidden rounded-2xl border-border/40 bg-background p-0 shadow-2xl sm:max-w-2xl">
+        <UI_DialogHeader className="shrink-0 border-b border-border/40 bg-gradient-to-br from-primary/5 via-card to-card p-6">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
-              <ClipboardCheck className="h-5 w-5" />
+            <div className="rounded-xl bg-primary/10 p-2.5 text-primary">
+              <ClipboardCheck className="size-5" />
             </div>
             <div>
               <UI_DialogTitle className="text-xl font-bold tracking-tight">
                 {t('title')}
               </UI_DialogTitle>
-              <UI_DialogDescription className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5 font-medium">
-                <Calendar className="h-3.5 w-3.5 text-primary/70" />
-                <span>
-                  {ts('completedAt', {
-                    date: new Date(completedAt).toLocaleDateString('ru-RU', {
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })
-                  })}
-                </span>
+              <UI_DialogDescription className="mt-0.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                <Calendar className="size-3.5 text-primary/70" />
+                {ts('completedAt', {
+                  date: new Date(completedAt).toLocaleString('ru-RU', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })
+                })}
               </UI_DialogDescription>
+              {data?.formSnapshot && data.formSnapshot.length > 1 && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t('resultsScrollHint', { count: data.formSnapshot.length })}
+                </p>
+              )}
             </div>
           </div>
         </UI_DialogHeader>
-
-        {/* Контент */}
-        <ScrollArea className="flex-1 p-6">
+        <ScrollArea className="min-h-0 flex-1 p-6">
           {isPending ? (
-            <div className="flex flex-col items-center justify-center py-24 gap-3">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-sm font-semibold text-muted-foreground animate-pulse">
+            <div className="flex flex-col items-center justify-center gap-3 py-24">
+              <Loader2 className="size-8 animate-spin text-primary" />
+              <p className="animate-pulse text-sm font-semibold text-muted-foreground">
                 {ts('loading')}
               </p>
             </div>
           ) : data ? (
-            <div className="space-y-6 pb-2">
-              {/* Личные данные: Имя и Возраст */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex items-center gap-3.5 p-4 rounded-xl border border-border/50 bg-muted/10">
-                  <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0">
-                    <User className="h-4 w-4" />
-                  </div>
-                  <div className="space-y-0.5 min-w-0">
-                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
-                      {t('fields.nameLabel')}
-                    </h4>
-                    <p className="text-base font-bold truncate leading-tight">{data.name}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3.5 p-4 rounded-xl border border-border/50 bg-muted/10">
-                  <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0">
-                    <Clock className="h-4 w-4" />
-                  </div>
-                  <div className="space-y-0.5">
-                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
-                      {t('fields.ageLabel')}
-                    </h4>
-                    <p className="text-base font-bold leading-tight">{data.age} лет</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Главный запрос */}
-              <div className="space-y-2">
-                <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/75 px-1">
-                  {t('fields.mainRequestLabel')}
-                </h4>
-                <div className="p-4 rounded-xl border border-primary/10 bg-gradient-to-br from-primary/[0.02] to-card text-sm leading-relaxed whitespace-pre-wrap font-medium">
-                  {data.mainRequest}
-                </div>
-              </div>
-
-              {/* Выбранные симптомы */}
-              <div className="space-y-2">
-                <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/75 px-1">
-                  {t('fields.checklistLabel')}
-                </h4>
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {data.requestChecklist?.map((id: string) => (
-                    <Badge
-                      key={id}
-                      variant="outline"
-                      className="px-3 py-1.5 text-xs font-semibold bg-primary/5 text-primary border-primary/20 hover:bg-primary/5 rounded-lg"
-                    >
-                      {t(`checklist.${id}`)}
-                    </Badge>
-                  ))}
-                  {(!data.requestChecklist || data.requestChecklist.length === 0) && (
-                    <p className="text-sm text-muted-foreground italic px-1">—</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Дополнительный комментарий */}
-              {data.comment && (
-                <div className="space-y-2">
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/75 px-1">
-                    {t('fields.commentLabel')}
-                  </h4>
-                  <div className="relative p-4 rounded-xl border border-amber-500/15 bg-amber-500/[0.02] text-sm leading-relaxed whitespace-pre-wrap italic text-foreground/90">
-                    <MessageCircle className="absolute right-3 top-3 h-4 w-4 text-amber-500/20" />
-                    {data.comment}
-                  </div>
-                </div>
-              )}
-            </div>
+            <ResultContent data={data} />
           ) : (
-            <div className="text-center py-16 text-muted-foreground font-semibold">
+            <div className="py-16 text-center font-semibold text-muted-foreground">
               Не удалось загрузить данные анкеты.
             </div>
           )}
@@ -189,4 +121,92 @@ export function IntakeResultsModal({ intakeId, completedAt }: IntakeResultsModal
       </UI_DialogContent>
     </UI_Dialog>
   );
-}
+};
+
+const ResultContent = ({ data }: { data: IntakeResultData }) => {
+  if (!data.formSnapshot) {
+    return <LegacyResultContent answers={data.answers} />;
+  }
+
+  return (
+    <div className="space-y-7 pb-2">
+      {data.formSnapshot.map(step => (
+        <section key={step.id} className="space-y-3">
+          <div>
+            <h3 className="text-base font-bold">{step.title}</h3>
+            {step.description && (
+              <p className="mt-0.5 text-sm text-muted-foreground">{step.description}</p>
+            )}
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {step.questions.map(question => (
+              <QuestionResult
+                key={question.id}
+                question={question}
+                value={data.answers[question.id]}
+              />
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+};
+
+const QuestionResult = ({ question, value }: { question: IntakeQuestion; value: unknown }) => {
+  const isEmpty =
+    value === undefined ||
+    value === null ||
+    value === '' ||
+    (Array.isArray(value) && value.length === 0);
+
+  return (
+    <div className={isFullWidthQuestion(question) ? 'space-y-2 sm:col-span-2' : 'space-y-2'}>
+      <h4 className="px-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/75">
+        {question.label}
+      </h4>
+      <div className="rounded-xl border border-border/50 bg-muted/10 p-4 text-sm leading-relaxed">
+        {isEmpty ? (
+          <span className="italic text-muted-foreground">Не заполнено</span>
+        ) : Array.isArray(value) ? (
+          <div className="flex flex-wrap gap-2">
+            {value.map(optionId => (
+              <Badge
+                key={String(optionId)}
+                variant="outline"
+                className="rounded-lg border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary"
+              >
+                {getOptionLabel(question, String(optionId))}
+              </Badge>
+            ))}
+          </div>
+        ) : question.type === 'SINGLE_CHOICE' && typeof value === 'string' ? (
+          getOptionLabel(question, value)
+        ) : (
+          String(value)
+        )}
+      </div>
+    </div>
+  );
+};
+
+const LegacyResultContent = ({ answers }: { answers: Record<string, unknown> }) => (
+  <div className="grid gap-4 pb-2 sm:grid-cols-2">
+    {Object.entries(answers).map(([key, value]) => (
+      <div key={key} className="space-y-2">
+        <h4 className="px-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/75">
+          {formatLegacyKey(key)}
+        </h4>
+        <div className="rounded-xl border border-border/50 bg-muted/10 p-4 text-sm leading-relaxed">
+          {Array.isArray(value) ? (
+            value.join(', ')
+          ) : value === undefined || value === null || value === '' ? (
+            <span className="italic text-muted-foreground">Не заполнено</span>
+          ) : (
+            String(value)
+          )}
+        </div>
+      </div>
+    ))}
+  </div>
+);

@@ -30,7 +30,69 @@ export async function deleteClientUser(userId: string) {
   }
 }
 
-import { encryptData } from '@/lib/crypto';
+import { decryptData, encryptData } from '@/lib/crypto';
+import {
+  consentSignatureKeyId,
+  createSha256Hash,
+  parseConsentSignaturePayload,
+  verifyConsentSignature
+} from '@/modules/intake/consent-signature';
+
+type ConsentVerificationStatus = 'VALID' | 'INVALID' | 'UNVERIFIABLE';
+
+type ConsentVerificationStatusesResult =
+  | { success: true; statuses: Record<string, ConsentVerificationStatus> }
+  | { success: false; error: string };
+
+type ConsentWithVerificationEvidence = {
+  type: string;
+  signature: string;
+  signatureKeyId: string | null;
+  signaturePayload: unknown;
+  userId: string;
+  agreedAt: Date;
+  ip: string | null;
+  userAgent: string | null;
+  intakeResponse: {
+    answers: string;
+    formVersion: number | null;
+    formSnapshot: unknown;
+  } | null;
+};
+
+/** Проверяет неизменность данных, зафиксированных электронной подписью согласия. */
+const getConsentVerificationStatus = (
+  consent: ConsentWithVerificationEvidence
+): ConsentVerificationStatus => {
+  const payload = parseConsentSignaturePayload(consent.signaturePayload);
+  if (
+    !payload.success ||
+    !consent.intakeResponse ||
+    consent.signatureKeyId !== consentSignatureKeyId
+  ) {
+    return 'UNVERIFIABLE';
+  }
+
+  try {
+    const answers = JSON.parse(decryptData(consent.intakeResponse.answers)) as unknown;
+    const evidenceIsUnchanged =
+      payload.data.consentType === consent.type &&
+      payload.data.userId === consent.userId &&
+      payload.data.agreedAt === consent.agreedAt.toISOString() &&
+      payload.data.ip === (consent.ip || '127.0.0.1') &&
+      payload.data.userAgent === (consent.userAgent || 'Unknown User Agent') &&
+      payload.data.form.version === consent.intakeResponse.formVersion &&
+      payload.data.form.snapshotHash === createSha256Hash(consent.intakeResponse.formSnapshot) &&
+      payload.data.answersHash === createSha256Hash(answers);
+
+    return evidenceIsUnchanged && verifyConsentSignature(payload.data, consent.signature)
+      ? 'VALID'
+      : 'INVALID';
+  } catch (error) {
+    console.error('Failed to verify client consent signature:', error);
+    return 'INVALID';
+  }
+};
 
 /**
  * Сохранить заметку психолога (с шифрованием)
@@ -119,6 +181,87 @@ export async function deleteClientConsent(consentId: string) {
   } catch (error) {
     console.error('Failed to delete client consent:', error);
     return { success: false, error: 'Internal Server Error' };
+  }
+}
+
+/** Возвращает подпись и результат проверки неизменности согласия только администратору. */
+export async function getClientConsentSignature(consentId: string) {
+  try {
+    const session = await auth();
+    if (session?.user?.role !== 'ADMIN') {
+      return { success: false, error: 'Недостаточно прав' };
+    }
+
+    const consent = await prisma.clientConsent.findUnique({
+      where: { id: consentId },
+      select: {
+        type: true,
+        signature: true,
+        signatureKeyId: true,
+        signaturePayload: true,
+        userId: true,
+        agreedAt: true,
+        ip: true,
+        userAgent: true,
+        intakeResponse: {
+          select: { answers: true, formVersion: true, formSnapshot: true }
+        }
+      }
+    });
+
+    if (!consent) {
+      return { success: false, error: 'Согласие не найдено' };
+    }
+
+    return {
+      success: true,
+      consent,
+      verification: { status: getConsentVerificationStatus(consent) }
+    };
+  } catch (error) {
+    console.error('Failed to get client consent signature:', error);
+    return { success: false, error: 'Не удалось загрузить подпись' };
+  }
+}
+
+/** Возвращает статусы проверки подписей согласий только администратору. */
+export async function getClientConsentVerificationStatuses(
+  consentIds: string[]
+): Promise<ConsentVerificationStatusesResult> {
+  try {
+    const session = await auth();
+    if (session?.user?.role !== 'ADMIN') {
+      return { success: false, error: 'Недостаточно прав' };
+    }
+
+    const ids = [...new Set(consentIds)].filter(Boolean).slice(0, 100);
+    const consents = await prisma.clientConsent.findMany({
+      where: { id: { in: ids } },
+      select: {
+        id: true,
+        type: true,
+        signature: true,
+        signatureKeyId: true,
+        signaturePayload: true,
+        userId: true,
+        agreedAt: true,
+        ip: true,
+        userAgent: true,
+        intakeResponse: {
+          select: { answers: true, formVersion: true, formSnapshot: true }
+        }
+      }
+    });
+
+    const statuses: Record<string, ConsentVerificationStatus> = {};
+    for (const consent of consents as Array<ConsentWithVerificationEvidence & { id: string }>) {
+      statuses[consent.id] = getConsentVerificationStatus(consent);
+    }
+
+    return { success: true, statuses };
+  } catch (error) {
+    console.error('Failed to verify client consent signatures:', error);
+    return { success: false, error: 'Не удалось проверить подписи' };
   }
 }
 

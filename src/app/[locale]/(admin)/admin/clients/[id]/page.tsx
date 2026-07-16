@@ -14,12 +14,14 @@ import { ClientAvatar } from './_components/client-avatar';
 import { ClientSchedule } from './_components/client-schedule';
 import { ClientMessages } from './_components/client-messages';
 import { BreadcrumbSetter } from '@/components/breadcrumb-setter';
+import { intakeFormStepsSchema } from '@/modules/intake/form-definition';
 
 type ClientIntakeRow = {
   id: string;
   formId: string;
   status: string;
   answers: string;
+  formSnapshot: Prisma.JsonValue | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -30,6 +32,7 @@ type ClientConsentRow = {
   agreedAt: Date;
   ip: string | null;
   userAgent: string | null;
+  intakeResponse: { id: string } | null;
 };
 
 const getStringMetadataField = (metadata: Prisma.JsonValue, key: string) => {
@@ -81,6 +84,7 @@ export default async function AdminClientProfilePage({
                 formId: true,
                 status: true,
                 answers: true,
+                formSnapshot: true,
                 createdAt: true,
                 updatedAt: true
               },
@@ -94,7 +98,8 @@ export default async function AdminClientProfilePage({
             type: true,
             agreedAt: true,
             ip: true,
-            userAgent: true
+            userAgent: true,
+            intakeResponse: { select: { id: true } }
           }
         }
       }
@@ -162,9 +167,13 @@ export default async function AdminClientProfilePage({
       status: intake.status,
       createdAt: intake.createdAt.toISOString(),
       updatedAt: intake.updatedAt.toISOString(),
-      plainAnswers
+      plainAnswers,
+      questionMetadata: getQuestionMetadata(intake.formSnapshot)
     };
   });
+  const intakeNumberById = new Map(
+    intakes.map((intake, index) => [intake.id, intakes.length - index])
+  );
 
   const lastLogin = user.loginHistory?.[0];
 
@@ -186,7 +195,10 @@ export default async function AdminClientProfilePage({
       type: consent.type,
       agreedAt: consent.agreedAt.toISOString(),
       ip: consent.ip,
-      userAgent: consent.userAgent
+      userAgent: consent.userAgent,
+      intakeNumber: consent.intakeResponse
+        ? intakeNumberById.get(consent.intakeResponse.id) || null
+        : null
     }))
   };
 
@@ -275,3 +287,23 @@ export default async function AdminClientProfilePage({
     </div>
   );
 }
+
+const getQuestionMetadata = (snapshot: Prisma.JsonValue | null) => {
+  const parsedSteps = intakeFormStepsSchema.safeParse(snapshot);
+  if (!parsedSteps.success) return {};
+
+  return Object.fromEntries(
+    parsedSteps.data.flatMap(step =>
+      step.questions.map(question => [
+        question.id,
+        {
+          label: question.label,
+          isFullWidth: question.type === 'LONG_TEXT' || question.type === 'MULTI_CHOICE',
+          optionLabels: Object.fromEntries(
+            question.options.map(option => [option.id, option.label])
+          )
+        }
+      ])
+    )
+  );
+};

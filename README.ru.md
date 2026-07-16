@@ -138,6 +138,7 @@ npm run dev
 | `POSTGRES_URL`        | Альтернативная строка подключения Postgres (используется Vercel Postgres)                         |
 | `PRISMA_DATABASE_URL` | Явный URL базы данных Prisma (переопределяет `DATABASE_URL` если установлена)                     |
 | `ADMIN_EMAIL`         | Email-адрес для предоставления доступа администратора при первом входе (например, your@email.com) |
+| `CONSENT_HMAC_KEY`    | Отдельный 32-байтный секрет (64 HEX) для подписи и проверки согласий; обязателен в production     |
 
 #### Email и уведомления
 

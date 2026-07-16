@@ -1,25 +1,61 @@
 'use server';
 
 import prisma from '@/lib/prisma';
-import { encryptData, decryptData, createHmacSignature } from '@/lib/crypto';
+import { encryptData, decryptData } from '@/lib/crypto';
 import { sendAdminIntakeNotificationToAdmin } from '@/lib/email';
 import { headers } from 'next/headers';
 import { auth } from '@/auth';
+import { Prisma } from '@prisma/client';
+import {
+  intakeFormStepsSchema,
+  isIntakeConsentAccepted,
+  isValidIntakeAnswer
+} from '@/modules/intake/form-definition';
+import { getIntakeFormDefinition } from '@/modules/intake/form-definition.server';
+import { defaultLocale, isLocale } from '@/i18n/config';
+import {
+  consentSignatureKeyId,
+  createConsentSignature,
+  createSha256Hash,
+  type ConsentSignaturePayload
+} from '@/modules/intake/consent-signature';
+
+const hasNewIntakeNotificationsDisabled = (value: unknown): boolean => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  return (value as Record<string, unknown>).newIntake === false;
+};
 
 /**
  * Отправка ответов анкеты Intake.
- * @param formId - Идентификатор формы.
- * @param answers - Объект с ответами.
+ * @param locale - Локаль опубликованной формы.
+ * @param values - Объект с ответами и согласием на обработку персональных данных.
  * @returns Объект с результатом операции.
  */
-export async function submitIntake(formId: string, answers: any) {
+export async function submitIntake(locale: string, values: Record<string, unknown>) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
       throw new Error('Unauthorized');
     }
 
+    const { consent, ...answers } = values;
+    if (!isIntakeConsentAccepted(consent)) {
+      return { success: false, error: 'Необходимо согласие на обработку персональных данных' };
+    }
+
     const userId = session.user.id;
+    const formLocale = isLocale(locale) ? locale : defaultLocale;
+    const definition = await getIntakeFormDefinition(formLocale);
+    const questions = definition.steps.flatMap(step => step.questions);
+    const normalizedAnswers = Object.fromEntries(
+      questions.map(question => [question.id, answers[question.id]])
+    );
+
+    if (
+      !questions.every(question => isValidIntakeAnswer(question, normalizedAnswers[question.id]))
+    ) {
+      return { success: false, error: 'Некорректные ответы' };
+    }
 
     let profile = await prisma.clientProfile.findUnique({
       where: { userId }
@@ -31,15 +67,54 @@ export async function submitIntake(formId: string, answers: any) {
       });
     }
 
-    const encryptedAnswers = encryptData(JSON.stringify(answers));
+    const encryptedAnswers = encryptData(JSON.stringify(normalizedAnswers));
+    const requestHeaders = await headers();
+    const ip =
+      requestHeaders.get('x-forwarded-for') || requestHeaders.get('x-real-ip') || '127.0.0.1';
+    const userAgent = requestHeaders.get('user-agent') || 'Unknown User Agent';
+    const consentType = `INTAKE_FORM_SUBMIT:${formLocale}:v${definition.version}`;
+    const agreedAt = new Date();
+    const signaturePayload: ConsentSignaturePayload = {
+      schemaVersion: 1,
+      consentType,
+      userId,
+      agreedAt: agreedAt.toISOString(),
+      ip,
+      userAgent,
+      form: {
+        locale: formLocale,
+        version: definition.version,
+        snapshotHash: createSha256Hash(definition.steps)
+      },
+      answersHash: createSha256Hash(normalizedAnswers)
+    };
+    const signature = createConsentSignature(signaturePayload);
 
-    const intake = await prisma.intakeResponse.create({
-      data: {
-        clientProfileId: profile.id,
-        formId,
-        status: 'COMPLETED',
-        answers: encryptedAnswers
-      }
+    const intake = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const consent = await tx.clientConsent.create({
+        data: {
+          userId,
+          type: consentType,
+          ip,
+          userAgent,
+          signature,
+          signatureKeyId: consentSignatureKeyId,
+          signaturePayload: signaturePayload as unknown as Prisma.InputJsonValue,
+          agreedAt
+        }
+      });
+
+      return tx.intakeResponse.create({
+        data: {
+          clientProfileId: profile.id,
+          consentId: consent.id,
+          formId: `intake_v${definition.version}`,
+          formVersion: definition.version,
+          formSnapshot: definition.steps as unknown as Prisma.InputJsonValue,
+          status: 'COMPLETED',
+          answers: encryptedAnswers
+        }
+      });
     });
 
     const admins = await prisma.user.findMany({
@@ -48,10 +123,13 @@ export async function submitIntake(formId: string, answers: any) {
     });
 
     for (const admin of admins) {
-      const settings = admin.notificationSettings as any;
-      if (!settings || settings.newIntake !== false) {
+      if (!hasNewIntakeNotificationsDisabled(admin.notificationSettings)) {
         if (admin.email) {
-          await sendAdminIntakeNotificationToAdmin(admin.email, userId, formId);
+          await sendAdminIntakeNotificationToAdmin(
+            admin.email,
+            userId,
+            `intake_v${definition.version}`
+          );
         }
       }
     }
@@ -93,50 +171,20 @@ export async function getIntakeAnswers(intakeId: string) {
     }
 
     const decryptedJson = decryptData(intake.answers);
-    const answers = JSON.parse(decryptedJson);
+    const parsedAnswers = JSON.parse(decryptedJson) as unknown;
+    const answers =
+      parsedAnswers && typeof parsedAnswers === 'object' && !Array.isArray(parsedAnswers)
+        ? (parsedAnswers as Record<string, unknown>)
+        : {};
+    const parsedSnapshot = intakeFormStepsSchema.safeParse(intake.formSnapshot);
 
-    return { success: true, answers };
+    return {
+      success: true,
+      answers,
+      formSnapshot: parsedSnapshot.success ? parsedSnapshot.data : null
+    };
   } catch (error) {
     console.error('Failed to get intake answers:', error);
-    return { success: false, error: 'Internal Server Error' };
-  }
-}
-
-/**
- * Фиксация цифрового согласия пользователя.
- * @param type - Тип события согласия.
- * @returns Объект с результатом.
- */
-export async function recordConsent(type: string) {
-  try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      throw new Error('Unauthorized');
-    }
-
-    const userId = session.user.id;
-    const reqHeaders = await headers();
-
-    const ip = reqHeaders.get('x-forwarded-for') || reqHeaders.get('x-real-ip') || '127.0.0.1';
-    const userAgent = reqHeaders.get('user-agent') || 'Unknown User Agent';
-    const nowStr = new Date().toISOString();
-
-    const payload = JSON.stringify({ userId, ip, userAgent, type, date: nowStr });
-    const signature = createHmacSignature(payload);
-
-    await prisma.clientConsent.create({
-      data: {
-        userId,
-        type,
-        ip,
-        userAgent,
-        signature
-      }
-    });
-
-    return { success: true };
-  } catch (error) {
-    console.error('Failed to record consent:', error);
     return { success: false, error: 'Internal Server Error' };
   }
 }
