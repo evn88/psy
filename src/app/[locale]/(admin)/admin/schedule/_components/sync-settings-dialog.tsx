@@ -6,7 +6,18 @@ import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from '@/components/ui/alert-dialog';
+import { Button, buttonVariants } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -23,6 +34,7 @@ import { useRouter } from '@/i18n/navigation';
 export interface SyncSettingsDialogProps {
   initialConnected?: boolean;
   calendarName?: string | null;
+  initialGoogleCalendarSyncUrl?: string | null;
   googleStatus?: string;
   initialWorkStart?: number;
   initialWorkEnd?: number;
@@ -31,6 +43,7 @@ export interface SyncSettingsDialogProps {
 export const SyncSettingsDialog = ({
   initialConnected = false,
   calendarName,
+  initialGoogleCalendarSyncUrl,
   googleStatus,
   initialWorkStart = 9,
   initialWorkEnd = 20
@@ -40,6 +53,9 @@ export const SyncSettingsDialog = ({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [connected, setConnected] = useState(initialConnected);
+  const [googleCalendarSyncUrl, setGoogleCalendarSyncUrl] = useState(
+    initialGoogleCalendarSyncUrl || ''
+  );
   const [workStart, setWorkStart] = useState(initialWorkStart.toString());
   const [workEnd, setWorkEnd] = useState(initialWorkEnd.toString());
   const [loading, setLoading] = useState(false);
@@ -68,7 +84,8 @@ export const SyncSettingsDialog = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           workHourStart: Number(workStart),
-          workHourEnd: Number(workEnd)
+          workHourEnd: Number(workEnd),
+          googleCalendarSyncUrl: googleCalendarSyncUrl.trim()
         })
       });
 
@@ -200,14 +217,31 @@ export const SyncSettingsDialog = ({
                     <CalendarSync data-icon="inline-start" />
                     {t('syncNow')}
                   </Button>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    onClick={handleDisconnect}
-                    disabled={loading}
-                  >
-                    {t('disconnectGoogle')}
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button type="button" variant="destructive" disabled={loading}>
+                        {t('disconnectGoogle')}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>{t('disconnectGoogleTitle')}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          {t('disconnectGoogleDescription')}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel disabled={loading}>{t('cancel')}</AlertDialogCancel>
+                        <AlertDialogAction
+                          className={buttonVariants({ variant: 'destructive' })}
+                          onClick={handleDisconnect}
+                          disabled={loading}
+                        >
+                          {t('disconnectGoogle')}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </>
               ) : (
                 <Button asChild>
@@ -216,6 +250,20 @@ export const SyncSettingsDialog = ({
                   </a>
                 </Button>
               )}
+            </div>
+
+            <div className="flex flex-col gap-2 pt-2">
+              <Label htmlFor="googleCalendarSyncUrl">{t('googleIcalUrlLabel')}</Label>
+              <Input
+                id="googleCalendarSyncUrl"
+                type="url"
+                inputMode="url"
+                placeholder="https://calendar.google.com/calendar/ical/.../basic.ics"
+                value={googleCalendarSyncUrl}
+                onChange={event => setGoogleCalendarSyncUrl(event.target.value)}
+                disabled={loading}
+              />
+              <p className="text-xs text-muted-foreground">{t('googleIcalUrlDescription')}</p>
             </div>
           </section>
         </div>

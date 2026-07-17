@@ -1317,6 +1317,13 @@
     "cancel": "Cancel",
     "confirm": "Confirm"
   },
+  "DateTimePicker": {
+    "selectDate": "Select date",
+    "selectTime": "Select time",
+    "hours": "Hours",
+    "minutes": "Minutes",
+    "done": "Done"
+  },
   "Schedule": {
     "title": "Schedule & Booking",
     "details": "Details",
@@ -1371,7 +1378,7 @@
     "pendingRequestsEmpty": "No booking requests are waiting for approval.",
     "pendingRequestsLoading": "Loading requests...",
     "pendingRequestsCount": "{count} requests",
-    "pendingStatusBadge": "Needs review",
+    "openRequest": "Open request",
     "requestClientLabel": "Client",
     "requestDateLabel": "Date",
     "requestTimeLabel": "Time",
@@ -1398,8 +1405,12 @@
     "googleConnectedDescription": "New and updated appointments are sent to the connected calendar.",
     "googleNotConnected": "Google Calendar is not connected",
     "googleOutboundDescription": "Connect your Google account so appointments created in the admin area automatically appear in your calendar.",
+    "googleIcalUrlLabel": "Secret iCal address (read events)",
+    "googleIcalUrlDescription": "Optional. Paste a secret iCal address to show external Google events in the schedule. It is not used to send appointments to Google.",
     "connectGoogle": "Connect Google Calendar",
     "disconnectGoogle": "Disconnect",
+    "disconnectGoogleTitle": "Disconnect Google Calendar?",
+    "disconnectGoogleDescription": "Synchronization will stop, and you can then connect another Google account. Existing calendar events will remain.",
     "syncNow": "Sync now",
     "googleConnectedSuccess": "Google Calendar connected and future appointments synced.",
     "googleConnectedWithErrors": "Google Calendar connected, but some appointments could not be synced.",

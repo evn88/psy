@@ -1328,6 +1328,13 @@
     "cancel": "Отмена",
     "confirm": "Подтвердить"
   },
+  "DateTimePicker": {
+    "selectDate": "Выберите дату",
+    "selectTime": "Выберите время",
+    "hours": "Часы",
+    "minutes": "Минуты",
+    "done": "Готово"
+  },
   "Schedule": {
     "title": "Расписание и Записи",
     "details": "Детали",
@@ -1382,7 +1389,7 @@
     "pendingRequestsEmpty": "Нет запросов, ожидающих подтверждения.",
     "pendingRequestsLoading": "Загружаю запросы...",
     "pendingRequestsCount": "{count} запросов",
-    "pendingStatusBadge": "Нужно решение",
+    "openRequest": "Открыть запрос",
     "requestClientLabel": "Клиент",
     "requestDateLabel": "Дата",
     "requestTimeLabel": "Время",
@@ -1409,8 +1416,12 @@
     "googleConnectedDescription": "Новые и изменённые записи отправляются в подключённый календарь.",
     "googleNotConnected": "Google Calendar не подключён",
     "googleOutboundDescription": "Подключите аккаунт Google, чтобы записи из админки автоматически появлялись в вашем календаре.",
+    "googleIcalUrlLabel": "Секретный iCal-адрес (чтение событий)",
+    "googleIcalUrlDescription": "Необязательно. Вставьте секретный адрес iCal, чтобы показывать внешние события Google в расписании. Он не используется для отправки записей в Google.",
     "connectGoogle": "Подключить Google Calendar",
     "disconnectGoogle": "Отключить",
+    "disconnectGoogleTitle": "Отключить Google Calendar?",
+    "disconnectGoogleDescription": "Синхронизация прекратится, после чего можно будет подключить другой аккаунт Google. Уже созданные события останутся в календаре.",
     "syncNow": "Синхронизировать сейчас",
     "googleConnectedSuccess": "Google Calendar подключён и будущие записи синхронизированы.",
     "googleConnectedWithErrors": "Google Calendar подключён, но часть записей не удалось синхронизировать.",

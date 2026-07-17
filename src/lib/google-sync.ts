@@ -25,6 +25,24 @@ const googleEventResponseSchema = z.object({
   id: z.string().min(1)
 });
 
+const googleCalendarEventsResponseSchema = z.object({
+  items: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        summary: z.string().optional(),
+        status: z.string().optional(),
+        start: z.object({ dateTime: z.string().optional(), date: z.string().optional() }),
+        end: z.object({ dateTime: z.string().optional(), date: z.string().optional() }),
+        extendedProperties: z
+          .object({ private: z.record(z.string(), z.string()).optional() })
+          .optional()
+      })
+    )
+    .default([]),
+  nextPageToken: z.string().optional()
+});
+
 type GoogleTokenResponse = z.infer<typeof googleTokenSchema>;
 
 type GoogleCalendarConnection = {
@@ -42,8 +60,8 @@ export type GoogleSyncResult = {
 };
 
 const getGoogleCredentials = (): { clientId: string; clientSecret: string } => {
-  const clientId = process.env.GOOGLE_CALENDAR_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CALENDAR_CLIENT_SECRET;
+  const clientId = process.env.GOOGLE_CALENDAR_CLIENT_ID || process.env.AUTH_GOOGLE_ID;
+  const clientSecret = process.env.GOOGLE_CALENDAR_CLIENT_SECRET || process.env.AUTH_GOOGLE_SECRET;
 
   if (!clientId || !clientSecret) {
     throw new Error('Google Calendar OAuth credentials are not configured');
@@ -79,7 +97,7 @@ export const createGoogleCalendarAuthorizationUrl = (params: {
     response_type: 'code',
     scope: GOOGLE_CALENDAR_SCOPE,
     access_type: 'offline',
-    prompt: 'consent',
+    prompt: 'consent select_account',
     include_granted_scopes: 'true',
     state: params.state
   });
@@ -433,20 +451,82 @@ export const syncFutureEventsWithGoogle = async (
   );
 };
 
+const createExternalGoogleEvent = (event: {
+  id: string;
+  summary?: string;
+  start: { dateTime?: string; date?: string };
+  end: { dateTime?: string; date?: string };
+}): ReturnType<typeof parseICal>[number] | null => {
+  const start = event.start.dateTime || event.start.date;
+  const end = event.end.dateTime || event.end.date;
+  if (!start || !end) {
+    return null;
+  }
+
+  return {
+    id: `google-${event.id}`,
+    title: event.summary?.trim() || 'Событие Google Calendar',
+    start: new Date(start),
+    end: new Date(end),
+    type: EventType.OTHER,
+    status: EventStatus.SCHEDULED,
+    meetLink: null,
+    userId: null,
+    isExternal: true
+  };
+};
+
 /**
- * Читает legacy iCal-фид Google для отображения занятости в приложении.
- * Исходящая синхронизация работает отдельно через OAuth и Calendar API.
- * @param userId - идентификатор владельца legacy iCal-настройки.
+ * Читает события подключённого Google Calendar через OAuth API или legacy iCal-фид.
+ * События, созданные приложением, исключаются: они уже присутствуют в локальном расписании.
+ * @param userId - идентификатор владельца календаря.
+ * @param range - необязательный диапазон выборки событий.
  */
-export const fetchGoogleEvents = async (userId: string) => {
+export const fetchGoogleEvents = async (userId: string, range?: { start: Date; end: Date }) => {
   try {
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (
-      !user ||
-      !user.googleCalendarSyncEnabled ||
-      user.googleCalendarRefreshToken ||
-      !user.googleCalendarSyncUrl
-    ) {
+    if (!user?.googleCalendarSyncEnabled) {
+      return [];
+    }
+
+    if (user.googleCalendarRefreshToken) {
+      const accessToken = await getValidAccessToken(user);
+      const calendarId = encodeURIComponent(user.googleCalendarId || 'primary');
+      const events: ReturnType<typeof parseICal> = [];
+      let pageToken: string | undefined;
+
+      do {
+        const searchParams = new URLSearchParams({
+          singleEvents: 'true',
+          maxResults: '2500',
+          ...(range && {
+            timeMin: range.start.toISOString(),
+            timeMax: range.end.toISOString()
+          }),
+          ...(pageToken && { pageToken })
+        });
+        const response = await requestGoogleCalendarApi(
+          `${GOOGLE_CALENDAR_API_URL}/calendars/${calendarId}/events?${searchParams.toString()}`,
+          accessToken,
+          { method: 'GET' }
+        );
+        const page = googleCalendarEventsResponseSchema.parse(await response.json());
+        events.push(
+          ...page.items
+            .filter(
+              event =>
+                event.status !== 'cancelled' && !event.extendedProperties?.private?.vershkovEventId
+            )
+            .map(createExternalGoogleEvent)
+            .filter(event => event !== null)
+        );
+        pageToken = page.nextPageToken;
+      } while (pageToken);
+
+      return events;
+    }
+
+    if (!user.googleCalendarSyncUrl) {
       return [];
     }
 

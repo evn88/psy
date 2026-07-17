@@ -75,7 +75,10 @@ async function getHandler(req: Request) {
     let googleEvents: ParsedEvent[] = [];
     if (admin) {
       const { fetchGoogleEvents } = await import('@/lib/google-sync');
-      googleEvents = await fetchGoogleEvents(admin.id);
+      googleEvents = await fetchGoogleEvents(
+        admin.id,
+        start && end ? { start: new Date(start), end: new Date(end) } : undefined
+      );
       if (start && end) {
         const startD = new Date(start);
         const endD = new Date(end);

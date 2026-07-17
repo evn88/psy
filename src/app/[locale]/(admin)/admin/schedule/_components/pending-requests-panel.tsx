@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { CalendarRange, Check, Clock3, Mail, UserRound, X } from 'lucide-react';
+import { ArrowUpRight, CalendarClock, Check, LoaderCircle, UserRound, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 
 import { PendingRequestRejectionDialog } from './pending-request-rejection-dialog';
 import type { Event } from './use-events';
@@ -129,9 +130,9 @@ export const PendingRequestsPanel = ({
   return (
     <>
       <Card className="flex flex-col border-border/60 lg:h-full lg:min-h-0">
-        <CardHeader className="pb-4">
+        <CardHeader className="gap-1 pb-5">
           <div className="flex items-start justify-between gap-3">
-            <div className="space-y-1">
+            <div className="flex min-w-0 flex-col gap-1">
               <CardTitle className="text-base sm:text-lg">{t('pendingRequestsTitle')}</CardTitle>
               <CardDescription>{t('pendingRequestsDescription')}</CardDescription>
             </div>
@@ -140,125 +141,103 @@ export const PendingRequestsPanel = ({
             </Badge>
           </div>
         </CardHeader>
+        <Separator className="opacity-60" />
 
-        <CardContent className="flex-1 min-h-0 px-4 pb-4 sm:px-6">
+        <CardContent className="flex min-h-0 flex-1 flex-col bg-muted/15 p-0">
           {isLoading ? (
-            <div className="rounded-xl border border-dashed px-4 py-6 text-sm text-muted-foreground">
+            <div className="flex min-h-32 items-center px-6 py-8 text-sm text-muted-foreground">
               {t('pendingRequestsLoading')}
             </div>
           ) : requests.length === 0 ? (
-            <div className="rounded-xl border border-dashed px-4 py-6 text-sm text-muted-foreground">
+            <div className="flex min-h-32 items-center px-6 py-8 text-sm text-muted-foreground">
               {t('pendingRequestsEmpty')}
             </div>
           ) : (
-            <div className="flex max-h-[28rem] flex-col gap-3 overflow-y-auto pr-1 lg:max-h-full">
+            <ol className="flex max-h-[28rem] flex-col divide-y divide-border/70 overflow-y-auto lg:max-h-full">
               {requests.map(request => {
                 const requestTitle = request.title || t(`types.${request.type}` as never);
+                const requestClientName = request.user?.name || request.user?.email;
+                const shouldShowClientEmail = Boolean(request.user?.name && request.user.email);
                 const isActionPending = activeRequestId === request.id;
 
                 return (
-                  <article
-                    key={request.id}
-                    className="rounded-xl border border-border/70 bg-card/60 p-4 transition-colors hover:bg-accent/20"
-                  >
-                    <div
-                      role={onRequestClick ? 'button' : undefined}
-                      tabIndex={onRequestClick ? 0 : -1}
-                      onClick={() => onRequestClick?.(request)}
-                      onKeyDown={event => {
-                        if (!onRequestClick) {
-                          return;
-                        }
-
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault();
-                          onRequestClick(request);
-                        }
-                      }}
-                      className={onRequestClick ? 'cursor-pointer outline-none' : undefined}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 space-y-1">
-                          <div className="truncate text-sm font-semibold sm:text-base">
-                            {requestTitle}
-                          </div>
-                          <div className="truncate text-xs text-muted-foreground sm:text-sm">
-                            {t(`statuses.${request.status}` as never)}
-                          </div>
-                        </div>
-                        <Badge
-                          variant="outline"
-                          className="shrink-0 border-amber-300 bg-amber-50 text-amber-900"
-                        >
-                          {t('pendingStatusBadge')}
-                        </Badge>
+                  <li key={request.id} className="px-5 py-5 sm:px-6">
+                    <div className="flex items-start gap-3">
+                      <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-background text-muted-foreground">
+                        <CalendarClock aria-hidden />
                       </div>
-
-                      <div className="mt-3 space-y-2 text-sm text-muted-foreground">
-                        <div className="flex items-start gap-2">
-                          <UserRound className="mt-0.5 h-4 w-4 shrink-0" />
-                          <div className="min-w-0">
-                            <div className="font-medium text-foreground">
-                              {request.user?.name || request.user?.email}
-                            </div>
-                            {request.user?.email && (
-                              <div className="flex items-center gap-1 truncate text-xs sm:text-sm">
-                                <Mail className="h-3.5 w-3.5 shrink-0" />
-                                <span className="truncate">{request.user.email}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <CalendarRange className="h-4 w-4 shrink-0" />
-                          <span>
-                            {t('requestDateLabel')}:{' '}
-                            {formatRequestDate(new Date(request.start), locale)}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <Clock3 className="h-4 w-4 shrink-0" />
-                          <span>
-                            {t('requestTimeLabel')}:{' '}
+                      <div className="flex min-w-0 flex-1 items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate text-base font-semibold leading-5">
+                            {requestTitle}
+                          </p>
+                          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                            {formatRequestDate(new Date(request.start), locale)} ·{' '}
                             {formatRequestTimeRange(
                               new Date(request.start),
                               new Date(request.end),
                               locale
                             )}
-                          </span>
+                          </p>
                         </div>
+                        {onRequestClick && (
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="size-9 shrink-0"
+                            onClick={() => onRequestClick(request)}
+                            aria-label={t('openRequest')}
+                          >
+                            <ArrowUpRight />
+                          </Button>
+                        )}
                       </div>
                     </div>
 
-                    <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                    <div className="mt-4 flex min-w-0 items-start gap-3 text-sm text-muted-foreground">
+                      <div className="flex size-10 shrink-0 items-start justify-center pt-0.5">
+                        <UserRound aria-hidden />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-foreground">{requestClientName}</p>
+                        {shouldShowClientEmail && (
+                          <p className="mt-0.5 truncate text-xs">{request.user?.email}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex gap-2">
                       <Button
                         type="button"
                         size="sm"
-                        className="sm:flex-1"
+                        className="flex-1"
                         disabled={isActionPending}
                         onClick={() => void handleApprove(request)}
                       >
-                        <Check className="h-4 w-4" />
+                        {isActionPending ? (
+                          <LoaderCircle data-icon="inline-start" className="animate-spin" />
+                        ) : (
+                          <Check data-icon="inline-start" />
+                        )}
                         {t('approveRequest')}
                       </Button>
                       <Button
                         type="button"
                         size="sm"
                         variant="destructive"
-                        className="sm:flex-1"
+                        className="flex-1"
                         disabled={isActionPending}
                         onClick={() => setRequestToReject(request)}
                       >
-                        <X className="h-4 w-4" />
+                        <X data-icon="inline-start" />
                         {t('rejectRequest')}
                       </Button>
                     </div>
-                  </article>
+                  </li>
                 );
               })}
-            </div>
+            </ol>
           )}
         </CardContent>
       </Card>

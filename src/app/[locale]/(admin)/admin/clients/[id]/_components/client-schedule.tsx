@@ -48,6 +48,7 @@ import {
   FormMessage
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
   Select,
   SelectContent,
@@ -55,6 +56,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import { TimePicker } from '@/components/ui/time-picker';
 import { addClientEvent, updateClientEvent } from '../../_actions/clients.actions';
 import type { EventStatus, EventType } from '@prisma/client';
 
@@ -436,7 +438,12 @@ export function ClientSchedule({ userId, events }: { userId: string; events: Cli
                     <FormItem className="col-span-1">
                       <FormLabel>Дата</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <DatePicker
+                          value={field.value}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          ref={field.ref}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -450,7 +457,12 @@ export function ClientSchedule({ userId, events }: { userId: string; events: Cli
                     <FormItem className="col-span-1">
                       <FormLabel>Время начала</FormLabel>
                       <FormControl>
-                        <Input type="time" {...field} />
+                        <TimePicker
+                          value={field.value}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          ref={field.ref}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

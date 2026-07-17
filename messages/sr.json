@@ -1250,6 +1250,13 @@
     "cancel": "Otkaži",
     "confirm": "Potvrdi"
   },
+  "DateTimePicker": {
+    "selectDate": "Izaberite datum",
+    "selectTime": "Izaberite vreme",
+    "hours": "Sati",
+    "minutes": "Minuti",
+    "done": "Gotovo"
+  },
   "Schedule": {
     "title": "Raspored i termini",
     "details": "Detalji",
@@ -1304,7 +1311,7 @@
     "pendingRequestsEmpty": "Nema zahteva koji čekaju potvrdu.",
     "pendingRequestsLoading": "Učitavam zahteve...",
     "pendingRequestsCount": "{count} zahteva",
-    "pendingStatusBadge": "Čeka odluku",
+    "openRequest": "Otvori zahtev",
     "requestClientLabel": "Klijent",
     "requestDateLabel": "Datum",
     "requestTimeLabel": "Vreme",
@@ -1331,8 +1338,12 @@
     "googleConnectedDescription": "Novi i izmenjeni termini šalju se u povezani kalendar.",
     "googleNotConnected": "Google Calendar nije povezan",
     "googleOutboundDescription": "Povežite Google nalog kako bi se termini iz administracije automatski pojavili u kalendaru.",
+    "googleIcalUrlLabel": "Tajna iCal adresa (čitanje događaja)",
+    "googleIcalUrlDescription": "Opciono. Nalepite tajnu iCal adresu da biste prikazali spoljne Google događaje u rasporedu. Ne koristi se za slanje termina u Google.",
     "connectGoogle": "Poveži Google Calendar",
     "disconnectGoogle": "Prekini vezu",
+    "disconnectGoogleTitle": "Prekinuti vezu sa Google Calendar-om?",
+    "disconnectGoogleDescription": "Sinhronizacija će biti zaustavljena, a zatim možete povezati drugi Google nalog. Postojeći događaji će ostati u kalendaru.",
     "syncNow": "Sinhronizuj sada",
     "googleConnectedSuccess": "Google Calendar je povezan i budući termini su sinhronizovani.",
     "googleConnectedWithErrors": "Google Calendar je povezan, ali neki termini nisu sinhronizovani.",

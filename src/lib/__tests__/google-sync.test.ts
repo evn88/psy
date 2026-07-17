@@ -23,6 +23,7 @@ vi.mock('@/lib/crypto', () => ({
 import {
   createGoogleCalendarAuthorizationUrl,
   createGoogleCalendarEventPayload,
+  fetchGoogleEvents,
   syncEventWithGoogle
 } from '@/lib/google-sync';
 
@@ -64,6 +65,8 @@ describe('Google Calendar sync', () => {
     vi.unstubAllGlobals();
     delete process.env.GOOGLE_CALENDAR_CLIENT_ID;
     delete process.env.GOOGLE_CALENDAR_CLIENT_SECRET;
+    delete process.env.AUTH_GOOGLE_ID;
+    delete process.env.AUTH_GOOGLE_SECRET;
   });
 
   it('формирует OAuth URL с offline-доступом и защитным state', () => {
@@ -82,6 +85,66 @@ describe('Google Calendar sync', () => {
     expect(authorizationUrl.searchParams.get('state')).toBe('secure-state');
     expect(authorizationUrl.searchParams.get('scope')).toBe(
       'https://www.googleapis.com/auth/calendar.events'
+    );
+    expect(authorizationUrl.searchParams.get('prompt')).toBe('consent select_account');
+  });
+
+  it('использует настройки Google-входа, если отдельные OAuth-переменные не заданы', () => {
+    process.env.AUTH_GOOGLE_ID = 'auth-google-client-id';
+    process.env.AUTH_GOOGLE_SECRET = 'auth-google-client-secret';
+
+    const authorizationUrl = new URL(
+      createGoogleCalendarAuthorizationUrl({
+        state: 'secure-state',
+        redirectUri: 'https://example.com/api/google-calendar/callback'
+      })
+    );
+
+    expect(authorizationUrl.searchParams.get('client_id')).toBe('auth-google-client-id');
+  });
+
+  it('читает заголовки внешних событий из подключённого Google Calendar', async () => {
+    prismaMock.user.findUnique.mockResolvedValue(calendarOwner);
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          items: [
+            {
+              id: 'external-event-1',
+              summary: 'Личная встреча',
+              status: 'confirmed',
+              start: { dateTime: '2026-07-18T10:00:00.000Z' },
+              end: { dateTime: '2026-07-18T11:00:00.000Z' }
+            },
+            {
+              id: 'synced-event-1',
+              summary: 'Консультация',
+              status: 'confirmed',
+              start: { dateTime: '2026-07-18T12:00:00.000Z' },
+              end: { dateTime: '2026-07-18T13:00:00.000Z' },
+              extendedProperties: { private: { vershkovEventId: 'event-1' } }
+            }
+          ]
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const events = await fetchGoogleEvents('admin-1', {
+      start: new Date('2026-07-18T00:00:00.000Z'),
+      end: new Date('2026-07-19T00:00:00.000Z')
+    });
+
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      id: 'google-external-event-1',
+      title: 'Личная встреча',
+      isExternal: true
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('timeMin=2026-07-18T00%3A00%3A00.000Z'),
+      expect.objectContaining({ method: 'GET' })
     );
   });
 

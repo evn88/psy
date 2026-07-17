@@ -2,14 +2,16 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ChevronDown, Clock3, Trash2, TriangleAlert } from 'lucide-react';
+import { ChevronDown, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import useSWR from 'swr';
 import { z } from 'zod';
 
+import { badgeVariants } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
   Dialog,
   DialogContent,
@@ -37,6 +39,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import { TimePicker } from '@/components/ui/time-picker';
 import {
   DEFAULT_SESSION_REMINDER_MINUTES,
   MAX_SESSION_REMINDER_MINUTES,
@@ -44,7 +47,7 @@ import {
   SESSION_REMINDER_PRESET_MINUTES
 } from '@/lib/session-reminders';
 import { optionalMeetingUrlSchema } from '@/lib/safe-url';
-import { isValidTimeZone } from '@/lib/timezone';
+import { formatUtcOffset, isValidTimeZone } from '@/lib/timezone';
 import { detectBrowserTimeZone } from '@/lib/browser-timezone';
 
 import { getEventDateRange, getEventTemporalValues } from './event-form-utils';
@@ -180,9 +183,10 @@ export const EventDialog = ({
   });
   const currentDuration = form.watch('duration');
   const selectedUserId = form.watch('userId');
+  const eventDate = form.watch('date');
+  const selectedUserOption = users?.find(user => user.id === selectedUserId);
   const selectedUser =
-    users?.find(user => user.id === selectedUserId) ??
-    (event?.user && event.user.id === selectedUserId ? event.user : null);
+    selectedUserOption ?? (event?.user && event.user.id === selectedUserId ? event.user : null);
   const selectedUserHasTimezone = Boolean(
     selectedUser?.timezone && isValidTimeZone(selectedUser.timezone)
   );
@@ -279,17 +283,76 @@ export const EventDialog = ({
                     disabled={usersLoading}
                   >
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t('noneSelected')} />
+                      <SelectTrigger className="text-left">
+                        {selectedUser ? (
+                          <div className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 pr-5">
+                            <span className="truncate text-left">
+                              {selectedUser.name || selectedUser.email}
+                            </span>
+                            <span className="flex shrink-0 items-center justify-end gap-1.5">
+                              {selectedUserOption?.role === 'ADMIN' && (
+                                <span
+                                  className={badgeVariants({
+                                    variant: 'default',
+                                    className: 'size-5 justify-center px-0'
+                                  })}
+                                  aria-label={t('admin')}
+                                  title={t('admin')}
+                                >
+                                  А
+                                </span>
+                              )}
+                              <span className={badgeVariants({ variant: 'outline' })}>
+                                {selectedUser.email}
+                              </span>
+                              <span className={badgeVariants({ variant: 'outline' })}>
+                                {formatUtcOffset(
+                                  selectedUser.timezone,
+                                  eventDate ? new Date(`${eventDate}T12:00:00`) : new Date()
+                                )}
+                              </span>
+                            </span>
+                          </div>
+                        ) : (
+                          <SelectValue placeholder={t('noneSelected')} />
+                        )}
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       <SelectGroup>
                         <SelectItem value="none">{t('noneSelected')}</SelectItem>
                         {users?.map(user => (
-                          <SelectItem key={user.id} value={user.id}>
-                            {user.name || user.email} (
-                            {user.role === 'ADMIN' ? t('admin') : user.email})
+                          <SelectItem
+                            key={user.id}
+                            value={user.id}
+                            className="[&>span:last-child]:w-full"
+                          >
+                            <span className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 pr-2">
+                              <span className="truncate">{user.name || user.email}</span>
+                              <span className="flex shrink-0 items-center justify-end gap-1.5">
+                                {user.role === 'ADMIN' && (
+                                  <span
+                                    className={badgeVariants({
+                                      variant: 'default',
+                                      className: 'size-5 justify-center px-0'
+                                    })}
+                                    aria-label={t('admin')}
+                                    title={t('admin')}
+                                  >
+                                    А
+                                  </span>
+                                )}
+                                <span className={badgeVariants({ variant: 'outline' })}>
+                                  {user.email}
+                                </span>
+                                <span className={badgeVariants({ variant: 'outline' })}>
+                                  {formatUtcOffset(
+                                    user.timezone,
+                                    eventDate ? new Date(`${eventDate}T12:00:00`) : new Date()
+                                  )}
+                                </span>
+                              </span>
+                            </span>
                           </SelectItem>
                         ))}
                       </SelectGroup>
@@ -300,32 +363,6 @@ export const EventDialog = ({
               )}
             />
 
-            <div className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5">
-              <div className="flex items-start gap-2.5">
-                {selectedUserId && !selectedUserHasTimezone ? (
-                  <TriangleAlert
-                    className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400"
-                    aria-hidden
-                  />
-                ) : (
-                  <Clock3 className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
-                )}
-                <div className="min-w-0">
-                  <p className="text-xs font-medium text-muted-foreground">{t('clientTimezone')}</p>
-                  <p className="mt-0.5 text-sm font-medium">
-                    {selectedUserId && !selectedUserHasTimezone
-                      ? t('clientTimezoneMissing')
-                      : clientTimezone}
-                  </p>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    {selectedUserId
-                      ? t('clientTimezoneReadOnlyDescription')
-                      : t('browserTimezoneDescription')}
-                  </p>
-                </div>
-              </div>
-            </div>
-
             <div className="grid gap-4 sm:grid-cols-3">
               <FormField
                 control={form.control}
@@ -334,7 +371,12 @@ export const EventDialog = ({
                   <FormItem>
                     <FormLabel>{t('date')}</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <DatePicker
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        ref={field.ref}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -347,7 +389,12 @@ export const EventDialog = ({
                   <FormItem>
                     <FormLabel>{t('startTime')}</FormLabel>
                     <FormControl>
-                      <Input type="time" {...field} />
+                      <TimePicker
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        ref={field.ref}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -91,7 +91,10 @@ async function getHandler(req: Request) {
       orderBy: { start: 'asc' }
     });
 
-    const googleEvents = (await fetchGoogleEvents(session.user.id!)) as CalendarEventLike[];
+    const googleEvents = (await fetchGoogleEvents(
+      session.user.id!,
+      start && end ? { start: new Date(start), end: new Date(end) } : undefined
+    )) as CalendarEventLike[];
     let filteredGoogle = googleEvents;
     if (start && end) {
       const startD = new Date(start);
