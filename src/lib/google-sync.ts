@@ -200,36 +200,14 @@ const calendarOwnerSelect = {
   googleCalendarSyncEnabled: true
 } as const;
 
-const getCalendarOwner = async (
-  authorId: string,
-  explicitOwnerId?: string
-): Promise<CalendarOwner | null> => {
-  const preferredOwnerId = explicitOwnerId || authorId;
-  const preferredOwner = await prisma.user.findFirst({
-    where: {
-      id: preferredOwnerId,
-      role: Role.ADMIN,
-      googleCalendarSyncEnabled: true,
-      googleCalendarRefreshToken: { not: null }
-    },
-    select: calendarOwnerSelect
-  });
-
-  if (preferredOwner) {
-    return preferredOwner;
-  }
-
-  if (explicitOwnerId) {
-    return null;
-  }
-
+const getCalendarOwner = async (authorId: string): Promise<CalendarOwner | null> => {
   return prisma.user.findFirst({
     where: {
+      id: authorId,
       role: Role.ADMIN,
       googleCalendarSyncEnabled: true,
       googleCalendarRefreshToken: { not: null }
     },
-    orderBy: { createdAt: 'asc' },
     select: calendarOwnerSelect
   });
 };
@@ -336,13 +314,11 @@ const requestGoogleCalendarApi = async (
  * Создаёт, обновляет или удаляет событие в подключённом Google Calendar.
  * @param eventId - идентификатор события приложения.
  * @param action - вид синхронизируемой мутации.
- * @param explicitOwnerId - администратор-владелец календаря для массовой синхронизации.
  * @returns Результат синхронизации без утечки OAuth-данных.
  */
 export const syncEventWithGoogle = async (
   eventId: string,
-  action: 'CREATE' | 'UPDATE' | 'DELETE',
-  explicitOwnerId?: string
+  action: 'CREATE' | 'UPDATE' | 'DELETE'
 ): Promise<GoogleSyncResult> => {
   const event = await prisma.event.findUnique({
     where: { id: eventId },
@@ -355,7 +331,7 @@ export const syncEventWithGoogle = async (
     return { success: false, skipped: true, message: 'event-not-found' };
   }
 
-  const owner = await getCalendarOwner(event.authorId, explicitOwnerId);
+  const owner = await getCalendarOwner(event.authorId);
   if (!owner) {
     return { success: false, skipped: true, message: 'calendar-not-connected' };
   }
@@ -433,13 +409,14 @@ export const syncFutureEventsWithGoogle = async (
 ): Promise<{ synced: number; failed: number }> => {
   const events: Array<{ id: string }> = await prisma.event.findMany({
     where: {
+      authorId: ownerId,
       end: { gte: new Date() },
       OR: [{ status: { not: EventStatus.CANCELLED } }, { googleEventId: { not: null } }]
     },
     select: { id: true }
   });
   const results: GoogleSyncResult[] = await Promise.all(
-    events.map(event => syncEventWithGoogle(event.id, 'UPDATE', ownerId))
+    events.map(event => syncEventWithGoogle(event.id, 'UPDATE'))
   );
 
   return results.reduce(

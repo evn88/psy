@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const prismaMock = vi.hoisted(() => ({
   event: {
+    findMany: vi.fn(),
     findUnique: vi.fn(),
     update: vi.fn()
   },
@@ -24,6 +25,7 @@ import {
   createGoogleCalendarAuthorizationUrl,
   createGoogleCalendarEventPayload,
   fetchGoogleEvents,
+  syncFutureEventsWithGoogle,
   syncEventWithGoogle
 } from '@/lib/google-sync';
 
@@ -56,6 +58,7 @@ const calendarOwner = {
 describe('Google Calendar sync', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    prismaMock.event.findMany.mockResolvedValue([]);
     prismaMock.event.findUnique.mockResolvedValue(baseEvent);
     prismaMock.event.update.mockResolvedValue(baseEvent);
     prismaMock.user.findFirst.mockResolvedValue(calendarOwner);
@@ -180,6 +183,41 @@ describe('Google Calendar sync', () => {
     expect(prismaMock.event.update).toHaveBeenCalledWith({
       where: { id: 'event-1' },
       data: { googleEventId: 'google-event-1', isGoogleSynced: true }
+    });
+  });
+
+  it('не использует календарь другого администратора для события', async () => {
+    prismaMock.user.findFirst.mockResolvedValue(null);
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await syncEventWithGoogle('event-1', 'CREATE');
+
+    expect(result).toEqual({
+      success: false,
+      skipped: true,
+      message: 'calendar-not-connected'
+    });
+    expect(prismaMock.user.findFirst).toHaveBeenCalledOnce();
+    expect(prismaMock.user.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: 'admin-1' })
+      })
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('массово синхронизирует только события владельца календаря', async () => {
+    const result = await syncFutureEventsWithGoogle('admin-1');
+
+    expect(result).toEqual({ synced: 0, failed: 0 });
+    expect(prismaMock.event.findMany).toHaveBeenCalledWith({
+      where: {
+        authorId: 'admin-1',
+        end: { gte: expect.any(Date) },
+        OR: [{ status: { not: EventStatus.CANCELLED } }, { googleEventId: { not: null } }]
+      },
+      select: { id: true }
     });
   });
 

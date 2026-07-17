@@ -93,6 +93,20 @@ async function getHandler(req: Request) {
 
     const sanitizedEvents = allEvents
       .map(event => {
+        if ('isExternal' in event && event.isExternal) {
+          return {
+            id: event.id,
+            type: event.type,
+            start: event.start,
+            end: event.end,
+            status: event.status,
+            title: 'Занято',
+            user: null,
+            userId: 'hidden' as const,
+            isExternal: true
+          };
+        }
+
         if (!event.userId) {
           return {
             ...event,

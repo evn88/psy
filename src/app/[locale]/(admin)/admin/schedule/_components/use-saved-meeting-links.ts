@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { getSafeMeetingUrl } from '@/lib/safe-url';
 
@@ -34,18 +34,34 @@ const parseStoredLinks = (value: string | null): string[] => {
  */
 export const useSavedMeetingLinks = () => {
   const [links, setLinks] = useState<string[]>([]);
+  const linksRef = useRef<string[]>([]);
 
   useEffect(() => {
     const frameId = window.requestAnimationFrame(() => {
-      setLinks(parseStoredLinks(window.localStorage.getItem(MEETING_LINKS_STORAGE_KEY)));
+      try {
+        const storedLinks = parseStoredLinks(
+          window.localStorage.getItem(MEETING_LINKS_STORAGE_KEY)
+        );
+        linksRef.current = storedLinks;
+        setLinks(storedLinks);
+      } catch {
+        // История ссылок необязательна и не должна ломать форму при запрете localStorage.
+      }
     });
 
     return () => window.cancelAnimationFrame(frameId);
   }, []);
 
-  const persistLinks = (nextLinks: string[]) => {
+  const persistLinks = (updateLinks: (currentLinks: string[]) => string[]) => {
+    const nextLinks = updateLinks(linksRef.current);
+    linksRef.current = nextLinks;
     setLinks(nextLinks);
-    window.localStorage.setItem(MEETING_LINKS_STORAGE_KEY, JSON.stringify(nextLinks));
+
+    try {
+      window.localStorage.setItem(MEETING_LINKS_STORAGE_KEY, JSON.stringify(nextLinks));
+    } catch {
+      // В памяти история остаётся доступной до перезагрузки страницы.
+    }
   };
 
   const saveLink = (value: string | null | undefined) => {
@@ -54,13 +70,16 @@ export const useSavedMeetingLinks = () => {
       return;
     }
 
-    persistLinks(
-      [safeLink, ...links.filter(link => link !== safeLink)].slice(0, MAX_SAVED_MEETING_LINKS)
+    persistLinks(currentLinks =>
+      [safeLink, ...currentLinks.filter(link => link !== safeLink)].slice(
+        0,
+        MAX_SAVED_MEETING_LINKS
+      )
     );
   };
 
   const removeLink = (value: string) => {
-    persistLinks(links.filter(link => link !== value));
+    persistLinks(currentLinks => currentLinks.filter(link => link !== value));
   };
 
   return { links, saveLink, removeLink };
