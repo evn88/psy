@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ChevronDown, Trash2 } from 'lucide-react';
+import { Check, ChevronDown, Link2, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Separator } from '@/components/ui/separator';
 import {
   Select,
   SelectContent,
@@ -437,49 +438,71 @@ export const EventDialog = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('meetLink')}</FormLabel>
-                  <div className="flex gap-2">
+                  <div className="flex">
                     <FormControl>
                       <Input
                         type="url"
                         placeholder="https://meet.google.com/..."
                         {...field}
                         value={field.value ?? ''}
+                        className="rounded-r-none"
                       />
                     </FormControl>
-                    <Popover open={meetingLinksOpen} onOpenChange={setMeetingLinksOpen}>
+                    <Popover modal open={meetingLinksOpen} onOpenChange={setMeetingLinksOpen}>
                       <PopoverTrigger asChild>
                         <Button
                           type="button"
                           variant="outline"
                           size="icon"
+                          className="-ml-px shrink-0 rounded-l-none"
                           aria-label={t('savedMeetingLinks')}
+                          aria-expanded={meetingLinksOpen}
                           disabled={savedMeetingLinks.length === 0}
                         >
                           <ChevronDown data-icon="inline-start" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent align="end" className="w-[min(420px,calc(100vw-2rem))] p-2">
-                        <p className="px-2 py-1 text-sm font-medium">{t('savedMeetingLinks')}</p>
-                        <div className="flex max-h-56 flex-col gap-1 overflow-y-auto">
+                      <PopoverContent
+                        align="end"
+                        sideOffset={8}
+                        collisionPadding={16}
+                        className="w-[calc(100vw-3rem)] overflow-hidden p-0 sm:w-[36rem]"
+                      >
+                        <div className="px-4 py-3">
+                          <p className="text-sm font-semibold">{t('savedMeetingLinks')}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {t('savedMeetingLinksDescription')}
+                          </p>
+                        </div>
+                        <Separator />
+                        <div className="flex max-h-64 flex-col gap-1 overflow-y-auto p-2">
                           {savedMeetingLinks.map(link => (
                             <div
                               key={link}
-                              className="flex items-center gap-1 rounded-md hover:bg-accent"
+                              className="flex items-stretch rounded-lg transition-colors hover:bg-accent"
                             >
                               <button
                                 type="button"
-                                className="min-w-0 flex-1 truncate px-2 py-2 text-left text-sm"
+                                className="flex min-w-0 flex-1 items-start gap-3 rounded-lg px-3 py-3 text-left text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
                                 onClick={() => {
                                   field.onChange(link);
                                   setMeetingLinksOpen(false);
                                 }}
                               >
-                                {link}
+                                <Link2
+                                  className="mt-0.5 shrink-0 text-muted-foreground"
+                                  aria-hidden
+                                />
+                                <span className="min-w-0 flex-1 break-all leading-5">{link}</span>
+                                {field.value === link && (
+                                  <Check className="mt-0.5 shrink-0 text-primary" aria-hidden />
+                                )}
                               </button>
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon"
+                                className="m-1 shrink-0 self-center text-muted-foreground hover:text-destructive"
                                 aria-label={t('deleteSavedMeetingLink', { link })}
                                 onClick={() => removeLink(link)}
                               >
