@@ -1,8 +1,25 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+const mocks = vi.hoisted(() => ({
+  acquireLease: vi.fn(),
+  createLog: vi.fn(),
+  releaseLease: vi.fn()
+}));
+
 vi.mock('workflow/api', () => ({ start: vi.fn() }));
 vi.mock('@/workflows/pillo-intake-reminder-workflow', () => ({
   runPilloIntakeReminderWorkflow: vi.fn()
+}));
+vi.mock('@/lib/prisma', () => ({
+  default: {
+    systemLogEntry: {
+      create: mocks.createLog
+    }
+  }
+}));
+vi.mock('@/modules/pillo/workflow-lease.server', () => ({
+  acquirePilloRunnerLease: mocks.acquireLease,
+  releasePilloRunnerLease: mocks.releaseLease
 }));
 
 import { startPilloIntakeReminderRunnerWorkflow } from '../pillo-reminder-workflow';
@@ -12,6 +29,9 @@ import { runPilloIntakeReminderWorkflow } from '@/workflows/pillo-intake-reminde
 describe('Pillo reminder workflow runner launcher', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.acquireLease.mockResolvedValue(true);
+    mocks.createLog.mockResolvedValue(undefined);
+    mocks.releaseLease.mockResolvedValue(undefined);
   });
 
   it('запускает единый runner с датой проверки', async () => {
@@ -24,8 +44,27 @@ describe('Pillo reminder workflow runner launcher', () => {
     // Assert
     expect(result).toBe(true);
     expect(start).toHaveBeenCalledWith(runPilloIntakeReminderWorkflow, [
-      { nowIso: '2026-05-03T10:00:00.000Z' }
+      {
+        holderId: expect.any(String),
+        nowIso: '2026-05-03T10:00:00.000Z'
+      }
     ]);
+    expect(mocks.acquireLease).toHaveBeenCalledWith({
+      holderId: expect.any(String),
+      now
+    });
+  });
+
+  it('не запускает второй runner при занятом lease', async () => {
+    // Arrange
+    mocks.acquireLease.mockResolvedValueOnce(false);
+
+    // Act
+    const result = await startPilloIntakeReminderRunnerWorkflow();
+
+    // Assert
+    expect(result).toBe(false);
+    expect(start).not.toHaveBeenCalled();
   });
 
   it('возвращает false, если runner не удалось поставить в очередь', async () => {
@@ -37,5 +76,6 @@ describe('Pillo reminder workflow runner launcher', () => {
 
     // Assert
     expect(result).toBe(false);
+    expect(mocks.releaseLease).toHaveBeenCalledWith(expect.any(String));
   });
 });

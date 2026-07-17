@@ -66,8 +66,7 @@ async function postHandler(req: Request) {
         password: hashedPassword,
         language: locale,
         timezone: timezone ?? null,
-        registrationIp,
-        role: process.env.ADMIN_EMAIL && email === process.env.ADMIN_EMAIL ? 'ADMIN' : 'GUEST'
+        registrationIp
       }
     });
 

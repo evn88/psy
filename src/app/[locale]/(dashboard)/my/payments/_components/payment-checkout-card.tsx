@@ -1,9 +1,15 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { FUNDING, PayPalButtons, PayPalScriptProvider } from '@paypal/react-paypal-js';
+import {
+  DISPATCH_ACTION,
+  FUNDING,
+  PayPalButtons,
+  PayPalScriptProvider,
+  usePayPalScriptReducer
+} from '@paypal/react-paypal-js';
 import { CreditCard, Wallet } from 'lucide-react';
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -44,6 +50,30 @@ interface PaymentCheckoutCardProps {
   locale: string;
 }
 
+/**
+ * Перезагружает PayPal SDK при смене валюты выбранного пакета.
+ * @param props - актуальная валюта checkout.
+ */
+const PayPalCurrencySync = ({ currency }: { currency: string }) => {
+  const [{ options }, dispatch] = usePayPalScriptReducer();
+
+  useEffect(() => {
+    if (options.currency === currency) {
+      return;
+    }
+
+    dispatch({
+      type: DISPATCH_ACTION.RESET_OPTIONS,
+      value: {
+        ...options,
+        currency
+      }
+    });
+  }, [currency, dispatch, options]);
+
+  return null;
+};
+
 export const PaymentCheckoutCard = ({
   clientId,
   currency,
@@ -76,11 +106,18 @@ export const PaymentCheckoutCard = ({
     name: ['amount', 'description', 'packageId']
   });
 
+  const selectedPackageCurrency = packages.find(
+    paymentPackage => paymentPackage.id === watchedPackageId
+  )?.currency;
+  const checkoutCurrency =
+    selectionType === 'package' && selectedPackageCurrency
+      ? selectedPackageCurrency.toUpperCase()
+      : currency.toUpperCase();
   const amountPreviewValue = watchedAmount ?? '';
   const descriptionPreviewValue = (watchedDescription ?? '').trim();
   const amountPreviewLabel = paymentCheckoutSchema.shape.amount.safeParse(amountPreviewValue)
     .success
-    ? formatPaymentAmount(amountPreviewValue, currency)
+    ? formatPaymentAmount(amountPreviewValue, checkoutCurrency)
     : 'Укажите сумму';
   const descriptionPreviewLabel = descriptionPreviewValue || DEFAULT_DESCRIPTION;
 
@@ -362,11 +399,12 @@ export const PaymentCheckoutCard = ({
             <PayPalScriptProvider
               options={{
                 clientId,
-                currency,
+                currency: checkoutCurrency,
                 intent: 'capture',
                 components: 'buttons,funding-eligibility'
               }}
             >
+              <PayPalCurrencySync currency={checkoutCurrency} />
               <div className="mt-5 grid gap-3">
                 {paymentMethods.map(method => (
                   <div
@@ -383,7 +421,7 @@ export const PaymentCheckoutCard = ({
                       style={method.style}
                       disabled={isRefreshing}
                       forceReRender={[
-                        currency,
+                        checkoutCurrency,
                         watchedAmount,
                         watchedDescription,
                         isDarkTheme,

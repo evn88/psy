@@ -2,12 +2,13 @@ import { PrismaClient } from '@prisma/client';
 import { withAccelerate } from '@prisma/extension-accelerate';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { resolvePrismaRuntimeDatabaseUrl } from '@/lib/database-url';
 
 /**
  * Создает экземпляр PrismaClient с поддержкой Prisma Accelerate.
  */
 const createPrismaClient = () => {
-  const url = process.env.PRISMA_DATABASE_URL || process.env.DATABASE_URL;
+  const url = resolvePrismaRuntimeDatabaseUrl();
 
   // Если URL начинается с prisma:// или prisma+postgres://, используем accelerateUrl
   if (url && (url.startsWith('prisma://') || url.startsWith('prisma+postgres://'))) {

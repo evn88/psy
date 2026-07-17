@@ -189,7 +189,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: 'jwt' },
   providers: [
     Google({
-      allowDangerousEmailAccountLinking: true
+      allowDangerousEmailAccountLinking: false
     }),
     WebAuthn({
       relayingParty: {
@@ -252,31 +252,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     ...authConfig.callbacks,
 
     async jwt({ token, user, trigger, session }) {
-      if (user && user.role) {
-        token.role = user.role;
-      }
+      const userId = token.sub ?? user?.id;
 
-      if (
-        user &&
-        'language' in user &&
-        typeof user.language === 'string' &&
-        isLocale(user.language)
-      ) {
-        token.language = user.language;
-      }
-
-      if ((typeof token.language !== 'string' || !isLocale(token.language)) && token.sub) {
+      if (userId) {
         const dbUser = await prisma.user.findUnique({
-          where: { id: token.sub },
-          select: { language: true, role: true }
+          where: { id: userId },
+          select: {
+            id: true,
+            isDisabled: true,
+            language: true,
+            role: true
+          }
         });
 
-        if (dbUser?.role && isRole(dbUser.role)) {
-          token.role = dbUser.role;
+        // JWT не должен переживать удаление, блокировку или понижение роли пользователя.
+        if (!dbUser || dbUser.isDisabled) {
+          return null;
         }
 
+        token.sub = dbUser.id;
+        token.role = dbUser.role;
         token.language =
-          dbUser?.language && isLocale(dbUser.language) ? dbUser.language : defaultLocale;
+          dbUser.language && isLocale(dbUser.language) ? dbUser.language : defaultLocale;
       }
 
       // Handle session update
@@ -311,9 +308,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           where: { email: user.email },
           select: {
             isDisabled: true,
-            id: true,
-            role: true,
-            accounts: { select: { provider: true } }
+            id: true
           }
         });
 
@@ -325,17 +320,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (account?.provider === 'google' || account?.provider === 'webauthn') {
           if (dbUser?.id) {
             await recordLoginHistory(dbUser.id, account.provider);
-          }
-        }
-
-        if (account?.provider === 'google' && dbUser) {
-          const isLinkedInDB = (dbUser.accounts as Array<{ provider: string }>).some(
-            (acc: { provider: string }) => acc.provider === 'google'
-          );
-
-          // Разрешаем вход только для уже привязанного Google-аккаунта или для явного ADMIN-пользователя
-          if (!isLinkedInDB && dbUser.role !== 'ADMIN') {
-            return '/auth?error=UserExists';
           }
         }
       }

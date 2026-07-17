@@ -165,6 +165,7 @@ model PilloIntake {
   reminderWorkflowStartedAt DateTime?
   reminderSentAt            DateTime?
   reminderEmailSentAt       DateTime?
+  reminderPushClaimedAt     DateTime?
   reminderPushSentAt        DateTime?
   createdAt                 DateTime                 @default(now())
   updatedAt                 DateTime                 @updatedAt
@@ -476,6 +477,22 @@ model SystemAlert {
   updatedAt DateTime        @updatedAt
 
   @@unique([type, periodKey])
+}
+
+model WorkflowLease {
+  key       String   @id
+  holderId  String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([expiresAt])
+}
+
+model DatabaseIdentity {
+  key        String   @id @default("primary")
+  instanceId String   @unique
+  createdAt  DateTime @default(now())
 }
 
 model SystemLogEntry {

@@ -134,7 +134,9 @@ npm run dev
 | `DATABASE_URL`        | PostgreSQL connection string (full URL with credentials)                      |
 | `POSTGRES_URL`        | Alternative Postgres connection string (used by Vercel Postgres)              |
 | `PRISMA_DATABASE_URL` | Explicit Prisma database URL (overrides `DATABASE_URL` if set)                |
-| `ADMIN_EMAIL`         | Email address to grant admin access on first login (e.g., your@email.com)     |
+| `DIRECT_DATABASE_URL` | Direct PostgreSQL URL for migrations, backup and restore                       |
+| `POSTGRES_URL_NON_POOLING` | Alternative direct PostgreSQL URL used when `DIRECT_DATABASE_URL` is absent |
+| `ADMIN_EMAIL`         | Existing administrator email used for operational notifications               |
 | `CONSENT_HMAC_KEY`    | Dedicated 32-byte secret (64 HEX) for consent signing and verification; required in production |
 
 #### Email & Notifications
@@ -179,13 +181,12 @@ npm run dev
 
 ### Admin Setup
 
-1. **Register** — Sign up with your email or Google OAuth
-2. **Set ADMIN_EMAIL** — Add your email to `.env.local`:
-   ```bash
-   ADMIN_EMAIL=your@email.com
-   ```
-3. **Login Again** — Sign in again and your account will automatically be elevated to `ADMIN` role
-4. **Access Admin Panel** — Navigate to `/admin` (accessible only to ADMIN users)
+1. **Register** — Sign up with your email or Google OAuth.
+2. **Grant the role out of band** — Set the existing verified user's `role` to `ADMIN` through a trusted database administration channel. Public registration never grants administrative access.
+3. **Set `ADMIN_EMAIL`** — Configure the same email if it should receive operational notifications.
+4. **Access Admin Panel** — Sign in again and navigate to `/admin`.
+
+Production deploys must provide `DIRECT_DATABASE_URL` or `POSTGRES_URL_NON_POOLING` to CI whenever `PRISMA_DATABASE_URL` or `POSTGRES_URL` is configured. `DATABASE_URL` is accepted as a direct fallback only when it is the sole runtime database URL. Before domain migrations, the deploy workflow bootstraps a service-only `DatabaseIdentity` sentinel and verifies that runtime (including Accelerate) and direct connections resolve to the same database instance.
 
 ---
 

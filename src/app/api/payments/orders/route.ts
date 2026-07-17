@@ -1,25 +1,51 @@
 import { NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { auth } from '@/auth';
+import prisma from '@/lib/prisma';
 import { getPaymentService, getActivePaymentCurrency } from '@/modules/payments/factory';
+import type { CreateOrderParams } from '@/modules/payments/types';
 import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
-const createOrderSchema = z.object({
-  amount: z
-    .string()
-    .trim()
-    .regex(/^\d+(\.\d{1,2})?$/, 'Amount must be a valid monetary value')
-    .refine(value => Number(value) > 0, 'Amount must be greater than zero'),
-  currency: z
-    .string()
-    .trim()
-    .toUpperCase()
-    .regex(/^[A-Z]{3}$/, 'Currency must be an ISO 4217 code')
-    .optional(),
-  description: z.string().trim().max(127).optional(),
-  kind: z.enum(['CHECKOUT', 'TOPUP']).optional(),
-  servicePackageId: z.string().optional()
-});
+const topupAmountSchema = z
+  .string()
+  .trim()
+  .max(13)
+  .regex(/^\d{1,10}(\.\d{1,2})?$/, 'Amount must be a valid monetary value')
+  .refine(value => new Prisma.Decimal(value).greaterThan(0), 'Amount must be greater than zero');
+
+const createOrderSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('CHECKOUT'),
+    servicePackageId: z.string().trim().min(1).max(128)
+  }),
+  z.object({
+    kind: z.literal('TOPUP'),
+    amount: topupAmountSchema,
+    description: z.string().trim().max(127).optional()
+  })
+]);
+
+/**
+ * Возвращает стабильное серверное описание пакета для PayPal.
+ */
+const getPackageDescription = (title: Prisma.JsonValue): string => {
+  if (typeof title === 'string' && title.trim()) {
+    return title.trim().slice(0, 127);
+  }
+
+  if (typeof title === 'object' && title !== null && !Array.isArray(title)) {
+    for (const locale of ['ru', 'en', 'sr']) {
+      const localizedTitle = title[locale];
+
+      if (typeof localizedTitle === 'string' && localizedTitle.trim()) {
+        return localizedTitle.trim().slice(0, 127);
+      }
+    }
+  }
+
+  return 'Service package';
+};
 
 /**
  * POST /api/payments/orders
@@ -46,17 +72,48 @@ async function postHandler(request: Request) {
       );
     }
 
-    const paymentService = getPaymentService();
-    // Используем дефолтную валюту провайдера если не передана
-    const currency = payload.data.currency || getActivePaymentCurrency();
+    let orderInput: Omit<CreateOrderParams, 'userId'> | null;
 
+    if (payload.data.kind === 'CHECKOUT') {
+      const servicePackage = await prisma.servicePackage.findFirst({
+        where: {
+          id: payload.data.servicePackageId,
+          isActive: true
+        },
+        select: {
+          id: true,
+          amount: true,
+          currency: true,
+          title: true
+        }
+      });
+
+      orderInput = servicePackage
+        ? {
+            amount: servicePackage.amount.toFixed(2),
+            currency: servicePackage.currency.toUpperCase(),
+            description: getPackageDescription(servicePackage.title),
+            kind: 'CHECKOUT',
+            servicePackageId: servicePackage.id
+          }
+        : null;
+    } else {
+      orderInput = {
+        amount: payload.data.amount,
+        currency: getActivePaymentCurrency(),
+        description: payload.data.description || 'Пополнение баланса',
+        kind: 'TOPUP'
+      };
+    }
+
+    if (!orderInput) {
+      return NextResponse.json({ message: 'Service package not found' }, { status: 404 });
+    }
+
+    const paymentService = getPaymentService();
     const order = await paymentService.createOrder({
-      amount: payload.data.amount,
-      currency: currency,
-      description: payload.data.description,
       userId: session.user.id,
-      kind: payload.data.kind,
-      servicePackageId: payload.data.servicePackageId
+      ...orderInput
     });
 
     return NextResponse.json({

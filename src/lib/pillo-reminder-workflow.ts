@@ -1,7 +1,12 @@
+import { randomUUID } from 'node:crypto';
 import { start } from 'workflow/api';
 
 import { runPilloIntakeReminderWorkflow } from '@/workflows/pillo-intake-reminder-workflow';
 import prisma from '@/lib/prisma';
+import {
+  acquirePilloRunnerLease,
+  releasePilloRunnerLease
+} from '@/modules/pillo/workflow-lease.server';
 
 /**
  * Запускает единый runner Pillo-напоминаний для всех пользователей.
@@ -11,8 +16,16 @@ import prisma from '@/lib/prisma';
 export const startPilloIntakeReminderRunnerWorkflow = async (
   now = new Date()
 ): Promise<boolean> => {
+  const holderId = randomUUID();
+  let hasLease = false;
+
   try {
-    await start(runPilloIntakeReminderWorkflow, [{ nowIso: now.toISOString() }]);
+    hasLease = await acquirePilloRunnerLease({ holderId, now });
+    if (!hasLease) {
+      return false;
+    }
+
+    await start(runPilloIntakeReminderWorkflow, [{ holderId, nowIso: now.toISOString() }]);
 
     try {
       await prisma.systemLogEntry.create({
@@ -29,6 +42,14 @@ export const startPilloIntakeReminderRunnerWorkflow = async (
 
     return true;
   } catch (error) {
+    if (hasLease) {
+      try {
+        await releasePilloRunnerLease(holderId);
+      } catch (releaseError: unknown) {
+        console.error('Failed to release Pillo workflow runner lease:', releaseError);
+      }
+    }
+
     console.error('Failed to start Pillo intake reminder runner workflow:', error);
     return false;
   }

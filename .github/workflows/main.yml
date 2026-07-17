@@ -7,6 +7,10 @@ on:
     branches:
       - main # Запускать при пуше в ветку dev
 
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest # Использовать последнюю Ubuntu в качестве среды выполнения
@@ -24,7 +28,36 @@ jobs:
       - name: Install dependencies # Шаг 3: Устанавливаем зависимости
         run: npm ci # Используем 'ci' для быстрой и чистой установки по lock-файлу
 
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Test
+        run: npm test
+
+      - name: Verify and deploy database migrations
+        env:
+          DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+          POSTGRES_URL_NON_POOLING: ${{ secrets.POSTGRES_URL_NON_POOLING }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
+          PRISMA_DATABASE_URL: ${{ secrets.PRISMA_DATABASE_URL }}
+        run: |
+          npm run migrations:verify
+          npx prisma generate
+          npm run database:verify-identity
+          npx prisma migrate deploy
+          npm run database:verify-identity
+
       - name: Build Next.js app # Шаг 4: Собираем Next.js приложение
+        env:
+          DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+          POSTGRES_URL_NON_POOLING: ${{ secrets.POSTGRES_URL_NON_POOLING }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
+          PRISMA_DATABASE_URL: ${{ secrets.PRISMA_DATABASE_URL }}
         run: npm run build # Эта команда должна использовать 'standalone' output из next.config.js
 
       - name: Deploy to Server via SSH # Шаг 5: Деплоим файлы на сервер

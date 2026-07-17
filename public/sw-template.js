@@ -228,8 +228,8 @@ self.addEventListener('push', event => {
       body: data.body ?? '',
       icon: '/web-app-manifest-192x192.png',
       badge: '/web-app-manifest-192x192.png',
-      tag: 'vershkov-notification',
-      renotify: true,
+      tag: data.tag || 'vershkov-notification',
+      renotify: data.renotify ?? true,
       data: {
         url: data.url || '/my'
       }

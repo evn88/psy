@@ -14,6 +14,9 @@ type PaymentReference = Pick<
   'id' | 'userId' | 'orderId' | 'captureId' | 'kind' | 'status' | 'servicePackageId'
 >;
 
+const COMPLETED_STATUS = 'COMPLETED';
+const WEBHOOK_CLAIM_TIMEOUT_MS = 5 * 60 * 1000;
+
 /**
  * Проверяет, что значение является объектом.
  */
@@ -56,6 +59,13 @@ const parsePayPalDate = (value?: string): Date | undefined => {
   const date = new Date(value);
 
   return Number.isNaN(date.getTime()) ? undefined : date;
+};
+
+/**
+ * Проверяет, что ошибка вызвана конфликтом уникального ограничения Prisma.
+ */
+const isUniqueConstraintError = (error: unknown): error is Prisma.PrismaClientKnownRequestError => {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
 };
 
 /**
@@ -215,7 +225,7 @@ export const syncPaymentFromPayPal = async (params: {
   const paymentData = {
     provider: 'PAYPAL' as const,
     kind: params.kind ?? existingPayment?.kind ?? 'CHECKOUT',
-    servicePackageId: params.servicePackageId ?? null,
+    servicePackageId: params.servicePackageId ?? existingPayment?.servicePackageId ?? null,
     userId,
     orderId: params.order.id,
     captureId: capture?.id ?? existingPayment?.captureId ?? null,
@@ -233,22 +243,27 @@ export const syncPaymentFromPayPal = async (params: {
   };
 
   if (existingPayment) {
-    if (
-      existingPayment.status !== 'COMPLETED' &&
-      paymentData.status === 'COMPLETED' &&
-      paymentData.kind === 'TOPUP'
-    ) {
-      const [updatedPayment] = await prisma.$transaction([
-        prisma.payment.update({
-          where: { id: existingPayment.id },
+    if (paymentData.kind === 'TOPUP') {
+      return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        const transition = await tx.payment.updateMany({
+          where: {
+            id: existingPayment.id,
+            status: { not: COMPLETED_STATUS }
+          },
           data: paymentData
-        }),
-        prisma.user.update({
-          where: { id: userId },
-          data: { balance: { increment: paymentData.amount } }
-        })
-      ]);
-      return updatedPayment;
+        });
+
+        if (transition.count === 1 && paymentData.status === COMPLETED_STATUS) {
+          await tx.user.update({
+            where: { id: userId },
+            data: { balance: { increment: paymentData.amount } }
+          });
+        }
+
+        return tx.payment.findUniqueOrThrow({
+          where: { id: existingPayment.id }
+        });
+      });
     }
 
     return prisma.payment.update({
@@ -264,20 +279,42 @@ export const syncPaymentFromPayPal = async (params: {
       }
     : paymentData;
 
-  if (paymentData.status === 'COMPLETED' && paymentData.kind === 'TOPUP') {
-    const [createdPayment] = await prisma.$transaction([
-      prisma.payment.create({ data: createData }),
-      prisma.user.update({
-        where: { id: userId },
-        data: { balance: { increment: paymentData.amount } }
-      })
-    ]);
-    return createdPayment;
-  }
+  try {
+    if (paymentData.kind === 'TOPUP') {
+      return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        const createdPayment = await tx.payment.create({ data: createData });
 
-  return prisma.payment.create({
-    data: createData
-  });
+        if (paymentData.status === COMPLETED_STATUS) {
+          await tx.user.update({
+            where: { id: userId },
+            data: { balance: { increment: paymentData.amount } }
+          });
+        }
+
+        return createdPayment;
+      });
+    }
+
+    return await prisma.payment.create({
+      data: createData
+    });
+  } catch (error) {
+    if (!isUniqueConstraintError(error)) {
+      throw error;
+    }
+
+    const concurrentPayment = await findPaymentByReferences({
+      paymentId: params.paymentId,
+      orderId: params.order.id,
+      captureId: capture?.id
+    });
+
+    if (!concurrentPayment) {
+      throw error;
+    }
+
+    return syncPaymentFromPayPal(params);
+  }
 };
 
 /**
@@ -363,6 +400,110 @@ const extractWebhookMoney = (event: PayPalWebhookEvent): PayPalMoney | undefined
   return undefined;
 };
 
+type WebhookClaim = {
+  id: string;
+  claimedAt: Date;
+};
+
+/**
+ * Формирует общие поля журнала webhook без состояния обработки.
+ */
+const getWebhookEventData = (
+  event: PayPalWebhookEvent,
+  references: ReturnType<typeof extractWebhookReferences>,
+  money: PayPalMoney | undefined
+) => {
+  return {
+    provider: 'PAYPAL' as const,
+    providerEventId: event.id,
+    eventType: event.event_type,
+    resourceType: event.resource_type ?? null,
+    resourceId: getNestedString(event.resource, ['id']) ?? null,
+    orderId: references.orderId ?? null,
+    captureId: references.captureId ?? null,
+    subscriptionId: references.subscriptionId ?? null,
+    disputeId: references.disputeId ?? null,
+    status: getNestedString(event.resource, ['status']) ?? null,
+    amount: money ? new Prisma.Decimal(money.value) : null,
+    currency: money?.currency_code ?? null,
+    occurredAt: parsePayPalDate(event.create_time) ?? null,
+    payload: toPrismaJson(event)
+  };
+};
+
+/**
+ * Атомарно закрепляет webhook за одним обработчиком.
+ * Незавершённый claim освобождается при ошибке, а зависший может быть занят повторно.
+ */
+const claimPayPalWebhookEvent = async (
+  event: PayPalWebhookEvent,
+  references: ReturnType<typeof extractWebhookReferences>,
+  money: PayPalMoney | undefined
+): Promise<WebhookClaim | null> => {
+  const claimedAt = new Date();
+  const eventData = getWebhookEventData(event, references, money);
+
+  try {
+    const createdEvent = await prisma.paymentEvent.create({
+      data: {
+        ...eventData,
+        isProcessed: false,
+        processedAt: claimedAt
+      },
+      select: { id: true }
+    });
+
+    return {
+      id: createdEvent.id,
+      claimedAt
+    };
+  } catch (error) {
+    if (!isUniqueConstraintError(error)) {
+      throw error;
+    }
+  }
+
+  const existingEvent = await prisma.paymentEvent.findUnique({
+    where: { providerEventId: event.id },
+    select: {
+      id: true,
+      isProcessed: true,
+      processedAt: true
+    }
+  });
+
+  if (!existingEvent || existingEvent.isProcessed) {
+    return null;
+  }
+
+  const claimIsActive =
+    existingEvent.processedAt !== null &&
+    claimedAt.getTime() - existingEvent.processedAt.getTime() < WEBHOOK_CLAIM_TIMEOUT_MS;
+
+  if (claimIsActive) {
+    return null;
+  }
+
+  const claimedEvent = await prisma.paymentEvent.updateMany({
+    where: {
+      id: existingEvent.id,
+      isProcessed: false,
+      processedAt: existingEvent.processedAt
+    },
+    data: {
+      ...eventData,
+      processedAt: claimedAt
+    }
+  });
+
+  return claimedEvent.count === 1
+    ? {
+        id: existingEvent.id,
+        claimedAt
+      }
+    : null;
+};
+
 /**
  * Создаёт или обновляет запись о споре из webhook-события PayPal.
  */
@@ -409,78 +550,61 @@ const upsertDisputeFromWebhook = async (params: {
  * Обрабатывает подтверждённый webhook PayPal и синхронизирует локальные сущности.
  */
 export const processPayPalWebhookEvent = async (event: PayPalWebhookEvent): Promise<void> => {
-  const existingEvent = await prisma.paymentEvent.findUnique({
-    where: { providerEventId: event.id }
-  });
+  const references = extractWebhookReferences(event);
+  const money = extractWebhookMoney(event);
+  const claim = await claimPayPalWebhookEvent(event, references, money);
 
-  if (existingEvent?.isProcessed) {
+  if (!claim) {
     return;
   }
 
-  const references = extractWebhookReferences(event);
-  const money = extractWebhookMoney(event);
-  const payment = await findPaymentByReferences(references);
+  try {
+    const payment = await findPaymentByReferences(references);
 
-  if (
-    payment &&
-    (event.event_type.startsWith('PAYMENT.') || event.event_type.startsWith('CHECKOUT.ORDER.'))
-  ) {
-    await syncPaymentWithPayPal(payment);
-  } else if (payment) {
-    await prisma.payment.update({
-      where: { id: payment.id },
+    if (
+      payment &&
+      (event.event_type.startsWith('PAYMENT.') || event.event_type.startsWith('CHECKOUT.ORDER.'))
+    ) {
+      await syncPaymentWithPayPal(payment);
+    } else if (payment) {
+      await prisma.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: getNestedString(event.resource, ['status']) ?? undefined,
+          lastSyncedAt: new Date()
+        }
+      });
+    }
+
+    if (event.event_type.startsWith('CUSTOMER.DISPUTE.')) {
+      await upsertDisputeFromWebhook({
+        event,
+        paymentId: payment?.id,
+        disputeId: references.disputeId
+      });
+    }
+
+    await prisma.paymentEvent.update({
+      where: { id: claim.id },
       data: {
-        status: getNestedString(event.resource, ['status']) ?? undefined,
-        lastSyncedAt: new Date()
+        ...getWebhookEventData(event, references, money),
+        paymentId: payment?.id ?? null,
+        isProcessed: true,
+        processedAt: new Date()
       }
     });
-  }
-
-  if (event.event_type.startsWith('CUSTOMER.DISPUTE.')) {
-    await upsertDisputeFromWebhook({
-      event,
-      paymentId: payment?.id,
-      disputeId: references.disputeId
+  } catch (error) {
+    await prisma.paymentEvent.updateMany({
+      where: {
+        id: claim.id,
+        isProcessed: false,
+        processedAt: claim.claimedAt
+      },
+      data: {
+        processedAt: null
+      }
     });
-  }
 
-  await prisma.paymentEvent.upsert({
-    where: { providerEventId: event.id },
-    update: {
-      paymentId: payment?.id ?? null,
-      eventType: event.event_type,
-      resourceType: event.resource_type ?? null,
-      resourceId: getNestedString(event.resource, ['id']) ?? null,
-      orderId: references.orderId ?? null,
-      captureId: references.captureId ?? null,
-      subscriptionId: references.subscriptionId ?? null,
-      disputeId: references.disputeId ?? null,
-      status: getNestedString(event.resource, ['status']) ?? null,
-      amount: money ? new Prisma.Decimal(money.value) : undefined,
-      currency: money?.currency_code ?? null,
-      occurredAt: parsePayPalDate(event.create_time) ?? undefined,
-      payload: toPrismaJson(event),
-      isProcessed: true,
-      processedAt: new Date()
-    },
-    create: {
-      provider: 'PAYPAL',
-      paymentId: payment?.id ?? null,
-      providerEventId: event.id,
-      eventType: event.event_type,
-      resourceType: event.resource_type ?? null,
-      resourceId: getNestedString(event.resource, ['id']) ?? null,
-      orderId: references.orderId ?? null,
-      captureId: references.captureId ?? null,
-      subscriptionId: references.subscriptionId ?? null,
-      disputeId: references.disputeId ?? null,
-      status: getNestedString(event.resource, ['status']) ?? null,
-      amount: money ? new Prisma.Decimal(money.value) : undefined,
-      currency: money?.currency_code ?? null,
-      occurredAt: parsePayPalDate(event.create_time) ?? undefined,
-      payload: toPrismaJson(event),
-      isProcessed: true,
-      processedAt: new Date()
-    }
-  });
+    throw error;
+  }
 };

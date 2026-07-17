@@ -578,6 +578,7 @@ interface SendPilloIntakeReminderEmailParams {
   skipUrl: string;
   locale: string;
   timezone: string;
+  idempotencyKey: string;
 }
 
 /**
@@ -594,32 +595,36 @@ export const sendPilloIntakeReminderEmail = async ({
   actionUrl,
   skipUrl,
   locale,
-  timezone
+  timezone,
+  idempotencyKey
 }: SendPilloIntakeReminderEmailParams): Promise<string | null> => {
   const copy = getPilloNotificationCopy(locale);
   const timeText = formatPilloIntakeDateTime({ scheduledFor, timezone, locale });
 
-  const { data, error } = await resend.emails.send({
-    from: FROM_ADDRESS,
-    to: [email],
-    subject: copy.intakeSubject,
-    react: PilloNotificationTemplate({
-      preview: copy.intakeHeading,
-      heading: copy.intakeHeading,
-      greeting: interpolatePilloCopy(copy.greeting, { name }),
-      message: copy.intakeMessage,
-      details: [
-        { label: copy.medicationLabel, value: medicationName },
-        { label: copy.doseLabel, value: doseText },
-        { label: copy.timeLabel, value: timeText }
-      ],
-      buttonText: copy.takeButton,
-      actionUrl,
-      secondaryButtonText: copy.skipButton,
-      secondaryActionUrl: skipUrl,
-      footer: copy.footer
-    })
-  });
+  const { data, error } = await resend.emails.send(
+    {
+      from: FROM_ADDRESS,
+      to: [email],
+      subject: copy.intakeSubject,
+      react: PilloNotificationTemplate({
+        preview: copy.intakeHeading,
+        heading: copy.intakeHeading,
+        greeting: interpolatePilloCopy(copy.greeting, { name }),
+        message: copy.intakeMessage,
+        details: [
+          { label: copy.medicationLabel, value: medicationName },
+          { label: copy.doseLabel, value: doseText },
+          { label: copy.timeLabel, value: timeText }
+        ],
+        buttonText: copy.takeButton,
+        actionUrl,
+        secondaryButtonText: copy.skipButton,
+        secondaryActionUrl: skipUrl,
+        footer: copy.footer
+      })
+    },
+    { idempotencyKey }
+  );
 
   if (error) {
     console.error('Ошибка отправки Pillo intake reminder email:', error);

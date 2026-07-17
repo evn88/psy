@@ -26,6 +26,7 @@ import {
 import prisma from '@/lib/prisma';
 import { sendPushToMany } from '@/lib/push';
 import { isPilloGuestEmail } from './guest';
+import { runPilloStockTransaction } from './stock-transaction.server';
 
 type PilloRuleWithUser = Prisma.PilloScheduleRuleGetPayload<{
   include: {
@@ -389,7 +390,7 @@ const getPilloStockNotificationResetData = (
  * @returns Результат операции и актуальный остаток.
  */
 export const takePilloIntake = async (userId: string, intakeId: string) => {
-  const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+  const result = await runPilloStockTransaction(async (tx: Prisma.TransactionClient) => {
     const intake = await tx.pilloIntake.findFirst({
       where: { id: intakeId, userId },
       include: { medication: true }
@@ -400,11 +401,11 @@ export const takePilloIntake = async (userId: string, intakeId: string) => {
     }
 
     if (intake.status === PilloIntakeStatus.TAKEN) {
-      return { intake, medication: intake.medication, wasChanged: false };
+      return { intake, medication: intake.medication, wasChanged: false as const };
     }
 
     if (intake.status !== PilloIntakeStatus.PENDING) {
-      return { intake, medication: intake.medication, wasChanged: false };
+      return { intake, medication: intake.medication, wasChanged: false as const };
     }
 
     const takenAt = new Date();
@@ -441,7 +442,13 @@ export const takePilloIntake = async (userId: string, intakeId: string) => {
       })
     ]);
 
-    return { intake: updatedIntake, medication, stockNotification, stockStatus, wasChanged: true };
+    return {
+      intake: updatedIntake,
+      medication,
+      stockNotification,
+      stockStatus,
+      wasChanged: true as const
+    };
   });
 
   if (!result) {
@@ -457,7 +464,7 @@ export const takePilloIntake = async (userId: string, intakeId: string) => {
           nextDoseUnits: result.intake.doseUnits
         });
 
-  if (result.wasChanged && 'stockNotification' in result && result.stockNotification.status) {
+  if (result.wasChanged && result.stockNotification.status) {
     await dispatchPilloLowStockNotifications({
       userId,
       medicationName: result.medication.name,
@@ -483,7 +490,7 @@ export const takePilloMedicationNow = async (
   doseUnits: number,
   takenDate: string
 ) => {
-  const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+  const result = await runPilloStockTransaction(async (tx: Prisma.TransactionClient) => {
     const manualIntakeDelegate = getPilloManualIntakeDelegate(tx);
     const medication = await tx.pilloMedication.findFirst({
       where: { id: medicationId, userId },
@@ -519,32 +526,26 @@ export const takePilloMedicationNow = async (
       emptyStockNotifiedAt: medication.emptyStockNotifiedAt,
       markedAt: takenAt
     });
-    const writes: Array<Promise<unknown>> = [
-      tx.pilloMedication.update({
-        where: { id: medication.id },
-        data: {
-          stockUnits: nextStock,
-          ...getPilloStockNotificationMarkData(stockNotification)
-        }
-      })
-    ];
+    const updatedMedication = await tx.pilloMedication.update({
+      where: { id: medication.id },
+      data: {
+        stockUnits: nextStock,
+        ...getPilloStockNotificationMarkData(stockNotification)
+      }
+    });
 
     if (manualIntakeDelegate) {
-      writes.push(
-        manualIntakeDelegate.create({
-          data: {
-            userId,
-            medicationId: medication.id,
-            doseUnits,
-            takenAt,
-            localDate: takenDate,
-            localTime
-          }
-        })
-      );
+      await manualIntakeDelegate.create({
+        data: {
+          userId,
+          medicationId: medication.id,
+          doseUnits,
+          takenAt,
+          localDate: takenDate,
+          localTime
+        }
+      });
     }
-
-    const [updatedMedication] = await Promise.all(writes);
 
     return { medication: updatedMedication, stockNotification, stockStatus };
   });
@@ -597,7 +598,7 @@ export const skipPilloIntake = async (userId: string, intakeId: string): Promise
  * @returns Результат операции.
  */
 export const undoPilloIntake = async (userId: string, intakeId: string) => {
-  const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+  const result = await runPilloStockTransaction(async (tx: Prisma.TransactionClient) => {
     const intake = await tx.pilloIntake.findFirst({
       where: { id: intakeId, userId },
       include: { medication: true }

@@ -1,12 +1,14 @@
-import { Pool, type QueryResultRow } from 'pg';
+import { Pool, type PoolClient, type QueryResultRow } from 'pg';
+import { resolveDirectDatabaseUrl } from '@/lib/database-url';
 import type {
   BackupArchiveTableColumn,
   BackupArchiveTableRecord,
   DatabaseTableRowsDocument
 } from './types';
+import { isBackupExcludedTableName } from './table-policy';
 import { escapeSqlIdentifier, replaceBlobUrlsDeep } from './utils';
 
-type DatabaseClient = Pick<Pool, 'query'>;
+export type DatabaseClient = Pick<PoolClient, 'query'>;
 
 type ForeignKeyDependencyRow = QueryResultRow & {
   tableName: string;
@@ -25,33 +27,58 @@ type PrimaryKeyRow = QueryResultRow & {
   columnName: string;
 };
 
-const DATABASE_URL_CANDIDATES = [
-  'DIRECT_DATABASE_URL',
-  'POSTGRES_URL_NON_POOLING',
-  'POSTGRES_URL',
-  'DATABASE_URL'
-] as const;
+type DatabaseIdentityRow = QueryResultRow & {
+  instanceId: string;
+};
+
+const DATABASE_IDENTITY_KEY = 'primary';
 
 /**
- * Возвращает URL прямого подключения к PostgreSQL для бэкапа.
- * @returns Строка подключения.
+ * Загружает identity БД через runtime Prisma URL, включая Prisma Accelerate.
+ * @returns Неизменяемый идентификатор экземпляра БД.
  */
-const getBackupDatabaseUrl = (): string => {
-  const candidates = DATABASE_URL_CANDIDATES.map(name => process.env[name]).filter(
-    (value): value is string => Boolean(value)
-  );
+const loadRuntimeDatabaseInstanceId = async (): Promise<string> => {
+  const prisma = (await import('@/lib/prisma')).default;
+  const identity = await prisma.databaseIdentity.findUnique({
+    where: { key: DATABASE_IDENTITY_KEY },
+    select: { instanceId: true }
+  });
 
-  const directUrl = candidates.find(
-    value => !value.startsWith('prisma://') && !value.startsWith('prisma+postgres://')
-  );
-
-  if (!directUrl) {
-    throw new Error(
-      'Для резервного копирования нужен прямой PostgreSQL URL. Задайте DIRECT_DATABASE_URL или POSTGRES_URL_NON_POOLING.'
-    );
+  if (!identity?.instanceId) {
+    throw new Error('Runtime БД не содержит обязательную запись DatabaseIdentity.');
   }
 
-  return directUrl.replace(/([?&])sslmode=[^&]+&?/, '$1').replace(/[?&]$/, '');
+  return identity.instanceId;
+};
+
+/**
+ * Проверяет, что runtime Prisma и direct backup URL ведут к одному экземпляру БД.
+ * Проверка выполняется до чтения или разрушительных restore-операций и при любой
+ * неопределённости завершается ошибкой.
+ * @param client - закреплённое direct-подключение PostgreSQL.
+ */
+export const assertBackupDatabaseIdentity = async (client: DatabaseClient): Promise<void> => {
+  const [runtimeInstanceId, directResult] = await Promise.all([
+    loadRuntimeDatabaseInstanceId(),
+    client.query<DatabaseIdentityRow>(
+      `
+        SELECT "instanceId"
+        FROM "DatabaseIdentity"
+        WHERE "key" = $1
+        LIMIT 1
+      `,
+      [DATABASE_IDENTITY_KEY]
+    )
+  ]);
+  const directInstanceId = directResult.rows[0]?.instanceId;
+
+  if (!directInstanceId) {
+    throw new Error('Direct БД не содержит обязательную запись DatabaseIdentity.');
+  }
+
+  if (runtimeInstanceId !== directInstanceId) {
+    throw new Error('Runtime и direct URL указывают на разные экземпляры базы данных.');
+  }
 };
 
 /**
@@ -62,15 +89,85 @@ const getBackupDatabaseUrl = (): string => {
 export const withBackupDatabaseClient = async <T>(
   run: (client: DatabaseClient) => Promise<T>
 ): Promise<T> => {
+  const databaseUrl = resolveDirectDatabaseUrl()
+    .replace(/([?&])sslmode=[^&]+&?/, '$1')
+    .replace(/[?&]$/, '');
   const pool = new Pool({
-    connectionString: getBackupDatabaseUrl(),
+    connectionString: databaseUrl,
     ssl: process.env.NODE_ENV === 'development' ? { rejectUnauthorized: false } : true
   });
 
   try {
-    return await run(pool);
+    const client = await pool.connect();
+
+    try {
+      await assertBackupDatabaseIdentity(client);
+      return await run(client);
+    } finally {
+      client.release();
+    }
   } finally {
     await pool.end();
+  }
+};
+
+/**
+ * Выполняет чтение backup в едином read-only snapshot.
+ * @param client - закреплённое подключение PostgreSQL.
+ * @param run - операция чтения схемы и данных.
+ * @returns Результат операции.
+ */
+export const withBackupDatabaseSnapshot = async <T>(
+  client: DatabaseClient,
+  run: () => Promise<T>
+): Promise<T> => {
+  await client.query('BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY');
+
+  try {
+    const result = await run();
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    try {
+      await client.query('ROLLBACK');
+    } catch (rollbackError) {
+      throw new AggregateError(
+        [error, rollbackError],
+        'Не удалось отменить транзакцию snapshot резервной копии.'
+      );
+    }
+
+    throw error;
+  }
+};
+
+/**
+ * Выполняет destructive restore в единой транзакции.
+ * @param client - закреплённое подключение PostgreSQL.
+ * @param run - операция очистки и восстановления таблиц.
+ * @returns Результат операции.
+ */
+export const withBackupRestoreTransaction = async <T>(
+  client: DatabaseClient,
+  run: () => Promise<T>
+): Promise<T> => {
+  await client.query('BEGIN');
+
+  try {
+    const result = await run();
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    try {
+      await client.query('ROLLBACK');
+    } catch (rollbackError) {
+      throw new AggregateError(
+        [error, rollbackError],
+        'Не удалось отменить транзакцию восстановления резервной копии.'
+      );
+    }
+
+    throw error;
   }
 };
 
@@ -242,11 +339,27 @@ export const loadBackupDatabaseManifest = async (
     SELECT tablename AS "tableName"
     FROM pg_tables
     WHERE schemaname = 'public'
+      AND tablename NOT LIKE 'pg\\_%' ESCAPE '\\'
+      AND tablename NOT LIKE 'sql\\_%' ESCAPE '\\'
+      AND tablename <> 'spatial_ref_sys'
     ORDER BY tablename ASC
   `);
 
-  const tableNames = tableResult.rows.map(row => row.tableName);
-  const dependencies = await loadForeignKeyDependencies(client);
+  const tableNames = tableResult.rows
+    .map(row => row.tableName)
+    .filter(tableName => !isBackupExcludedTableName(tableName));
+  const tableNameSet = new Set(tableNames);
+  const allDependencies = await loadForeignKeyDependencies(client);
+  const dependencies = new Map(
+    tableNames.map(tableName => [
+      tableName,
+      new Set(
+        Array.from(allDependencies.get(tableName) ?? []).filter(dependency =>
+          tableNameSet.has(dependency)
+        )
+      )
+    ])
+  );
   const orderedTableNames = sortTablesForRestore(tableNames, dependencies);
 
   const tables = await Promise.all(
@@ -325,6 +438,22 @@ export const validateBackupManifestAgainstDatabase = async (
 ): Promise<void> => {
   const currentTables = await loadBackupDatabaseManifest(client);
   const currentByName = new Map(currentTables.map(table => [table.name, table]));
+  const archivedByName = new Map(manifestTables.map(table => [table.name, table]));
+
+  if (currentTables.length !== manifestTables.length) {
+    const missingInArchive = currentTables
+      .filter(table => !archivedByName.has(table.name))
+      .map(table => table.name);
+    const missingInDatabase = manifestTables
+      .filter(table => !currentByName.has(table.name))
+      .map(table => table.name);
+
+    throw new Error(
+      `Набор таблиц архива не совпадает с текущей БД. Отсутствуют в архиве: ${
+        missingInArchive.join(', ') || 'нет'
+      }; отсутствуют в БД: ${missingInDatabase.join(', ') || 'нет'}.`
+    );
+  }
 
   for (const archivedTable of manifestTables) {
     const currentTable = currentByName.get(archivedTable.name);
@@ -333,11 +462,19 @@ export const validateBackupManifestAgainstDatabase = async (
       throw new Error(`Таблица ${archivedTable.name} отсутствует в текущей БД.`);
     }
 
-    const currentColumns = currentTable.columns.map(column => column.name).join('|');
-    const archivedColumns = archivedTable.columns.map(column => column.name).join('|');
+    const currentColumns = JSON.stringify(currentTable.columns);
+    const archivedColumns = JSON.stringify(archivedTable.columns);
 
     if (currentColumns !== archivedColumns) {
       throw new Error(`Структура таблицы ${archivedTable.name} не совпадает с архивом.`);
+    }
+
+    if (JSON.stringify(currentTable.primaryKey) !== JSON.stringify(archivedTable.primaryKey)) {
+      throw new Error(`Первичный ключ таблицы ${archivedTable.name} не совпадает с архивом.`);
+    }
+
+    if (JSON.stringify(currentTable.dependsOn) !== JSON.stringify(archivedTable.dependsOn)) {
+      throw new Error(`Зависимости таблицы ${archivedTable.name} не совпадают с архивом.`);
     }
   }
 };
@@ -356,7 +493,7 @@ export const truncateBackupTables = async (
   }
 
   const tableSql = tables.map(table => escapeSqlIdentifier(table.name)).join(', ');
-  await client.query(`TRUNCATE TABLE ${tableSql} CASCADE`);
+  await client.query(`TRUNCATE TABLE ${tableSql}`);
 };
 
 /**

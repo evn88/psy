@@ -49,6 +49,7 @@ export async function updateUser(data: UpdateUserSchema) {
   }
 
   try {
+    const validatedData = result.data;
     const updateData: {
       name?: string;
       email?: string;
@@ -56,23 +57,23 @@ export async function updateUser(data: UpdateUserSchema) {
       password?: string;
       timezone?: string;
     } = {
-      name: data.name,
-      email: data.email,
-      role: data.role,
-      timezone: data.timezone
+      name: validatedData.name,
+      email: validatedData.email,
+      role: validatedData.role,
+      timezone: validatedData.timezone
     };
 
-    if (data.password) {
-      updateData.password = await bcrypt.hash(data.password, 10);
+    if (validatedData.password) {
+      updateData.password = await bcrypt.hash(validatedData.password, 10);
     }
 
-    const user = await prisma.user.update({
-      where: { id: data.id },
+    await prisma.user.update({
+      where: { id: validatedData.id },
       data: updateData
     });
 
     revalidatePath('/admin/users');
-    return { success: true, user };
+    return { success: true };
   } catch (error) {
     console.error('Failed to update user:', error);
     return { error: 'Failed to update user' };

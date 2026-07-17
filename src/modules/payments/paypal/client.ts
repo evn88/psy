@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import { SystemLogCategory } from '@prisma/client';
 import {
   getPayPalBaseUrl,
@@ -243,7 +242,7 @@ export const capturePayPalOrder = async (orderId: string): Promise<PayPalOrder> 
     method: 'POST',
     headers: {
       Prefer: 'return=representation',
-      'PayPal-Request-Id': `capture-order-${orderId}-${randomUUID()}`
+      'PayPal-Request-Id': `capture-order-${orderId}`
     },
     body: {}
   });

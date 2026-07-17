@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, createHmac, randomBytes } from 'node:crypto';
 
 import { PILLO_ACTION_TOKEN_TTL_HOURS } from './constants';
 
@@ -8,6 +8,23 @@ import { PILLO_ACTION_TOKEN_TTL_HOURS } from './constants';
  */
 export const createPilloActionToken = (): string => {
   return randomBytes(32).toString('base64url');
+};
+
+/**
+ * Создаёт стабильный и непредсказуемый токен напоминания для одного приёма.
+ * Стабильность нужна, чтобы повтор шага отправки использовал тот же idempotency payload.
+ * @param intakeId - идентификатор приёма.
+ * @returns HMAC-токен для одноразовой ссылки.
+ */
+export const createPilloReminderActionToken = (intakeId: string): string => {
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) {
+    throw new Error('AUTH_SECRET is required for Pillo reminder action tokens');
+  }
+
+  return createHmac('sha256', secret)
+    .update(`pillo-intake-reminder:v1:${intakeId}`)
+    .digest('base64url');
 };
 
 /**

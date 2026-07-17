@@ -1,6 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { BackupArchiveTableRecord } from '../types';
-import { dumpBackupTableRows, restoreBackupTableRows } from '../database';
+import {
+  dumpBackupTableRows,
+  loadBackupDatabaseManifest,
+  restoreBackupTableRows,
+  truncateBackupTables,
+  withBackupDatabaseSnapshot,
+  withBackupRestoreTransaction,
+  type DatabaseClient
+} from '../database';
 
 describe('backup database helpers', () => {
   it('восстановление таблицы подставляет новые blob url и оживляет даты', async () => {
@@ -89,5 +97,125 @@ describe('backup database helpers', () => {
       table: 'user',
       rows: [{ id: 'user-1', email: 'test@example.com' }]
     });
+  });
+
+  it('snapshot backup выполняется в read-only repeatable read транзакции', async () => {
+    // Arrange
+    const query = vi.fn().mockResolvedValue({ rows: [] });
+    const client = { query };
+
+    // Act
+    const result = await withBackupDatabaseSnapshot(client, async () => {
+      await client.query('SELECT * FROM "User"');
+      return 'snapshot-result';
+    });
+
+    // Assert
+    expect(result).toBe('snapshot-result');
+    expect(query.mock.calls.map(([sql]) => sql)).toEqual([
+      'BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY',
+      'SELECT * FROM "User"',
+      'COMMIT'
+    ]);
+  });
+
+  it('ошибка restore приводит к rollback транзакции', async () => {
+    // Arrange
+    const query = vi.fn().mockResolvedValue({ rows: [] });
+    const client = { query };
+
+    // Act
+    const restorePromise = withBackupRestoreTransaction(client, async () => {
+      await client.query('TRUNCATE TABLE "User" CASCADE');
+      throw new Error('insert failed');
+    });
+
+    // Assert
+    await expect(restorePromise).rejects.toThrow('insert failed');
+    expect(query.mock.calls.map(([sql]) => sql)).toEqual([
+      'BEGIN',
+      'TRUNCATE TABLE "User" CASCADE',
+      'ROLLBACK'
+    ]);
+  });
+
+  it('очистка restore не затрагивает исключённые таблицы через cascade', async () => {
+    // Arrange
+    const query = vi.fn().mockResolvedValue({ rows: [] });
+    const client = { query };
+    const table: BackupArchiveTableRecord = {
+      name: 'User',
+      order: 0,
+      rowCount: 0,
+      primaryKey: ['id'],
+      dependsOn: [],
+      columns: [
+        { name: 'id', dataType: 'text', udtName: 'text', isNullable: false, ordinalPosition: 1 }
+      ]
+    };
+
+    // Act
+    await truncateBackupTables(client, [table]);
+
+    // Assert
+    expect(query).toHaveBeenCalledWith('TRUNCATE TABLE "User"');
+  });
+
+  it('manifest backup исключает таблицу миграций и системные таблицы', async () => {
+    // Arrange
+    const query = vi.fn(async (sql: string, params?: unknown[]) => {
+      if (sql.includes('FROM pg_tables')) {
+        return {
+          rows: [
+            { tableName: 'User' },
+            { tableName: '_ApplicationRelation' },
+            { tableName: '_prisma_migrations' },
+            { tableName: 'DatabaseIdentity' },
+            { tableName: 'pg_service_table' },
+            { tableName: 'WorkflowLease' }
+          ]
+        };
+      }
+
+      if (sql.includes("constraint_type = 'FOREIGN KEY'")) {
+        return { rows: [] };
+      }
+
+      if (sql.includes("constraint_type = 'PRIMARY KEY'")) {
+        return {
+          rows:
+            params?.[0] === 'User' || params?.[0] === '_ApplicationRelation'
+              ? [{ columnName: 'id' }]
+              : []
+        };
+      }
+
+      if (sql.includes('FROM information_schema.columns')) {
+        return {
+          rows:
+            params?.[0] === 'User' || params?.[0] === '_ApplicationRelation'
+              ? [
+                  {
+                    name: 'id',
+                    dataType: 'text',
+                    udtName: 'text',
+                    isNullable: false,
+                    ordinalPosition: 1
+                  }
+                ]
+              : []
+        };
+      }
+
+      return { rows: [] };
+    });
+
+    // Act
+    const manifest = await loadBackupDatabaseManifest({
+      query: query as unknown as DatabaseClient['query']
+    });
+
+    // Assert
+    expect(manifest.map(table => table.name)).toEqual(['_ApplicationRelation', 'User']);
   });
 });
