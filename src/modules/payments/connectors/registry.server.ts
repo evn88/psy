@@ -8,6 +8,7 @@ import type {
 } from '@/modules/payments/types';
 
 import { payPalConnector } from './paypal/connector.server';
+import { stripeConnector } from './stripe/connector.server';
 import type {
   PaymentConnector,
   PaymentConnectorHealth,
@@ -15,7 +16,7 @@ import type {
   ResolvedPaymentConnector
 } from './types';
 
-const paymentConnectors = [payPalConnector] as const;
+const paymentConnectors = [payPalConnector, stripeConnector] as const;
 
 const connectorById = new Map<PaymentProviderId, PaymentConnector>(
   paymentConnectors.map(connector => [connector.metadata.id, connector])

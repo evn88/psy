@@ -163,6 +163,9 @@ npm run dev
 | `PAYPAL_WEBHOOK_ID`             | PayPal webhook ID used to verify incoming webhook signatures                                    |
 | `PAYPAL_ENVIRONMENT`            | PayPal environment: `sandbox` or `live` (default: `sandbox`)                                   |
 | `NEXT_PUBLIC_PAYPAL_CURRENCY`   | Default checkout currency for the user payments page (optional, default: `EUR`)                |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key used by Payment Element (safe to expose)                         |
+| `STRIPE_SECRET_KEY`             | Stripe secret API key used only by server-side payment modules                                 |
+| `STRIPE_WEBHOOK_SECRET`         | Stripe endpoint secret used to verify raw webhook payloads                                     |
 
 #### AI & Storage
 

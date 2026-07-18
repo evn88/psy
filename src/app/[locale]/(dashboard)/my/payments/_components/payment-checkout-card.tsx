@@ -16,7 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useRouter } from '@/i18n/navigation';
 import { formatPaymentAmount } from '@/modules/payments';
 import { PaymentProviderCheckout } from '@/modules/payments/components/payment-provider-checkout';
-import type { PaymentProviderCheckoutConfig } from '@/modules/payments/types';
+import type { OrderResponse, PaymentProviderCheckoutConfig } from '@/modules/payments/types';
 
 import type { PaymentServicePackage } from './payment-checkout.types';
 import { getPaymentPackageTitle, PaymentPackageCard } from './payment-package-card';
@@ -129,16 +129,17 @@ export const PaymentCheckoutCard = ({
       body: JSON.stringify(payloadBody)
     });
 
-    const payload = (await response.json()) as {
-      id?: string;
-      message?: string;
-    };
+    const payload = (await response.json()) as Partial<OrderResponse> & { message?: string };
 
-    if (!response.ok || !payload.id) {
+    if (!response.ok || !payload.id || !payload.checkoutKind || !payload.status) {
       throw new Error(payload.message || 'Не удалось создать платёжный order');
     }
 
-    return payload.id;
+    if (payload.checkoutKind === 'stripe-elements' && !payload.clientSecret) {
+      throw new Error('Платёжный провайдер не вернул client secret');
+    }
+
+    return payload as OrderResponse;
   };
 
   const handleApprove = async (orderId: string) => {

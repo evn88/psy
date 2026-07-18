@@ -137,10 +137,7 @@ async function postHandler(request: Request) {
       ...orderInput
     });
 
-    return NextResponse.json({
-      id: order.id,
-      status: order.status
-    });
+    return NextResponse.json(order);
   } catch (error: unknown) {
     console.error('Failed to create payment order:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });

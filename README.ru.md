@@ -155,7 +155,7 @@ npm run dev
 | `WORKFLOW_ALERT_THRESHOLD_PERCENT`      | Опциональный порог предупреждения в процентах (по умолчанию: `80`)                  |
 | `WORKFLOW_ESTIMATED_STEPS_PER_REMINDER` | Опциональная оценка steps на один запуск workflow-напоминания (по умолчанию: `3`)   |
 
-#### PayPal платежи
+#### Платежи
 
 | Переменная                      | Описание                                                                                         |
 |---------------------------------|--------------------------------------------------------------------------------------------------|
@@ -164,6 +164,9 @@ npm run dev
 | `PAYPAL_WEBHOOK_ID`             | ID webhook в PayPal, используемый для проверки подписи входящих событий                           |
 | `PAYPAL_ENVIRONMENT`            | Окружение PayPal: `sandbox` или `live` (по умолчанию: `sandbox`)                                 |
 | `NEXT_PUBLIC_PAYPAL_CURRENCY`   | Валюта checkout по умолчанию на странице оплат пользователя (необязательно, по умолчанию: `EUR`) |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Публичный ключ Stripe для Payment Element                                                   |
+| `STRIPE_SECRET_KEY`             | Секретный API-ключ Stripe, доступный только серверным платёжным модулям                           |
+| `STRIPE_WEBHOOK_SECRET`         | Секрет endpoint Stripe для проверки подписи исходного webhook body                                |
 
 #### ИИ и хранилище
 

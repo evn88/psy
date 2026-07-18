@@ -11,15 +11,15 @@ import { useEffect } from 'react';
 
 import { useTheme } from '@/components/theme-provider';
 import { cn } from '@/lib/utils';
-import type { PaymentProviderCheckoutConfig } from '@/modules/payments/types';
+import type { OrderResponse, PayPalCheckoutConfig } from '@/modules/payments/types';
 
 interface PayPalCheckoutProps {
   amount: string;
-  config: PaymentProviderCheckoutConfig;
+  config: PayPalCheckoutConfig;
   currency: string;
   description: string;
   disabled: boolean;
-  createOrder: () => Promise<string>;
+  createOrder: () => Promise<OrderResponse>;
   onApprove: (orderId: string) => Promise<void>;
   onError: (error: unknown) => void;
   validate: () => Promise<boolean>;
@@ -110,14 +110,22 @@ export const PayPalCheckout = ({
           >
             <PayPalButtons
               fundingSource={method.fundingSource}
-              className="w-full"
+              className="w-full overflow-hidden rounded-xl [&_.paypal-buttons]:overflow-hidden [&_iframe]:rounded-xl [&_iframe]:[clip-path:inset(1px_round_11px)]"
               style={method.style}
               disabled={disabled}
               forceReRender={[currency, amount, description, isDarkTheme, method.key, config.id]}
               onClick={async (_data, actions) =>
                 (await validate()) ? actions.resolve() : actions.reject()
               }
-              createOrder={createOrder}
+              createOrder={async () => {
+                const order = await createOrder();
+
+                if (order.checkoutKind !== 'paypal') {
+                  throw new Error('Unexpected checkout response for PayPal');
+                }
+
+                return order.id;
+              }}
               onApprove={async data => onApprove(data.orderID)}
               onError={onError}
             />

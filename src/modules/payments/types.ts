@@ -1,6 +1,7 @@
 import type { Payment, PaymentKind } from '@prisma/client';
 
 export const PAYPAL_PROVIDER_ID = 'PAYPAL' as const;
+export const STRIPE_PROVIDER_ID = 'STRIPE' as const;
 
 export type PaymentProviderId = string;
 
@@ -14,15 +15,25 @@ export type PaymentProviderCapability =
 
 export type PaymentProviderHealthStatus = 'configured' | 'error' | 'unknown';
 
-export interface PaymentProviderCheckoutConfig {
+interface BasePaymentProviderCheckoutConfig {
   id: PaymentProviderId;
   label: string;
-  checkoutKind: 'paypal';
-  clientId: string;
   defaultCurrency: string;
   supportedCurrencies: string[];
   capabilities: PaymentProviderCapability[];
 }
+
+export interface PayPalCheckoutConfig extends BasePaymentProviderCheckoutConfig {
+  checkoutKind: 'paypal';
+  clientId: string;
+}
+
+export interface StripeCheckoutConfig extends BasePaymentProviderCheckoutConfig {
+  checkoutKind: 'stripe-elements';
+  publishableKey: string;
+}
+
+export type PaymentProviderCheckoutConfig = PayPalCheckoutConfig | StripeCheckoutConfig;
 
 export interface CreateOrderParams {
   amount: string;
@@ -52,10 +63,21 @@ export type SyncPaymentParams = Pick<
   | 'userId'
 >;
 
-export interface OrderResponse {
+interface BaseOrderResponse {
   id: string;
   status: string;
 }
+
+export interface PayPalOrderResponse extends BaseOrderResponse {
+  checkoutKind: 'paypal';
+}
+
+export interface StripeOrderResponse extends BaseOrderResponse {
+  checkoutKind: 'stripe-elements';
+  clientSecret: string;
+}
+
+export type OrderResponse = PayPalOrderResponse | StripeOrderResponse;
 
 export interface IPaymentService {
   /**

@@ -37,6 +37,7 @@ export class PayPalService implements IPaymentService {
     });
 
     return {
+      checkoutKind: 'paypal',
       id: order.id,
       status: order.status
     };

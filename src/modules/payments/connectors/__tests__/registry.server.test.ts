@@ -26,6 +26,12 @@ vi.mock('@/modules/payments/providers/paypal-service', () => ({
   }
 }));
 
+vi.mock('@/modules/payments/providers/stripe-service', () => ({
+  StripeService: class {
+    providerName = 'STRIPE';
+  }
+}));
+
 vi.mock('@/modules/payments/paypal/client', () => ({
   getPayPalAccessToken: vi.fn()
 }));
@@ -41,6 +47,7 @@ describe('payment connector registry', () => {
     vi.clearAllMocks();
     vi.stubEnv('NEXT_PUBLIC_PAYPAL_CLIENT_ID', 'client-id');
     vi.stubEnv('NEXT_PUBLIC_PAYPAL_CURRENCY', 'EUR');
+    vi.stubEnv('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY', 'pk_test_public');
   });
 
   it('не разрешает создавать платежи через отключённый коннектор', async () => {
@@ -95,5 +102,27 @@ describe('payment connector registry', () => {
       })
     ]);
     expect(JSON.stringify(configs)).not.toContain('PAYPAL_CLIENT_SECRET');
+  });
+
+  it('отдаёт Stripe publishable key без server credentials', async () => {
+    mocks.findMany.mockResolvedValue([
+      {
+        id: 'STRIPE',
+        enabled: true,
+        isDefault: true,
+        settings: { defaultCurrency: 'EUR' }
+      }
+    ]);
+
+    const configs = await getEnabledPaymentCheckoutConfigs();
+
+    expect(configs).toEqual([
+      expect.objectContaining({
+        id: 'STRIPE',
+        checkoutKind: 'stripe-elements',
+        publishableKey: 'pk_test_public'
+      })
+    ]);
+    expect(JSON.stringify(configs)).not.toContain('STRIPE_SECRET_KEY');
   });
 });
