@@ -42,12 +42,12 @@ export const ClientPayments = async ({ clientId }: ClientPaymentsProps) => {
   }));
 
   return (
-    <Card>
+    <Card className="min-w-0 overflow-hidden">
       <CardHeader className="flex flex-col gap-4 border-b md:flex-row md:items-center md:justify-between">
         <div>
           <CardTitle className="text-xl">Платежи клиента</CardTitle>
           <CardDescription>
-            Локальная история оплат по клиенту с возможностью ручной сверки через PayPal API.
+            Локальная история оплат по клиенту с возможностью ручной сверки через API провайдера.
           </CardDescription>
         </div>
         <PaymentsSyncButton
@@ -55,7 +55,7 @@ export const ClientPayments = async ({ clientId }: ClientPaymentsProps) => {
           userId={clientId}
         />
       </CardHeader>
-      <CardContent className="pt-6">
+      <CardContent className="min-w-0 pt-6">
         <AdminPaymentsTable payments={tableItems} showClientColumn={false} />
       </CardContent>
     </Card>

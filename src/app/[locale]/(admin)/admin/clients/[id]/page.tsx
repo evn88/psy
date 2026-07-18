@@ -208,7 +208,7 @@ export default async function AdminClientProfilePage({
   const mainRequest = latestIntake?.plainAnswers?.mainRequest as string | undefined;
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6">
       <BreadcrumbSetter segment={user.id} title={displayName} />
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div className="flex flex-col md:flex-row md:items-center gap-4">
@@ -237,7 +237,7 @@ export default async function AdminClientProfilePage({
         )}
       </div>
 
-      <Tabs defaultValue="notes" className="space-y-4">
+      <Tabs defaultValue="notes" className="min-w-0 space-y-4">
         <TabsList className="bg-muted flex-wrap h-auto">
           <TabsTrigger value="notes">{t('tabs.notes')}</TabsTrigger>
           <TabsTrigger value="intakes">{t('tabs.intakes')}</TabsTrigger>
@@ -268,7 +268,7 @@ export default async function AdminClientProfilePage({
           <ClientDocuments clientId={user.id} documents={documents} />
         </TabsContent>
 
-        <TabsContent value="payments" className="mt-4">
+        <TabsContent value="payments" className="mt-4 min-w-0">
           <ClientPayments clientId={user.id} />
         </TabsContent>
 

@@ -39,7 +39,7 @@ export const SidebarWorkspaceLayout = ({
               {headerActions && <div className="flex shrink-0 items-center">{headerActions}</div>}
             </div>
           </header>
-          <div className="flex flex-1 flex-col gap-4 p-4 pt-5 md:p-6">{children}</div>
+          <div className="flex min-w-0 flex-1 flex-col gap-4 p-4 pt-5 md:p-6">{children}</div>
         </BreadcrumbProvider>
         {afterContent}
       </SidebarInset>
