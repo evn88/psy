@@ -75,9 +75,8 @@ export default async function MyPaymentsPage({ params }: Readonly<MyPaymentsPage
     amountValue: item.amountValue,
     direction: item.direction,
     createdAtLabel: item.createdAtLabel,
-    providerLabel: item.provider
-      ? (providerLabelById.get(item.provider) ?? item.provider)
-      : 'Внутренний счёт',
+    providerLabel: item.provider ? (providerLabelById.get(item.provider) ?? item.provider) : null,
+    source: item.source,
     status: item.status,
     title: item.title
   }));

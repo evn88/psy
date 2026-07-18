@@ -32,8 +32,11 @@ import {
 } from '@/components/ui/table';
 import { Link, useRouter } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
+import { FinancialSourceBadge } from '@/modules/payments/components/financial-source-badge';
 import { PaymentStatusBadge } from '@/modules/payments/components/payment-status-badge';
 import { PaymentsSyncButton } from '@/modules/payments/components/payments-sync-button';
+
+import type { FinancialHistorySource } from './financial-history-source';
 
 export type FinancialHistoryDirection = 'INCOME' | 'EXPENSE' | 'REFUND' | 'NEUTRAL';
 
@@ -44,6 +47,7 @@ export interface FinancialHistoryItem {
   clientName: string;
   clientEmail: string;
   provider: string | null;
+  source: FinancialHistorySource;
   status: string;
   statusGroup: 'SUCCESS' | 'FAILED' | 'PENDING';
   direction: FinancialHistoryDirection;
@@ -138,7 +142,7 @@ export const FinancialHistoryTable = ({
     }
     if (
       normalizedQuery &&
-      !`${item.id} ${item.clientName} ${item.clientEmail} ${item.title}`
+      !`${item.id} ${item.clientName} ${item.clientEmail} ${item.title} ${item.source}`
         .toLowerCase()
         .includes(normalizedQuery)
     ) {
@@ -287,15 +291,22 @@ export const FinancialHistoryTable = ({
                       <p className="text-xs text-muted-foreground">{item.clientEmail}</p>
                     </TableCell>
                   )}
-                  <TableCell
-                    className={cn(
-                      'font-semibold tabular-nums',
-                      item.direction === 'INCOME' && 'text-emerald-600 dark:text-emerald-400',
-                      (item.direction === 'EXPENSE' || item.direction === 'REFUND') &&
-                        'text-rose-600 dark:text-rose-400'
-                    )}
-                  >
-                    {item.amountLabel}
+                  <TableCell>
+                    <p
+                      className={cn(
+                        'font-semibold tabular-nums',
+                        item.direction === 'INCOME' && 'text-emerald-600 dark:text-emerald-400',
+                        (item.direction === 'EXPENSE' || item.direction === 'REFUND') &&
+                          'text-rose-600 dark:text-rose-400'
+                      )}
+                    >
+                      {item.amountLabel}
+                    </p>
+                    <FinancialSourceBadge
+                      source={item.source}
+                      providerLabel={item.provider}
+                      className="mt-1"
+                    />
                   </TableCell>
                   <TableCell>
                     <PaymentStatusBadge status={item.status} />
@@ -317,7 +328,13 @@ export const FinancialHistoryTable = ({
           {selectedItem && (
             <>
               <DialogHeader>
-                <DialogTitle>{selectedItem.title}</DialogTitle>
+                <div className="flex flex-wrap items-center gap-2">
+                  <DialogTitle>{selectedItem.title}</DialogTitle>
+                  <FinancialSourceBadge
+                    source={selectedItem.source}
+                    providerLabel={selectedItem.provider}
+                  />
+                </div>
                 <DialogDescription>
                   {selectedItem.createdAtLabel} · {selectedItem.id}
                 </DialogDescription>

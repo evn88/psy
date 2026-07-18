@@ -4,6 +4,10 @@ import { FinancialOperationType, FinancialOperationStatus, Prisma } from '@prism
 
 import prisma from '@/lib/prisma';
 
+import {
+  getFinancialHistorySourceLabel,
+  resolveFinancialHistorySource
+} from './financial-history-source';
 import type { FinancialHistoryDirection, FinancialHistoryItem } from './financial-history-table';
 
 const FAILED_PAYMENT_STATUSES = new Set(['DECLINED', 'DENIED', 'FAILED', 'CANCELLED']);
@@ -27,7 +31,7 @@ const getOperationTitle = (type: FinancialOperationType): string => {
     CONSULTATION_CHARGE: 'Оплата консультации',
     CONSULTATION_REVERSAL: 'Возврат за консультацию',
     PROVIDER_REFUND: 'Возврат платежа',
-    MANUAL_ADJUSTMENT: 'Ручная корректировка'
+    MANUAL_ADJUSTMENT: 'Корректировка администратора'
   };
 
   return titles[type];
@@ -72,6 +76,12 @@ export const getFinancialHistory = async (params?: {
                   template: true
                 }
               },
+              initiatedBy: {
+                select: {
+                  email: true,
+                  name: true
+                }
+              },
               payment: {
                 select: {
                   amount: true,
@@ -113,6 +123,12 @@ export const getFinancialHistory = async (params?: {
                 select: {
                   status: true,
                   template: true
+                }
+              },
+              initiatedBy: {
+                select: {
+                  email: true,
+                  name: true
                 }
               },
               payment: {
@@ -169,6 +185,12 @@ export const getFinancialHistory = async (params?: {
               template: true;
             };
           };
+          initiatedBy: {
+            select: {
+              email: true;
+              name: true;
+            };
+          };
           payment: {
             select: {
               amount: true;
@@ -214,6 +236,12 @@ export const getFinancialHistory = async (params?: {
               template: true;
             };
           };
+          initiatedBy: {
+            select: {
+              email: true;
+              name: true;
+            };
+          };
           payment: {
             select: {
               id: true;
@@ -241,6 +269,10 @@ export const getFinancialHistory = async (params?: {
 
   const walletItems: FinancialHistoryItem[] = walletTransactions.map(transaction => {
     const payment = transaction.operation.payment;
+    const source = resolveFinancialHistorySource({
+      isAdminAdjustment: transaction.operation.type === FinancialOperationType.MANUAL_ADJUSTMENT,
+      provider: payment?.provider ?? null
+    });
     const amountValue = transaction.amount.toNumber();
     const isTopupTransaction = transaction.type === 'TOPUP';
     const refundableAmount = payment?.amount.minus(payment.refundedAmount);
@@ -256,6 +288,7 @@ export const getFinancialHistory = async (params?: {
       clientName: transaction.user.name || 'Без имени',
       clientEmail: transaction.user.email,
       provider: payment?.provider ?? null,
+      source,
       status: transaction.operation.status,
       statusGroup: getOperationStatusGroup(transaction.operation.status),
       direction: getDirection(transaction.amount, transaction.operation.type),
@@ -267,6 +300,22 @@ export const getFinancialHistory = async (params?: {
       title: getOperationTitle(transaction.operation.type),
       refundable,
       details: [
+        {
+          label: 'Источник',
+          value: getFinancialHistorySourceLabel(source, payment?.provider)
+        },
+        ...(source === 'ADMIN_ADJUSTMENT'
+          ? [
+              {
+                label: 'Выполнил',
+                value: transaction.operation.initiatedBy
+                  ? transaction.operation.initiatedBy.name
+                    ? `${transaction.operation.initiatedBy.name} (${transaction.operation.initiatedBy.email})`
+                    : transaction.operation.initiatedBy.email
+                  : 'Администратор (аккаунт недоступен)'
+              }
+            ]
+          : []),
         { label: 'Тип проводки', value: transaction.type },
         {
           label: 'Баланс до',
@@ -304,6 +353,11 @@ export const getFinancialHistory = async (params?: {
   const packageItems: FinancialHistoryItem[] = packageTransactions.map(transaction => {
     const amountValue = transaction.minutes;
     const user = transaction.purchasedPackage.user;
+    const provider = transaction.operation.payment?.provider ?? null;
+    const source = resolveFinancialHistorySource({
+      isAdminAdjustment: transaction.operation.type === FinancialOperationType.MANUAL_ADJUSTMENT,
+      provider
+    });
 
     return {
       id: transaction.id,
@@ -311,7 +365,8 @@ export const getFinancialHistory = async (params?: {
       clientId: user.id,
       clientName: user.name || 'Без имени',
       clientEmail: user.email,
-      provider: transaction.operation.payment?.provider ?? null,
+      provider,
+      source,
       status: transaction.operation.status,
       statusGroup: getOperationStatusGroup(transaction.operation.status),
       direction:
@@ -328,6 +383,22 @@ export const getFinancialHistory = async (params?: {
       title: getOperationTitle(transaction.operation.type),
       refundable: false,
       details: [
+        {
+          label: 'Источник',
+          value: getFinancialHistorySourceLabel(source, provider)
+        },
+        ...(source === 'ADMIN_ADJUSTMENT'
+          ? [
+              {
+                label: 'Выполнил',
+                value: transaction.operation.initiatedBy
+                  ? transaction.operation.initiatedBy.name
+                    ? `${transaction.operation.initiatedBy.name} (${transaction.operation.initiatedBy.email})`
+                    : transaction.operation.initiatedBy.email
+                  : 'Администратор (аккаунт недоступен)'
+              }
+            ]
+          : []),
         { label: 'Тип проводки', value: transaction.type },
         {
           label: 'Остаток до',
@@ -371,6 +442,7 @@ export const getFinancialHistory = async (params?: {
       clientName: payment.user.name || 'Без имени',
       clientEmail: payment.user.email,
       provider: payment.provider,
+      source: 'PAYMENT_PROVIDER',
       status: payment.status,
       statusGroup,
       direction: 'NEUTRAL',
@@ -382,6 +454,10 @@ export const getFinancialHistory = async (params?: {
       title: payment.kind === 'TOPUP' ? 'Попытка пополнения' : 'Попытка покупки пакета',
       refundable: false,
       details: [
+        {
+          label: 'Источник',
+          value: getFinancialHistorySourceLabel('PAYMENT_PROVIDER', payment.provider)
+        },
         { label: 'Провайдер', value: payment.provider },
         { label: 'Order ID', value: payment.orderId },
         { label: 'Capture ID', value: payment.captureId || '—' },

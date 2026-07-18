@@ -10,7 +10,10 @@ import {
   TableRow
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
+import { FinancialSourceBadge } from '@/modules/payments/components/financial-source-badge';
 import { PaymentStatusBadge } from '@/modules/payments/components/payment-status-badge';
+
+import type { FinancialHistorySource } from '@/modules/payments/financial/financial-history-source';
 
 interface MyPaymentHistoryItem {
   id: string;
@@ -19,7 +22,8 @@ interface MyPaymentHistoryItem {
   direction: 'INCOME' | 'EXPENSE' | 'REFUND' | 'NEUTRAL';
   status: string;
   title: string;
-  providerLabel: string;
+  source: FinancialHistorySource;
+  providerLabel: string | null;
   createdAtLabel: string;
 }
 
@@ -71,12 +75,15 @@ export const MyPaymentsHistory = ({ payments }: MyPaymentsHistoryProps) => {
                         {payment.amountLabel}
                       </p>
                       <p className="mt-1 text-xs text-muted-foreground">{payment.title}</p>
+                      <FinancialSourceBadge
+                        source={payment.source}
+                        providerLabel={payment.providerLabel}
+                        className="mt-2"
+                      />
                     </div>
                     <PaymentStatusBadge status={payment.status} />
                   </div>
-                  <p className="mt-3 text-xs text-muted-foreground">
-                    {payment.createdAtLabel} · {payment.providerLabel}
-                  </p>
+                  <p className="mt-3 text-xs text-muted-foreground">{payment.createdAtLabel}</p>
                 </article>
               ))
             )}
@@ -105,7 +112,11 @@ export const MyPaymentsHistory = ({ payments }: MyPaymentsHistoryProps) => {
                     <TableRow key={payment.id}>
                       <TableCell>
                         <p className="font-medium">{payment.title}</p>
-                        <p className="text-xs text-muted-foreground">{payment.providerLabel}</p>
+                        <FinancialSourceBadge
+                          source={payment.source}
+                          providerLabel={payment.providerLabel}
+                          className="mt-1"
+                        />
                       </TableCell>
                       <TableCell
                         className={cn(
