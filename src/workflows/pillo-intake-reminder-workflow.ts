@@ -12,12 +12,20 @@ import {
 } from '@/modules/pillo/notifications';
 import { isPilloGuestEmail } from '@/modules/pillo/guest';
 import {
-  createPilloActionToken as createPilloActionTokenValue,
+  createPilloReminderActionToken,
   getPilloActionTokenExpiresAt,
   hashPilloActionToken
 } from '@/modules/pillo/tokens';
+import {
+  claimPilloReminderIntake,
+  PILLO_REMINDER_CLAIM_TIMEOUT_MS,
+  releasePilloReminderPush,
+  reservePilloReminderPush
+} from '@/modules/pillo/reminder-claims.server';
+import { releasePilloRunnerLease } from '@/modules/pillo/workflow-lease.server';
 
 type PilloIntakeReminderWorkflowParams = {
+  holderId?: string;
   nowIso?: string;
 };
 
@@ -117,14 +125,74 @@ const getPilloReminderSkipReason = (intake: PilloReminderIntakeRecord): string |
  * @returns Список приёмов, которым ещё нужны напоминания.
  */
 const loadDuePilloReminderIntakes = async (now: Date): Promise<PilloReminderIntakeRecord[]> => {
+  const staleClaimBefore = new Date(now.getTime() - PILLO_REMINDER_CLAIM_TIMEOUT_MS);
+
   return prisma.pilloIntake.findMany({
     where: {
       status: PENDING_INTAKE_STATUS,
       scheduledFor: { lte: now },
-      OR: [{ reminderEmailSentAt: null }, { reminderPushSentAt: null }]
+      scheduleRule: { isActive: true },
+      medication: { isActive: true },
+      user: { isDisabled: false },
+      AND: [
+        {
+          OR: [
+            { reminderEmailSentAt: null },
+            { reminderPushSentAt: null, reminderPushClaimedAt: null }
+          ]
+        },
+        {
+          OR: [
+            { reminderWorkflowStartedAt: null },
+            { reminderWorkflowStartedAt: { lte: staleClaimBefore } }
+          ]
+        }
+      ]
     },
-    orderBy: { scheduledFor: 'asc' },
+    orderBy: [
+      { reminderWorkflowStartedAt: { sort: 'asc', nulls: 'first' } },
+      { scheduledFor: 'asc' }
+    ],
     take: PILLO_REMINDER_BATCH_SIZE,
+    include: {
+      medication: true,
+      scheduleRule: true,
+      user: {
+        include: {
+          pilloUserSettings: true,
+          pushSubscriptions: {
+            select: {
+              endpoint: true,
+              p256dh: true,
+              auth: true
+            }
+          }
+        }
+      }
+    }
+  });
+};
+
+/**
+ * Повторно загружает приём после claim и проверяет актуальное состояние зависимостей.
+ * @param intakeId - идентификатор приёма.
+ * @param claimedAt - метка текущего владельца claim.
+ * @returns Актуальный приём или `null`, если он больше не требует отправки.
+ */
+const loadClaimedPilloReminderIntake = async (
+  intakeId: string,
+  claimedAt: Date
+): Promise<PilloReminderIntakeRecord | null> => {
+  return prisma.pilloIntake.findFirst({
+    where: {
+      id: intakeId,
+      status: PENDING_INTAKE_STATUS,
+      reminderWorkflowStartedAt: claimedAt,
+      scheduleRule: { isActive: true },
+      medication: { isActive: true },
+      user: { isDisabled: false },
+      OR: [{ reminderEmailSentAt: null }, { reminderPushSentAt: null, reminderPushClaimedAt: null }]
+    },
     include: {
       medication: true,
       scheduleRule: true,
@@ -150,14 +218,18 @@ const loadDuePilloReminderIntakes = async (now: Date): Promise<PilloReminderInta
  * @returns Открытый токен для ссылки.
  */
 const createPilloActionTokenStep = async (intake: PilloReminderIntakeRecord): Promise<string> => {
-  const token = createPilloActionTokenValue();
+  const token = createPilloReminderActionToken(intake.id);
+  const tokenHash = hashPilloActionToken(token);
+  const expiresAt = getPilloActionTokenExpiresAt();
 
-  await prisma.pilloIntakeActionToken.create({
-    data: {
+  await prisma.pilloIntakeActionToken.upsert({
+    where: { tokenHash },
+    update: { expiresAt },
+    create: {
       userId: intake.userId,
       intakeId: intake.id,
-      tokenHash: hashPilloActionToken(token),
-      expiresAt: getPilloActionTokenExpiresAt()
+      tokenHash,
+      expiresAt
     }
   });
 
@@ -184,6 +256,17 @@ const dispatchPilloIntakeReminder = async (
   }
 
   const settings = intake.user.pilloUserSettings;
+  const workflowClaimedAt = intake.reminderWorkflowStartedAt;
+
+  if (!workflowClaimedAt) {
+    return {
+      status: 'skipped',
+      reason: 'workflow-claim-missing',
+      emailSent: false,
+      pushSent: false
+    };
+  }
+
   const isEmailEnabled = settings?.emailRemindersEnabled !== false;
   const isPushEnabled = settings?.pushRemindersEnabled !== false;
   const token = await createPilloActionTokenStep(intake);
@@ -196,6 +279,7 @@ const dispatchPilloIntakeReminder = async (
   let reminderPushSentAt = intake.reminderPushSentAt;
   let isEmailSent = false;
   let isPushSent = false;
+  let isPushAlreadyClaimed = false;
   let hasFailedChannel = false;
 
   if (
@@ -213,7 +297,8 @@ const dispatchPilloIntakeReminder = async (
       actionUrl,
       skipUrl,
       locale: intake.user.language,
-      timezone: intake.user.timezone || 'UTC'
+      timezone: intake.user.timezone || 'UTC',
+      idempotencyKey: `pillo-intake/${intake.id}/email-v1`
     });
 
     if (emailResult) {
@@ -227,27 +312,54 @@ const dispatchPilloIntakeReminder = async (
   }
 
   if (!intake.reminderPushSentAt && isPushEnabled && intake.user.pushSubscriptions.length > 0) {
-    const pushResults = await sendPushToMany(intake.user.pushSubscriptions, {
-      title: copy.pushIntakeTitle,
-      body: interpolatePilloCopy(copy.pushIntakeBody, {
-        name: intake.medication.name,
-        dose: doseText
-      }),
-      url: actionUrl
-    });
+    const pushClaimedAt = new Date();
+    const isPushReserved = await reservePilloReminderPush(
+      intake.id,
+      workflowClaimedAt,
+      pushClaimedAt,
+      Boolean(intake.reminderEmailSentAt)
+    );
 
-    if (pushResults.some(item => item.success)) {
-      isPushSent = true;
-      reminderPushSentAt = nowTimestamp;
+    if (isPushReserved) {
+      reminderPushSentAt = pushClaimedAt;
+
+      try {
+        const pushResults = await sendPushToMany(intake.user.pushSubscriptions, {
+          title: copy.pushIntakeTitle,
+          body: interpolatePilloCopy(copy.pushIntakeBody, {
+            name: intake.medication.name,
+            dose: doseText
+          }),
+          url: actionUrl,
+          tag: `pillo-intake-${intake.id}`,
+          renotify: false
+        });
+
+        if (pushResults.some(item => item.success)) {
+          isPushSent = true;
+        } else {
+          await releasePilloReminderPush(intake.id, workflowClaimedAt, pushClaimedAt);
+          reminderPushSentAt = null;
+          hasFailedChannel = true;
+        }
+      } catch {
+        await releasePilloReminderPush(intake.id, workflowClaimedAt, pushClaimedAt);
+        reminderPushSentAt = null;
+        hasFailedChannel = true;
+      }
     } else {
-      hasFailedChannel = true;
+      isPushAlreadyClaimed = true;
     }
   } else if (!intake.reminderPushSentAt) {
     reminderPushSentAt = nowTimestamp;
   }
 
-  await prisma.pilloIntake.update({
-    where: { id: intake.id },
+  const updateResult = await prisma.pilloIntake.updateMany({
+    where: {
+      id: intake.id,
+      status: PENDING_INTAKE_STATUS,
+      reminderWorkflowStartedAt: workflowClaimedAt
+    },
     data: {
       reminderEmailSentAt,
       reminderPushSentAt,
@@ -256,12 +368,30 @@ const dispatchPilloIntakeReminder = async (
     }
   });
 
+  if (updateResult.count === 0) {
+    return {
+      status: 'skipped',
+      reason: 'workflow-claim-lost',
+      emailSent: isEmailSent,
+      pushSent: isPushSent
+    };
+  }
+
   if (hasFailedChannel) {
     return {
       status: 'failed',
       reason: 'delivery-failed',
       emailSent: isEmailSent,
       pushSent: isPushSent
+    };
+  }
+
+  if (isPushAlreadyClaimed) {
+    return {
+      status: 'skipped',
+      reason: 'push-delivery-already-claimed',
+      emailSent: isEmailSent,
+      pushSent: false
     };
   }
 
@@ -288,7 +418,21 @@ const dispatchPilloIntakeRemindersStep = async (
   let failed = 0;
 
   for (const intake of intakes) {
-    const result = await dispatchPilloIntakeReminder(intake);
+    const claimedAt = new Date();
+    const isClaimed = await claimPilloReminderIntake(intake.id, claimedAt);
+
+    if (!isClaimed) {
+      skipped++;
+      continue;
+    }
+
+    const claimedIntake = await loadClaimedPilloReminderIntake(intake.id, claimedAt);
+    if (!claimedIntake) {
+      skipped++;
+      continue;
+    }
+
+    const result = await dispatchPilloIntakeReminder(claimedIntake);
 
     if (result.status === 'sent') {
       sent++;
@@ -300,6 +444,16 @@ const dispatchPilloIntakeRemindersStep = async (
   }
 
   return { scanned: intakes.length, sent, skipped, failed };
+};
+
+/**
+ * Освобождает lease после штатного завершения суточного runner.
+ * @param holderId - идентификатор владельца lease.
+ */
+const releasePilloRunnerLeaseStep = async (holderId: string): Promise<void> => {
+  'use step';
+
+  await releasePilloRunnerLease(holderId);
 };
 
 /**
@@ -338,6 +492,10 @@ export const runPilloIntakeReminderWorkflow = async (
     if (i < iterations - 1) {
       await sleep('5m');
     }
+  }
+
+  if (params.holderId) {
+    await releasePilloRunnerLeaseStep(params.holderId);
   }
 
   return {

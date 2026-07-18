@@ -1,16 +1,36 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import { auth } from '@/auth';
+
+import { EventStatus, EventType, Role, type Prisma } from '@prisma/client';
 import { z } from 'zod';
-import type { Prisma } from '@prisma/client';
+
 import type { ParsedEvent } from '@/lib/ical-parser';
 import { doesDateRangeOverlap, isValidDateRange } from '@/lib/event-utils';
+import prisma from '@/lib/prisma';
 import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
+import {
+  resolveCalendarApiAccess,
+  toAvailableEventDto,
+  toBusyEventDto,
+  toOwnedEventDto
+} from './calendar-user-api';
 
 const getEventsSchema = z.object({
   start: z.string().datetime().optional(),
   end: z.string().datetime().optional()
 });
+
+interface DatabaseCalendarEvent {
+  id: string;
+  type: EventType;
+  status: EventStatus;
+  start: Date;
+  end: Date;
+  title: string | null;
+  meetLink: string | null;
+  userId: string | null;
+  reminderMinutesBeforeStart: number;
+  bookingReminderMinutesBeforeStart: number | null;
+}
 
 /**
  * GET /api/user/events
@@ -18,9 +38,12 @@ const getEventsSchema = z.object({
  */
 async function getHandler(req: Request) {
   try {
-    const session = await auth();
-    if (!session || !session.user?.id) {
+    const access = await resolveCalendarApiAccess();
+    if (access.status === 'unauthenticated') {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+    if (access.status === 'forbidden') {
+      return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
 
     const { searchParams } = new URL(req.url);
@@ -41,9 +64,7 @@ async function getHandler(req: Request) {
       return NextResponse.json({ message: 'Invalid date range' }, { status: 400 });
     }
 
-    const whereClause: Prisma.EventWhereInput = {
-      OR: [{ userId: null }, { type: 'FREE_SLOT' }, { userId: session.user.id }]
-    };
+    const whereClause: Prisma.EventWhereInput = {};
 
     if (start && end) {
       whereClause.AND = [
@@ -60,22 +81,39 @@ async function getHandler(req: Request) {
       ];
     }
 
-    const events = await prisma.event.findMany({
+    const events = (await prisma.event.findMany({
       where: whereClause,
-      include: {
-        user: { select: { id: true, name: true, email: true } }
+      select: {
+        id: true,
+        type: true,
+        status: true,
+        start: true,
+        end: true,
+        title: true,
+        meetLink: true,
+        userId: true,
+        reminderMinutesBeforeStart: true,
+        bookingReminderMinutesBeforeStart: true
       },
       orderBy: { start: 'asc' }
-    });
+    })) as DatabaseCalendarEvent[];
 
     const admin = await prisma.user.findFirst({
-      where: { role: 'ADMIN', googleCalendarSyncEnabled: true }
+      where: {
+        role: Role.ADMIN,
+        isDisabled: false,
+        googleCalendarSyncEnabled: true
+      },
+      select: { id: true }
     });
 
     let googleEvents: ParsedEvent[] = [];
     if (admin) {
       const { fetchGoogleEvents } = await import('@/lib/google-sync');
-      googleEvents = await fetchGoogleEvents(admin.id);
+      googleEvents = await fetchGoogleEvents(
+        admin.id,
+        start && end ? { start: new Date(start), end: new Date(end) } : undefined
+      );
       if (start && end) {
         const startD = new Date(start);
         const endD = new Date(end);
@@ -85,44 +123,42 @@ async function getHandler(req: Request) {
       }
     }
 
-    const allEvents = [...events, ...googleEvents];
-    allEvents.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+    const now = new Date();
+    const visibleDatabaseEvents: Array<
+      | ReturnType<typeof toAvailableEventDto>
+      | ReturnType<typeof toBusyEventDto>
+      | ReturnType<typeof toOwnedEventDto>
+    > = [];
 
-    const sanitizedEvents = allEvents
-      .map(event => {
-        if (!event.userId) {
-          return {
-            ...event,
-            user: null
-          };
-        }
+    for (const event of events) {
+      if (event.userId === access.userId) {
+        visibleDatabaseEvents.push(toOwnedEventDto(event));
+        continue;
+      }
 
-        if (event.userId !== session.user.id) {
-          if (event.type === 'FREE_SLOT') {
-            return {
-              id: event.id,
-              type: event.type,
-              start: event.start,
-              end: event.end,
-              status: event.status,
-              title: 'Занято',
-              user: null,
-              userId: 'hidden'
-            };
-          }
-          return null;
-        }
+      if (
+        event.userId === null &&
+        event.type === EventType.FREE_SLOT &&
+        event.status === EventStatus.SCHEDULED &&
+        event.start > now
+      ) {
+        visibleDatabaseEvents.push(toAvailableEventDto(event));
+        continue;
+      }
 
-        return event;
-      })
-      .filter(
-        (
-          event
-        ): event is (typeof events)[number] | (ParsedEvent & { user: null; userId: 'hidden' }) =>
-          event !== null
-      );
+      if (
+        event.status !== EventStatus.CANCELLED &&
+        (event.userId !== null || event.type !== EventType.FREE_SLOT)
+      ) {
+        visibleDatabaseEvents.push(toBusyEventDto(event));
+      }
+    }
+    const visibleGoogleEvents = googleEvents.map(event => toBusyEventDto(event, true));
+    const visibleEvents = [...visibleDatabaseEvents, ...visibleGoogleEvents].sort(
+      (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()
+    );
 
-    return NextResponse.json(sanitizedEvents);
+    return NextResponse.json(visibleEvents);
   } catch (error) {
     console.error('Failed to fetch user events:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });

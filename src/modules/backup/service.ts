@@ -1,3 +1,6 @@
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import {
   BACKUP_ARCHIVE_CONTENT_TYPE,
   BACKUP_MANIFEST_VERSION,
@@ -17,14 +20,16 @@ import {
   restoreBackupTableRows,
   truncateBackupTables,
   validateBackupManifestAgainstDatabase,
-  withBackupDatabaseClient
+  withBackupDatabaseClient,
+  withBackupDatabaseSnapshot,
+  withBackupRestoreTransaction,
+  type DatabaseClient
 } from './database';
 import type {
   BackupArchiveResult,
   BackupArchiveTableRecord,
   BackupProgressReporter,
   DatabaseBackupArchiveManifest,
-  DatabaseTableRowsDocument,
   RestoreSiteBackupInput
 } from './types';
 import {
@@ -32,6 +37,12 @@ import {
   createBackupArchiveFileName,
   readNodeStreamToBuffer
 } from './utils';
+import {
+  getDatabaseTableEntryName,
+  parseDatabaseBackupArchiveManifest,
+  parseDatabaseTableRowsDocument,
+  validateDatabaseTableRowsDocument
+} from './validation';
 
 const MANIFEST_ENTRY_NAME = 'manifest.json';
 
@@ -52,45 +63,45 @@ const mapProgressRange = (start: number, end: number, progress: number): number 
 
 /**
  * Загружает список таблиц и число строк для архива БД.
+ * @param client - закреплённое подключение PostgreSQL.
  * @param report - репортёр прогресса.
  * @param options - дополнительные параметры создания.
  * @returns Список таблиц БД.
  */
 const loadDatabaseArchiveTables = async (
+  client: DatabaseClient,
   report: BackupProgressReporter,
   options: CreateBackupArchiveOptions = {}
 ): Promise<BackupArchiveTableRecord[]> => {
   const { assertCanContinue } = options;
 
-  return withBackupDatabaseClient(async client => {
+  await assertCanContinue?.();
+  await report({
+    phase: 'database',
+    message: 'Читается структура БД для резервной копии.',
+    progress: 3
+  });
+
+  const tables = await loadBackupDatabaseManifest(client);
+  const result: BackupArchiveTableRecord[] = [];
+
+  for (const [index, table] of tables.entries()) {
     await assertCanContinue?.();
-    await report({
-      phase: 'database',
-      message: 'Читается структура БД для резервной копии.',
-      progress: 3
+
+    const rowCount = await countBackupTableRows(client, table.name);
+    result.push({
+      ...table,
+      rowCount
     });
 
-    const tables = await loadBackupDatabaseManifest(client);
-    const result: BackupArchiveTableRecord[] = [];
+    await report({
+      phase: 'database',
+      message: `Подсчитаны строки таблицы ${table.name}.`,
+      progress: mapProgressRange(3, 12, ((index + 1) / Math.max(tables.length, 1)) * 100)
+    });
+  }
 
-    for (const [index, table] of tables.entries()) {
-      await assertCanContinue?.();
-
-      const rowCount = await countBackupTableRows(client, table.name);
-      result.push({
-        ...table,
-        rowCount
-      });
-
-      await report({
-        phase: 'database',
-        message: `Подсчитаны строки таблицы ${table.name}.`,
-        progress: mapProgressRange(3, 12, ((index + 1) / tables.length) * 100)
-      });
-    }
-
-    return result;
-  });
+  return result;
 };
 
 /**
@@ -130,11 +141,10 @@ export const createDatabaseBackupArchive = async (
   const { assertCanContinue } = options;
 
   await assertCanContinue?.();
-  const tables = await loadDatabaseArchiveTables(report, options);
-  const manifest = buildDatabaseArchiveManifest(archiveKind, tables);
   const fileName = createBackupArchiveFileName(archiveKind);
   const archivePathname = createArchivePathname(archiveKind, fileName);
   const { pack, stream } = createTarGzArchive();
+  let manifest: DatabaseBackupArchiveManifest | null = null;
 
   await report({
     phase: 'archive',
@@ -149,57 +159,174 @@ export const createDatabaseBackupArchive = async (
     BACKUP_ARCHIVE_CONTENT_TYPE
   );
 
-  await addBufferArchiveEntry(
-    pack,
-    MANIFEST_ENTRY_NAME,
-    Buffer.from(JSON.stringify(manifest), 'utf8')
-  );
+  try {
+    await withBackupDatabaseClient(async client => {
+      await withBackupDatabaseSnapshot(client, async () => {
+        const tables = await loadDatabaseArchiveTables(client, report, options);
+        manifest = parseDatabaseBackupArchiveManifest(
+          buildDatabaseArchiveManifest(archiveKind, tables)
+        );
 
-  await withBackupDatabaseClient(async client => {
-    for (const [index, table] of manifest.database.tables.entries()) {
-      await assertCanContinue?.();
+        await addBufferArchiveEntry(
+          pack,
+          MANIFEST_ENTRY_NAME,
+          Buffer.from(JSON.stringify(manifest), 'utf8')
+        );
 
-      const document = await dumpBackupTableRows(client, table);
-      const entryName = `database/tables/${table.order.toString().padStart(3, '0')}-${table.name}.json`;
+        for (const [index, table] of manifest.database.tables.entries()) {
+          await assertCanContinue?.();
 
-      await addBufferArchiveEntry(pack, entryName, Buffer.from(JSON.stringify(document), 'utf8'));
+          const document = await dumpBackupTableRows(client, table);
+          if (document.rows.length !== table.rowCount) {
+            throw new Error(
+              `Snapshot таблицы ${table.name} изменился во время backup: ожидалось ${table.rowCount}, получено ${document.rows.length}.`
+            );
+          }
 
-      await report({
-        phase: 'database',
-        message: `Сериализована таблица ${table.name} (${document.rows.length} строк).`,
-        progress: mapProgressRange(
-          20,
-          88,
-          ((index + 1) / Math.max(manifest.database.tableCount, 1)) * 100
-        )
+          await addBufferArchiveEntry(
+            pack,
+            getDatabaseTableEntryName(table),
+            Buffer.from(JSON.stringify(document), 'utf8')
+          );
+
+          await report({
+            phase: 'database',
+            message: `Сериализована таблица ${table.name} (${document.rows.length} строк).`,
+            progress: mapProgressRange(
+              20,
+              88,
+              ((index + 1) / Math.max(manifest.database.tableCount, 1)) * 100
+            )
+          });
+        }
       });
+    });
+
+    if (!manifest) {
+      throw new Error('Не удалось сформировать manifest архива БД.');
     }
-  });
 
-  await assertCanContinue?.();
-  await report({
-    phase: 'upload',
-    message: 'Архив БД финализируется и загружается в private blob.',
-    progress: 92
-  });
+    await assertCanContinue?.();
+    await report({
+      phase: 'upload',
+      message: 'Архив БД финализируется и загружается в private blob.',
+      progress: 92
+    });
 
-  finalizeTarArchive(pack);
-  const uploaded = await uploadPromise;
+    finalizeTarArchive(pack);
+    const uploaded = await uploadPromise;
 
-  await assertCanContinue?.();
-  await report({
-    phase: 'done',
-    message: 'Архив БД успешно создан.',
-    progress: 100
-  });
+    await assertCanContinue?.();
+    await report({
+      phase: 'done',
+      message: 'Архив БД успешно создан.',
+      progress: 100
+    });
 
-  return {
-    artifact: 'database',
-    manifest,
-    pathname: archivePathname,
-    fileName,
-    url: uploaded.url
-  };
+    return {
+      artifact: 'database',
+      manifest,
+      pathname: archivePathname,
+      fileName,
+      url: uploaded.url
+    };
+  } catch (error) {
+    pack.destroy(error instanceof Error ? error : new Error(String(error)));
+    await uploadPromise.catch(() => undefined);
+    throw error;
+  }
+};
+
+type PreparedDatabaseRestoreArchive = {
+  temporaryDirectory: string;
+  manifest: DatabaseBackupArchiveManifest;
+  tableEntryPaths: Map<string, string>;
+};
+
+/**
+ * Полностью распаковывает и валидирует архив до начала транзакции восстановления.
+ * В памяти одновременно удерживается только один table entry.
+ * @param source - поток tar.gz.
+ * @returns Проверенный manifest и пути временных table entry.
+ */
+const prepareDatabaseRestoreArchive = async (
+  source: NodeJS.ReadableStream
+): Promise<PreparedDatabaseRestoreArchive> => {
+  const temporaryDirectory = await mkdtemp(path.join(tmpdir(), 'vershkov-database-restore-'));
+  const seenEntryNames = new Set<string>();
+  const entryPaths = new Map<string, string>();
+  let entryIndex = 0;
+
+  try {
+    await extractTarGzArchive(source, async entry => {
+      if (seenEntryNames.has(entry.name)) {
+        throw new Error(`Архив БД содержит дубликат entry ${entry.name}.`);
+      }
+
+      seenEntryNames.add(entry.name);
+
+      const entryBuffer = await readNodeStreamToBuffer(entry.stream);
+      const entryPath = path.join(
+        temporaryDirectory,
+        `archive-entry-${entryIndex.toString().padStart(6, '0')}.json`
+      );
+      entryIndex += 1;
+      await writeFile(entryPath, entryBuffer);
+      entryPaths.set(entry.name, entryPath);
+    });
+
+    const manifestPath = entryPaths.get(MANIFEST_ENTRY_NAME);
+
+    if (!manifestPath) {
+      throw new Error('Архив БД не содержит manifest.json.');
+    }
+
+    const manifestBuffer = await readFile(manifestPath);
+    const manifest = parseDatabaseBackupArchiveManifest(
+      JSON.parse(manifestBuffer.toString('utf8')) as unknown
+    );
+    const tableEntryPaths = new Map(
+      Array.from(entryPaths.entries()).filter(([entryName]) => entryName !== MANIFEST_ENTRY_NAME)
+    );
+    const expectedEntries = new Map(
+      manifest.database.tables.map(table => [getDatabaseTableEntryName(table), table])
+    );
+
+    for (const entryName of tableEntryPaths.keys()) {
+      if (!expectedEntries.has(entryName)) {
+        throw new Error(`Архив БД содержит неожиданный entry ${entryName}.`);
+      }
+    }
+
+    for (const [entryName, table] of expectedEntries.entries()) {
+      const entryPath = tableEntryPaths.get(entryName);
+
+      if (!entryPath) {
+        throw new Error(`Архив БД не содержит данные таблицы ${table.name}.`);
+      }
+
+      const documentBuffer = await readFile(entryPath);
+      const document = parseDatabaseTableRowsDocument(
+        JSON.parse(documentBuffer.toString('utf8')) as unknown
+      );
+      validateDatabaseTableRowsDocument(document, table);
+    }
+
+    if (tableEntryPaths.size !== manifest.database.tableCount) {
+      throw new Error(
+        `Архив БД содержит ${tableEntryPaths.size} table entry вместо ${manifest.database.tableCount}.`
+      );
+    }
+
+    return {
+      temporaryDirectory,
+      manifest,
+      tableEntryPaths
+    };
+  } catch (error) {
+    await rm(temporaryDirectory, { recursive: true, force: true }).catch(() => undefined);
+    throw error;
+  }
 };
 
 /**
@@ -212,87 +339,61 @@ const restoreDatabaseBackupArchive = async (
   report: BackupProgressReporter
 ): Promise<void> => {
   const archiveBlob = await getBackupBlobStream('private', input.databaseArchivePathname);
+  const preparedArchive = await prepareDatabaseRestoreArchive(archiveBlob.stream);
 
-  await withBackupDatabaseClient(async client => {
-    let manifest: DatabaseBackupArchiveManifest | null = null;
-    let databasePrepared = false;
-    let completedTableItems = 0;
-
-    await extractTarGzArchive(archiveBlob.stream, async entry => {
-      if (entry.name === MANIFEST_ENTRY_NAME) {
-        const manifestBuffer = await readNodeStreamToBuffer(entry.stream);
-        const parsedManifest = JSON.parse(
-          manifestBuffer.toString('utf8')
-        ) as DatabaseBackupArchiveManifest;
-
-        if (parsedManifest.version !== BACKUP_MANIFEST_VERSION) {
-          throw new Error(
-            `Неподдерживаемая версия архива БД: ${parsedManifest.version}. Ожидалась ${BACKUP_MANIFEST_VERSION}.`
-          );
-        }
-
-        if (parsedManifest.artifact !== 'database') {
-          throw new Error('Загруженный архив не является архивом БД.');
-        }
-
-        manifest = parsedManifest;
-        await validateBackupManifestAgainstDatabase(client, parsedManifest.database.tables);
+  try {
+    await withBackupDatabaseClient(async client => {
+      await withBackupRestoreTransaction(client, async () => {
+        await validateBackupManifestAgainstDatabase(
+          client,
+          preparedArchive.manifest.database.tables
+        );
 
         await report({
           phase: 'restore',
-          message: 'Manifest архива БД проверен. Начинается восстановление таблиц.',
+          message: 'Manifest и содержимое архива БД проверены. Начинается восстановление таблиц.',
           progress: 40
         });
 
-        return;
-      }
-
-      if (!manifest) {
-        throw new Error('Архив БД повреждён: manifest.json должен быть первым файлом.');
-      }
-
-      if (!entry.name.startsWith('database/tables/')) {
-        entry.stream.resume();
-        return;
-      }
-
-      if (!databasePrepared) {
-        await truncateBackupTables(client, manifest.database.tables);
-        databasePrepared = true;
+        await truncateBackupTables(client, preparedArchive.manifest.database.tables);
 
         await report({
           phase: 'database',
           message: 'Текущие таблицы очищены. Начинается запись данных из архива БД.',
           progress: 46
         });
-      }
 
-      const documentBuffer = await readNodeStreamToBuffer(entry.stream);
-      const document = JSON.parse(documentBuffer.toString('utf8')) as DatabaseTableRowsDocument;
-      const table = manifest.database.tables.find(item => item.name === document.table);
+        for (const [index, table] of preparedArchive.manifest.database.tables.entries()) {
+          const entryPath = preparedArchive.tableEntryPaths.get(getDatabaseTableEntryName(table));
 
-      if (!table) {
-        throw new Error(`Таблица ${document.table} отсутствует в manifest архива БД.`);
-      }
+          if (!entryPath) {
+            throw new Error(`Не найден проверенный entry таблицы ${table.name}.`);
+          }
 
-      await restoreBackupTableRows(client, table, document.rows, new Map());
-      completedTableItems += 1;
+          const documentBuffer = await readFile(entryPath);
+          const document = parseDatabaseTableRowsDocument(
+            JSON.parse(documentBuffer.toString('utf8')) as unknown
+          );
+          validateDatabaseTableRowsDocument(document, table);
+          await restoreBackupTableRows(client, table, document.rows, new Map());
 
-      await report({
-        phase: 'database',
-        message: `Восстановлена таблица ${document.table} (${document.rows.length} строк).`,
-        progress: mapProgressRange(
-          46,
-          96,
-          (completedTableItems / Math.max(manifest.database.tableCount, 1)) * 100
-        )
+          await report({
+            phase: 'database',
+            message: `Восстановлена таблица ${document.table} (${document.rows.length} строк).`,
+            progress: mapProgressRange(
+              46,
+              96,
+              ((index + 1) / Math.max(preparedArchive.manifest.database.tableCount, 1)) * 100
+            )
+          });
+        }
       });
     });
-
-    if (!manifest) {
-      throw new Error('Архив БД не содержит manifest.json.');
-    }
-  });
+  } finally {
+    await rm(preparedArchive.temporaryDirectory, { recursive: true, force: true }).catch(
+      () => undefined
+    );
+  }
 
   if (input.databaseArchivePathname.startsWith(`${BACKUP_UPLOAD_PREFIX}/`)) {
     await deleteBackupBlobs('private', [input.databaseArchivePathname]);

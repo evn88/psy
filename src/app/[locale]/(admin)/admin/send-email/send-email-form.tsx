@@ -1,26 +1,15 @@
 'use client';
 
-import * as React from 'react';
+import { useEffect, useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Bell, CheckCircle2, Mail, Megaphone, Send, Smartphone } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage
-} from '@/components/ui/form';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
+
+import type { EmailUser } from './actions';
+
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,52 +20,61 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@/components/ui/alert-dialog';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, Bell, Settings } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import { MultiEmailSelect } from '@/components/ui/multi-email-select';
-import { EmailUser } from './actions';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { isSafeNotificationActionUrl } from '@/modules/notifications/schemas';
+import { cn } from '@/lib/utils';
 
 const PUSH_BODY_LIMIT = 178;
+const MESSAGE_LIMIT = 500;
 
-// --- Схема валидации ---
-const emailSchema = z
+const deliveryChannels = ['email', 'push', 'inApp'] as const;
+type DeliveryChannel = (typeof deliveryChannels)[number];
+
+const broadcastSchema = z
   .object({
-    to: z.array(z.string().email({ message: 'Один из адресов имеет неверный формат' })),
-    subject: z.string().min(1, { message: 'Тема обязательна' }),
-    message: z.string().min(1, { message: 'Заполните текст сообщения' }),
-    sendToAll: z.boolean()
+    to: z.array(z.email({ message: 'Некорректный email' })),
+    subject: z.string().trim().min(1, 'Укажите заголовок').max(120),
+    message: z.string().trim().min(1, 'Введите сообщение').max(MESSAGE_LIMIT),
+    sendToAll: z.boolean(),
+    actionUrl: z.union([
+      z.literal(''),
+      z.string().trim().refine(isSafeNotificationActionUrl, {
+        message: 'Используйте внутреннюю ссылку вида /my/sessions'
+      })
+    ]),
+    actionLabel: z.string().trim().max(40)
   })
   .refine(data => data.sendToAll || data.to.length > 0, {
     message: 'Выберите хотя бы одного получателя',
     path: ['to']
+  })
+  .refine(data => !data.actionLabel || Boolean(data.actionUrl), {
+    message: 'Для подписи действия укажите ссылку',
+    path: ['actionLabel']
   });
 
-type EmailFormValues = z.infer<typeof emailSchema>;
-
-/**
- * Отправляет запрос на отправку письма через API
- */
-async function sendEmailRequest(data: EmailFormValues): Promise<void> {
-  const response = await fetch('/api/send', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(data)
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || 'Ошибка при отправке письма');
-  }
-}
+type BroadcastFormValues = z.infer<typeof broadcastSchema>;
 
 interface SendEmailFormProps {
   users: EmailUser[];
 }
 
-export interface DeliveryStatus {
+interface DeliveryStatus {
   id?: string;
   email: string;
   success: boolean;
@@ -84,46 +82,63 @@ export interface DeliveryStatus {
   error?: string;
 }
 
-/**
- * Клиентская форма отправки писем
- */
-export function SendEmailForm({ users }: SendEmailFormProps) {
-  const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
-  const [isConfirmPushOpen, setIsConfirmPushOpen] = React.useState(false);
-  const [isSending, setIsSending] = React.useState(false);
-  const [isSendingPush, setIsSendingPush] = React.useState(false);
-  const [deliveryStatuses, setDeliveryStatuses] = React.useState<DeliveryStatus[] | null>(null);
-  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
-  const [pushResult, setPushResult] = React.useState<{ sent: number; failed: number } | null>(null);
-  const [pushError, setPushError] = React.useState<string | null>(null);
+interface BroadcastResult {
+  tone: 'success' | 'error';
+  message: string;
+}
 
-  const form = useForm<EmailFormValues>({
-    resolver: zodResolver(emailSchema),
+const channelIcons: Record<DeliveryChannel, typeof Mail> = {
+  email: Mail,
+  push: Smartphone,
+  inApp: Bell
+};
+
+/** Унифицированная форма отправки email, push и persistent in-app уведомлений. */
+export const SendEmailForm = ({ users }: SendEmailFormProps) => {
+  const t = useTranslations('AdminBroadcast');
+  const [channel, setChannel] = useState<DeliveryChannel>('email');
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [deliveryStatuses, setDeliveryStatuses] = useState<DeliveryStatus[] | null>(null);
+  const [result, setResult] = useState<BroadcastResult | null>(null);
+
+  const form = useForm<BroadcastFormValues>({
+    resolver: zodResolver(broadcastSchema),
     defaultValues: {
       to: [],
       subject: '',
       message: '',
-      sendToAll: false
+      sendToAll: false,
+      actionUrl: '',
+      actionLabel: ''
     }
   });
 
-  const watchSendToAll = form.watch('sendToAll');
-  const watchTo = form.watch('to');
-  const watchMessage = form.watch('message');
-  const isPushDisabled = watchMessage.length > PUSH_BODY_LIMIT || isSending || isSendingPush;
+  const sendToAll = form.watch('sendToAll');
+  const selectedRecipients = form.watch('to');
+  const subject = form.watch('subject');
+  const message = form.watch('message');
+  const actionUrl = form.watch('actionUrl');
+  const actionLabel = form.watch('actionLabel');
+  const ChannelIcon = channelIcons[channel];
+  const recipientCount = sendToAll ? users.length : selectedRecipients.length;
+  const messageLimit = channel === 'push' ? PUSH_BODY_LIMIT : MESSAGE_LIMIT;
+  const isMessageOverLimit = message.length > messageLimit;
 
-  // --- Фоновый опрос (Polling) статусов ---
-  React.useEffect(() => {
-    if (!deliveryStatuses || deliveryStatuses.length === 0) return;
+  useEffect(() => {
+    if (!deliveryStatuses?.length) {
+      return;
+    }
 
-    // Ищем только те письма, которые еще в процессе
     const pendingIds = deliveryStatuses
-      .filter(s => s.id && (s.status === 'queued' || s.status === 'sent'))
-      .map(s => s.id as string);
+      .filter(status => status.id && ['queued', 'sent'].includes(status.status))
+      .map(status => status.id as string);
 
-    if (pendingIds.length === 0) return;
+    if (pendingIds.length === 0) {
+      return;
+    }
 
-    const intervalId = setInterval(async () => {
+    const intervalId = window.setInterval(async () => {
       try {
         const response = await fetch('/api/send/status', {
           method: 'POST',
@@ -131,394 +146,425 @@ export function SendEmailForm({ users }: SendEmailFormProps) {
           body: JSON.stringify({ ids: pendingIds })
         });
 
-        if (response.ok) {
-          const { statuses } = await response.json();
-          if (statuses) {
-            setDeliveryStatuses(prev => {
-              if (!prev) return prev;
-
-              let hasChanges = false;
-              const next = prev.map(item => {
-                if (item.id && statuses[item.id] && item.status !== statuses[item.id]) {
-                  hasChanges = true;
-                  const newStatus = statuses[item.id];
-                  const isError = ['bounced', 'complained', 'rejected', 'error'].includes(
-                    newStatus
-                  );
-                  const isSuccess = newStatus === 'delivered';
-
-                  return {
-                    ...item,
-                    status: newStatus,
-                    success: isSuccess || (!isError && item.success), // Keep old success if pending
-                    error: isError ? `Не доставлено (${newStatus})` : item.error
-                  };
-                }
-                return item;
-              });
-
-              return hasChanges ? next : prev;
-            });
-          }
+        if (!response.ok) {
+          return;
         }
-      } catch (err) {
-        console.error('Ошибка опроса статусов:', err);
+
+        const payload = (await response.json()) as { statuses?: Record<string, string> };
+        if (!payload.statuses) {
+          return;
+        }
+
+        setDeliveryStatuses(
+          current =>
+            current?.map(item => {
+              const nextStatus = item.id ? payload.statuses?.[item.id] : undefined;
+              if (!nextStatus || nextStatus === item.status) {
+                return item;
+              }
+
+              const failed = ['bounced', 'complained', 'rejected', 'error'].includes(nextStatus);
+              return {
+                ...item,
+                status: nextStatus as DeliveryStatus['status'],
+                success: nextStatus === 'delivered' || (!failed && item.success),
+                error: failed ? t('deliveryFailed', { status: nextStatus }) : item.error
+              };
+            }) || null
+        );
+      } catch {
+        // Следующий polling повторит запрос, отдельное UI-сообщение здесь создаст лишний шум.
       }
-    }, 4000); // Опрос каждые 4 секунды
+    }, 4000);
 
-    return () => clearInterval(intervalId);
-  }, [deliveryStatuses]);
+    return () => window.clearInterval(intervalId);
+  }, [deliveryStatuses, t]);
 
-  // --- Обработчики ---
-  const handleTrigerConfirm = form.handleSubmit(() => {
+  const openConfirmation = form.handleSubmit(() => {
+    if (isMessageOverLimit) {
+      setResult({ tone: 'error', message: t('messageTooLong', { limit: messageLimit }) });
+      return;
+    }
+    setResult(null);
     setIsConfirmOpen(true);
   });
 
-  const handleTriggerPushConfirm = form.handleSubmit(() => {
-    setIsConfirmPushOpen(true);
-  });
-
-  const handleConfirmPush = async () => {
-    setIsConfirmPushOpen(false);
-    setIsSendingPush(true);
-    setPushResult(null);
-    setPushError(null);
-
-    try {
-      const data = form.getValues();
-      const response = await fetch('/api/send/push', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: data.to,
-          sendToAll: data.sendToAll,
-          title: data.subject,
-          message: data.message
-        })
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          typeof result.error === 'string' ? result.error : 'Ошибка при отправке push'
-        );
-      }
-
-      const results: { success: boolean }[] = result.results ?? [];
-      setPushResult({
-        sent: results.filter(r => r.success).length,
-        failed: results.filter(r => !r.success).length
-      });
-    } catch (error) {
-      setPushError(error instanceof Error ? error.message : 'Произошла неизвестная ошибка');
-    } finally {
-      setIsSendingPush(false);
+  const sendEmail = async (values: BroadcastFormValues): Promise<void> => {
+    const response = await fetch('/api/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to: values.to,
+        subject: values.subject,
+        message: values.message,
+        sendToAll: values.sendToAll
+      })
+    });
+    const payload = (await response.json()) as {
+      error?: string | { message?: string };
+      statuses?: DeliveryStatus[];
+    };
+    if (!response.ok) {
+      throw new Error(
+        typeof payload.error === 'string' ? payload.error : payload.error?.message || t('sendError')
+      );
     }
+    setDeliveryStatuses(payload.statuses || null);
+    setResult({ tone: 'success', message: t('emailQueued') });
   };
 
-  const handleConfirmSend = async () => {
+  const sendPush = async (values: BroadcastFormValues): Promise<void> => {
+    const response = await fetch('/api/send/push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to: values.to,
+        sendToAll: values.sendToAll,
+        title: values.subject,
+        message: values.message
+      })
+    });
+    const payload = (await response.json()) as {
+      error?: string;
+      results?: Array<{ success: boolean }>;
+    };
+    if (!response.ok) {
+      throw new Error(payload.error || t('sendError'));
+    }
+    const sent = payload.results?.filter(item => item.success).length || 0;
+    const failed = payload.results?.filter(item => !item.success).length || 0;
+    setResult({ tone: 'success', message: t('pushSent', { sent, failed }) });
+  };
+
+  const sendInApp = async (values: BroadcastFormValues): Promise<void> => {
+    const response = await fetch('/api/admin/notifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to: values.to,
+        sendToAll: values.sendToAll,
+        title: values.subject,
+        message: values.message,
+        actionUrl: values.actionUrl || null,
+        actionLabel: values.actionLabel || null
+      })
+    });
+    const payload = (await response.json()) as { message?: string; created?: number };
+    if (!response.ok) {
+      throw new Error(payload.message || t('sendError'));
+    }
+    setResult({ tone: 'success', message: t('inAppCreated', { count: payload.created || 0 }) });
+  };
+
+  const confirmSend = async () => {
     setIsConfirmOpen(false);
     setIsSending(true);
-    setErrorMessage(null);
-    setDeliveryStatuses(null);
+    setResult(null);
+    if (channel !== 'email') {
+      setDeliveryStatuses(null);
+    }
 
     try {
-      const data = form.getValues();
-      const response = await fetch('/api/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          typeof result.error === 'string'
-            ? result.error
-            : result.error?.message || 'Ошибка при отправке письма'
-        );
+      const values = form.getValues();
+      if (channel === 'email') {
+        await sendEmail(values);
+      } else if (channel === 'push') {
+        await sendPush(values);
+      } else {
+        await sendInApp(values);
       }
-
-      if (result.statuses) {
-        setDeliveryStatuses(result.statuses);
-      }
-
-      form.reset();
     } catch (error) {
-      console.error(error);
-      setErrorMessage(error instanceof Error ? error.message : 'Произошла неизвестная ошибка');
+      setResult({
+        tone: 'error',
+        message: error instanceof Error ? error.message : t('sendError')
+      });
     } finally {
       setIsSending(false);
     }
   };
 
-  // --- Render ---
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Отправка писем</h2>
-      </div>
-
-      <Card className="max-w-2xl relative">
-        <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-          <div className="space-y-1">
-            <CardTitle>Новое письмо</CardTitle>
-            <CardDescription>
-              Отправьте письмо одному или всем пользователям напрямую. Письмо будет оформлено от
-              имени администратора.
-            </CardDescription>
+    <div className="mx-auto w-full max-w-[1500px] space-y-8 pb-12">
+      <header className="flex flex-col gap-5 border-b pb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div className="max-w-2xl space-y-2">
+          <div className="flex items-center gap-2 text-primary">
+            <Megaphone className="size-4" aria-hidden />
+            <span className="text-xs font-semibold uppercase tracking-[0.16em]">
+              {t('eyebrow')}
+            </span>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                title="Настройки рассылки"
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[280px]">
-              <div className="px-2 py-1.5 text-sm font-semibold">Настройки рассылки</div>
-              <Form {...form}>
-                <FormField
-                  control={form.control}
-                  name="sendToAll"
-                  render={({ field }) => (
-                    <DropdownMenuCheckboxItem
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                      className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer font-medium py-2"
-                    >
-                      <AlertTriangle className="mr-2 h-4 w-4 flex-shrink-0" />
-                      Отправить всем пользователям
-                    </DropdownMenuCheckboxItem>
-                  )}
-                />
-              </Form>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </CardHeader>
-        <CardContent className="pt-4">
-          {deliveryStatuses && (
-            <div className="bg-muted text-foreground p-4 rounded-md mb-6 text-sm border space-y-2">
-              <h3 className="font-semibold text-base mb-3">Статус рассылки:</h3>
-              <ul className="space-y-2 max-h-[250px] overflow-y-auto pr-2">
-                {deliveryStatuses.map((item, index) => {
-                  const isError = ['bounced', 'complained', 'rejected', 'error'].includes(
-                    item.status
-                  );
-                  const isPending = ['queued', 'sent'].includes(item.status);
-                  const isSuccess = item.status === 'delivered';
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t('title')}</h1>
+          <p className="text-sm leading-6 text-muted-foreground sm:text-base">{t('description')}</p>
+        </div>
+        <Badge variant="secondary" className="w-fit px-3 py-1.5 text-xs">
+          {t('usersAvailable', { count: users.length })}
+        </Badge>
+      </header>
 
-                  return (
-                    <li
-                      key={index}
-                      className="flex flex-col sm:flex-row sm:items-center justify-between p-2 rounded-md bg-background border"
-                    >
-                      <span className="font-medium truncate mr-2" title={item.email}>
-                        {item.email}
-                      </span>
-                      {isSuccess ? (
-                        <Badge
-                          variant="secondary"
-                          className="bg-green-100 text-green-800 hover:bg-green-100/80 shrink-0 w-fit"
-                        >
-                          Доставлено
-                        </Badge>
-                      ) : isPending ? (
-                        <Badge
-                          variant="outline"
-                          className="text-yellow-600 border-yellow-300 bg-yellow-50 shrink-0 w-fit animate-pulse"
-                        >
-                          В процессе ({item.status})
-                        </Badge>
-                      ) : (
-                        <div className="flex flex-col shrink-0 sm:items-end">
-                          <Badge variant="destructive" className="w-fit">
-                            Ошибка
-                          </Badge>
-                          <span className="text-xs text-red-600 mt-1 sm:text-right">
-                            {item.error || 'Неизвестная ошибка'}
-                          </span>
-                        </div>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
+      <Tabs
+        value={channel}
+        onValueChange={value => {
+          if (deliveryChannels.includes(value as DeliveryChannel)) {
+            setChannel(value as DeliveryChannel);
+            setResult(null);
+            setDeliveryStatuses(null);
+          }
+        }}
+      >
+        <TabsList className="grid h-auto w-full grid-cols-3 gap-1 p-1 sm:w-fit">
+          {deliveryChannels.map(item => {
+            const Icon = channelIcons[item];
+            return (
+              <TabsTrigger key={item} value={item} className="gap-2 px-4 py-2">
+                <Icon className="size-4" aria-hidden />
+                {t(`channels.${item}.label`)}
+              </TabsTrigger>
+            );
+          })}
+        </TabsList>
+      </Tabs>
 
-          {errorMessage && (
-            <div className="bg-red-100 text-red-800 p-4 rounded-md mb-6 text-sm">
-              {errorMessage}
+      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <section className="rounded-2xl border bg-card shadow-sm">
+          <div className="border-b px-5 py-5 sm:px-7">
+            <div className="flex items-start gap-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <ChannelIcon className="size-4" aria-hidden />
+              </span>
+              <div>
+                <h2 className="text-lg font-semibold">{t(`channels.${channel}.title`)}</h2>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                  {t(`channels.${channel}.description`)}
+                </p>
+              </div>
             </div>
-          )}
+          </div>
 
           <Form {...form}>
-            <form onSubmit={handleTrigerConfirm} className="space-y-6">
-              {!watchSendToAll && (
+            <form onSubmit={openConfirmation} className="space-y-7 px-5 py-6 sm:px-7">
+              <div className="space-y-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold">{t('audienceTitle')}</h3>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      {t('audienceDescription')}
+                    </p>
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="sendToAll"
+                    render={({ field }) => (
+                      <FormItem className="flex shrink-0 items-center gap-2 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={checked => field.onChange(checked === true)}
+                          />
+                        </FormControl>
+                        <FormLabel className="cursor-pointer text-sm font-normal text-muted-foreground">
+                          {t('sendToAll')}
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {!sendToAll && (
+                  <FormField
+                    control={form.control}
+                    name="to"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <MultiEmailSelect
+                            options={users}
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder={t('recipientsPlaceholder')}
+                            ariaLabel={t('recipients')}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </div>
+
+              <div className="space-y-5 border-t pt-6">
                 <FormField
                   control={form.control}
-                  name="to"
+                  name="subject"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Кому (Email)</FormLabel>
+                      <FormLabel>{t('subject')}</FormLabel>
                       <FormControl>
-                        <MultiEmailSelect
-                          options={users}
-                          value={field.value}
-                          onChange={field.onChange}
-                          disabled={watchSendToAll}
-                        />
+                        <Input {...field} placeholder={t('subjectPlaceholder')} className="h-11" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="message"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('message')}</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          placeholder={t('messagePlaceholder')}
+                          className="min-h-44 resize-y leading-6"
+                        />
+                      </FormControl>
+                      <div className="flex items-start justify-between gap-3">
+                        <FormMessage />
+                        <span
+                          className={cn(
+                            'ml-auto text-xs tabular-nums text-muted-foreground',
+                            isMessageOverLimit && 'font-medium text-destructive'
+                          )}
+                        >
+                          {message.length} / {messageLimit}
+                        </span>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+
+                {channel === 'inApp' && (
+                  <div className="grid gap-4 rounded-xl bg-muted/25 p-4 sm:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="actionUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t('actionUrl')}</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="/my/sessions" />
+                          </FormControl>
+                          <FormDescription>{t('actionUrlDescription')}</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="actionLabel"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t('actionLabel')}</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder={t('actionLabelPlaceholder')} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {result && (
+                <Alert variant={result.tone === 'error' ? 'destructive' : 'default'}>
+                  {result.tone === 'success' && <CheckCircle2 className="size-4" aria-hidden />}
+                  <AlertTitle>{result.tone === 'success' ? t('success') : t('error')}</AlertTitle>
+                  <AlertDescription>{result.message}</AlertDescription>
+                </Alert>
               )}
 
-              <FormField
-                control={form.control}
-                name="subject"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Тема</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Тема письма..." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="message"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Сообщение</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Текст сообщения..."
-                        className="min-h-[150px]"
-                        {...field}
-                      />
-                    </FormControl>
-                    <div className="flex items-center justify-between">
-                      <FormMessage />
-                      <span
-                        className={`ml-auto text-xs tabular-nums ${
-                          watchMessage.length > PUSH_BODY_LIMIT
-                            ? 'text-destructive font-medium'
-                            : 'text-muted-foreground'
-                        }`}
-                      >
-                        {watchMessage.length} / {PUSH_BODY_LIMIT} (Push)
-                      </span>
-                    </div>
-                  </FormItem>
-                )}
-              />
-
-              {pushResult && (
-                <div className="rounded-md border bg-muted p-3 text-sm">
-                  <span className="text-green-700 font-medium">
-                    Push отправлено: {pushResult.sent}
-                  </span>
-                  {pushResult.failed > 0 && (
-                    <span className="ml-3 text-destructive">Ошибок: {pushResult.failed}</span>
-                  )}
-                  {pushResult.sent === 0 && pushResult.failed === 0 && (
-                    <span className="text-muted-foreground"> — нет активных подписок</span>
-                  )}
+              {deliveryStatuses && (
+                <div className="space-y-3 rounded-xl border p-4">
+                  <h3 className="text-sm font-semibold">{t('deliveryStatus')}</h3>
+                  <ul className="max-h-64 space-y-2 overflow-y-auto pr-1">
+                    {deliveryStatuses.map(item => {
+                      const failed = ['bounced', 'complained', 'rejected', 'error'].includes(
+                        item.status
+                      );
+                      return (
+                        <li
+                          key={item.id || item.email}
+                          className="flex items-center justify-between gap-3 rounded-lg bg-muted/25 px-3 py-2"
+                        >
+                          <span className="min-w-0 truncate text-sm">{item.email}</span>
+                          <Badge variant={failed ? 'destructive' : 'secondary'}>
+                            {t(`statuses.${item.status}`)}
+                          </Badge>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 </div>
               )}
-              {pushError && (
-                <div className="rounded-md bg-red-100 text-red-800 p-3 text-sm">{pushError}</div>
-              )}
 
-              <div className="flex flex-wrap gap-2">
-                <Button type="submit" disabled={isSending || isSendingPush}>
-                  {isSending ? 'Отправка...' : 'Отправить письмо'}
-                </Button>
+              <div className="flex items-center justify-between gap-4 border-t pt-5">
+                <p className="text-xs text-muted-foreground">
+                  {t('recipientSummary', { count: recipientCount })}
+                </p>
                 <Button
-                  type="button"
-                  variant="outline"
-                  disabled={isPushDisabled}
-                  onClick={handleTriggerPushConfirm}
-                  title={
-                    watchMessage.length > PUSH_BODY_LIMIT
-                      ? `Сообщение превышает лимит Push (${PUSH_BODY_LIMIT} символов)`
-                      : 'Отправить Push-уведомление'
-                  }
+                  type="submit"
+                  disabled={isSending || isMessageOverLimit}
+                  className="min-w-40"
                 >
-                  <Bell className="mr-2 h-4 w-4" />
-                  {isSendingPush ? 'Отправка...' : 'Отправить Push'}
+                  <Send className="size-4" aria-hidden />
+                  {isSending ? t('sending') : t(`channels.${channel}.action`)}
                 </Button>
               </div>
             </form>
           </Form>
-        </CardContent>
-      </Card>
+        </section>
+
+        <aside className="space-y-4 lg:sticky lg:top-24">
+          <div className="rounded-2xl border bg-card p-5 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-sm font-semibold">{t('preview')}</h2>
+              <Badge variant="outline">{t(`channels.${channel}.label`)}</Badge>
+            </div>
+            <div className="mt-5 space-y-3 rounded-xl border bg-background p-4">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <ChannelIcon className="size-3.5" aria-hidden />
+                {t('recipientSummary', { count: recipientCount })}
+              </div>
+              <p className="break-words text-sm font-semibold">
+                {subject || t('previewSubjectFallback')}
+              </p>
+              <p className="whitespace-pre-wrap break-words text-xs leading-5 text-muted-foreground">
+                {message || t('previewMessageFallback')}
+              </p>
+              {channel === 'inApp' && actionUrl && (
+                <span className="inline-flex rounded-md border px-2 py-1 text-xs font-medium">
+                  {actionLabel || t('defaultActionLabel')}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-xl bg-muted/35 px-4 py-3 text-xs leading-5 text-muted-foreground">
+            {t(`channels.${channel}.hint`)}
+          </div>
+        </aside>
+      </div>
 
       <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
+            <AlertDialogTitle>{t('confirmTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {watchSendToAll ? (
-                <>
-                  Вы собираетесь сделать <strong>массовую рассылку</strong> по всей базе
-                  пользователей. Это действие нельзя отменить.
-                </>
-              ) : (
-                <>
-                  Вы собираетесь отправить письмо {watchTo.length} получателям. Это действие нельзя
-                  отменить.
-                </>
-              )}
+              {t('confirmDescription', {
+                channel: t(`channels.${channel}.label`),
+                count: recipientCount
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Отмена</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmSend}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              Подтвердить отправку
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={isConfirmPushOpen} onOpenChange={setIsConfirmPushOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Отправить Push-уведомление?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {watchSendToAll ? (
-                <>
-                  Push-уведомление будет отправлено <strong>всем пользователям</strong> у которых
-                  включены уведомления. Это действие нельзя отменить.
-                </>
-              ) : (
-                <>
-                  Push-уведомление будет отправлено {watchTo.length} пользователям (у которых
-                  включены уведомления). Это действие нельзя отменить.
-                </>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Отмена</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmPush}>Отправить Push</AlertDialogAction>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmSend}>{t('confirm')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
   );
-}
+};

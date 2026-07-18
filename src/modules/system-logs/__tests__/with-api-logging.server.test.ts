@@ -30,7 +30,7 @@ describe('withApiLogging', () => {
     });
 
     // Act
-    const response = await withApiLogging(handler)(request, {});
+    const response = await withApiLogging(handler)(request, { params: Promise.resolve({}) });
 
     // Assert
     expect(response.status).toBe(200);
@@ -52,7 +52,7 @@ describe('withApiLogging', () => {
     const request = new Request('https://example.com/api/test', { method: 'GET' });
 
     // Act
-    const response = await withApiLogging(handler)(request, {});
+    const response = await withApiLogging(handler)(request, { params: Promise.resolve({}) });
 
     // Assert
     expect(response.status).toBe(500);

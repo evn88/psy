@@ -105,6 +105,7 @@ async function patchHandler(req: Request, props: { params: Promise<{ id: string 
     const normalizedCancelReason = normalizeCancelReason(cancelReason);
     const hasUserField = Object.prototype.hasOwnProperty.call(result.data, 'userId');
     const hasCancelReasonField = Object.prototype.hasOwnProperty.call(result.data, 'cancelReason');
+    const targetUserId = hasUserField ? result.data.userId : event.userId;
     const isStartChanged = Boolean(start) && nextStart.getTime() !== event.start.getTime();
     const isEndChanged = Boolean(end) && nextEnd.getTime() !== event.end.getTime();
     const isStatusChanged = typeof status === 'string' && status !== event.status;
@@ -133,6 +134,20 @@ async function patchHandler(req: Request, props: { params: Promise<{ id: string 
 
     if (!isValidDateRange({ start: nextStart, end: nextEnd })) {
       return NextResponse.json({ message: 'Invalid date range' }, { status: 400 });
+    }
+
+    if (targetUserId) {
+      const selectedUser = await prisma.user.findFirst({
+        where: {
+          id: targetUserId,
+          role: { in: ['USER', 'ADMIN'] }
+        },
+        select: { id: true }
+      });
+
+      if (!selectedUser) {
+        return NextResponse.json({ message: 'Client not found' }, { status: 400 });
+      }
     }
 
     if (effectiveNextStatus !== 'CANCELLED') {
@@ -286,10 +301,9 @@ async function patchHandler(req: Request, props: { params: Promise<{ id: string 
       reminderWorkflowVersion: updatedEvent.reminderWorkflowVersion
     });
 
-    // Trigger Google Calendar sync hook
-    syncEventWithGoogle(updatedEvent.id, 'UPDATE');
+    const googleSyncResult = await syncEventWithGoogle(updatedEvent.id, 'UPDATE');
 
-    return NextResponse.json(updatedEvent);
+    return NextResponse.json({ ...updatedEvent, isGoogleSynced: googleSyncResult.success });
   } catch (error) {
     console.error('Failed to update event:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
@@ -325,7 +339,13 @@ async function deleteHandler(req: Request, props: { params: Promise<{ id: string
     }
 
     // Trigger Google Calendar sync before deletion
-    await syncEventWithGoogle(eventId, 'DELETE');
+    const googleSyncResult = await syncEventWithGoogle(eventId, 'DELETE');
+    if (!googleSyncResult.success && !googleSyncResult.skipped) {
+      return NextResponse.json(
+        { message: 'Failed to delete the event from Google Calendar' },
+        { status: 502 }
+      );
+    }
 
     await prisma.event.delete({
       where: { id: eventId }

@@ -1,6 +1,12 @@
 import { Readable } from 'node:stream';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { extractTarGzArchive } from '../archive';
+import { BACKUP_MANIFEST_VERSION } from '@/lib/config/backup';
+import {
+  addBufferArchiveEntry,
+  createTarGzArchive,
+  extractTarGzArchive,
+  finalizeTarArchive
+} from '../archive';
 import { readNodeStreamToBuffer } from '../utils';
 import type {
   BackupArchiveTableRecord,
@@ -21,7 +27,10 @@ const testState = vi.hoisted(() => {
     privateBlobs: new Map<string, MockBlob>(),
     tables: [] as BackupArchiveTableRecord[],
     rowsByTable: {} as Record<string, Array<Record<string, unknown>>>,
-    truncateCalls: 0
+    truncateCalls: 0,
+    snapshotTransactionCommands: [] as string[],
+    restoreTransactionCommands: [] as string[],
+    restoreFailureTable: null as string | null
   };
 });
 
@@ -96,6 +105,38 @@ vi.mock('@/modules/backup/database', () => {
     withBackupDatabaseClient: vi.fn(async (run: (client: typeof fakeClient) => Promise<unknown>) =>
       run(fakeClient)
     ),
+    withBackupDatabaseSnapshot: vi.fn(
+      async (_client: typeof fakeClient, run: () => Promise<unknown>) => {
+        testState.snapshotTransactionCommands.push(
+          'BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY'
+        );
+
+        try {
+          const result = await run();
+          testState.snapshotTransactionCommands.push('COMMIT');
+          return result;
+        } catch (error) {
+          testState.snapshotTransactionCommands.push('ROLLBACK');
+          throw error;
+        }
+      }
+    ),
+    withBackupRestoreTransaction: vi.fn(
+      async (_client: typeof fakeClient, run: () => Promise<unknown>) => {
+        const previousRows = structuredClone(testState.rowsByTable);
+        testState.restoreTransactionCommands.push('BEGIN');
+
+        try {
+          const result = await run();
+          testState.restoreTransactionCommands.push('COMMIT');
+          return result;
+        } catch (error) {
+          testState.rowsByTable = previousRows;
+          testState.restoreTransactionCommands.push('ROLLBACK');
+          throw error;
+        }
+      }
+    ),
     loadBackupDatabaseManifest: vi.fn(async () => testState.tables),
     countBackupTableRows: vi.fn(async (_client: unknown, tableName: string) => {
       return testState.rowsByTable[tableName]?.length ?? 0;
@@ -120,11 +161,72 @@ vi.mock('@/modules/backup/database', () => {
         table: BackupArchiveTableRecord,
         rows: Array<Record<string, unknown>>
       ) => {
+        if (testState.restoreFailureTable === table.name) {
+          throw new Error(`restore failed for ${table.name}`);
+        }
+
         testState.rowsByTable[table.name] = rows;
       }
     )
   };
 });
+
+const createBlogPostTable = (rowCount = 1): BackupArchiveTableRecord => {
+  return {
+    name: 'blog_post',
+    order: 0,
+    rowCount,
+    primaryKey: ['id'],
+    dependsOn: [],
+    columns: [
+      { name: 'id', dataType: 'text', udtName: 'text', isNullable: false, ordinalPosition: 1 },
+      {
+        name: 'title',
+        dataType: 'text',
+        udtName: 'text',
+        isNullable: false,
+        ordinalPosition: 2
+      }
+    ]
+  };
+};
+
+const createDatabaseManifest = (table: BackupArchiveTableRecord): DatabaseBackupArchiveManifest => {
+  return {
+    version: BACKUP_MANIFEST_VERSION,
+    createdAt: '2026-04-09T12:00:00.000Z',
+    archiveKind: 'manual',
+    artifact: 'database',
+    database: {
+      tableCount: 1,
+      tables: [table]
+    }
+  };
+};
+
+const createArchiveBuffer = async (
+  entries: Array<{ name: string; value: unknown }>
+): Promise<Buffer> => {
+  const { pack, stream } = createTarGzArchive();
+  const bufferPromise = readNodeStreamToBuffer(stream);
+
+  for (const entry of entries) {
+    await addBufferArchiveEntry(pack, entry.name, Buffer.from(JSON.stringify(entry.value), 'utf8'));
+  }
+
+  finalizeTarArchive(pack);
+  return bufferPromise;
+};
+
+const putSourceArchive = (pathname: string, buffer: Buffer): void => {
+  testState.privateBlobs.set(pathname, {
+    pathname,
+    url: `https://private.blob.local/${pathname}`,
+    contentType: 'application/gzip',
+    buffer,
+    uploadedAt: new Date('2026-04-09T12:30:00.000Z')
+  });
+};
 
 describe('backup service orchestration', () => {
   beforeEach(() => {
@@ -132,30 +234,15 @@ describe('backup service orchestration', () => {
     testState.tables = [];
     testState.rowsByTable = {};
     testState.truncateCalls = 0;
+    testState.snapshotTransactionCommands = [];
+    testState.restoreTransactionCommands = [];
+    testState.restoreFailureTable = null;
     vi.clearAllMocks();
   });
 
   it('создание архива БД сериализует таблицы в tar.gz', async () => {
     // Arrange
-    testState.tables = [
-      {
-        name: 'blog_post',
-        order: 0,
-        rowCount: 0,
-        primaryKey: ['id'],
-        dependsOn: [],
-        columns: [
-          { name: 'id', dataType: 'text', udtName: 'text', isNullable: false, ordinalPosition: 1 },
-          {
-            name: 'title',
-            dataType: 'text',
-            udtName: 'text',
-            isNullable: false,
-            ordinalPosition: 2
-          }
-        ]
-      }
-    ];
+    testState.tables = [createBlogPostTable(0)];
     testState.rowsByTable.blog_post = [
       {
         id: 'post-1',
@@ -201,29 +288,15 @@ describe('backup service orchestration', () => {
       ]
     });
     expect(progressLog.at(-1)).toBe('Архив БД успешно создан.');
+    expect(testState.snapshotTransactionCommands).toEqual([
+      'BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY',
+      'COMMIT'
+    ]);
   });
 
   it('восстановление из архива БД разворачивает таблицы и сохраняет теневую копию', async () => {
     // Arrange
-    testState.tables = [
-      {
-        name: 'blog_post',
-        order: 0,
-        rowCount: 1,
-        primaryKey: ['id'],
-        dependsOn: [],
-        columns: [
-          { name: 'id', dataType: 'text', udtName: 'text', isNullable: false, ordinalPosition: 1 },
-          {
-            name: 'title',
-            dataType: 'text',
-            udtName: 'text',
-            isNullable: false,
-            ordinalPosition: 2
-          }
-        ]
-      }
-    ];
+    testState.tables = [createBlogPostTable()];
     testState.rowsByTable.blog_post = [
       {
         id: 'backup-post',
@@ -275,5 +348,105 @@ describe('backup service orchestration', () => {
     expect(testState.truncateCalls).toBe(1);
     expect(testState.privateBlobs.has(sourceArchivePathname)).toBe(false);
     expect(progressLog.at(-1)).toBe('Восстановление БД из архива завершено.');
+    expect(testState.restoreTransactionCommands).toEqual(['BEGIN', 'COMMIT']);
+  });
+
+  it('архив без entry таблицы отклоняется до очистки БД', async () => {
+    // Arrange
+    const table = createBlogPostTable();
+    const manifest = createDatabaseManifest(table);
+    const sourceArchivePathname =
+      'system-backups/uploads/database/missing-table-database-archive.tar.gz';
+    testState.tables = [table];
+    testState.rowsByTable.blog_post = [{ id: 'current-post', title: 'Current title' }];
+    putSourceArchive(
+      sourceArchivePathname,
+      await createArchiveBuffer([{ name: 'manifest.json', value: manifest }])
+    );
+    const { restoreSiteBackupArchives } = await import('../service');
+
+    // Act
+    const restorePromise = restoreSiteBackupArchives(
+      { databaseArchivePathname: sourceArchivePathname },
+      async () => undefined
+    );
+
+    // Assert
+    await expect(restorePromise).rejects.toThrow('не содержит данные таблицы blog_post');
+    expect(testState.truncateCalls).toBe(0);
+    expect(testState.rowsByTable.blog_post).toEqual([
+      { id: 'current-post', title: 'Current title' }
+    ]);
+    expect(testState.restoreTransactionCommands).toEqual([]);
+  });
+
+  it('несовпадение rowCount отклоняется до очистки БД', async () => {
+    // Arrange
+    const table = createBlogPostTable(2);
+    const manifest = createDatabaseManifest(table);
+    const sourceArchivePathname =
+      'system-backups/uploads/database/invalid-row-count-database-archive.tar.gz';
+    testState.tables = [table];
+    testState.rowsByTable.blog_post = [{ id: 'current-post', title: 'Current title' }];
+    putSourceArchive(
+      sourceArchivePathname,
+      await createArchiveBuffer([
+        { name: 'database/tables/000-blog_post.json', value: { table: 'blog_post', rows: [] } },
+        { name: 'manifest.json', value: manifest }
+      ])
+    );
+    const { restoreSiteBackupArchives } = await import('../service');
+
+    // Act
+    const restorePromise = restoreSiteBackupArchives(
+      { databaseArchivePathname: sourceArchivePathname },
+      async () => undefined
+    );
+
+    // Assert
+    await expect(restorePromise).rejects.toThrow(
+      'Количество строк таблицы blog_post не совпадает с manifest'
+    );
+    expect(testState.truncateCalls).toBe(0);
+    expect(testState.restoreTransactionCommands).toEqual([]);
+  });
+
+  it('ошибка записи таблицы откатывает destructive restore целиком', async () => {
+    // Arrange
+    const table = createBlogPostTable();
+    const manifest = createDatabaseManifest(table);
+    const sourceArchivePathname =
+      'system-backups/uploads/database/rollback-database-archive.tar.gz';
+    testState.tables = [table];
+    testState.rowsByTable.blog_post = [{ id: 'current-post', title: 'Current title' }];
+    testState.restoreFailureTable = 'blog_post';
+    putSourceArchive(
+      sourceArchivePathname,
+      await createArchiveBuffer([
+        { name: 'manifest.json', value: manifest },
+        {
+          name: 'database/tables/000-blog_post.json',
+          value: {
+            table: 'blog_post',
+            rows: [{ id: 'backup-post', title: 'Archived title' }]
+          }
+        }
+      ])
+    );
+    const { restoreSiteBackupArchives } = await import('../service');
+
+    // Act
+    const restorePromise = restoreSiteBackupArchives(
+      { databaseArchivePathname: sourceArchivePathname },
+      async () => undefined
+    );
+
+    // Assert
+    await expect(restorePromise).rejects.toThrow('restore failed for blog_post');
+    expect(testState.restoreTransactionCommands).toEqual(['BEGIN', 'ROLLBACK']);
+    expect(testState.rowsByTable.blog_post).toEqual([
+      { id: 'current-post', title: 'Current title' }
+    ]);
+    expect(testState.privateBlobs.has(sourceArchivePathname)).toBe(true);
   });
 });

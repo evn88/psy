@@ -1,8 +1,23 @@
 'use client';
 
-import { useState } from 'react';
-import { Info, Settings } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useEffect, useState } from 'react';
+import { CalendarCheck, CalendarSync, Settings } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
+import { toast } from 'sonner';
+
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from '@/components/ui/alert-dialog';
+import { Button, buttonVariants } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -14,50 +29,114 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { useTranslations } from 'next-intl';
+import { useRouter } from '@/i18n/navigation';
 
 export interface SyncSettingsDialogProps {
-  initialUrl?: string | null;
-  initialEnabled?: boolean;
+  initialConnected?: boolean;
+  calendarName?: string | null;
+  initialGoogleCalendarSyncUrl?: string | null;
+  googleStatus?: string;
   initialWorkStart?: number;
   initialWorkEnd?: number;
 }
 
-export function SyncSettingsDialog({
-  initialUrl,
-  initialEnabled,
+export const SyncSettingsDialog = ({
+  initialConnected = false,
+  calendarName,
+  initialGoogleCalendarSyncUrl,
+  googleStatus,
   initialWorkStart = 9,
   initialWorkEnd = 20
-}: SyncSettingsDialogProps) {
+}: SyncSettingsDialogProps) => {
   const t = useTranslations('Schedule');
+  const locale = useLocale();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [url, setUrl] = useState(initialUrl || '');
-  const [enabled, setEnabled] = useState(initialEnabled || false);
+  const [connected, setConnected] = useState(initialConnected);
+  const [googleCalendarSyncUrl, setGoogleCalendarSyncUrl] = useState(
+    initialGoogleCalendarSyncUrl || ''
+  );
   const [workStart, setWorkStart] = useState(initialWorkStart.toString());
   const [workEnd, setWorkEnd] = useState(initialWorkEnd.toString());
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (!googleStatus) {
+      return;
+    }
+
+    if (googleStatus === 'connected') {
+      toast.success(t('googleConnectedSuccess'));
+    } else if (googleStatus === 'connected-with-errors') {
+      toast.warning(t('googleConnectedWithErrors'));
+    } else if (googleStatus === 'configuration-error') {
+      toast.error(t('googleConfigurationError'));
+    } else {
+      toast.error(t('googleConnectionError'));
+    }
+  }, [googleStatus, t]);
+
   const handleSave = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/profile/update', {
+      const response = await fetch('/api/profile/update', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          googleCalendarSyncUrl: url || null,
-          googleCalendarSyncEnabled: enabled,
-          workHourStart: parseInt(workStart) || 0,
-          workHourEnd: parseInt(workEnd) || 24
+          workHourStart: Number(workStart),
+          workHourEnd: Number(workEnd),
+          googleCalendarSyncUrl: googleCalendarSyncUrl.trim()
         })
       });
-      if (res.ok) {
-        setOpen(false);
-      } else {
-        console.error('Failed to update sync settings');
+
+      if (!response.ok) {
+        const result = (await response.json()) as { message?: string };
+        throw new Error(result.message || t('settingsSaveError'));
       }
-    } catch (e) {
-      console.error(e);
+
+      toast.success(t('settingsSaved'));
+      setOpen(false);
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('settingsSaveError'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/google-calendar/disconnect', { method: 'POST' });
+      if (!response.ok) {
+        throw new Error(t('googleDisconnectError'));
+      }
+      setConnected(false);
+      toast.success(t('googleDisconnected'));
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('googleDisconnectError'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSync = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/google-calendar/sync', { method: 'POST' });
+      const result = (await response.json()) as {
+        synced?: number;
+        failed?: number;
+        message?: string;
+      };
+      if (!response.ok || (result.failed ?? 0) > 0) {
+        throw new Error(result.message || t('googleSyncError'));
+      }
+      toast.success(t('googleSyncSuccess', { count: result.synced ?? 0 }));
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('googleSyncError'));
     } finally {
       setLoading(false);
     }
@@ -66,20 +145,23 @@ export function SyncSettingsDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="icon" title="Google Calendar Sync Settings">
-          <Settings className="h-4 w-4" />
+        <Button variant="outline" size="icon" aria-label={t('settingsTitle')}>
+          <Settings data-icon="inline-start" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
           <DialogTitle>{t('settingsTitle')}</DialogTitle>
           <DialogDescription>{t('settingsDescription')}</DialogDescription>
         </DialogHeader>
-        <div className="grid gap-6 py-4">
-          <div className="grid gap-4 bg-muted/20 p-4 rounded-lg border">
-            <h4 className="font-semibold text-sm">{t('workHours')}</h4>
-            <div className="flex items-center gap-4">
-              <div className="grid gap-2 flex-1">
+
+        <div className="flex flex-col gap-6 py-2">
+          <section className="flex flex-col gap-3" aria-labelledby="work-hours-title">
+            <h3 id="work-hours-title" className="text-sm font-semibold">
+              {t('workHours')}
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
                 <Label htmlFor="workStart">{t('startHour')}</Label>
                 <Input
                   id="workStart"
@@ -87,11 +169,11 @@ export function SyncSettingsDialog({
                   min="0"
                   max="23"
                   value={workStart}
-                  onChange={e => setWorkStart(e.target.value)}
+                  onChange={event => setWorkStart(event.target.value)}
                   disabled={loading}
                 />
               </div>
-              <div className="grid gap-2 flex-1">
+              <div className="flex flex-col gap-2">
                 <Label htmlFor="workEnd">{t('endHour')}</Label>
                 <Input
                   id="workEnd"
@@ -99,61 +181,102 @@ export function SyncSettingsDialog({
                   min="1"
                   max="24"
                   value={workEnd}
-                  onChange={e => setWorkEnd(e.target.value)}
+                  onChange={event => setWorkEnd(event.target.value)}
                   disabled={loading}
                 />
               </div>
             </div>
-          </div>
+          </section>
 
-          <div className="flex items-center space-x-2 bg-muted/30 p-3 rounded-lg border">
-            <Checkbox
-              id="enabled"
-              checked={enabled}
-              onCheckedChange={checked => setEnabled(checked as boolean)}
-            />
-            <Label htmlFor="enabled" className="text-base font-medium cursor-pointer">
-              {t('enableGoogleCalendar')}
-            </Label>
-          </div>
+          <section className="flex flex-col gap-3" aria-labelledby="google-calendar-title">
+            <h3 id="google-calendar-title" className="text-sm font-semibold">
+              Google Calendar
+            </h3>
+            {connected ? (
+              <Alert>
+                <CalendarCheck />
+                <AlertTitle>{t('googleConnected')}</AlertTitle>
+                <AlertDescription>
+                  {calendarName
+                    ? t('googleConnectedCalendar', { calendar: calendarName })
+                    : t('googleConnectedDescription')}
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <Alert>
+                <CalendarSync />
+                <AlertTitle>{t('googleNotConnected')}</AlertTitle>
+                <AlertDescription>{t('googleOutboundDescription')}</AlertDescription>
+              </Alert>
+            )}
 
-          <div className="grid gap-2">
-            <Label htmlFor="url">{t('webhookUrl')}</Label>
-            <Input
-              id="url"
-              value={url}
-              onChange={e => setUrl(e.target.value)}
-              placeholder="https://..."
-              disabled={loading || !enabled}
-            />
-          </div>
+            <div className="flex flex-wrap gap-2">
+              {connected ? (
+                <>
+                  <Button type="button" variant="outline" onClick={handleSync} disabled={loading}>
+                    <CalendarSync data-icon="inline-start" />
+                    {t('syncNow')}
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button type="button" variant="destructive" disabled={loading}>
+                        {t('disconnectGoogle')}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>{t('disconnectGoogleTitle')}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          {t('disconnectGoogleDescription')}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel disabled={loading}>{t('cancel')}</AlertDialogCancel>
+                        <AlertDialogAction
+                          className={buttonVariants({ variant: 'destructive' })}
+                          onClick={handleDisconnect}
+                          disabled={loading}
+                        >
+                          {t('disconnectGoogle')}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </>
+              ) : (
+                <Button asChild>
+                  <a href={`/api/google-calendar/connect?locale=${encodeURIComponent(locale)}`}>
+                    {t('connectGoogle')}
+                  </a>
+                </Button>
+              )}
+            </div>
 
-          <details className="bg-blue-50/50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-100 dark:border-blue-900 group">
-            <summary className="flex items-center text-sm font-semibold text-blue-800 dark:text-blue-300 cursor-pointer select-none">
-              <Info className="w-4 h-4 mr-2" />
-              {t('howToGetLink')}
-              <span className="ml-auto opacity-70 text-xs transition-transform group-open:rotate-180">
-                ▼
-              </span>
-            </summary>
-            <ol className="list-decimal list-inside text-xs space-y-2 text-blue-900/80 dark:text-blue-200/80 mt-3 pt-3 border-t border-blue-100/50">
-              <li>{t('googleStep1')}</li>
-              <li>{t('googleStep2')}</li>
-              <li>{t('googleStep3')}</li>
-              <li>{t('googleStep4')}</li>
-              <li>{t('googleStep5')}</li>
-            </ol>
-          </details>
+            <div className="flex flex-col gap-2 pt-2">
+              <Label htmlFor="googleCalendarSyncUrl">{t('googleIcalUrlLabel')}</Label>
+              <Input
+                id="googleCalendarSyncUrl"
+                type="url"
+                inputMode="url"
+                placeholder="https://calendar.google.com/calendar/ical/.../basic.ics"
+                value={googleCalendarSyncUrl}
+                onChange={event => setGoogleCalendarSyncUrl(event.target.value)}
+                disabled={loading}
+              />
+              <p className="text-xs text-muted-foreground">{t('googleIcalUrlDescription')}</p>
+            </div>
+          </section>
         </div>
+
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+          <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>
             {t('cancel')}
           </Button>
           <Button type="button" onClick={handleSave} disabled={loading}>
-            {loading ? t('saving') : t('save')}
+            {loading ? t('saving') : t('saveWorkHours')}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
-}
+};

@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { randomUUID } from 'crypto';
 import { headers } from 'next/headers';
 import { sendVerificationEmail } from '@/lib/email';
+import { isValidTimeZone } from '@/lib/timezone';
 import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 /** Время жизни токена верификации — 24 часа */
@@ -16,7 +17,12 @@ const registerSchema = z.object({
   email: z.email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   locale: z.string().optional().default(defaultLocale),
-  timezone: z.string().optional().default('UTC')
+  timezone: z
+    .string()
+    .trim()
+    .refine(isValidTimeZone, { message: 'Invalid timezone' })
+    .nullable()
+    .optional()
 });
 
 /**
@@ -59,9 +65,8 @@ async function postHandler(req: Request) {
         email,
         password: hashedPassword,
         language: locale,
-        timezone,
-        registrationIp,
-        role: process.env.ADMIN_EMAIL && email === process.env.ADMIN_EMAIL ? 'ADMIN' : 'GUEST'
+        timezone: timezone ?? null,
+        registrationIp
       }
     });
 

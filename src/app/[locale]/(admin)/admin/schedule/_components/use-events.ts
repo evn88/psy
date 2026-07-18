@@ -2,7 +2,7 @@ import useSWR from 'swr';
 import { Event as PrismaEvent, EventStatus, EventType } from '@prisma/client';
 
 export type Event = PrismaEvent & {
-  user?: { id: string; name: string; email: string } | null;
+  user?: { id: string; name: string | null; email: string; timezone: string | null } | null;
 };
 
 export type EventMutationInput = {

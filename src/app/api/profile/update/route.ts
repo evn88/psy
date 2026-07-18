@@ -50,7 +50,8 @@ async function putHandler(req: Request) {
       where: { email: session.user.email },
       select: {
         workHourStart: true,
-        workHourEnd: true
+        workHourEnd: true,
+        googleCalendarRefreshToken: true
       }
     });
 
@@ -60,6 +61,11 @@ async function putHandler(req: Request) {
 
     const nextWorkHourStart = result.data.workHourStart ?? currentUser.workHourStart;
     const nextWorkHourEnd = result.data.workHourEnd ?? currentUser.workHourEnd;
+    const nextGoogleCalendarSyncEnabled =
+      result.data.googleCalendarSyncEnabled ??
+      (result.data.googleCalendarSyncUrl !== undefined && !currentUser.googleCalendarRefreshToken
+        ? Boolean(result.data.googleCalendarSyncUrl)
+        : undefined);
 
     if (nextWorkHourStart >= nextWorkHourEnd) {
       return NextResponse.json(
@@ -76,8 +82,8 @@ async function putHandler(req: Request) {
         ...(result.data.googleCalendarSyncUrl !== undefined && {
           googleCalendarSyncUrl: result.data.googleCalendarSyncUrl || null
         }),
-        ...(result.data.googleCalendarSyncEnabled !== undefined && {
-          googleCalendarSyncEnabled: result.data.googleCalendarSyncEnabled
+        ...(nextGoogleCalendarSyncEnabled !== undefined && {
+          googleCalendarSyncEnabled: nextGoogleCalendarSyncEnabled
         }),
         ...(result.data.workHourStart !== undefined && {
           workHourStart: result.data.workHourStart

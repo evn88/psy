@@ -32,6 +32,7 @@ export const MyBreadcrumbs = () => {
     sessions: t('sessions'),
     payments: t('payments'),
     data: t('data'),
+    notifications: t('notifications'),
     settings: t('settings')
   };
 

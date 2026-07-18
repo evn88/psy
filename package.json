@@ -6,9 +6,12 @@
     "predev": "node scripts/generate-sw.js",
     "dev": "next dev",
     "prebuild": "node scripts/generate-sw.js",
-    "build": "prisma generate && next build",
+    "build": "prisma generate && next build --webpack",
+    "postbuild": "node scripts/prepare-standalone.mjs",
     "start": "next start",
+    "database:verify-identity": "node scripts/verify-database-identity.mjs",
     "lint": "eslint .",
+    "migrations:verify": "node scripts/verify-migration-checksums.mjs",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -22,8 +25,8 @@
     ]
   },
   "overrides": {
-    "devalue": "5.6.4",
-    "undici": "7.24.7",
+    "devalue": "5.8.1",
+    "undici": "7.28.0",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3"
   },

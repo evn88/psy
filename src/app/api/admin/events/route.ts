@@ -86,12 +86,15 @@ async function getHandler(req: Request) {
     const events = await prisma.event.findMany({
       where: whereClause,
       include: {
-        user: { select: { id: true, name: true, email: true } }
+        user: { select: { id: true, name: true, email: true, timezone: true } }
       },
       orderBy: { start: 'asc' }
     });
 
-    const googleEvents = (await fetchGoogleEvents(session.user.id!)) as CalendarEventLike[];
+    const googleEvents = (await fetchGoogleEvents(
+      session.user.id!,
+      start && end ? { start: new Date(start), end: new Date(end) } : undefined
+    )) as CalendarEventLike[];
     let filteredGoogle = googleEvents;
     if (start && end) {
       const startD = new Date(start);
@@ -156,6 +159,20 @@ async function postHandler(req: Request) {
 
     if (!isValidDateRange({ start: startDate, end: endDate })) {
       return NextResponse.json({ message: 'Invalid date range' }, { status: 400 });
+    }
+
+    if (userId) {
+      const selectedUser = await prisma.user.findFirst({
+        where: {
+          id: userId,
+          role: { in: ['USER', 'ADMIN'] }
+        },
+        select: { id: true }
+      });
+
+      if (!selectedUser) {
+        return NextResponse.json({ message: 'Client not found' }, { status: 400 });
+      }
     }
 
     if (status !== 'CANCELLED') {
@@ -228,10 +245,12 @@ async function postHandler(req: Request) {
       reminderWorkflowVersion: newEvent.reminderWorkflowVersion
     });
 
-    // Trigger Google Calendar sync hook
-    syncEventWithGoogle(newEvent.id, 'CREATE');
+    const googleSyncResult = await syncEventWithGoogle(newEvent.id, 'CREATE');
 
-    return NextResponse.json(newEvent, { status: 201 });
+    return NextResponse.json(
+      { ...newEvent, isGoogleSynced: googleSyncResult.success },
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Failed to create event:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });

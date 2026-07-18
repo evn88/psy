@@ -21,6 +21,8 @@ export type PushPayload = {
   title?: string;
   body: string;
   url?: string;
+  tag?: string;
+  renotify?: boolean;
 };
 
 export type PushResult = {
@@ -37,8 +39,8 @@ export async function sendPushToSubscription(
   sub: { endpoint: string; p256dh: string; auth: string },
   payload: PushPayload
 ): Promise<PushResult> {
-  ensureVapid();
   try {
+    ensureVapid();
     await webpush.sendNotification(
       {
         endpoint: sub.endpoint,
@@ -47,7 +49,9 @@ export async function sendPushToSubscription(
       JSON.stringify({
         title: payload.title ?? '',
         body: payload.body,
-        url: payload.url
+        url: payload.url,
+        tag: payload.tag,
+        renotify: payload.renotify
       })
     );
     return { endpoint: sub.endpoint, success: true };
@@ -56,9 +60,13 @@ export async function sendPushToSubscription(
 
     // 410 Gone — подписка более недействительна, удаляем
     if (statusCode === 410) {
-      await prisma.pushSubscription.deleteMany({
-        where: { endpoint: sub.endpoint }
-      });
+      try {
+        await prisma.pushSubscription.deleteMany({
+          where: { endpoint: sub.endpoint }
+        });
+      } catch {
+        // Ошибка очистки подписки не должна превращать известный отказ доставки в повторную отправку.
+      }
     }
 
     return {

@@ -1,5 +1,4 @@
 import { EventStatus } from '@prisma/client';
-import { start } from 'workflow/api';
 
 import { runSessionReminderWorkflow } from '@/workflows/session-reminder-workflow';
 
@@ -34,6 +33,7 @@ export const startSessionReminderWorkflow = async (
   }
 
   try {
+    const { start } = await import('workflow/api');
     await start(runSessionReminderWorkflow, [
       {
         eventId: event.id,

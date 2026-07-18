@@ -43,7 +43,7 @@ export function parseICal(icalData: string): ParsedEvent[] {
       if (currentEvent.dtstart && currentEvent.dtend) {
         events.push({
           id: currentEvent.uid || `external-${Date.now()}-${Math.random()}`,
-          title: currentEvent.summary || 'Google Event (Busy)',
+          title: currentEvent.summary || 'Событие Google Calendar',
           start: parseICalDate(currentEvent.dtstart),
           end: parseICalDate(currentEvent.dtend),
           type: 'OTHER',

@@ -106,7 +106,7 @@ export default async function MyProfilePage({ params }: MyProfilePageProps) {
         hasPassword={hasPassword}
         lastLoginAt={lastLogin?.createdAt ?? null}
         lastLoginIp={lastLogin?.ip ?? null}
-        timezone={dbUser?.timezone ?? 'UTC'}
+        timezone={dbUser.timezone}
         userEmail={user.email ?? ''}
       />
     </div>

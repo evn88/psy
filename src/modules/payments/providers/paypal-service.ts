@@ -42,10 +42,8 @@ export class PayPalService implements IPaymentService {
   }
 
   async captureOrder(params: CaptureOrderParams): Promise<void> {
-    // В случае с PayPal достаточно вызвать метод capture (который мы уже имеем)
-    // Вебхук сам обновит статус в БД, или можно сделать это сразу здесь,
-    // но в оригинальном route: `await fetch('/api/paypal/orders/${orderId}/capture')`
-    // логика была просто вызов capture.
-    await capturePayPalOrder(params.orderId);
+    const order = await capturePayPalOrder(params.orderId);
+
+    await syncPaymentFromPayPal({ order });
   }
 }

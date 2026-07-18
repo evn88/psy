@@ -7,54 +7,82 @@ datasource db {
 }
 
 model User {
-  id                        String                   @id @default(cuid())
-  name                      String?
-  email                     String                   @unique
-  emailVerified             DateTime?
-  image                     String?
-  password                  String?
-  role                      Role                     @default(GUEST)
-  language                  String                   @default("ru")
-  theme                     String                   @default("system")
-  lastSeen                  DateTime?                @default(now())
-  createdAt                 DateTime                 @default(now())
-  updatedAt                 DateTime                 @updatedAt
-  isDisabled                Boolean                  @default(false)
-  registrationIp            String?
-  timezone                  String?                  @default("UTC")
-  googleCalendarSyncEnabled Boolean                  @default(false)
-  googleCalendarSyncUrl     String?
-  workHourEnd               Int                      @default(20)
-  workHourStart             Int                      @default(9)
-  blogNotifications         Boolean                  @default(false)
-  notificationSettings      Json?
-  dashboardConfig           Json?
-  balance                   Decimal                  @default(0) @db.Decimal(12, 2)
-  accounts                  Account[]
-  Authenticator             Authenticator[]
-  blogPosts                 BlogPost[]               @relation("BlogAuthor")
-  consents                  ClientConsent[]
-  uploadedDocs              ClientDocument[]         @relation("UploadedDocuments")
-  documents                 ClientDocument[]         @relation("UserDocuments")
-  clientProfile             ClientProfile?
-  createdEvents             Event[]                  @relation("EventCreator")
-  clientEvents              Event[]                  @relation("EventClient")
-  payments                  Payment[]
-  pilloIntakes              PilloIntake[]
-  pilloActionTokens         PilloIntakeActionToken[]
-  pilloManualIntakes        PilloManualIntake[]
-  pilloMedications          PilloMedication[]
-  pilloScheduleRules        PilloScheduleRule[]
-  pilloUserSettings         PilloUserSettings?
-  pushSubscriptions         PushSubscription[]
-  sessions                  Session[]
-  createdSurveys            Survey[]                 @relation("SurveyCreator")
-  surveyAssignments         SurveyAssignment[]
-  surveyComments            SurveyComment[]
-  systemLogs                SystemLogEntry[]
-  loginHistory              UserLoginHistory[]
-  clientGroupId             String?
-  clientGroup               ClientGroup?             @relation(fields: [clientGroupId], references: [id])
+  id                           String                   @id @default(cuid())
+  name                         String?
+  email                        String                   @unique
+  emailVerified                DateTime?
+  image                        String?
+  password                     String?
+  role                         Role                     @default(GUEST)
+  language                     String                   @default("ru")
+  theme                        String                   @default("system")
+  lastSeen                     DateTime?                @default(now())
+  createdAt                    DateTime                 @default(now())
+  updatedAt                    DateTime                 @updatedAt
+  isDisabled                   Boolean                  @default(false)
+  registrationIp               String?
+  timezone                     String?
+  googleCalendarSyncEnabled    Boolean                  @default(false)
+  googleCalendarSyncUrl        String?
+  googleCalendarAccessToken    String?
+  googleCalendarRefreshToken   String?
+  googleCalendarTokenExpiresAt DateTime?
+  googleCalendarId             String?
+  googleCalendarName           String?
+  workHourEnd                  Int                      @default(20)
+  workHourStart                Int                      @default(9)
+  blogNotifications            Boolean                  @default(false)
+  notificationSettings         Json?
+  dashboardConfig              Json?
+  balance                      Decimal                  @default(0) @db.Decimal(12, 2)
+  accounts                     Account[]
+  Authenticator                Authenticator[]
+  blogPosts                    BlogPost[]               @relation("BlogAuthor")
+  consents                     ClientConsent[]
+  uploadedDocs                 ClientDocument[]         @relation("UploadedDocuments")
+  documents                    ClientDocument[]         @relation("UserDocuments")
+  clientProfile                ClientProfile?
+  createdEvents                Event[]                  @relation("EventCreator")
+  clientEvents                 Event[]                  @relation("EventClient")
+  payments                     Payment[]
+  pilloIntakes                 PilloIntake[]
+  pilloActionTokens            PilloIntakeActionToken[]
+  pilloManualIntakes           PilloManualIntake[]
+  pilloMedications             PilloMedication[]
+  pilloScheduleRules           PilloScheduleRule[]
+  pilloUserSettings            PilloUserSettings?
+  pushSubscriptions            PushSubscription[]
+  sessions                     Session[]
+  createdSurveys               Survey[]                 @relation("SurveyCreator")
+  surveyAssignments            SurveyAssignment[]
+  surveyComments               SurveyComment[]
+  systemLogs                   SystemLogEntry[]
+  loginHistory                 UserLoginHistory[]
+  clientGroupId                String?
+  clientGroup                  ClientGroup?             @relation(fields: [clientGroupId], references: [id])
+  appNotifications             AppNotification[]
+}
+
+/// Persistent-уведомление внутри интерфейса приложения.
+model AppNotification {
+  id          String              @id @default(cuid())
+  userId      String
+  kind        AppNotificationKind @default(INFO)
+  source      String
+  dedupeKey   String?             @unique
+  title       String
+  message     String
+  actionUrl   String?
+  actionLabel String?
+  readAt      DateTime?
+  dismissedAt DateTime?
+  deletedAt   DateTime?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, dismissedAt, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
 }
 
 /// Подписка на Web Push уведомления (PWA)
@@ -137,6 +165,7 @@ model PilloIntake {
   reminderWorkflowStartedAt DateTime?
   reminderSentAt            DateTime?
   reminderEmailSentAt       DateTime?
+  reminderPushClaimedAt     DateTime?
   reminderPushSentAt        DateTime?
   createdAt                 DateTime                 @default(now())
   updatedAt                 DateTime                 @updatedAt
@@ -450,6 +479,22 @@ model SystemAlert {
   @@unique([type, periodKey])
 }
 
+model WorkflowLease {
+  key       String   @id
+  holderId  String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([expiresAt])
+}
+
+model DatabaseIdentity {
+  key        String   @id @default("primary")
+  instanceId String   @unique
+  createdAt  DateTime @default(now())
+}
+
 model SystemLogEntry {
   id           String            @id @default(cuid())
   category     SystemLogCategory
@@ -504,17 +549,17 @@ model ClientProfile {
 }
 
 model IntakeResponse {
-  id              String        @id @default(cuid())
+  id              String         @id @default(cuid())
   clientProfileId String
-  consentId       String?       @unique
+  consentId       String?        @unique
   formId          String
   formVersion     Int?
   formSnapshot    Json?
-  status          String        @default("COMPLETED")
+  status          String         @default("COMPLETED")
   answers         String
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  clientProfile   ClientProfile @relation(fields: [clientProfileId], references: [id], onDelete: Cascade)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  clientProfile   ClientProfile  @relation(fields: [clientProfileId], references: [id], onDelete: Cascade)
   consent         ClientConsent? @relation("IntakeConsentResponse", fields: [consentId], references: [id], onDelete: SetNull)
 }
 
@@ -571,30 +616,32 @@ model ServicePackage {
 }
 
 model Payment {
-  id               String           @id @default(cuid())
-  provider         PaymentProvider  @default(PAYPAL)
-  kind             PaymentKind      @default(CHECKOUT)
-  userId           String
-  orderId          String           @unique
-  captureId        String?          @unique
-  subscriptionId   String?
-  invoiceId        String?
-  amount           Decimal          @db.Decimal(12, 2)
-  currency         String
-  status           String
-  description      String?
-  payerEmail       String?
-  rawOrder         Json?
-  rawCapture       Json?
-  capturedAt       DateTime?
-  lastSyncedAt     DateTime?
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  servicePackageId String?
-  servicePackage   ServicePackage?  @relation(fields: [servicePackageId], references: [id])
-  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  disputes         PaymentDispute[]
-  events           PaymentEvent[]
+  id                String           @id @default(cuid())
+  provider          PaymentProvider  @default(PAYPAL)
+  kind              PaymentKind      @default(CHECKOUT)
+  userId            String
+  orderId           String           @unique
+  captureId         String?          @unique
+  subscriptionId    String?
+  invoiceId         String?
+  amount            Decimal          @db.Decimal(12, 2)
+  currency          String
+  status            String
+  description       String?
+  payerEmail        String?
+  rawOrder          Json?
+  rawCapture        Json?
+  capturedAt        DateTime?
+  balanceCreditedAt DateTime?
+  refundedAmount    Decimal          @default(0) @db.Decimal(12, 2)
+  lastSyncedAt      DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  servicePackageId  String?
+  servicePackage    ServicePackage?  @relation(fields: [servicePackageId], references: [id])
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  disputes          PaymentDispute[]
+  events            PaymentEvent[]
 
   @@index([userId, createdAt(sort: Desc)])
   @@index([status])
@@ -704,6 +751,12 @@ enum PilloIntakeStatus {
   TAKEN
   SKIPPED
   MISSED
+}
+
+enum AppNotificationKind {
+  INFO
+  WARNING
+  SUCCESS
 }
 
 enum BlogPostStatus {

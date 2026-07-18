@@ -154,23 +154,9 @@ export default async function proxy(req: NextRequest) {
   const isLoggedIn = !!session;
   const userRole = session?.user?.role;
 
-  const isAuthPage = pathname === '/auth' || pathname.startsWith('/auth/');
   const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/');
   const isMyRoute = pathname === '/my' || pathname.startsWith('/my/');
   const isMiniAppRoute = pathname === '/app' || pathname.startsWith('/app/');
-
-  if (isAuthPage) {
-    if (isLoggedIn) {
-      if (userRole === 'ADMIN') {
-        return redirectToLocalePath(req, locale, '/admin');
-      }
-      if (userRole === 'USER') {
-        return redirectToLocalePath(req, locale, '/my');
-      }
-
-      return redirectToLocalePath(req, locale, '/my/profile');
-    }
-  }
 
   if (isAdminRoute) {
     if (!isLoggedIn) {

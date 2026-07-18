@@ -11,6 +11,7 @@ import { redirect } from '@/i18n/navigation';
 import { SidebarWorkspaceLayout } from '@/components/sidebar-workspace-layout';
 import { getUserUnreadSurveysCount } from './surveys/actions';
 import { requireAuthenticatedUser } from '@/lib/auth-helpers';
+import { AccountNotificationCenter } from '@/components/account-notification-center';
 
 export const metadata: Metadata = {
   robots: {
@@ -47,6 +48,7 @@ const MyLayout = async ({ children, params }: Readonly<MyLayoutProps>) => {
       defaultSidebarOpen={defaultSidebarOpen}
       sidebar={<MySidebar user={user} unreadSurveysCount={unreadSurveysCount} />}
       breadcrumbs={<MyBreadcrumbs />}
+      headerActions={<AccountNotificationCenter historyHref="/my/notifications" />}
       afterContent={<SurveySync />}
     >
       {children}

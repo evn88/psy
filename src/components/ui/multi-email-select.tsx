@@ -13,6 +13,7 @@ interface MultiEmailSelectProps {
   value: string[];
   onChange: (value: string[]) => void;
   placeholder?: string;
+  ariaLabel?: string;
   disabled?: boolean;
 }
 
@@ -21,6 +22,7 @@ export function MultiEmailSelect({
   value,
   onChange,
   placeholder = 'Введите email или выберите из списка...',
+  ariaLabel,
   disabled = false
 }: MultiEmailSelectProps) {
   const [inputValue, setInputValue] = React.useState('');
@@ -111,6 +113,7 @@ export function MultiEmailSelect({
         })}
         <input
           type="text"
+          aria-label={ariaLabel || placeholder}
           value={inputValue}
           onChange={e => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}

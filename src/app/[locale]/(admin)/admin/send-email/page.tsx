@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { SendEmailForm } from './send-email-form';
 import { getUsersForEmail } from './actions';
 
