@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
-import { syncPaymentWithPayPal } from '@/modules/payments/paypal/service';
+import { getPaymentService } from '@/modules/payments/factory';
 import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 const syncPaymentsSchema = z.object({
@@ -47,14 +47,22 @@ async function postHandler(request: Request) {
         userId: true,
         orderId: true,
         captureId: true,
-        kind: true
+        kind: true,
+        provider: true,
+        status: true,
+        currency: true,
+        amount: true,
+        balanceCreditedAt: true,
+        refundedAmount: true,
+        servicePackageId: true
       }
     });
     type SyncPaymentRecord = (typeof payments)[number];
 
     const syncResults = await Promise.allSettled(
-      payments.map((payment: SyncPaymentRecord) => {
-        return syncPaymentWithPayPal(payment);
+      payments.map(async (payment: SyncPaymentRecord) => {
+        const paymentService = await getPaymentService(payment.provider);
+        return paymentService.syncPayment(payment);
       })
     );
 

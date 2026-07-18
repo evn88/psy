@@ -1,4 +1,4 @@
-import { PaymentProvider, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -7,7 +7,8 @@ const mocks = vi.hoisted(() => ({
   createOrder: vi.fn(),
   findPayment: vi.fn(),
   findServicePackage: vi.fn(),
-  getActivePaymentCurrency: vi.fn()
+  getActivePaymentCurrency: vi.fn(),
+  getPaymentService: vi.fn()
 }));
 
 vi.mock('@/auth', () => ({
@@ -17,7 +18,7 @@ vi.mock('@/auth', () => ({
 vi.mock('@/lib/prisma', () => ({
   default: {
     payment: {
-      findUnique: mocks.findPayment
+      findFirst: mocks.findPayment
     },
     servicePackage: {
       findFirst: mocks.findServicePackage
@@ -27,11 +28,7 @@ vi.mock('@/lib/prisma', () => ({
 
 vi.mock('@/modules/payments/factory', () => ({
   getActivePaymentCurrency: mocks.getActivePaymentCurrency,
-  getPaymentService: () => ({
-    providerName: PaymentProvider.PAYPAL,
-    captureOrder: mocks.captureOrder,
-    createOrder: mocks.createOrder
-  })
+  getPaymentService: mocks.getPaymentService
 }));
 
 vi.mock('@/modules/system-logs/with-api-logging.server', () => ({
@@ -55,6 +52,12 @@ describe('payment routes', () => {
     });
     mocks.captureOrder.mockResolvedValue(undefined);
     mocks.getActivePaymentCurrency.mockReturnValue('EUR');
+    mocks.getPaymentService.mockResolvedValue({
+      providerName: 'PAYPAL',
+      supportsCurrency: () => true,
+      captureOrder: mocks.captureOrder,
+      createOrder: mocks.createOrder
+    });
   });
 
   it('создаёт CHECKOUT только по активному пакету и игнорирует клиентскую цену', async () => {
@@ -128,6 +131,33 @@ describe('payment routes', () => {
     expect(mocks.createOrder).not.toHaveBeenCalled();
   });
 
+  it('передаёт выбранного провайдера в registry', async () => {
+    mocks.findServicePackage.mockResolvedValue({
+      id: 'package-1',
+      amount: new Prisma.Decimal('80.00'),
+      currency: 'EUR',
+      title: { ru: 'Консультация' }
+    });
+
+    const response = await createOrder(
+      new Request('http://localhost/api/payments/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kind: 'CHECKOUT',
+          provider: 'STRIPE',
+          servicePackageId: 'package-1'
+        })
+      }),
+      { params: Promise.resolve({}) }
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocks.getPaymentService).toHaveBeenCalledWith('STRIPE', {
+      requireEnabled: true
+    });
+  });
+
   it('валидирует TOPUP отдельно и использует серверную валюту', async () => {
     const response = await createOrder(
       new Request('http://localhost/api/payments/orders', {
@@ -178,7 +208,7 @@ describe('payment routes', () => {
 
   it('не позволяет захватить order другого пользователя', async () => {
     mocks.findPayment.mockResolvedValue({
-      provider: PaymentProvider.PAYPAL,
+      provider: 'PAYPAL',
       status: 'CREATED',
       userId: 'user-2'
     });
@@ -193,7 +223,7 @@ describe('payment routes', () => {
 
   it('отклоняет capture в недопустимом состоянии', async () => {
     mocks.findPayment.mockResolvedValue({
-      provider: PaymentProvider.PAYPAL,
+      provider: 'PAYPAL',
       status: 'VOIDED',
       userId: 'user-1'
     });
@@ -208,7 +238,7 @@ describe('payment routes', () => {
 
   it('повторный capture завершённого собственного order идемпотентен', async () => {
     mocks.findPayment.mockResolvedValue({
-      provider: PaymentProvider.PAYPAL,
+      provider: 'PAYPAL',
       status: 'COMPLETED',
       userId: 'user-1'
     });

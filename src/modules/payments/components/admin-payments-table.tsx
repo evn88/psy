@@ -1,9 +1,4 @@
-'use client';
-
-import { useDeferredValue, useState } from 'react';
-import { Search } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
-import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -13,6 +8,7 @@ import {
   TableRow
 } from '@/components/ui/table';
 import { PaymentStatusBadge } from '@/modules/payments/components/payment-status-badge';
+import { PaymentsSyncButton } from '@/modules/payments/components/payments-sync-button';
 
 export interface AdminPaymentTableItem {
   id: string;
@@ -35,46 +31,16 @@ interface AdminPaymentsTableProps {
 }
 
 /**
- * Таблица платежей для админки с локальным поиском по клиенту и идентификаторам PayPal.
+ * Таблица платежей для админки.
  */
 export const AdminPaymentsTable = ({
   payments,
   showClientColumn = true
 }: AdminPaymentsTableProps) => {
-  const [query, setQuery] = useState('');
-  const deferredQuery = useDeferredValue(query.trim().toLowerCase());
-
-  const filteredPayments = payments.filter(payment => {
-    if (!deferredQuery) {
-      return true;
-    }
-
-    return [
-      payment.clientName,
-      payment.clientEmail,
-      payment.orderId,
-      payment.captureId || '',
-      payment.status
-    ]
-      .join(' ')
-      .toLowerCase()
-      .includes(deferredQuery);
-  });
-
   return (
-    <div className="space-y-4">
-      <div className="relative max-w-sm">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={query}
-          onChange={event => setQuery(event.target.value)}
-          placeholder="Поиск по клиенту, order id или capture id"
-          className="pl-9"
-        />
-      </div>
-
-      <div className="rounded-md border">
-        <Table>
+    <div className="min-w-0 max-w-full">
+      <div className="min-w-0 max-w-full overflow-hidden rounded-md border">
+        <Table className="min-w-[1180px]">
           <TableHeader>
             <TableRow>
               {showClientColumn ? <TableHead>Клиент</TableHead> : null}
@@ -86,20 +52,21 @@ export const AdminPaymentsTable = ({
               <TableHead>Создан</TableHead>
               <TableHead>Оплачен</TableHead>
               <TableHead>Последняя синхронизация</TableHead>
+              <TableHead className="text-right">Действия</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredPayments.length === 0 ? (
+            {payments.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={showClientColumn ? 8 : 7}
+                  colSpan={showClientColumn ? 10 : 9}
                   className="py-10 text-center text-muted-foreground"
                 >
                   Платежи не найдены
                 </TableCell>
               </TableRow>
             ) : (
-              filteredPayments.map(payment => (
+              payments.map(payment => (
                 <TableRow key={payment.id}>
                   {showClientColumn ? (
                     <TableCell>
@@ -130,6 +97,9 @@ export const AdminPaymentsTable = ({
                   <TableCell>{payment.createdAtLabel}</TableCell>
                   <TableCell>{payment.capturedAtLabel}</TableCell>
                   <TableCell>{payment.lastSyncedAtLabel}</TableCell>
+                  <TableCell className="text-right">
+                    <PaymentsSyncButton compact paymentIds={[payment.id]} />
+                  </TableCell>
                 </TableRow>
               ))
             )}

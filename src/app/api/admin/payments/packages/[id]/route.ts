@@ -5,14 +5,21 @@ import prisma from '@/lib/prisma';
 import { z } from 'zod';
 import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
+const localizedTextSchema = z.record(z.string(), z.string().trim().max(500));
+
 const updateSchema = z.object({
-  title: z.any().optional(),
-  description: z.any().optional(),
-  amount: z.number().optional(),
-  currency: z.string().optional(),
+  title: localizedTextSchema.optional(),
+  description: localizedTextSchema.optional(),
+  amount: z.number().positive().max(999_999).optional(),
+  currency: z
+    .string()
+    .trim()
+    .regex(/^[A-Za-z]{3}$/)
+    .transform(value => value.toUpperCase())
+    .optional(),
   coverImage: z.string().nullable().optional(),
   isActive: z.boolean().optional(),
-  order: z.number().optional()
+  order: z.number().int().optional()
 });
 
 async function putHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {

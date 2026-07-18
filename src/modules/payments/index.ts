@@ -16,6 +16,12 @@ interface MonthlyRevenuePoint {
   total: number;
 }
 
+export type PaymentStatusGroup = 'problematic' | 'processing' | 'refunded' | 'successful';
+
+const SUCCESSFUL_PAYMENT_STATUSES = new Set(['COMPLETED', 'PARTIALLY_REFUNDED']);
+const PROCESSING_PAYMENT_STATUSES = new Set(['CREATED', 'SAVED', 'APPROVED', 'PENDING']);
+const REFUNDED_PAYMENT_STATUSES = new Set(['REFUNDED', 'REVERSED']);
+
 const MONTH_LABELS_RU = [
   'Янв',
   'Фев',
@@ -35,7 +41,28 @@ const MONTH_LABELS_RU = [
  * Проверяет, относится ли статус к успешно зачисленным платежам.
  */
 export const isSuccessfulPaymentStatus = (status: string): boolean => {
-  return ['COMPLETED', 'PARTIALLY_REFUNDED'].includes(status);
+  return getPaymentStatusGroup(status) === 'successful';
+};
+
+/**
+ * Нормализует provider-specific статус для фильтров и пользовательского интерфейса.
+ */
+export const getPaymentStatusGroup = (status: string): PaymentStatusGroup => {
+  const normalizedStatus = status.toUpperCase();
+
+  if (SUCCESSFUL_PAYMENT_STATUSES.has(normalizedStatus)) {
+    return 'successful';
+  }
+
+  if (PROCESSING_PAYMENT_STATUSES.has(normalizedStatus)) {
+    return 'processing';
+  }
+
+  if (REFUNDED_PAYMENT_STATUSES.has(normalizedStatus)) {
+    return 'refunded';
+  }
+
+  return 'problematic';
 };
 
 /**

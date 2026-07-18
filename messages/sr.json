@@ -310,6 +310,7 @@
       "schedule": "Raspored",
       "payments": "Plaćanja",
       "packages": "Paketi usluga",
+      "paymentProviders": "Provajderi plaćanja",
       "blog": "Blog",
       "sendEmail": "Slanje emaila",
       "notifications": "Obaveštenja",

@@ -1,4 +1,4 @@
-import { PaymentKind, PaymentProvider, Prisma } from '@prisma/client';
+import { PaymentKind, Prisma } from '@prisma/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => {
@@ -55,7 +55,7 @@ import type { PayPalOrder, PayPalWebhookEvent } from '@/modules/payments/paypal/
 
 const basePayment = {
   id: 'payment-1',
-  provider: PaymentProvider.PAYPAL,
+  provider: 'PAYPAL',
   kind: PaymentKind.TOPUP,
   userId: 'user-1',
   orderId: 'order-1',
@@ -479,7 +479,12 @@ describe('PayPal payment service', () => {
     expect(paymentStatus).toBe('PARTIALLY_REFUNDED');
     expect(mocks.payment.findUnique).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { captureId: 'capture-1' }
+        where: {
+          provider_captureId: {
+            provider: 'PAYPAL',
+            captureId: 'capture-1'
+          }
+        }
       })
     );
     expect(mocks.getPayPalCapture).not.toHaveBeenCalled();

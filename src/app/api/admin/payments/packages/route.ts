@@ -5,14 +5,24 @@ import prisma from '@/lib/prisma';
 import { z } from 'zod';
 import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
+const localizedTextSchema = z.record(z.string(), z.string().trim().max(500));
+
 const createSchema = z.object({
-  title: z.any(), // Record<string, string> expected
-  description: z.any().optional(), // Record<string, string> expected
-  amount: z.number(),
-  currency: z.string().default('EUR'),
+  title: localizedTextSchema.refine(
+    value => Boolean(value.ru?.trim()),
+    'Russian title is required'
+  ),
+  description: localizedTextSchema.optional(),
+  amount: z.number().positive().max(999_999),
+  currency: z
+    .string()
+    .trim()
+    .regex(/^[A-Za-z]{3}$/)
+    .transform(value => value.toUpperCase())
+    .default('EUR'),
   coverImage: z.string().nullable().optional(),
   isActive: z.boolean().default(true),
-  order: z.number().default(0)
+  order: z.number().int().default(0)
 });
 
 async function getHandler(req: Request) {

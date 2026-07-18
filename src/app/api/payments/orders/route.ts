@@ -17,10 +17,12 @@ const topupAmountSchema = z
 const createOrderSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('CHECKOUT'),
+    provider: z.string().trim().min(1).max(64).optional(),
     servicePackageId: z.string().trim().min(1).max(128)
   }),
   z.object({
     kind: z.literal('TOPUP'),
+    provider: z.string().trim().min(1).max(64).optional(),
     amount: topupAmountSchema,
     description: z.string().trim().max(127).optional()
   })
@@ -100,7 +102,7 @@ async function postHandler(request: Request) {
     } else {
       orderInput = {
         amount: payload.data.amount,
-        currency: getActivePaymentCurrency(),
+        currency: await getActivePaymentCurrency(),
         description: payload.data.description || 'Пополнение баланса',
         kind: 'TOPUP'
       };
@@ -110,7 +112,26 @@ async function postHandler(request: Request) {
       return NextResponse.json({ message: 'Service package not found' }, { status: 404 });
     }
 
-    const paymentService = getPaymentService();
+    let paymentService;
+
+    try {
+      paymentService = await getPaymentService(payload.data.provider, {
+        requireEnabled: true
+      });
+    } catch {
+      return NextResponse.json(
+        { message: 'Selected payment provider is unavailable' },
+        { status: 409 }
+      );
+    }
+
+    if (!paymentService.supportsCurrency(orderInput.currency)) {
+      return NextResponse.json(
+        { message: 'Selected payment provider does not support this currency' },
+        { status: 409 }
+      );
+    }
+
     const order = await paymentService.createOrder({
       userId: session.user.id,
       ...orderInput

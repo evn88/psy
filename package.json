@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "node scripts/generate-sw.js",
+    "predev": "prisma generate && node scripts/generate-sw.js",
     "dev": "next dev",
     "prebuild": "node scripts/generate-sw.js",
     "build": "prisma generate && next build --webpack",

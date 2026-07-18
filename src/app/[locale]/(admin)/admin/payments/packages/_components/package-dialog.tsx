@@ -46,7 +46,16 @@ type PackageFormValues = z.infer<typeof packageSchema>;
 
 interface PackageDialogProps {
   children: React.ReactNode;
-  pkg?: any; // The initial package data if editing
+  pkg?: {
+    id: string;
+    title: Record<string, string>;
+    description: Record<string, string> | null;
+    amount: string;
+    currency: string;
+    isActive: boolean;
+    order: number;
+    coverImage: string | null;
+  };
   onSuccess?: () => void;
 }
 

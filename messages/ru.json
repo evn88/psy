@@ -320,6 +320,7 @@
       "schedule": "Расписание",
       "payments": "Платежи",
       "packages": "Пакеты услуг",
+      "paymentProviders": "Провайдеры оплаты",
       "blog": "Блог",
       "sendEmail": "Рассылка",
       "notifications": "Уведомления",

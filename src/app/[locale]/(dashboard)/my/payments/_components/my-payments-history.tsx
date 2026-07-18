@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 
 import { PaymentStatusBadge } from '@/modules/payments/components/payment-status-badge';
+import { getPaymentStatusGroup, type PaymentStatusGroup } from '@/modules/payments';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -26,6 +27,7 @@ interface MyPaymentHistoryItem {
   amountLabel: string;
   status: string;
   orderId: string;
+  providerLabel: string;
   createdAtLabel: string;
   capturedAtLabel: string;
 }
@@ -33,8 +35,6 @@ interface MyPaymentHistoryItem {
 interface MyPaymentsHistoryProps {
   payments: MyPaymentHistoryItem[];
 }
-
-type PaymentHistoryGroup = 'successful' | 'processing' | 'refunded' | 'problematic';
 
 interface PaymentHistoryEmptyStateProps {
   ctaLabel: string;
@@ -46,33 +46,6 @@ interface PaymentHistoryEmptyStateProps {
 interface PaymentHistoryTableProps {
   payments: MyPaymentHistoryItem[];
 }
-
-const SUCCESSFUL_PAYMENT_STATUSES = new Set(['COMPLETED', 'PARTIALLY_REFUNDED']);
-const PROCESSING_PAYMENT_STATUSES = new Set(['CREATED', 'SAVED', 'APPROVED', 'PENDING']);
-const REFUNDED_PAYMENT_STATUSES = new Set(['REFUNDED', 'REVERSED']);
-
-/**
- * Определяет группу истории для статуса платежа.
- * @param status - Статус платежа из базы.
- * @returns Ключ фильтра для вкладок истории.
- */
-const getPaymentHistoryGroup = (status: string): PaymentHistoryGroup => {
-  const normalizedStatus = status.toUpperCase();
-
-  if (SUCCESSFUL_PAYMENT_STATUSES.has(normalizedStatus)) {
-    return 'successful';
-  }
-
-  if (PROCESSING_PAYMENT_STATUSES.has(normalizedStatus)) {
-    return 'processing';
-  }
-
-  if (REFUNDED_PAYMENT_STATUSES.has(normalizedStatus)) {
-    return 'refunded';
-  }
-
-  return 'problematic';
-};
 
 /**
  * Пустое состояние для вкладок истории платежей.
@@ -115,55 +88,95 @@ const PaymentHistoryEmptyState = ({
  */
 const PaymentHistoryTable = ({ payments }: PaymentHistoryTableProps) => {
   return (
-    <div className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm">
-      <Table className="min-w-[820px]">
-        <TableHeader className="bg-muted/40">
-          <TableRow className="hover:bg-transparent border-b border-border/40">
-            <TableHead className="h-11 whitespace-nowrap text-[10px] font-bold uppercase tracking-wider text-muted-foreground/85">
-              Сумма
-            </TableHead>
-            <TableHead className="h-11 whitespace-nowrap text-[10px] font-bold uppercase tracking-wider text-muted-foreground/85">
-              Статус
-            </TableHead>
-            <TableHead className="h-11 whitespace-nowrap text-[10px] font-bold uppercase tracking-wider text-muted-foreground/85">
-              Order ID
-            </TableHead>
-            <TableHead className="h-11 whitespace-nowrap text-[10px] font-bold uppercase tracking-wider text-muted-foreground/85">
-              Создан
-            </TableHead>
-            <TableHead className="h-11 whitespace-nowrap text-[10px] font-bold uppercase tracking-wider text-muted-foreground/85">
-              Оплачен
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {payments.map(payment => (
-            <TableRow
-              key={payment.id}
-              className="hover:bg-primary/5 transition-colors border-b border-border/45"
-            >
-              <TableCell className="px-4 py-3.5 text-sm font-bold text-foreground/90">
-                {payment.amountLabel}
-              </TableCell>
-              <TableCell className="px-4 py-3.5">
-                <PaymentStatusBadge status={payment.status} />
-              </TableCell>
-              <TableCell className="px-4 py-3.5 font-mono text-xs text-muted-foreground/80">
-                <span className="block max-w-[260px] break-all" title={payment.orderId}>
-                  {payment.orderId}
-                </span>
-              </TableCell>
-              <TableCell className="px-4 py-3.5 text-xs text-muted-foreground/80">
-                {payment.createdAtLabel}
-              </TableCell>
-              <TableCell className="px-4 py-3.5 text-xs text-muted-foreground/80">
-                {payment.capturedAtLabel}
-              </TableCell>
+    <>
+      <div className="grid gap-3 md:hidden">
+        {payments.map(payment => (
+          <article key={payment.id} className="space-y-3 rounded-xl border p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-semibold">{payment.amountLabel}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{payment.providerLabel}</p>
+              </div>
+              <PaymentStatusBadge status={payment.status} />
+            </div>
+            <dl className="grid grid-cols-2 gap-3 text-xs">
+              <div>
+                <dt className="text-muted-foreground">Создан</dt>
+                <dd className="mt-1">{payment.createdAtLabel}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Подтверждён</dt>
+                <dd className="mt-1">{payment.capturedAtLabel}</dd>
+              </div>
+            </dl>
+            {getPaymentStatusGroup(payment.status) === 'problematic' ? (
+              <a href="#payment-checkout" className="inline-flex text-sm font-medium text-primary">
+                Повторить оплату
+              </a>
+            ) : null}
+          </article>
+        ))}
+      </div>
+      <div className="hidden overflow-hidden rounded-2xl border border-border/50 bg-card md:block">
+        <Table>
+          <TableHeader className="bg-muted/40">
+            <TableRow className="hover:bg-transparent border-b border-border/40">
+              <TableHead className="h-11 whitespace-nowrap text-[10px] font-bold uppercase tracking-wider text-muted-foreground/85">
+                Сумма
+              </TableHead>
+              <TableHead className="h-11 whitespace-nowrap text-[10px] font-bold uppercase tracking-wider text-muted-foreground/85">
+                Статус
+              </TableHead>
+              <TableHead className="h-11 whitespace-nowrap text-[10px] font-bold uppercase tracking-wider text-muted-foreground/85">
+                Провайдер
+              </TableHead>
+              <TableHead className="h-11 whitespace-nowrap text-[10px] font-bold uppercase tracking-wider text-muted-foreground/85">
+                Создан
+              </TableHead>
+              <TableHead className="h-11 whitespace-nowrap text-[10px] font-bold uppercase tracking-wider text-muted-foreground/85">
+                Оплачен
+              </TableHead>
+              <TableHead className="h-11 text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground/85">
+                Действие
+              </TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+          </TableHeader>
+          <TableBody>
+            {payments.map(payment => (
+              <TableRow
+                key={payment.id}
+                className="hover:bg-primary/5 transition-colors border-b border-border/45"
+              >
+                <TableCell className="px-4 py-3.5 text-sm font-bold text-foreground/90">
+                  {payment.amountLabel}
+                </TableCell>
+                <TableCell className="px-4 py-3.5">
+                  <PaymentStatusBadge status={payment.status} />
+                </TableCell>
+                <TableCell className="px-4 py-3.5 text-xs text-muted-foreground/80">
+                  {payment.providerLabel}
+                </TableCell>
+                <TableCell className="px-4 py-3.5 text-xs text-muted-foreground/80">
+                  {payment.createdAtLabel}
+                </TableCell>
+                <TableCell className="px-4 py-3.5 text-xs text-muted-foreground/80">
+                  {payment.capturedAtLabel}
+                </TableCell>
+                <TableCell className="px-4 py-3.5 text-right text-xs">
+                  {getPaymentStatusGroup(payment.status) === 'problematic' ? (
+                    <a href="#payment-checkout" className="font-medium text-primary">
+                      Повторить
+                    </a>
+                  ) : (
+                    '—'
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </>
   );
 };
 
@@ -171,9 +184,9 @@ const PaymentHistoryTable = ({ payments }: PaymentHistoryTableProps) => {
  * История платежей пользователя в личном кабинете.
  */
 export const MyPaymentsHistory = ({ payments }: MyPaymentsHistoryProps) => {
-  const groupedPayments = payments.reduce<Record<PaymentHistoryGroup, MyPaymentHistoryItem[]>>(
+  const groupedPayments = payments.reduce<Record<PaymentStatusGroup, MyPaymentHistoryItem[]>>(
     (accumulator, payment) => {
-      const group = getPaymentHistoryGroup(payment.status);
+      const group = getPaymentStatusGroup(payment.status);
       accumulator[group].push(payment);
 
       return accumulator;
@@ -189,7 +202,7 @@ export const MyPaymentsHistory = ({ payments }: MyPaymentsHistoryProps) => {
   const paymentTabs = [
     {
       ctaLabel: 'Перейти к оплате',
-      description: 'Здесь появятся все операции после capture и последующей синхронизации.',
+      description: 'Здесь появятся подтверждённые и ожидающие операции.',
       icon: Sparkles,
       items: payments,
       title: 'Платежей пока нет',
@@ -205,7 +218,7 @@ export const MyPaymentsHistory = ({ payments }: MyPaymentsHistoryProps) => {
     },
     {
       ctaLabel: 'Перейти к оплате',
-      description: 'Сюда попадают платежи, которые ещё проходят проверку или ожидают capture.',
+      description: 'Сюда попадают платежи, которые ещё проходят проверку.',
       icon: Clock3,
       items: groupedPayments.processing,
       title: 'Нет платежей в обработке',
@@ -238,8 +251,8 @@ export const MyPaymentsHistory = ({ payments }: MyPaymentsHistoryProps) => {
       <CardHeader className="space-y-4 border-b border-border/40 bg-gradient-to-b from-muted/20 to-card p-6 pb-5">
         <CardTitle className="text-lg font-bold">История платежей</CardTitle>
         <CardDescription className="max-w-2xl text-xs leading-relaxed text-muted-foreground/80">
-          Здесь появляются операции после capture и последующей синхронизации webhook. При
-          необходимости список можно быстро отфильтровать по статусу.
+          Следите за состоянием оплат и возвратов. Технические детали скрыты, чтобы история было
+          проще читать.
         </CardDescription>
       </CardHeader>
 

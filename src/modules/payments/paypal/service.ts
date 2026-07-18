@@ -202,7 +202,12 @@ const findPaymentByReferences = async (refs: {
 
   if (refs.captureId) {
     const payment = await prisma.payment.findUnique({
-      where: { captureId: refs.captureId },
+      where: {
+        provider_captureId: {
+          provider: 'PAYPAL',
+          captureId: refs.captureId
+        }
+      },
       select: paymentReferenceSelect
     });
 
@@ -213,7 +218,12 @@ const findPaymentByReferences = async (refs: {
 
   if (refs.orderId) {
     const payment = await prisma.payment.findUnique({
-      where: { orderId: refs.orderId },
+      where: {
+        provider_orderId: {
+          provider: 'PAYPAL',
+          orderId: refs.orderId
+        }
+      },
       select: paymentReferenceSelect
     });
 
@@ -588,7 +598,12 @@ const claimPayPalWebhookEvent = async (
   }
 
   const existingEvent = await prisma.paymentEvent.findUnique({
-    where: { providerEventId: event.id },
+    where: {
+      provider_providerEventId: {
+        provider: 'PAYPAL',
+        providerEventId: event.id
+      }
+    },
     select: {
       id: true,
       isProcessed: true,
@@ -736,7 +751,12 @@ const upsertDisputeFromWebhook = async (params: {
   const money = extractWebhookMoney(params.event);
 
   await prisma.paymentDispute.upsert({
-    where: { disputeId: params.disputeId },
+    where: {
+      provider_disputeId: {
+        provider: 'PAYPAL',
+        disputeId: params.disputeId
+      }
+    },
     update: {
       paymentId: params.paymentId ?? null,
       stage: getNestedString(params.event.resource, ['dispute_life_cycle_stage']) ?? null,
@@ -749,6 +769,7 @@ const upsertDisputeFromWebhook = async (params: {
       payload: toPrismaJson(params.event.resource)
     },
     create: {
+      provider: 'PAYPAL',
       paymentId: params.paymentId ?? null,
       disputeId: params.disputeId,
       stage: getNestedString(params.event.resource, ['dispute_life_cycle_stage']) ?? null,

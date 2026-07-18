@@ -6,6 +6,7 @@ import { DeletePackageButton } from './_components/delete-package-button';
 import { EditPackageButton } from './_components/edit-package-button';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
+import type { ServicePackage } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +39,7 @@ export default async function AdminPackagesPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {packages.map((pkg: any) => {
+          {(packages as ServicePackage[]).map(pkg => {
             const titleObj = pkg.title as Record<string, string>;
             const title = titleObj?.ru || titleObj?.en || 'Без названия';
 

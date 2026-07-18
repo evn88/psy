@@ -124,6 +124,12 @@ export function AppSidebar({ user, unreadSurveysCount = 0, ...props }: AppSideba
       icon: Package,
       isActive: pathname.startsWith('/admin/payments/packages')
     },
+    paymentProviders: {
+      title: tItems('paymentProviders'),
+      url: '/admin/payments/providers',
+      icon: Settings,
+      isActive: pathname.startsWith('/admin/payments/providers')
+    },
     blog: {
       title: tItems('blog'),
       url: '/admin/blog',
@@ -170,7 +176,13 @@ export function AppSidebar({ user, unreadSurveysCount = 0, ...props }: AppSideba
     },
     {
       label: tItems('groupOperations'),
-      routes: [routes.schedule, routes.payments, routes.packages, routes.sendEmail]
+      routes: [
+        routes.schedule,
+        routes.payments,
+        routes.packages,
+        routes.paymentProviders,
+        routes.sendEmail
+      ]
     },
     { label: tItems('groupContent'), routes: [routes.blog, routes.apps] },
     { label: tItems('groupSystem'), routes: [routes.backups, routes.logs, routes.profile] }

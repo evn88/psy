@@ -1,4 +1,3 @@
-import { PaymentProvider } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import type {
   CaptureOrderParams,
@@ -7,11 +6,13 @@ import type {
   OrderResponse
 } from '../types';
 import { capturePayPalOrder, createPayPalOrder } from '../paypal/client';
-import { syncPaymentFromPayPal } from '../paypal/service';
+import { syncPaymentFromPayPal, syncPaymentWithPayPal } from '../paypal/service';
+import { PAYPAL_PROVIDER_ID } from '../types';
+import { PAYPAL_SUPPORTED_CURRENCIES } from '../connectors/paypal/constants';
 
 export class PayPalService implements IPaymentService {
-  get providerName(): PaymentProvider {
-    return PaymentProvider.PAYPAL;
+  get providerName(): string {
+    return PAYPAL_PROVIDER_ID;
   }
 
   async createOrder(params: CreateOrderParams): Promise<OrderResponse> {
@@ -45,5 +46,15 @@ export class PayPalService implements IPaymentService {
     const order = await capturePayPalOrder(params.orderId);
 
     await syncPaymentFromPayPal({ order });
+  }
+
+  supportsCurrency(currency: string): boolean {
+    return PAYPAL_SUPPORTED_CURRENCIES.includes(currency.toUpperCase());
+  }
+
+  async syncPayment(
+    payment: Parameters<IPaymentService['syncPayment']>[0]
+  ): ReturnType<IPaymentService['syncPayment']> {
+    return syncPaymentWithPayPal(payment);
   }
 }

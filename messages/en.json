@@ -320,6 +320,7 @@
       "schedule": "Schedule",
       "payments": "Payments",
       "packages": "Service Packages",
+      "paymentProviders": "Payment Providers",
       "blog": "Blog",
       "sendEmail": "Send Email",
       "notifications": "Notifications",

@@ -7,14 +7,19 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 interface PaymentsSyncButtonProps {
+  compact?: boolean;
   paymentIds: string[];
   userId?: string;
 }
 
 /**
- * Кнопка ручной сверки локальных платежей с PayPal API.
+ * Кнопка ручной сверки локальных платежей с их провайдерами.
  */
-export const PaymentsSyncButton = ({ paymentIds, userId }: PaymentsSyncButtonProps) => {
+export const PaymentsSyncButton = ({
+  compact = false,
+  paymentIds,
+  userId
+}: PaymentsSyncButtonProps) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -50,9 +55,14 @@ export const PaymentsSyncButton = ({ paymentIds, userId }: PaymentsSyncButtonPro
   };
 
   return (
-    <Button onClick={handleSync} disabled={isPending || paymentIds.length === 0} variant="outline">
+    <Button
+      onClick={handleSync}
+      disabled={isPending || paymentIds.length === 0}
+      variant="outline"
+      size={compact ? 'sm' : 'default'}
+    >
       <RefreshCcw className={isPending ? 'mr-2 h-4 w-4 animate-spin' : 'mr-2 h-4 w-4'} />
-      {isPending ? 'Сверяю...' : 'Сверить с PayPal'}
+      {isPending ? 'Сверяю...' : compact ? 'Сверить' : 'Сверить с провайдерами'}
     </Button>
   );
 };

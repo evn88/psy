@@ -1,20 +1,12 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  DISPATCH_ACTION,
-  FUNDING,
-  PayPalButtons,
-  PayPalScriptProvider,
-  usePayPalScriptReducer
-} from '@paypal/react-paypal-js';
 import { CreditCard, Wallet } from 'lucide-react';
-import { useEffect, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { useTheme } from '@/components/theme-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -22,8 +14,9 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useRouter } from '@/i18n/navigation';
-import { cn } from '@/lib/utils';
 import { formatPaymentAmount } from '@/modules/payments';
+import { PaymentProviderCheckout } from '@/modules/payments/components/payment-provider-checkout';
+import type { PaymentProviderCheckoutConfig } from '@/modules/payments/types';
 
 import type { PaymentServicePackage } from './payment-checkout.types';
 import { getPaymentPackageTitle, PaymentPackageCard } from './payment-package-card';
@@ -43,50 +36,24 @@ const paymentCheckoutSchema = z.object({
 type PaymentCheckoutValues = z.infer<typeof paymentCheckoutSchema>;
 
 interface PaymentCheckoutCardProps {
-  clientId: string;
   currency: string;
   balance: string;
   packages: PaymentServicePackage[];
   locale: string;
+  providerConfigs: PaymentProviderCheckoutConfig[];
 }
 
-/**
- * Перезагружает PayPal SDK при смене валюты выбранного пакета.
- * @param props - актуальная валюта checkout.
- */
-const PayPalCurrencySync = ({ currency }: { currency: string }) => {
-  const [{ options }, dispatch] = usePayPalScriptReducer();
-
-  useEffect(() => {
-    if (options.currency === currency) {
-      return;
-    }
-
-    dispatch({
-      type: DISPATCH_ACTION.RESET_OPTIONS,
-      value: {
-        ...options,
-        currency
-      }
-    });
-  }, [currency, dispatch, options]);
-
-  return null;
-};
-
 export const PaymentCheckoutCard = ({
-  clientId,
   currency,
   balance,
   packages,
-  locale
+  locale,
+  providerConfigs
 }: PaymentCheckoutCardProps) => {
   const router = useRouter();
-  const { resolvedTheme } = useTheme();
-  const isDarkTheme = resolvedTheme === 'dark';
   const [isRefreshing, startTransition] = useTransition();
-
   const [selectionType, setSelectionType] = useState<'package' | 'topup'>('package');
+  const [providerId, setProviderId] = useState(providerConfigs[0]?.id ?? '');
 
   const form = useForm<PaymentCheckoutValues>({
     resolver: zodResolver(paymentCheckoutSchema),
@@ -109,10 +76,17 @@ export const PaymentCheckoutCard = ({
   const selectedPackageCurrency = packages.find(
     paymentPackage => paymentPackage.id === watchedPackageId
   )?.currency;
+  const availableProviders = providerConfigs.filter(provider =>
+    selectionType === 'package' && selectedPackageCurrency
+      ? provider.supportedCurrencies.includes(selectedPackageCurrency.toUpperCase())
+      : provider.supportedCurrencies.includes(provider.defaultCurrency)
+  );
+  const activeProvider =
+    availableProviders.find(provider => provider.id === providerId) ?? availableProviders[0];
   const checkoutCurrency =
     selectionType === 'package' && selectedPackageCurrency
       ? selectedPackageCurrency.toUpperCase()
-      : currency.toUpperCase();
+      : (activeProvider?.defaultCurrency ?? currency).toUpperCase();
   const amountPreviewValue = watchedAmount ?? '';
   const descriptionPreviewValue = (watchedDescription ?? '').trim();
   const amountPreviewLabel = paymentCheckoutSchema.shape.amount.safeParse(amountPreviewValue)
@@ -120,36 +94,6 @@ export const PaymentCheckoutCard = ({
     ? formatPaymentAmount(amountPreviewValue, checkoutCurrency)
     : 'Укажите сумму';
   const descriptionPreviewLabel = descriptionPreviewValue || DEFAULT_DESCRIPTION;
-
-  const paymentMethods = [
-    {
-      key: 'paypal',
-      fundingSource: FUNDING.PAYPAL,
-      style: {
-        color: isDarkTheme ? 'black' : 'blue',
-        borderRadius: 16,
-        disableMaxWidth: true,
-        height: 48,
-        label: 'paypal' as const,
-        layout: 'horizontal' as const,
-        shape: 'rect' as const,
-        tagline: false
-      }
-    },
-    {
-      key: 'card',
-      fundingSource: FUNDING.CARD,
-      style: {
-        color: 'black' as const,
-        borderRadius: 16,
-        disableMaxWidth: true,
-        height: 48,
-        layout: 'horizontal' as const,
-        shape: 'rect' as const,
-        tagline: false
-      }
-    }
-  ] as const;
 
   const handleSuccessfulCapture = () => {
     toast.success('Платёж успешно проведён');
@@ -171,9 +115,9 @@ export const PaymentCheckoutCard = ({
 
     const payloadBody = {
       amount: form.getValues('amount'),
-      currency,
       description: form.getValues('description'),
       kind: selectionType === 'topup' ? 'TOPUP' : 'CHECKOUT',
+      provider: activeProvider?.id,
       servicePackageId: form.getValues('packageId') || undefined
     };
 
@@ -199,7 +143,11 @@ export const PaymentCheckoutCard = ({
 
   const handleApprove = async (orderId: string) => {
     const response = await fetch(`/api/payments/orders/${orderId}/capture`, {
-      method: 'POST'
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ provider: activeProvider?.id })
     });
 
     if (!response.ok) {
@@ -226,12 +174,8 @@ export const PaymentCheckoutCard = ({
 
   return (
     <div className="space-y-8">
-      {/* Баланс пользователя */}
-      <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card/95 to-card/70 p-6 backdrop-blur-md shadow-sm transition-all duration-300 hover:shadow-md hover:border-primary/30">
-        <div className="absolute right-0 top-0 -mr-16 -mt-16 h-36 w-36 rounded-full bg-primary/10 blur-2xl" />
-        <div className="absolute left-1/4 bottom-0 -ml-16 -mb-16 h-28 w-28 rounded-full bg-blue-500/5 blur-2xl" />
-
-        <div className="relative z-10 flex items-center justify-between">
+      <div className="rounded-2xl border bg-card p-5 sm:p-6">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-inner">
               <Wallet className="h-6 w-6" aria-hidden />
@@ -240,7 +184,7 @@ export const PaymentCheckoutCard = ({
               <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
                 Текущий баланс
               </p>
-              <h2 className="text-3xl font-extrabold tracking-tight mt-1 bg-gradient-to-r from-foreground to-foreground/85 bg-clip-text">
+              <h2 className="mt-1 text-3xl font-bold tracking-tight">
                 {formatPaymentAmount(balance, currency)}
               </h2>
             </div>
@@ -319,7 +263,7 @@ export const PaymentCheckoutCard = ({
                     >
                       Сумма
                     </Label>
-                    <span className="text-xs font-bold text-primary">{currency}</span>
+                    <span className="text-xs font-bold text-primary">{checkoutCurrency}</span>
                   </div>
                   <Input
                     id="payment-amount"
@@ -331,7 +275,7 @@ export const PaymentCheckoutCard = ({
                   />
                   <div className="mt-3.5 flex items-center justify-between gap-3 text-[11px] text-muted-foreground/75 leading-relaxed">
                     <p>Введите сумму в формате `50.00`</p>
-                    <p className="font-semibold">{formatPaymentAmount(50, currency)}</p>
+                    <p className="font-semibold">{formatPaymentAmount(50, checkoutCurrency)}</p>
                   </div>
                   {form.formState.errors.amount && (
                     <p className="mt-2 text-xs font-bold text-destructive">
@@ -384,7 +328,7 @@ export const PaymentCheckoutCard = ({
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border/50 bg-muted/5 p-5 shadow-sm hover:border-primary/20 transition-colors">
+          <div className="rounded-2xl border border-border/50 bg-muted/5 p-5">
             <div className="space-y-1">
               <p className="text-sm font-bold text-foreground/90">Способ оплаты</p>
               <p className="text-xs text-muted-foreground/80 leading-relaxed">
@@ -396,56 +340,40 @@ export const PaymentCheckoutCard = ({
               </p>
             </div>
 
-            <PayPalScriptProvider
-              options={{
-                clientId,
-                currency: checkoutCurrency,
-                intent: 'capture',
-                components: 'buttons,funding-eligibility'
-              }}
-            >
-              <PayPalCurrencySync currency={checkoutCurrency} />
-              <div className="mt-5 grid gap-3">
-                {paymentMethods.map(method => (
-                  <div
-                    key={method.key}
-                    aria-busy={isRefreshing}
-                    className={cn(
-                      'rounded-[18px] bg-transparent py-0.5',
-                      isRefreshing && 'pointer-events-none opacity-70 transition-opacity'
-                    )}
+            {availableProviders.length > 1 ? (
+              <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Провайдер оплаты">
+                {availableProviders.map(provider => (
+                  <Button
+                    key={provider.id}
+                    type="button"
+                    variant={provider.id === activeProvider?.id ? 'default' : 'outline'}
+                    onClick={() => setProviderId(provider.id)}
                   >
-                    <PayPalButtons
-                      fundingSource={method.fundingSource}
-                      className="w-full"
-                      style={method.style}
-                      disabled={isRefreshing}
-                      forceReRender={[
-                        checkoutCurrency,
-                        watchedAmount,
-                        watchedDescription,
-                        isDarkTheme,
-                        method.key
-                      ]}
-                      onClick={async (_data, actions) => {
-                        const isValid = await validateCheckout();
-
-                        if (!isValid) {
-                          return actions.reject();
-                        }
-
-                        return actions.resolve();
-                      }}
-                      createOrder={handleCreateOrder}
-                      onApprove={async data => {
-                        await handleApprove(data.orderID);
-                      }}
-                      onError={handleCheckoutError}
-                    />
-                  </div>
+                    {provider.label}
+                  </Button>
                 ))}
               </div>
-            </PayPalScriptProvider>
+            ) : null}
+
+            <div className="mt-5">
+              {activeProvider ? (
+                <PaymentProviderCheckout
+                  amount={watchedAmount ?? ''}
+                  config={activeProvider}
+                  currency={checkoutCurrency}
+                  description={watchedDescription ?? ''}
+                  disabled={isRefreshing}
+                  createOrder={handleCreateOrder}
+                  onApprove={handleApprove}
+                  onError={handleCheckoutError}
+                  validate={validateCheckout}
+                />
+              ) : (
+                <p role="alert" className="text-sm text-muted-foreground">
+                  Онлайн-оплата временно недоступна. Пожалуйста, попробуйте позже.
+                </p>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>

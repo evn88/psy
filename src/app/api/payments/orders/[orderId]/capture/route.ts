@@ -3,8 +3,12 @@ import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { getPaymentService } from '@/modules/payments/factory';
 import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
+import { z } from 'zod';
 
 const CAPTURABLE_PAYMENT_STATUSES = new Set(['CREATED', 'SAVED', 'APPROVED']);
+const captureRequestSchema = z.object({
+  provider: z.string().trim().min(1).max(64).optional()
+});
 
 interface CaptureRouteProps {
   params: Promise<{ orderId: string }>;
@@ -23,8 +27,13 @@ async function postHandler(request: Request, { params }: Readonly<CaptureRoutePr
     }
 
     const { orderId } = await params;
-    const payment = await prisma.payment.findUnique({
-      where: { orderId },
+    const payload = captureRequestSchema.safeParse(await request.json().catch(() => ({})));
+    const payment = await prisma.payment.findFirst({
+      where: {
+        orderId,
+        userId: session.user.id,
+        ...(payload.success && payload.data.provider ? { provider: payload.data.provider } : {})
+      },
       select: {
         provider: true,
         status: true,
@@ -40,7 +49,7 @@ async function postHandler(request: Request, { params }: Readonly<CaptureRoutePr
       return NextResponse.json({ success: true });
     }
 
-    const paymentService = getPaymentService();
+    const paymentService = await getPaymentService(payment.provider);
 
     if (
       payment.provider !== paymentService.providerName ||
