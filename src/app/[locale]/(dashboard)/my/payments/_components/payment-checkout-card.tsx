@@ -341,40 +341,46 @@ export const PaymentCheckoutCard = ({
               </p>
             </div>
 
-            {availableProviders.length > 1 ? (
-              <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Провайдер оплаты">
-                {availableProviders.map(provider => (
-                  <Button
-                    key={provider.id}
-                    type="button"
-                    variant={provider.id === activeProvider?.id ? 'default' : 'outline'}
-                    onClick={() => setProviderId(provider.id)}
-                  >
-                    {provider.label}
-                  </Button>
-                ))}
-              </div>
-            ) : null}
+            {activeProvider ? (
+              <Tabs
+                value={activeProvider.id}
+                onValueChange={setProviderId}
+                className="mt-4 flex flex-col gap-5"
+              >
+                <TabsList
+                  className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl border border-border/50 bg-muted/40 p-1"
+                  aria-label="Провайдер оплаты"
+                >
+                  {availableProviders.map(provider => (
+                    <TabsTrigger
+                      key={provider.id}
+                      value={provider.id}
+                      className="min-h-10 min-w-fit rounded-lg px-4 text-xs font-semibold"
+                    >
+                      {provider.label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
 
-            <div className="mt-5">
-              {activeProvider ? (
-                <PaymentProviderCheckout
-                  amount={watchedAmount ?? ''}
-                  config={activeProvider}
-                  currency={checkoutCurrency}
-                  description={watchedDescription ?? ''}
-                  disabled={isRefreshing}
-                  createOrder={handleCreateOrder}
-                  onApprove={handleApprove}
-                  onError={handleCheckoutError}
-                  validate={validateCheckout}
-                />
-              ) : (
-                <p role="alert" className="text-sm text-muted-foreground">
-                  Онлайн-оплата временно недоступна. Пожалуйста, попробуйте позже.
-                </p>
-              )}
-            </div>
+                <TabsContent value={activeProvider.id} className="mt-0">
+                  <PaymentProviderCheckout
+                    amount={watchedAmount ?? ''}
+                    config={activeProvider}
+                    currency={checkoutCurrency}
+                    description={watchedDescription ?? ''}
+                    disabled={isRefreshing}
+                    createOrder={handleCreateOrder}
+                    onApprove={handleApprove}
+                    onError={handleCheckoutError}
+                    validate={validateCheckout}
+                  />
+                </TabsContent>
+              </Tabs>
+            ) : (
+              <p role="alert" className="mt-5 text-sm text-muted-foreground">
+                Онлайн-оплата временно недоступна. Пожалуйста, попробуйте позже.
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>
