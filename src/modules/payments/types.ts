@@ -48,12 +48,19 @@ export interface CaptureOrderParams {
   orderId: string;
 }
 
+export interface RefundPaymentParams {
+  payment: SyncPaymentParams;
+  amount?: string;
+  idempotencyKey: string;
+}
+
 export type SyncPaymentParams = Pick<
   Payment,
   | 'amount'
   | 'balanceCreditedAt'
   | 'captureId'
   | 'currency'
+  | 'fulfilledAt'
   | 'id'
   | 'kind'
   | 'orderId'
@@ -94,6 +101,11 @@ export interface IPaymentService {
    * Подтверждает (захватывает средства) ордера.
    */
   captureOrder(params: CaptureOrderParams): Promise<void>;
+
+  /**
+   * Возвращает полный платёж или указанную часть через провайдера.
+   */
+  refundPayment(params: RefundPaymentParams): Promise<Payment>;
 
   /**
    * Проверяет поддержку валюты до создания внешней операции.

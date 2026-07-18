@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { EventStatus, EventType, Prisma } from '@prisma/client';
+import { EventBillingSource, EventStatus, EventType, Prisma } from '@prisma/client';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { sendEventCancellationEmail, sendEventNotificationEmail } from '@/lib/email';
@@ -13,6 +13,12 @@ import {
   MIN_SESSION_REMINDER_MINUTES
 } from '@/lib/session-reminders';
 import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
+import {
+  chargeConsultationInTransaction,
+  reverseConsultationInTransaction,
+  runFinancialTransaction
+} from '@/modules/payments/financial/financial-service.server';
+import { FinancialDomainError } from '@/modules/payments/financial/errors';
 
 const eventUserSelect = {
   id: true,
@@ -36,7 +42,10 @@ const updateEventSchema = z.object({
     .int()
     .min(MIN_SESSION_REMINDER_MINUTES)
     .max(MAX_SESSION_REMINDER_MINUTES)
-    .optional()
+    .optional(),
+  billingSource: z.nativeEnum(EventBillingSource).optional(),
+  purchasedPackageId: z.string().cuid().optional(),
+  billingReason: z.string().trim().max(500).optional()
 });
 
 type EventConflict = {
@@ -90,7 +99,15 @@ async function patchHandler(req: Request, props: { params: Promise<{ id: string 
     const event = await prisma.event.findUnique({
       where: { id: eventId },
       include: {
-        user: { select: eventUserSelect }
+        user: { select: eventUserSelect },
+        billingAllocation: {
+          select: {
+            id: true,
+            purchasedPackageId: true,
+            source: true,
+            status: true
+          }
+        }
       }
     });
 
@@ -98,10 +115,20 @@ async function patchHandler(req: Request, props: { params: Promise<{ id: string 
       return NextResponse.json({ message: 'Event not found' }, { status: 404 });
     }
 
-    const { start, end, status, cancelReason, ...restData } = result.data;
+    const {
+      start,
+      end,
+      status,
+      cancelReason,
+      billingSource,
+      purchasedPackageId,
+      billingReason,
+      ...restData
+    } = result.data;
     const nextStart = start ? new Date(start) : event.start;
     const nextEnd = end ? new Date(end) : event.end;
     const nextStatus = status ?? event.status;
+    const nextType = result.data.type ?? event.type;
     const normalizedCancelReason = normalizeCancelReason(cancelReason);
     const hasUserField = Object.prototype.hasOwnProperty.call(result.data, 'userId');
     const hasCancelReasonField = Object.prototype.hasOwnProperty.call(result.data, 'cancelReason');
@@ -131,6 +158,37 @@ async function patchHandler(req: Request, props: { params: Promise<{ id: string 
       isUserChanged ||
       isRejectingPendingRequest;
     const shouldBumpReminderWorkflowVersion = shouldResetReminderSentAt || isStatusChanged;
+    const shouldReverseBilling =
+      Boolean(event.billingAllocation) &&
+      (effectiveNextStatus === EventStatus.CANCELLED ||
+        nextType !== EventType.CONSULTATION ||
+        isUserChanged);
+    const shouldChargeConsultation =
+      !event.billingAllocation &&
+      nextType === EventType.CONSULTATION &&
+      effectiveNextStatus === EventStatus.SCHEDULED &&
+      Boolean(targetUserId);
+
+    if (
+      event.billingAllocation &&
+      !shouldReverseBilling &&
+      (isStartChanged || isEndChanged || isUserChanged)
+    ) {
+      return NextResponse.json(
+        {
+          message:
+            'У оплаченной консультации нельзя менять время или клиента. Сначала отмените встречу, чтобы выполнить возврат.'
+        },
+        { status: 409 }
+      );
+    }
+
+    if (shouldChargeConsultation && !billingSource) {
+      return NextResponse.json(
+        { message: 'Выберите источник оплаты консультации' },
+        { status: 400 }
+      );
+    }
 
     if (!isValidDateRange({ start: nextStart, end: nextEnd })) {
       return NextResponse.json({ message: 'Invalid date range' }, { status: 400 });
@@ -214,12 +272,45 @@ async function patchHandler(req: Request, props: { params: Promise<{ id: string 
       updateData.cancelReason = null;
     }
 
-    const updatedEvent = await prisma.event.update({
-      where: { id: eventId },
-      data: updateData,
-      include: {
-        user: { select: eventUserSelect }
+    const updatedEvent = await runFinancialTransaction(async transaction => {
+      if (shouldReverseBilling) {
+        await reverseConsultationInTransaction(transaction, {
+          eventId,
+          initiatedById: session.user.id!,
+          reason: normalizedCancelReason || 'Изменение или отмена консультации'
+        });
       }
+
+      const nextEvent = await transaction.event.update({
+        where: { id: eventId },
+        data: updateData,
+        include: {
+          user: { select: eventUserSelect },
+          billingAllocation: {
+            select: {
+              purchasedPackageId: true,
+              source: true
+            }
+          }
+        }
+      });
+
+      if (shouldChargeConsultation && billingSource && targetUserId) {
+        await chargeConsultationInTransaction(transaction, {
+          eventId,
+          userId: targetUserId,
+          initiatedById: session.user.id!,
+          durationMinutes: Math.round((nextEnd.getTime() - nextStart.getTime()) / 60_000),
+          eventStart: nextStart,
+          billing: {
+            source: billingSource,
+            purchasedPackageId,
+            reason: billingReason
+          }
+        });
+      }
+
+      return nextEvent;
     });
 
     if (isRejectingPendingRequest && event.user?.email) {
@@ -305,6 +396,10 @@ async function patchHandler(req: Request, props: { params: Promise<{ id: string 
 
     return NextResponse.json({ ...updatedEvent, isGoogleSynced: googleSyncResult.success });
   } catch (error) {
+    if (error instanceof FinancialDomainError) {
+      return NextResponse.json({ message: error.message, code: error.code }, { status: 409 });
+    }
+
     console.error('Failed to update event:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
@@ -336,6 +431,21 @@ async function deleteHandler(req: Request, props: { params: Promise<{ id: string
 
     if (!event) {
       return NextResponse.json({ message: 'Event not found' }, { status: 404 });
+    }
+
+    const billingAllocation = await prisma.eventBillingAllocation.findUnique({
+      where: { eventId },
+      select: { id: true }
+    });
+
+    if (billingAllocation) {
+      return NextResponse.json(
+        {
+          message:
+            'Оплаченную консультацию нельзя удалить. Отмените её, чтобы сохранить финансовую историю и вернуть средства.'
+        },
+        { status: 409 }
+      );
     }
 
     // Trigger Google Calendar sync before deletion

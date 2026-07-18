@@ -1,5 +1,13 @@
-import { Prisma, type Payment, type PaymentKind } from '@prisma/client';
+import { PaymentKind, Prisma, type Payment } from '@prisma/client';
 import prisma from '@/lib/prisma';
+import {
+  fulfillDirectPackagePurchase,
+  recordProviderRefund,
+  recordTopupCredit
+} from '@/modules/payments/financial/financial-service.server';
+import { FINANCIAL_CURRENCY } from '@/modules/payments/financial/constants';
+import { FinancialDomainError } from '@/modules/payments/financial/errors';
+import { PAYPAL_PROVIDER_ID } from '@/modules/payments/types';
 import { getPayPalCapture, getPayPalOrder } from './client';
 import type {
   PayPalCapture,
@@ -36,7 +44,8 @@ const paymentReferenceSelect = {
   amount: true,
   currency: true,
   balanceCreditedAt: true,
-  refundedAmount: true
+  refundedAmount: true,
+  fulfilledAt: true
 } satisfies Prisma.PaymentSelect;
 
 type PaymentReference = Prisma.PaymentGetPayload<{
@@ -298,77 +307,113 @@ export const syncPaymentFromPayPal = async (params: {
     lastSyncedAt: new Date()
   };
 
+  if (
+    CAPTURED_PAYMENT_STATUSES.has(paymentData.status) &&
+    paymentData.currency !== FINANCIAL_CURRENCY
+  ) {
+    throw new FinancialDomainError(
+      'INVALID_CURRENCY',
+      `Внутренний баланс поддерживает только ${FINANCIAL_CURRENCY}`
+    );
+  }
+
   if (existingPayment) {
-    if (paymentData.kind === 'TOPUP') {
-      return runSerializablePaymentTransaction(async transaction => {
-        const currentPayment = await transaction.payment.findUniqueOrThrow({
-          where: { id: existingPayment.id },
-          select: paymentReferenceSelect
-        });
-        const isCapturedLifecycle = CAPTURED_PAYMENT_STATUSES.has(paymentData.status);
-        const currentRefundedAmount = currentPayment.refundedAmount.greaterThan(paymentData.amount)
-          ? paymentData.amount
-          : currentPayment.refundedAmount;
-        const refundedAmount = FULL_REFUND_STATUSES.has(paymentData.status)
-          ? paymentData.amount
-          : currentRefundedAmount;
-        const shouldApplyInitialCredit =
-          currentPayment.balanceCreditedAt === null && isCapturedLifecycle;
-        const creditAmount = shouldApplyInitialCredit
-          ? paymentData.amount.minus(refundedAmount)
-          : new Prisma.Decimal(0);
-        const refundAdjustment = currentPayment.balanceCreditedAt
+    return runSerializablePaymentTransaction(async transaction => {
+      const currentPayment = await transaction.payment.findUniqueOrThrow({
+        where: { id: existingPayment.id },
+        select: paymentReferenceSelect
+      });
+      const isCapturedLifecycle = CAPTURED_PAYMENT_STATUSES.has(paymentData.status);
+      const currentRefundedAmount = currentPayment.refundedAmount.greaterThan(paymentData.amount)
+        ? paymentData.amount
+        : currentPayment.refundedAmount;
+      const refundedAmount = FULL_REFUND_STATUSES.has(paymentData.status)
+        ? paymentData.amount
+        : currentRefundedAmount;
+      const shouldApplyInitialCredit =
+        paymentData.kind === PaymentKind.TOPUP &&
+        currentPayment.balanceCreditedAt === null &&
+        isCapturedLifecycle;
+      const creditAmount = shouldApplyInitialCredit
+        ? paymentData.amount.minus(refundedAmount)
+        : new Prisma.Decimal(0);
+      const refundAdjustment =
+        paymentData.kind === PaymentKind.TOPUP && currentPayment.balanceCreditedAt
           ? refundedAmount.minus(currentRefundedAmount)
           : new Prisma.Decimal(0);
-        const balanceDelta = creditAmount.minus(refundAdjustment);
-        const fallbackStatus =
-          currentPayment.balanceCreditedAt && !isCapturedLifecycle
-            ? currentPayment.status
-            : paymentData.status;
-        const status = getRefundAwarePaymentStatus(
-          paymentData.amount,
+      const fallbackStatus =
+        currentPayment.balanceCreditedAt && !isCapturedLifecycle
+          ? currentPayment.status
+          : paymentData.status;
+      const status = getRefundAwarePaymentStatus(
+        paymentData.amount,
+        refundedAmount,
+        fallbackStatus
+      );
+      const updatedPayment = await transaction.payment.update({
+        where: { id: existingPayment.id },
+        data: {
+          ...paymentData,
+          status,
           refundedAmount,
-          fallbackStatus
-        );
-        const updatedPayment = await transaction.payment.update({
-          where: { id: existingPayment.id },
-          data: {
-            ...paymentData,
-            status,
-            refundedAmount,
-            balanceCreditedAt:
-              currentPayment.balanceCreditedAt ?? (isCapturedLifecycle ? new Date() : null)
-          }
-        });
-
-        if (balanceDelta.greaterThan(0)) {
-          await transaction.user.update({
-            where: { id: userId },
-            data: { balance: { increment: balanceDelta } }
-          });
-        } else if (balanceDelta.lessThan(0)) {
-          await transaction.user.update({
-            where: { id: userId },
-            data: { balance: { decrement: balanceDelta.abs() } }
-          });
+          balanceCreditedAt:
+            paymentData.kind === PaymentKind.TOPUP
+              ? (currentPayment.balanceCreditedAt ?? (isCapturedLifecycle ? new Date() : null))
+              : currentPayment.balanceCreditedAt
         }
-
-        return updatedPayment;
       });
-    }
 
-    return prisma.payment.update({
-      where: { id: existingPayment.id },
-      data: paymentData
+      if (creditAmount.greaterThan(0)) {
+        await recordTopupCredit({
+          transaction,
+          paymentId: updatedPayment.id,
+          userId,
+          amount: creditAmount,
+          provider: PAYPAL_PROVIDER_ID
+        });
+      } else if (
+        paymentData.kind === PaymentKind.CHECKOUT &&
+        updatedPayment.servicePackageId &&
+        isCapturedLifecycle &&
+        currentPayment.fulfilledAt === null
+      ) {
+        await fulfillDirectPackagePurchase({
+          transaction,
+          paymentId: updatedPayment.id,
+          userId,
+          amount: paymentData.amount,
+          servicePackageId: updatedPayment.servicePackageId,
+          provider: PAYPAL_PROVIDER_ID
+        });
+      }
+
+      const refundDelta = refundedAmount.minus(currentRefundedAmount);
+      const shouldRecordRefund =
+        refundAdjustment.greaterThan(0) ||
+        (paymentData.kind === PaymentKind.CHECKOUT && refundDelta.greaterThan(0));
+
+      if (shouldRecordRefund) {
+        await recordProviderRefund({
+          transaction,
+          paymentId: updatedPayment.id,
+          userId,
+          paymentKind: paymentData.kind,
+          paymentAmount: paymentData.amount,
+          refundDelta,
+          totalRefundedAmount: refundedAmount,
+          provider: PAYPAL_PROVIDER_ID
+        });
+      }
+
+      return updatedPayment;
     });
   }
 
   const isInitialCapturedTopup =
     paymentData.kind === 'TOPUP' && CAPTURED_PAYMENT_STATUSES.has(paymentData.status);
-  const initialRefundedAmount =
-    paymentData.kind === 'TOPUP' && FULL_REFUND_STATUSES.has(paymentData.status)
-      ? paymentData.amount
-      : new Prisma.Decimal(0);
+  const initialRefundedAmount = FULL_REFUND_STATUSES.has(paymentData.status)
+    ? paymentData.amount
+    : new Prisma.Decimal(0);
   const createData = params.paymentId
     ? {
         id: params.paymentId,
@@ -391,26 +436,50 @@ export const syncPaymentFromPayPal = async (params: {
       };
 
   try {
-    if (paymentData.kind === 'TOPUP') {
-      return await runSerializablePaymentTransaction(async transaction => {
-        const createdPayment = await transaction.payment.create({ data: createData });
-        const creditAmount = isInitialCapturedTopup
-          ? paymentData.amount.minus(initialRefundedAmount)
-          : new Prisma.Decimal(0);
+    return await runSerializablePaymentTransaction(async transaction => {
+      const createdPayment = await transaction.payment.create({ data: createData });
+      const isCapturedLifecycle = CAPTURED_PAYMENT_STATUSES.has(paymentData.status);
+      const creditAmount = isInitialCapturedTopup
+        ? paymentData.amount.minus(initialRefundedAmount)
+        : new Prisma.Decimal(0);
 
-        if (creditAmount.greaterThan(0)) {
-          await transaction.user.update({
-            where: { id: userId },
-            data: { balance: { increment: creditAmount } }
+      if (creditAmount.greaterThan(0)) {
+        await recordTopupCredit({
+          transaction,
+          paymentId: createdPayment.id,
+          userId,
+          amount: creditAmount,
+          provider: PAYPAL_PROVIDER_ID
+        });
+      } else if (
+        paymentData.kind === PaymentKind.CHECKOUT &&
+        createdPayment.servicePackageId &&
+        isCapturedLifecycle
+      ) {
+        await fulfillDirectPackagePurchase({
+          transaction,
+          paymentId: createdPayment.id,
+          userId,
+          amount: paymentData.amount,
+          servicePackageId: createdPayment.servicePackageId,
+          provider: PAYPAL_PROVIDER_ID
+        });
+
+        if (initialRefundedAmount.greaterThan(0)) {
+          await recordProviderRefund({
+            transaction,
+            paymentId: createdPayment.id,
+            userId,
+            paymentKind: paymentData.kind,
+            paymentAmount: paymentData.amount,
+            refundDelta: initialRefundedAmount,
+            totalRefundedAmount: initialRefundedAmount,
+            provider: PAYPAL_PROVIDER_ID
           });
         }
+      }
 
-        return createdPayment;
-      });
-    }
-
-    return await prisma.payment.create({
-      data: createData
+      return createdPayment;
     });
   } catch (error) {
     if (!isUniqueConstraintError(error)) {
@@ -700,18 +769,21 @@ const applyRefundAdjustmentFromWebhook = async (params: {
       params.event.event_type === 'PAYMENT.CAPTURE.REVERSED' ? 'REVERSED' : 'REFUNDED';
     const status = getRefundAwarePaymentStatus(currentPayment.amount, refundedAmount, refundStatus);
 
-    if (
-      currentPayment.kind === 'TOPUP' &&
-      currentPayment.balanceCreditedAt &&
-      adjustmentAmount.greaterThan(0)
-    ) {
-      await transaction.user.update({
-        where: { id: currentPayment.userId },
-        data: {
-          balance: {
-            decrement: adjustmentAmount
-          }
-        }
+    const paymentWasFulfilled =
+      currentPayment.kind === PaymentKind.TOPUP
+        ? Boolean(currentPayment.balanceCreditedAt)
+        : Boolean(currentPayment.fulfilledAt);
+
+    if (paymentWasFulfilled && adjustmentAmount.greaterThan(0)) {
+      await recordProviderRefund({
+        transaction,
+        paymentId: currentPayment.id,
+        userId: currentPayment.userId,
+        paymentKind: currentPayment.kind,
+        paymentAmount: currentPayment.amount,
+        refundDelta: adjustmentAmount,
+        totalRefundedAmount: refundedAmount,
+        provider: PAYPAL_PROVIDER_ID
       });
     }
 

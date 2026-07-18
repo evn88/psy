@@ -66,25 +66,49 @@ const eventTypeOptions = [
 const eventStatusOptions = ['SCHEDULED', 'CANCELLED', 'COMPLETED', 'PENDING_CONFIRMATION'] as const;
 const defaultDurationOptions = [30, 45, 60, 90, 120];
 
-const eventSchema = z.object({
-  title: z.string().optional(),
-  type: z.enum(eventTypeOptions),
-  status: z.enum(eventStatusOptions),
-  date: z.string().min(1, 'Обязательно'),
-  startTime: z.string().min(1, 'Обязательно'),
-  duration: z
-    .number()
-    .int()
-    .min(15, 'Минимум 15 минут')
-    .max(8 * 60, 'Максимум 8 часов'),
-  meetLink: optionalMeetingUrlSchema,
-  userId: z.string().optional().nullable(),
-  reminderMinutesBeforeStart: z
-    .number()
-    .int()
-    .min(MIN_SESSION_REMINDER_MINUTES)
-    .max(MAX_SESSION_REMINDER_MINUTES)
-});
+const eventSchema = z
+  .object({
+    title: z.string().optional(),
+    type: z.enum(eventTypeOptions),
+    status: z.enum(eventStatusOptions),
+    date: z.string().min(1, 'Обязательно'),
+    startTime: z.string().min(1, 'Обязательно'),
+    duration: z
+      .number()
+      .int()
+      .min(15, 'Минимум 15 минут')
+      .max(8 * 60, 'Максимум 8 часов'),
+    meetLink: optionalMeetingUrlSchema,
+    userId: z.string().optional().nullable(),
+    reminderMinutesBeforeStart: z
+      .number()
+      .int()
+      .min(MIN_SESSION_REMINDER_MINUTES)
+      .max(MAX_SESSION_REMINDER_MINUTES),
+    billingSource: z.enum(['WALLET', 'PACKAGE']).optional(),
+    purchasedPackageId: z.string().optional(),
+    billingReason: z.string().trim().max(500).optional()
+  })
+  .superRefine((values, context) => {
+    const requiresBilling =
+      values.type === 'CONSULTATION' && values.status === 'SCHEDULED' && Boolean(values.userId);
+
+    if (requiresBilling && !values.billingSource) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Выберите источник оплаты',
+        path: ['billingSource']
+      });
+    }
+
+    if (requiresBilling && values.billingSource === 'PACKAGE' && !values.purchasedPackageId) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Выберите пакет',
+        path: ['purchasedPackageId']
+      });
+    }
+  });
 
 type EventFormValues = z.infer<typeof eventSchema>;
 
@@ -94,6 +118,19 @@ type UserOption = {
   email: string;
   role: 'ADMIN' | 'USER';
   timezone: string | null;
+};
+
+type FinancialSummary = {
+  balance: string;
+  consultationPrice: string;
+  currency: 'EUR';
+  packages: Array<{
+    id: string;
+    title: string;
+    totalMinutes: number;
+    remainingMinutes: number;
+    expiresAt: string | null;
+  }>;
 };
 
 interface EventDialogProps {
@@ -112,6 +149,16 @@ const fetchUsers = async (url: string): Promise<UserOption[]> => {
     throw new Error('Не удалось загрузить клиентов');
   }
   return response.json() as Promise<UserOption[]>;
+};
+
+const fetchFinancialSummary = async (url: string): Promise<FinancialSummary> => {
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error('Не удалось загрузить баланс клиента');
+  }
+
+  return response.json() as Promise<FinancialSummary>;
 };
 
 const getBrowserTimezone = (): string => {
@@ -150,6 +197,14 @@ const getInitialValues = (params: {
     ...temporalValues,
     meetLink: event?.meetLink || '',
     userId: event?.userId || null,
+    billingSource:
+      event?.billingAllocation?.source === 'PACKAGE'
+        ? 'PACKAGE'
+        : event?.billingAllocation?.source === 'WALLET'
+          ? 'WALLET'
+          : 'WALLET',
+    purchasedPackageId: event?.billingAllocation?.purchasedPackageId || undefined,
+    billingReason: '',
     reminderMinutesBeforeStart:
       event?.reminderMinutesBeforeStart ?? DEFAULT_SESSION_REMINDER_MINUTES
   };
@@ -184,6 +239,9 @@ export const EventDialog = ({
   });
   const currentDuration = form.watch('duration');
   const selectedUserId = form.watch('userId');
+  const selectedEventType = form.watch('type');
+  const selectedEventStatus = form.watch('status');
+  const selectedBillingSource = form.watch('billingSource');
   const eventDate = form.watch('date');
   const selectedUserOption = users?.find(user => user.id === selectedUserId);
   const selectedUser =
@@ -199,6 +257,16 @@ export const EventDialog = ({
   const durationOptions = useMemo(
     () => Array.from(new Set([...defaultDurationOptions, currentDuration])).sort((a, b) => a - b),
     [currentDuration]
+  );
+  const shouldShowBilling =
+    selectedEventType === 'CONSULTATION' &&
+    selectedEventStatus === 'SCHEDULED' &&
+    Boolean(selectedUserId);
+  const { data: financialSummary, isLoading: financialSummaryLoading } = useSWR<FinancialSummary>(
+    open && shouldShowBilling && selectedUserId
+      ? `/api/admin/users/${selectedUserId}/financial-summary`
+      : null,
+    fetchFinancialSummary
   );
 
   useEffect(() => {
@@ -233,7 +301,15 @@ export const EventDialog = ({
         title: values.title?.trim() || '',
         meetLink: values.meetLink || undefined,
         userId: values.userId ?? null,
-        reminderMinutesBeforeStart: values.reminderMinutesBeforeStart
+        reminderMinutesBeforeStart: values.reminderMinutesBeforeStart,
+        ...(shouldShowBilling && values.billingSource
+          ? {
+              billingSource: values.billingSource,
+              purchasedPackageId:
+                values.billingSource === 'PACKAGE' ? values.purchasedPackageId : undefined,
+              billingReason: values.billingReason?.trim() || undefined
+            }
+          : {})
       };
 
       await onSave(payload);
@@ -363,6 +439,93 @@ export const EventDialog = ({
                 </FormItem>
               )}
             />
+
+            {shouldShowBilling && (
+              <div className="space-y-4 rounded-xl border bg-muted/20 p-4">
+                <div>
+                  <p className="font-medium">Оплата консультации</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {financialSummaryLoading
+                      ? 'Загружаем баланс и пакеты…'
+                      : `Баланс: ${financialSummary?.balance ?? '0.00'} EUR · Тариф: ${
+                          financialSummary?.consultationPrice ?? '0.00'
+                        } EUR`}
+                  </p>
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="billingSource"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Источник списания</FormLabel>
+                      <Select
+                        onValueChange={value => {
+                          field.onChange(value);
+                          if (value !== 'PACKAGE') {
+                            form.setValue('purchasedPackageId', undefined);
+                          }
+                        }}
+                        value={field.value}
+                        disabled={Boolean(event?.billingAllocation)}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Выберите источник" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="WALLET">Денежный баланс (EUR)</SelectItem>
+                          <SelectItem value="PACKAGE" disabled={!financialSummary?.packages.length}>
+                            Купленный пакет
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {event?.billingAllocation && (
+                        <FormDescription>
+                          Источник уже зафиксирован. Для возврата используйте отмену встречи.
+                        </FormDescription>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {selectedBillingSource === 'PACKAGE' && (
+                  <FormField
+                    control={form.control}
+                    name="purchasedPackageId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Пакет клиента</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          disabled={Boolean(event?.billingAllocation)}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Выберите пакет" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {financialSummary?.packages.map(purchasedPackage => (
+                              <SelectItem key={purchasedPackage.id} value={purchasedPackage.id}>
+                                {purchasedPackage.title} · {purchasedPackage.remainingMinutes} мин.
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Для встречи будет зарезервировано {currentDuration} минут.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </div>
+            )}
 
             <div className="grid gap-4 sm:grid-cols-3">
               <FormField

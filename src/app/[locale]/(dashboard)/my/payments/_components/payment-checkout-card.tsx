@@ -20,6 +20,7 @@ import type { OrderResponse, PaymentProviderCheckoutConfig } from '@/modules/pay
 
 import type { PaymentServicePackage } from './payment-checkout.types';
 import { getPaymentPackageTitle, PaymentPackageCard } from './payment-package-card';
+import { purchasePackageFromBalanceAction } from '../actions';
 
 const DEFAULT_DESCRIPTION = 'Оплата услуг';
 
@@ -52,6 +53,7 @@ export const PaymentCheckoutCard = ({
 }: PaymentCheckoutCardProps) => {
   const router = useRouter();
   const [isRefreshing, startTransition] = useTransition();
+  const [isBalancePurchasePending, startBalancePurchaseTransition] = useTransition();
   const [selectionType, setSelectionType] = useState<'package' | 'topup'>('package');
   const [providerId, setProviderId] = useState(providerConfigs[0]?.id ?? '');
 
@@ -73,20 +75,12 @@ export const PaymentCheckoutCard = ({
     name: ['amount', 'description', 'packageId']
   });
 
-  const selectedPackageCurrency = packages.find(
-    paymentPackage => paymentPackage.id === watchedPackageId
-  )?.currency;
   const availableProviders = providerConfigs.filter(provider =>
-    selectionType === 'package' && selectedPackageCurrency
-      ? provider.supportedCurrencies.includes(selectedPackageCurrency.toUpperCase())
-      : provider.supportedCurrencies.includes(provider.defaultCurrency)
+    provider.supportedCurrencies.includes('EUR')
   );
   const activeProvider =
     availableProviders.find(provider => provider.id === providerId) ?? availableProviders[0];
-  const checkoutCurrency =
-    selectionType === 'package' && selectedPackageCurrency
-      ? selectedPackageCurrency.toUpperCase()
-      : (activeProvider?.defaultCurrency ?? currency).toUpperCase();
+  const checkoutCurrency = 'EUR';
   const amountPreviewValue = watchedAmount ?? '';
   const descriptionPreviewValue = (watchedDescription ?? '').trim();
   const amountPreviewLabel = paymentCheckoutSchema.shape.amount.safeParse(amountPreviewValue)
@@ -172,6 +166,27 @@ export const PaymentCheckoutCard = ({
     form.setValue('description', title, { shouldValidate: true });
     form.setValue('packageId', pkg.id);
   };
+  const selectedPackage = packages.find(pkg => pkg.id === watchedPackageId);
+  const canPurchaseFromBalance =
+    Boolean(selectedPackage) && Number(balance) >= Number(selectedPackage?.amount ?? 0);
+
+  const purchaseFromBalance = () => {
+    if (!selectedPackage) return;
+
+    startBalancePurchaseTransition(async () => {
+      const result = await purchasePackageFromBalanceAction(
+        selectedPackage.id,
+        crypto.randomUUID()
+      );
+
+      if (result.success) {
+        toast.success(result.message);
+        router.refresh();
+      } else {
+        toast.error(result.message);
+      }
+    });
+  };
 
   return (
     <div className="space-y-8">
@@ -205,7 +220,9 @@ export const PaymentCheckoutCard = ({
             <div className="space-y-1 min-w-0">
               <CardTitle className="text-lg font-bold">Оплата услуг</CardTitle>
               <CardDescription className="max-w-2xl text-xs leading-relaxed text-muted-foreground/80">
-                Выберите пакет консультаций или пополните баланс на произвольную сумму.
+                Пополняйте внутренний счёт для разовых консультаций или оплачивайте с него пакет.
+                Пакет также можно купить сразу картой — система сначала зачислит оплату, затем
+                спишет стоимость пакета.
               </CardDescription>
             </div>
           </div>
@@ -327,6 +344,21 @@ export const PaymentCheckoutCard = ({
                 {descriptionPreviewLabel}
               </p>
             </div>
+            {selectionType === 'package' && selectedPackage && (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={!canPurchaseFromBalance || isBalancePurchasePending}
+                onClick={purchaseFromBalance}
+              >
+                <Wallet />
+                {isBalancePurchasePending
+                  ? 'Покупаем…'
+                  : canPurchaseFromBalance
+                    ? 'Купить с баланса'
+                    : 'Недостаточно на балансе'}
+              </Button>
+            )}
           </div>
 
           <div className="rounded-2xl border border-border/50 bg-muted/5 p-5">

@@ -91,7 +91,8 @@ describe('payment routes', () => {
     expect(mocks.findServicePackage).toHaveBeenCalledWith({
       where: {
         id: 'package-1',
-        isActive: true
+        isActive: true,
+        currency: 'EUR'
       },
       select: {
         id: true,

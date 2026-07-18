@@ -10,6 +10,7 @@ import {
   type PayPalCapture,
   PayPalApiError,
   type PayPalOrder,
+  type PayPalRefund,
   type PayPalWebhookEvent,
   type PayPalWebhookVerificationResponse
 } from './types';
@@ -254,6 +255,32 @@ export const capturePayPalOrder = async (orderId: string): Promise<PayPalOrder> 
 export const getPayPalCapture = async (captureId: string): Promise<PayPalCapture> => {
   return paypalRequest<PayPalCapture>(`/v2/payments/captures/${captureId}`, {
     method: 'GET'
+  });
+};
+
+/**
+ * Выполняет полный или частичный возврат PayPal capture.
+ */
+export const refundPayPalCapture = async (params: {
+  captureId: string;
+  amount?: string;
+  currency: string;
+  idempotencyKey: string;
+}): Promise<PayPalRefund> => {
+  return paypalRequest<PayPalRefund>(`/v2/payments/captures/${params.captureId}/refund`, {
+    method: 'POST',
+    headers: {
+      Prefer: 'return=representation',
+      'PayPal-Request-Id': params.idempotencyKey
+    },
+    body: params.amount
+      ? {
+          amount: {
+            currency_code: params.currency,
+            value: params.amount
+          }
+        }
+      : {}
   });
 };
 

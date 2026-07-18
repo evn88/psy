@@ -78,9 +78,8 @@ export default async function AdminPackagesPage() {
                     </Badge>
                   </div>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-                    <span>
-                      Цена: {pkg.amount.toString()} {pkg.currency}
-                    </span>
+                    <span>Цена: {pkg.amount.toString()} EUR</span>
+                    <span>Консультации: {pkg.includedMinutes} мин.</span>
                     <span>Позиция: {pkg.order}</span>
                   </div>
                 </div>

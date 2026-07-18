@@ -14,12 +14,8 @@ const createSchema = z.object({
   ),
   description: localizedTextSchema.optional(),
   amount: z.number().positive().max(999_999),
-  currency: z
-    .string()
-    .trim()
-    .regex(/^[A-Za-z]{3}$/)
-    .transform(value => value.toUpperCase())
-    .default('EUR'),
+  currency: z.literal('EUR').default('EUR'),
+  includedMinutes: z.number().int().min(15).max(100_000),
   coverImage: z.string().nullable().optional(),
   isActive: z.boolean().default(true),
   order: z.number().int().default(0)
@@ -53,7 +49,8 @@ async function postHandler(req: Request) {
     );
   }
 
-  const { title, description, amount, currency, coverImage, isActive, order } = parsed.data;
+  const { title, description, amount, currency, includedMinutes, coverImage, isActive, order } =
+    parsed.data;
 
   const pkg = await prisma.servicePackage.create({
     data: {
@@ -61,6 +58,7 @@ async function postHandler(req: Request) {
       description: description ?? null,
       amount,
       currency,
+      includedMinutes,
       coverImage: coverImage ?? null,
       isActive,
       order

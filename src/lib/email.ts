@@ -21,6 +21,7 @@ import { AccountDeletedUserTemplate } from '@/emails/account-deleted-user-templa
 import { AccountDeletedAdminTemplate } from '@/emails/account-deleted-admin-template';
 import { AdminIntakeNotificationTemplate } from '@/emails/admin-intake-notification-template';
 import { PilloNotificationTemplate } from '@/emails/pillo-notification-template';
+import { FinancialNotificationTemplate } from '@/emails/financial-notification-template';
 import {
   formatPilloIntakeDateTime,
   getPilloNotificationCopy,
@@ -64,6 +65,53 @@ const interpolate = (template: string, vars: Record<string, string>): string => 
     (result, [key, value]) => result.replace(new RegExp(`\\{${key}\\}`, 'g'), value),
     template
   );
+};
+
+interface SendFinancialNotificationEmailParams {
+  email: string;
+  subject: string;
+  heading: string;
+  greeting: string;
+  message: string;
+  details: Array<{ label: string; value: string }>;
+  actionUrl: string;
+  actionText: string;
+}
+
+/**
+ * Отправляет подготовленное обязательное финансовое уведомление.
+ */
+export const sendFinancialNotificationEmail = async ({
+  email,
+  subject,
+  heading,
+  greeting,
+  message,
+  details,
+  actionUrl,
+  actionText
+}: SendFinancialNotificationEmailParams): Promise<string | null> => {
+  const { data, error } = await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: [email],
+    subject,
+    react: FinancialNotificationTemplate({
+      preview: subject,
+      heading,
+      greeting,
+      message,
+      details,
+      actionUrl,
+      actionText
+    })
+  });
+
+  if (error) {
+    console.error('Ошибка отправки финансового уведомления:', error);
+    return null;
+  }
+
+  return data?.id ?? null;
 };
 
 type EventNotificationVariant = 'default' | 'bookingPending' | 'bookingConfirmed';

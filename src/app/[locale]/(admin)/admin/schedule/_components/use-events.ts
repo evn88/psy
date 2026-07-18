@@ -1,8 +1,12 @@
 import useSWR from 'swr';
-import { Event as PrismaEvent, EventStatus, EventType } from '@prisma/client';
+import { Event as PrismaEvent, EventBillingSource, EventStatus, EventType } from '@prisma/client';
 
 export type Event = PrismaEvent & {
   user?: { id: string; name: string | null; email: string; timezone: string | null } | null;
+  billingAllocation?: {
+    source: EventBillingSource;
+    purchasedPackageId: string | null;
+  } | null;
 };
 
 export type EventMutationInput = {
@@ -14,6 +18,9 @@ export type EventMutationInput = {
   meetLink?: string;
   userId: string | null;
   reminderMinutesBeforeStart: number;
+  billingSource?: EventBillingSource;
+  purchasedPackageId?: string;
+  billingReason?: string;
 };
 
 type EventApiItem = Omit<Event, 'start' | 'end' | 'createdAt' | 'updatedAt'> & {

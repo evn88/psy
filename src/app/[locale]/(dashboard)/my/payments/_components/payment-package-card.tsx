@@ -70,6 +70,9 @@ export const PaymentPackageCard = ({
       >
         {formatPaymentAmount(pkg.amount, pkg.currency)}
       </p>
+      <p className="mt-1 text-xs font-medium text-muted-foreground">
+        {pkg.includedMinutes} минут консультаций
+      </p>
     </button>
   );
 };

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { EventStatus } from '@prisma/client';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { CalendarView } from './calendar-view';
 import { type Event, type EventMutationInput, useEvents } from './use-events';
@@ -123,7 +124,11 @@ export function ScheduleDashboard({ workHourStart = 9, workHourEnd = 20 }: Sched
   const handleRequestClick = (event: Event) => {
     setCurrentDate(new Date(event.start));
     setSelectedDate(new Date(event.start));
-    handleEditEvent(event);
+    handleEditEvent({
+      ...event,
+      status:
+        event.status === EventStatus.PENDING_CONFIRMATION ? EventStatus.SCHEDULED : event.status
+    });
   };
 
   if (!isMounted) return <div className="min-h-[500px]" />;

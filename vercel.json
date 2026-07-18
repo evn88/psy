@@ -12,6 +12,10 @@
     {
       "path": "/api/cron/system-logs-cleanup",
       "schedule": "30 0 * * *"
+    },
+    {
+      "path": "/api/cron/financial-emails",
+      "schedule": "* * * * *"
     }
   ]
 }

@@ -10,7 +10,8 @@ import type {
   CaptureOrderParams,
   CreateOrderParams,
   IPaymentService,
-  OrderResponse
+  OrderResponse,
+  RefundPaymentParams
 } from '@/modules/payments/types';
 import { STRIPE_PROVIDER_ID } from '@/modules/payments/types';
 
@@ -81,6 +82,26 @@ export class StripeService implements IPaymentService {
     }
 
     await syncPaymentFromStripe({ paymentIntent: capturedPaymentIntent });
+  }
+
+  async refundPayment(params: RefundPaymentParams) {
+    const stripe = getStripeClient();
+
+    await stripe.refunds.create(
+      {
+        payment_intent: params.payment.orderId,
+        ...(params.amount
+          ? {
+              amount: toStripeMinorUnits(params.amount, params.payment.currency)
+            }
+          : {})
+      },
+      {
+        idempotencyKey: params.idempotencyKey
+      }
+    );
+
+    return syncPaymentWithStripe(params.payment);
   }
 
   supportsCurrency(currency: string): boolean {

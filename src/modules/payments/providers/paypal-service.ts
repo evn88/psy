@@ -1,11 +1,15 @@
 import { randomUUID } from 'node:crypto';
+import { Prisma } from '@prisma/client';
+
+import { applyConfirmedProviderRefund } from '@/modules/payments/financial/financial-service.server';
 import type {
   CaptureOrderParams,
   CreateOrderParams,
   IPaymentService,
-  OrderResponse
+  OrderResponse,
+  RefundPaymentParams
 } from '../types';
-import { capturePayPalOrder, createPayPalOrder } from '../paypal/client';
+import { capturePayPalOrder, createPayPalOrder, refundPayPalCapture } from '../paypal/client';
 import { syncPaymentFromPayPal, syncPaymentWithPayPal } from '../paypal/service';
 import { PAYPAL_PROVIDER_ID } from '../types';
 import { PAYPAL_SUPPORTED_CURRENCIES } from '../connectors/paypal/constants';
@@ -47,6 +51,29 @@ export class PayPalService implements IPaymentService {
     const order = await capturePayPalOrder(params.orderId);
 
     await syncPaymentFromPayPal({ order });
+  }
+
+  async refundPayment(params: RefundPaymentParams) {
+    if (!params.payment.captureId) {
+      throw new Error('PayPal payment does not contain capture ID');
+    }
+
+    const refund = await refundPayPalCapture({
+      captureId: params.payment.captureId,
+      amount: params.amount,
+      currency: params.payment.currency,
+      idempotencyKey: params.idempotencyKey
+    });
+
+    if (refund.status === 'COMPLETED' && refund.amount?.value) {
+      return applyConfirmedProviderRefund({
+        paymentId: params.payment.id,
+        refundAmount: new Prisma.Decimal(refund.amount.value),
+        provider: PAYPAL_PROVIDER_ID
+      });
+    }
+
+    return syncPaymentWithPayPal(params.payment);
   }
 
   supportsCurrency(currency: string): boolean {

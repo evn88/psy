@@ -37,6 +37,7 @@ interface ClientItem {
   email: string;
   image: string | null;
   role: string;
+  balance: string;
   intakesCount: number;
   fmtCreatedAt: string;
   clientGroupId: string | null;
@@ -159,6 +160,7 @@ export function ClientsTable({ clients, groups }: { clients: ClientItem[]; group
               <TableHead>{t('name')}</TableHead>
               <TableHead>{t('email')}</TableHead>
               <TableHead>Группа</TableHead>
+              <TableHead>Баланс</TableHead>
               <TableHead className="text-center">{t('intakesCount')}</TableHead>
               <TableHead>{t('registeredAt')}</TableHead>
               <TableHead className="text-right">{t('actions')}</TableHead>
@@ -167,7 +169,7 @@ export function ClientsTable({ clients, groups }: { clients: ClientItem[]; group
           <TableBody>
             {filteredClients.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
                   Нет данных
                 </TableCell>
               </TableRow>
@@ -204,6 +206,7 @@ export function ClientsTable({ clients, groups }: { clients: ClientItem[]; group
                       <span className="text-xs text-muted-foreground">Нет</span>
                     )}
                   </TableCell>
+                  <TableCell className="font-medium tabular-nums">{client.balance} EUR</TableCell>
                   <TableCell className="text-center">
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-semibold ${client.intakesCount > 0 ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}

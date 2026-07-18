@@ -36,7 +36,11 @@ const packageSchema = z.object({
   amount: z
     .number({ message: 'Сумма должна быть больше 0' })
     .min(0.01, 'Сумма должна быть больше 0'),
-  currency: z.string(),
+  currency: z.literal('EUR'),
+  includedMinutes: z
+    .number({ message: 'Укажите длительность пакета' })
+    .int('Количество минут должно быть целым')
+    .min(15, 'Минимум 15 минут'),
   isActive: z.boolean(),
   order: z.number({ message: 'Введите число' }),
   coverImage: z.string().optional()
@@ -52,6 +56,7 @@ interface PackageDialogProps {
     description: Record<string, string> | null;
     amount: string;
     currency: string;
+    includedMinutes: number;
     isActive: boolean;
     order: number;
     coverImage: string | null;
@@ -75,7 +80,8 @@ export function PackageDialog({ children, pkg, onSuccess }: PackageDialogProps) 
       descriptionEn: pkg?.description?.en || '',
       descriptionSr: pkg?.description?.sr || '',
       amount: pkg?.amount ? parseFloat(pkg.amount) : 50,
-      currency: pkg?.currency || 'EUR',
+      currency: 'EUR',
+      includedMinutes: pkg?.includedMinutes ?? 60,
       isActive: pkg?.isActive ?? true,
       order: pkg?.order ?? 0,
       coverImage: pkg?.coverImage || ''
@@ -97,7 +103,8 @@ export function PackageDialog({ children, pkg, onSuccess }: PackageDialogProps) 
           ...(values.descriptionSr ? { sr: values.descriptionSr } : {})
         },
         amount: values.amount,
-        currency: values.currency,
+        currency: 'EUR',
+        includedMinutes: values.includedMinutes,
         isActive: values.isActive,
         order: values.order,
         coverImage: values.coverImage || null
@@ -281,12 +288,22 @@ export function PackageDialog({ children, pkg, onSuccess }: PackageDialogProps) 
               />
               <FormField
                 control={form.control}
-                name="currency"
+                name="includedMinutes"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Валюта</FormLabel>
+                    <FormLabel>Минуты консультаций</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input
+                        type="number"
+                        min={15}
+                        step={15}
+                        {...field}
+                        value={field.value ?? ''}
+                        onChange={event => {
+                          const value = Number.parseInt(event.target.value, 10);
+                          field.onChange(Number.isNaN(value) ? undefined : value);
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

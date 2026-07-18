@@ -22,6 +22,9 @@ const mocks = vi.hoisted(() => {
   return {
     getPayPalCapture: vi.fn(),
     getPayPalOrder: vi.fn(),
+    fulfillDirectPackagePurchase: vi.fn(),
+    recordProviderRefund: vi.fn(),
+    recordTopupCredit: vi.fn(),
     payment,
     paymentDispute: {
       upsert: vi.fn()
@@ -40,6 +43,14 @@ vi.mock('@/lib/prisma', () => ({
     user: mocks.user,
     $transaction: mocks.transaction
   }
+}));
+
+vi.mock('server-only', () => ({}));
+
+vi.mock('@/modules/payments/financial/financial-service.server', () => ({
+  fulfillDirectPackagePurchase: mocks.fulfillDirectPackagePurchase,
+  recordProviderRefund: mocks.recordProviderRefund,
+  recordTopupCredit: mocks.recordTopupCredit
 }));
 
 vi.mock('@/modules/payments/paypal/client', () => ({
@@ -239,11 +250,14 @@ describe('PayPal payment service', () => {
     ]);
 
     expect(mocks.payment.update).toHaveBeenCalledTimes(2);
-    expect(mocks.user.update).toHaveBeenCalledOnce();
-    expect(mocks.user.update).toHaveBeenCalledWith({
-      where: { id: 'user-1' },
-      data: { balance: { increment: new Prisma.Decimal('25.00') } }
-    });
+    expect(mocks.recordTopupCredit).toHaveBeenCalledOnce();
+    expect(mocks.recordTopupCredit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-1',
+        amount: new Prisma.Decimal('25.00'),
+        provider: 'PAYPAL'
+      })
+    );
     expect(mocks.transaction).toHaveBeenCalledWith(expect.any(Function), {
       isolationLevel: 'Serializable'
     });
@@ -277,7 +291,7 @@ describe('PayPal payment service', () => {
         })
       })
     );
-    expect(mocks.user.update).not.toHaveBeenCalled();
+    expect(mocks.recordTopupCredit).not.toHaveBeenCalled();
     expect(paymentStatus).toBe('COMPLETED');
   });
 
@@ -339,7 +353,7 @@ describe('PayPal payment service', () => {
     ]);
 
     expect(mocks.getPayPalOrder).toHaveBeenCalledOnce();
-    expect(mocks.user.update).toHaveBeenCalledOnce();
+    expect(mocks.recordTopupCredit).toHaveBeenCalledOnce();
     expect(storedEvent?.isProcessed).toBe(true);
   });
 
@@ -466,15 +480,14 @@ describe('PayPal payment service', () => {
     await processPayPalWebhookEvent(event);
 
     // Assert
-    expect(mocks.user.update).toHaveBeenCalledOnce();
-    expect(mocks.user.update).toHaveBeenCalledWith({
-      where: { id: 'user-1' },
-      data: {
-        balance: {
-          decrement: new Prisma.Decimal('10.00')
-        }
-      }
-    });
+    expect(mocks.recordProviderRefund).toHaveBeenCalledOnce();
+    expect(mocks.recordProviderRefund).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-1',
+        refundDelta: new Prisma.Decimal('10.00'),
+        totalRefundedAmount: new Prisma.Decimal('10.00')
+      })
+    );
     expect(refundedAmount.equals(new Prisma.Decimal('10.00'))).toBe(true);
     expect(paymentStatus).toBe('PARTIALLY_REFUNDED');
     expect(mocks.payment.findUnique).toHaveBeenCalledWith(
@@ -506,15 +519,13 @@ describe('PayPal payment service', () => {
     });
 
     // Assert
-    expect(mocks.user.update).toHaveBeenCalledOnce();
-    expect(mocks.user.update).toHaveBeenCalledWith({
-      where: { id: 'user-1' },
-      data: {
-        balance: {
-          increment: new Prisma.Decimal('15.00')
-        }
-      }
-    });
+    expect(mocks.recordTopupCredit).toHaveBeenCalledOnce();
+    expect(mocks.recordTopupCredit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-1',
+        amount: new Prisma.Decimal('15.00')
+      })
+    );
     expect(refundedAmount.equals(new Prisma.Decimal('10.00'))).toBe(true);
     expect(paymentStatus).toBe('PARTIALLY_REFUNDED');
     expect(balanceCreditedAt).toBeInstanceOf(Date);
@@ -536,14 +547,13 @@ describe('PayPal payment service', () => {
     await processPayPalWebhookEvent(reversalEvent);
 
     // Assert
-    expect(mocks.user.update).toHaveBeenCalledWith({
-      where: { id: 'user-1' },
-      data: {
-        balance: {
-          decrement: new Prisma.Decimal('15.00')
-        }
-      }
-    });
+    expect(mocks.recordProviderRefund).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-1',
+        refundDelta: new Prisma.Decimal('15.00'),
+        totalRefundedAmount: new Prisma.Decimal('25.00')
+      })
+    );
     expect(refundedAmount.equals(new Prisma.Decimal('25.00'))).toBe(true);
     expect(paymentStatus).toBe('REVERSED');
   });

@@ -3,7 +3,8 @@ import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
-import { getPaymentService, getActivePaymentCurrency } from '@/modules/payments/factory';
+import { getPaymentService } from '@/modules/payments/factory';
+import { FINANCIAL_CURRENCY } from '@/modules/payments/financial/constants';
 import type { CreateOrderParams } from '@/modules/payments/types';
 import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
@@ -80,7 +81,8 @@ async function postHandler(request: Request) {
       const servicePackage = await prisma.servicePackage.findFirst({
         where: {
           id: payload.data.servicePackageId,
-          isActive: true
+          isActive: true,
+          currency: FINANCIAL_CURRENCY
         },
         select: {
           id: true,
@@ -102,7 +104,7 @@ async function postHandler(request: Request) {
     } else {
       orderInput = {
         amount: payload.data.amount,
-        currency: await getActivePaymentCurrency(),
+        currency: FINANCIAL_CURRENCY,
         description: payload.data.description || 'Пополнение баланса',
         kind: 'TOPUP'
       };

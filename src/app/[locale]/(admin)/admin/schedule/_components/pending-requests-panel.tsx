@@ -91,6 +91,11 @@ export const PendingRequestsPanel = ({
    * @param event - событие, которое нужно подтвердить.
    */
   const handleApprove = async (event: Event): Promise<void> => {
+    if (onRequestClick) {
+      onRequestClick(event);
+      return;
+    }
+
     setActiveRequestId(event.id);
 
     try {

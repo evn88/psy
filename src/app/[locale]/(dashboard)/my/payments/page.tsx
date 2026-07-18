@@ -2,14 +2,17 @@ import { auth } from '@/auth';
 import { type AppLocale, defaultLocale, isLocale } from '@/i18n/config';
 import { redirect } from '@/i18n/navigation';
 import prisma from '@/lib/prisma';
-import { formatPaymentAmount } from '@/modules/payments';
 import {
   getEnabledPaymentCheckoutConfigs,
   getInstalledPaymentConnectorMetadata
 } from '@/modules/payments/connectors/registry.server';
 import { getTranslations } from 'next-intl/server';
 import { requireAuthenticatedUser } from '@/lib/auth-helpers';
-import { CreditCard } from 'lucide-react';
+import { CreditCard, PackageCheck } from 'lucide-react';
+import type { Prisma } from '@prisma/client';
+import { getFinancialHistory } from '@/modules/payments/financial/financial-history.server';
+import type { FinancialHistoryItem } from '@/modules/payments/financial/financial-history-table';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 import { MyPaymentsHistory } from './_components/my-payments-history';
 import { PaymentCheckoutCard } from './_components/payment-checkout-card';
@@ -44,46 +47,49 @@ export default async function MyPaymentsPage({ params }: Readonly<MyPaymentsPage
   }
 
   const providerMetadata: PaymentConnectorMetadata[] = getInstalledPaymentConnectorMetadata();
-  const [payments, packages, providerConfigs] = await Promise.all([
-    prisma.payment.findMany({
-      where: { userId: user.id },
-      select: {
-        id: true,
-        amount: true,
-        capturedAt: true,
-        createdAt: true,
-        currency: true,
-        orderId: true,
-        provider: true,
-        status: true
-      },
-      orderBy: { createdAt: 'desc' }
-    }),
-    prisma.servicePackage.findMany({
-      where: { isActive: true },
-      orderBy: { order: 'asc' }
-    }),
-    getEnabledPaymentCheckoutConfigs()
-  ]);
-  type PaymentRecord = (typeof payments)[number];
-  type ServicePackageRecord = (typeof packages)[number];
+  const [historyResult, packagesResult, purchasedPackagesResult, providerConfigs] =
+    await Promise.all([
+      getFinancialHistory({ userId: user.id, take: 500 }),
+      prisma.servicePackage.findMany({
+        where: { isActive: true, currency: 'EUR' },
+        orderBy: { order: 'asc' }
+      }),
+      prisma.purchasedPackage.findMany({
+        where: { userId: user.id },
+        orderBy: { purchasedAt: 'desc' }
+      }),
+      getEnabledPaymentCheckoutConfigs()
+    ]);
+  type ServicePackageRecord = Prisma.ServicePackageGetPayload<Record<string, never>>;
+  type PurchasedPackageRecord = Prisma.PurchasedPackageGetPayload<Record<string, never>>;
+  const packages = packagesResult as ServicePackageRecord[];
+  const purchasedPackages = purchasedPackagesResult as PurchasedPackageRecord[];
+  const history = historyResult as FinancialHistoryItem[];
 
-  const displayCurrency =
-    payments[0]?.currency || providerConfigs[0]?.defaultCurrency || packages[0]?.currency || 'EUR';
-  const paymentLocale =
-    currentLocale === 'en' ? 'en-US' : currentLocale === 'sr' ? 'sr-RS' : 'ru-RU';
   const providerLabelById = new Map(
     providerMetadata.map(provider => [provider.id, provider.label])
   );
-  const paymentHistory = payments.map((payment: PaymentRecord) => ({
-    id: payment.id,
-    amountLabel: formatPaymentAmount(payment.amount, payment.currency, paymentLocale),
-    capturedAtLabel: payment.capturedAt ? payment.capturedAt.toLocaleString(paymentLocale) : '—',
-    createdAtLabel: payment.createdAt.toLocaleString(paymentLocale),
-    orderId: payment.orderId,
-    providerLabel: providerLabelById.get(payment.provider) ?? payment.provider,
-    status: payment.status
+  const paymentHistory = history.map(item => ({
+    id: item.id,
+    amountLabel: item.amountLabel,
+    amountValue: item.amountValue,
+    direction: item.direction,
+    createdAtLabel: item.createdAtLabel,
+    providerLabel: item.provider
+      ? (providerLabelById.get(item.provider) ?? item.provider)
+      : 'Внутренний счёт',
+    status: item.status,
+    title: item.title
   }));
+  const getPackageTitle = (title: unknown): string => {
+    if (typeof title === 'string') return title;
+    if (title && typeof title === 'object' && !Array.isArray(title)) {
+      const localized = title as Record<string, unknown>;
+      const value = localized[currentLocale] ?? localized.ru;
+      if (typeof value === 'string') return value;
+    }
+    return 'Пакет консультаций';
+  };
 
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-8 pb-12 px-4 sm:px-6 lg:px-8 animate-in fade-in duration-300">
@@ -101,13 +107,14 @@ export default async function MyPaymentsPage({ params }: Readonly<MyPaymentsPage
       </div>
 
       <PaymentCheckoutCard
-        currency={displayCurrency}
+        currency="EUR"
         balance={user.balance.toString()}
         packages={packages.map(
           (pkg: ServicePackageRecord): PaymentServicePackage => ({
             id: pkg.id,
             amount: pkg.amount.toString(),
-            currency: pkg.currency,
+            currency: 'EUR',
+            includedMinutes: pkg.includedMinutes,
             title: pkg.title as LocalizedPaymentText,
             description: pkg.description as LocalizedPaymentText | null,
             coverImage: pkg.coverImage
@@ -116,6 +123,38 @@ export default async function MyPaymentsPage({ params }: Readonly<MyPaymentsPage
         locale={currentLocale}
         providerConfigs={providerConfigs}
       />
+
+      {purchasedPackages.length > 0 && (
+        <Card className="overflow-hidden rounded-2xl">
+          <CardHeader className="border-b">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <PackageCheck className="text-primary" />
+              Мои пакеты
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 pt-6 sm:grid-cols-2 lg:grid-cols-3">
+            {purchasedPackages.map(purchasedPackage => (
+              <div key={purchasedPackage.id} className="rounded-xl border bg-muted/10 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="font-semibold">{getPackageTitle(purchasedPackage.titleSnapshot)}</p>
+                  <span className="rounded-full bg-muted px-2 py-1 text-[10px] font-semibold">
+                    {purchasedPackage.status}
+                  </span>
+                </div>
+                <p className="mt-4 text-2xl font-semibold tabular-nums">
+                  {purchasedPackage.remainingMinutes}{' '}
+                  <span className="text-sm font-normal text-muted-foreground">
+                    из {purchasedPackage.totalMinutes} мин.
+                  </span>
+                </p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Куплен {purchasedPackage.purchasedAt.toLocaleDateString('ru-RU')}
+                </p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       <MyPaymentsHistory payments={paymentHistory} />
     </div>

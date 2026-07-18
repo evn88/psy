@@ -11,12 +11,8 @@ const updateSchema = z.object({
   title: localizedTextSchema.optional(),
   description: localizedTextSchema.optional(),
   amount: z.number().positive().max(999_999).optional(),
-  currency: z
-    .string()
-    .trim()
-    .regex(/^[A-Za-z]{3}$/)
-    .transform(value => value.toUpperCase())
-    .optional(),
+  currency: z.literal('EUR').optional(),
+  includedMinutes: z.number().int().min(15).max(100_000).optional(),
   coverImage: z.string().nullable().optional(),
   isActive: z.boolean().optional(),
   order: z.number().int().optional()

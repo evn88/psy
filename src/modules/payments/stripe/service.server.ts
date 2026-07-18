@@ -4,6 +4,13 @@ import { PaymentKind, Prisma, type Payment } from '@prisma/client';
 import type Stripe from 'stripe';
 
 import prisma from '@/lib/prisma';
+import {
+  fulfillDirectPackagePurchase,
+  recordProviderRefund,
+  recordTopupCredit
+} from '@/modules/payments/financial/financial-service.server';
+import { FINANCIAL_CURRENCY } from '@/modules/payments/financial/constants';
+import { FinancialDomainError } from '@/modules/payments/financial/errors';
 import { STRIPE_PROVIDER_ID, type SyncPaymentParams } from '@/modules/payments/types';
 
 import { getStripeClient } from './client.server';
@@ -29,7 +36,8 @@ const paymentReferenceSelect = {
   amount: true,
   currency: true,
   balanceCreditedAt: true,
-  refundedAmount: true
+  refundedAmount: true,
+  fulfilledAt: true
 } satisfies Prisma.PaymentSelect;
 
 type PaymentReference = Prisma.PaymentGetPayload<{
@@ -211,8 +219,11 @@ export const syncPaymentFromStripe = async (params: {
     lastSyncedAt: new Date()
   };
 
-  if (existingPayment && kind !== PaymentKind.TOPUP) {
-    return prisma.payment.update({ where: { id: existingPayment.id }, data: paymentData });
+  if (CAPTURED_PAYMENT_STATUSES.has(status) && paymentData.currency !== FINANCIAL_CURRENCY) {
+    throw new FinancialDomainError(
+      'INVALID_CURRENCY',
+      `Внутренний баланс поддерживает только ${FINANCIAL_CURRENCY}`
+    );
   }
 
   if (existingPayment) {
@@ -227,24 +238,56 @@ export const syncPaymentFromStripe = async (params: {
       const refundAdjustment = currentPayment.balanceCreditedAt
         ? refundedAmount.minus(currentPayment.refundedAmount)
         : new Prisma.Decimal(0);
-      const balanceDelta = initialCredit.minus(refundAdjustment);
       const payment = await transaction.payment.update({
         where: { id: existingPayment.id },
         data: {
           ...paymentData,
-          balanceCreditedAt: currentPayment.balanceCreditedAt ?? (isCaptured ? new Date() : null)
+          balanceCreditedAt:
+            kind === PaymentKind.TOPUP
+              ? (currentPayment.balanceCreditedAt ?? (isCaptured ? new Date() : null))
+              : currentPayment.balanceCreditedAt
         }
       });
 
-      if (balanceDelta.greaterThan(0)) {
-        await transaction.user.update({
-          where: { id: userId },
-          data: { balance: { increment: balanceDelta } }
+      if (kind === PaymentKind.TOPUP && initialCredit.greaterThan(0)) {
+        await recordTopupCredit({
+          transaction,
+          paymentId: payment.id,
+          userId,
+          amount: initialCredit,
+          provider: STRIPE_PROVIDER_ID
         });
-      } else if (balanceDelta.lessThan(0)) {
-        await transaction.user.update({
-          where: { id: userId },
-          data: { balance: { decrement: balanceDelta.abs() } }
+      } else if (
+        kind === PaymentKind.CHECKOUT &&
+        payment.servicePackageId &&
+        isCaptured &&
+        currentPayment.fulfilledAt === null
+      ) {
+        await fulfillDirectPackagePurchase({
+          transaction,
+          paymentId: payment.id,
+          userId,
+          amount,
+          servicePackageId: payment.servicePackageId,
+          provider: STRIPE_PROVIDER_ID
+        });
+      }
+
+      const shouldRecordRefund =
+        refundAdjustment.greaterThan(0) ||
+        (kind === PaymentKind.CHECKOUT &&
+          refundedAmount.greaterThan(currentPayment.refundedAmount));
+
+      if (shouldRecordRefund) {
+        await recordProviderRefund({
+          transaction,
+          paymentId: payment.id,
+          userId,
+          paymentKind: kind,
+          paymentAmount: amount,
+          refundDelta: refundedAmount.minus(currentPayment.refundedAmount),
+          totalRefundedAmount: refundedAmount,
+          provider: STRIPE_PROVIDER_ID
         });
       }
 
@@ -264,21 +307,41 @@ export const syncPaymentFromStripe = async (params: {
   };
 
   try {
-    if (kind !== PaymentKind.TOPUP) {
-      return await prisma.payment.create({ data: createData });
-    }
-
     return await runSerializablePaymentTransaction(async transaction => {
       const payment = await transaction.payment.create({ data: createData });
-      const creditAmount = CAPTURED_PAYMENT_STATUSES.has(status)
-        ? amount.minus(refundedAmount)
-        : new Prisma.Decimal(0);
+      const isCaptured = CAPTURED_PAYMENT_STATUSES.has(status);
+      const creditAmount = isCaptured ? amount.minus(refundedAmount) : new Prisma.Decimal(0);
 
-      if (creditAmount.greaterThan(0)) {
-        await transaction.user.update({
-          where: { id: userId },
-          data: { balance: { increment: creditAmount } }
+      if (kind === PaymentKind.TOPUP && creditAmount.greaterThan(0)) {
+        await recordTopupCredit({
+          transaction,
+          paymentId: payment.id,
+          userId,
+          amount: creditAmount,
+          provider: STRIPE_PROVIDER_ID
         });
+      } else if (kind === PaymentKind.CHECKOUT && payment.servicePackageId && isCaptured) {
+        await fulfillDirectPackagePurchase({
+          transaction,
+          paymentId: payment.id,
+          userId,
+          amount,
+          servicePackageId: payment.servicePackageId,
+          provider: STRIPE_PROVIDER_ID
+        });
+
+        if (refundedAmount.greaterThan(0)) {
+          await recordProviderRefund({
+            transaction,
+            paymentId: payment.id,
+            userId,
+            paymentKind: kind,
+            paymentAmount: amount,
+            refundDelta: refundedAmount,
+            totalRefundedAmount: refundedAmount,
+            provider: STRIPE_PROVIDER_ID
+          });
+        }
       }
 
       return payment;

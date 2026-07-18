@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { EventStatus, EventType, Prisma } from '@prisma/client';
+import { EventBillingSource, EventStatus, EventType, Prisma } from '@prisma/client';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { sendEventNotificationEmail } from '@/lib/email';
@@ -14,6 +14,11 @@ import {
   MIN_SESSION_REMINDER_MINUTES
 } from '@/lib/session-reminders';
 import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
+import {
+  chargeConsultationInTransaction,
+  runFinancialTransaction
+} from '@/modules/payments/financial/financial-service.server';
+import { FinancialDomainError } from '@/modules/payments/financial/errors';
 
 const getEventsSchema = z.object({
   start: z.string().datetime().optional(),
@@ -86,7 +91,13 @@ async function getHandler(req: Request) {
     const events = await prisma.event.findMany({
       where: whereClause,
       include: {
-        user: { select: { id: true, name: true, email: true, timezone: true } }
+        user: { select: { id: true, name: true, email: true, timezone: true } },
+        billingAllocation: {
+          select: {
+            purchasedPackageId: true,
+            source: true
+          }
+        }
       },
       orderBy: { start: 'asc' }
     });
@@ -128,7 +139,10 @@ const createEventSchema = z.object({
     .min(MIN_SESSION_REMINDER_MINUTES)
     .max(MAX_SESSION_REMINDER_MINUTES)
     .optional()
-    .default(DEFAULT_SESSION_REMINDER_MINUTES)
+    .default(DEFAULT_SESSION_REMINDER_MINUTES),
+  billingSource: z.nativeEnum(EventBillingSource).optional(),
+  purchasedPackageId: z.string().cuid().optional(),
+  billingReason: z.string().trim().max(500).optional()
 });
 
 /**
@@ -152,8 +166,19 @@ async function postHandler(req: Request) {
       );
     }
 
-    const { type, start, end, status, title, meetLink, userId, reminderMinutesBeforeStart } =
-      result.data;
+    const {
+      type,
+      start,
+      end,
+      status,
+      title,
+      meetLink,
+      userId,
+      reminderMinutesBeforeStart,
+      billingSource,
+      purchasedPackageId,
+      billingReason
+    } = result.data;
     const startDate = new Date(start);
     const endDate = new Date(end);
 
@@ -205,21 +230,56 @@ async function postHandler(req: Request) {
       }
     }
 
-    const newEvent = await prisma.event.create({
-      data: {
-        type,
-        start: startDate,
-        end: endDate,
-        status,
-        title,
-        meetLink: meetLink || null,
-        userId: userId || null,
-        reminderMinutesBeforeStart,
-        authorId: session.user.id!
-      },
-      include: {
-        user: { select: { id: true, name: true, email: true, language: true, timezone: true } }
+    const shouldChargeConsultation =
+      type === EventType.CONSULTATION && status === EventStatus.SCHEDULED && Boolean(userId);
+
+    if (shouldChargeConsultation && !billingSource) {
+      return NextResponse.json(
+        { message: 'Выберите источник оплаты консультации' },
+        { status: 400 }
+      );
+    }
+
+    const newEvent = await runFinancialTransaction(async transaction => {
+      const createdEvent = await transaction.event.create({
+        data: {
+          type,
+          start: startDate,
+          end: endDate,
+          status,
+          title,
+          meetLink: meetLink || null,
+          userId: userId || null,
+          reminderMinutesBeforeStart,
+          authorId: session.user.id!
+        },
+        include: {
+          user: { select: { id: true, name: true, email: true, language: true, timezone: true } },
+          billingAllocation: {
+            select: {
+              purchasedPackageId: true,
+              source: true
+            }
+          }
+        }
+      });
+
+      if (shouldChargeConsultation && billingSource && userId) {
+        await chargeConsultationInTransaction(transaction, {
+          eventId: createdEvent.id,
+          userId,
+          initiatedById: session.user.id!,
+          durationMinutes: Math.round((endDate.getTime() - startDate.getTime()) / 60_000),
+          eventStart: startDate,
+          billing: {
+            source: billingSource,
+            purchasedPackageId,
+            reason: billingReason
+          }
+        });
       }
+
+      return createdEvent;
     });
 
     if (newEvent.user && newEvent.user.email) {
@@ -252,6 +312,10 @@ async function postHandler(req: Request) {
       { status: 201 }
     );
   } catch (error) {
+    if (error instanceof FinancialDomainError) {
+      return NextResponse.json({ message: error.message, code: error.code }, { status: 409 });
+    }
+
     console.error('Failed to create event:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }

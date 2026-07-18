@@ -36,6 +36,7 @@ export default async function AdminClientsPage() {
     email: u.email,
     image: u.image,
     role: u.role,
+    balance: u.balance.toFixed(2),
     intakesCount: u.clientProfile?._count?.intakes || 0,
     clientGroupId: u.clientGroupId,
     clientGroup: u.clientGroup,
