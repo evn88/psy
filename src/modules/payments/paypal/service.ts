@@ -9,13 +9,39 @@ import type {
   PayPalWebhookEvent
 } from './types';
 
-type PaymentReference = Pick<
-  Payment,
-  'id' | 'userId' | 'orderId' | 'captureId' | 'kind' | 'status' | 'servicePackageId'
->;
-
 const COMPLETED_STATUS = 'COMPLETED';
 const WEBHOOK_CLAIM_TIMEOUT_MS = 5 * 60 * 1000;
+const PAYMENT_TRANSACTION_RETRY_LIMIT = 3;
+const CAPTURED_PAYMENT_STATUSES = new Set([
+  COMPLETED_STATUS,
+  'PARTIALLY_REFUNDED',
+  'REFUNDED',
+  'REVERSED'
+]);
+const FULL_REFUND_STATUSES = new Set(['REFUNDED', 'REVERSED']);
+const REFUND_EVENT_TYPES = new Set([
+  'PAYMENT.CAPTURE.REFUNDED',
+  'PAYMENT.CAPTURE.REVERSED',
+  'PAYMENT.REFUND.COMPLETED'
+]);
+
+const paymentReferenceSelect = {
+  id: true,
+  userId: true,
+  orderId: true,
+  captureId: true,
+  kind: true,
+  status: true,
+  servicePackageId: true,
+  amount: true,
+  currency: true,
+  balanceCreditedAt: true,
+  refundedAmount: true
+} satisfies Prisma.PaymentSelect;
+
+type PaymentReference = Prisma.PaymentGetPayload<{
+  select: typeof paymentReferenceSelect;
+}>;
 
 /**
  * Проверяет, что значение является объектом.
@@ -69,6 +95,58 @@ const isUniqueConstraintError = (error: unknown): error is Prisma.PrismaClientKn
 };
 
 /**
+ * Проверяет конфликт сериализации Prisma, который можно безопасно повторить.
+ */
+const isTransactionWriteConflict = (error: unknown): boolean => {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: unknown }).code === 'P2034'
+  );
+};
+
+/**
+ * Выполняет короткую финансовую транзакцию с повтором конфликтов сериализации.
+ */
+const runSerializablePaymentTransaction = async <T>(
+  operation: (transaction: Prisma.TransactionClient) => Promise<T>
+): Promise<T> => {
+  for (let attempt = 1; attempt <= PAYMENT_TRANSACTION_RETRY_LIMIT; attempt++) {
+    try {
+      return await prisma.$transaction(operation, {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable
+      });
+    } catch (error: unknown) {
+      if (!isTransactionWriteConflict(error) || attempt === PAYMENT_TRANSACTION_RETRY_LIMIT) {
+        throw error;
+      }
+    }
+  }
+
+  throw new Error('Payment transaction retry limit exceeded');
+};
+
+/**
+ * Возвращает статус платежа с учётом уже подтверждённых возвратов.
+ */
+const getRefundAwarePaymentStatus = (
+  amount: Prisma.Decimal,
+  refundedAmount: Prisma.Decimal,
+  fallbackStatus: string
+): string => {
+  if (refundedAmount.greaterThanOrEqualTo(amount)) {
+    return fallbackStatus === 'REVERSED' ? 'REVERSED' : 'REFUNDED';
+  }
+
+  if (refundedAmount.greaterThan(0)) {
+    return 'PARTIALLY_REFUNDED';
+  }
+
+  return fallbackStatus;
+};
+
+/**
  * Возвращает первую purchase unit заказа PayPal.
  */
 export const getPrimaryPurchaseUnit = (
@@ -114,15 +192,7 @@ const findPaymentByReferences = async (refs: {
   if (refs.paymentId) {
     const payment = await prisma.payment.findUnique({
       where: { id: refs.paymentId },
-      select: {
-        id: true,
-        userId: true,
-        orderId: true,
-        captureId: true,
-        kind: true,
-        status: true,
-        servicePackageId: true
-      }
+      select: paymentReferenceSelect
     });
 
     if (payment) {
@@ -133,15 +203,7 @@ const findPaymentByReferences = async (refs: {
   if (refs.captureId) {
     const payment = await prisma.payment.findUnique({
       where: { captureId: refs.captureId },
-      select: {
-        id: true,
-        userId: true,
-        orderId: true,
-        captureId: true,
-        kind: true,
-        status: true,
-        servicePackageId: true
-      }
+      select: paymentReferenceSelect
     });
 
     if (payment) {
@@ -152,15 +214,7 @@ const findPaymentByReferences = async (refs: {
   if (refs.orderId) {
     const payment = await prisma.payment.findUnique({
       where: { orderId: refs.orderId },
-      select: {
-        id: true,
-        userId: true,
-        orderId: true,
-        captureId: true,
-        kind: true,
-        status: true,
-        servicePackageId: true
-      }
+      select: paymentReferenceSelect
     });
 
     if (payment) {
@@ -172,15 +226,7 @@ const findPaymentByReferences = async (refs: {
     const payment = await prisma.payment.findFirst({
       where: { subscriptionId: refs.subscriptionId },
       orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        userId: true,
-        orderId: true,
-        captureId: true,
-        kind: true,
-        status: true,
-        servicePackageId: true
-      }
+      select: paymentReferenceSelect
     });
 
     if (payment) {
@@ -244,25 +290,60 @@ export const syncPaymentFromPayPal = async (params: {
 
   if (existingPayment) {
     if (paymentData.kind === 'TOPUP') {
-      return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-        const transition = await tx.payment.updateMany({
-          where: {
-            id: existingPayment.id,
-            status: { not: COMPLETED_STATUS }
-          },
-          data: paymentData
+      return runSerializablePaymentTransaction(async transaction => {
+        const currentPayment = await transaction.payment.findUniqueOrThrow({
+          where: { id: existingPayment.id },
+          select: paymentReferenceSelect
+        });
+        const isCapturedLifecycle = CAPTURED_PAYMENT_STATUSES.has(paymentData.status);
+        const currentRefundedAmount = currentPayment.refundedAmount.greaterThan(paymentData.amount)
+          ? paymentData.amount
+          : currentPayment.refundedAmount;
+        const refundedAmount = FULL_REFUND_STATUSES.has(paymentData.status)
+          ? paymentData.amount
+          : currentRefundedAmount;
+        const shouldApplyInitialCredit =
+          currentPayment.balanceCreditedAt === null && isCapturedLifecycle;
+        const creditAmount = shouldApplyInitialCredit
+          ? paymentData.amount.minus(refundedAmount)
+          : new Prisma.Decimal(0);
+        const refundAdjustment = currentPayment.balanceCreditedAt
+          ? refundedAmount.minus(currentRefundedAmount)
+          : new Prisma.Decimal(0);
+        const balanceDelta = creditAmount.minus(refundAdjustment);
+        const fallbackStatus =
+          currentPayment.balanceCreditedAt && !isCapturedLifecycle
+            ? currentPayment.status
+            : paymentData.status;
+        const status = getRefundAwarePaymentStatus(
+          paymentData.amount,
+          refundedAmount,
+          fallbackStatus
+        );
+        const updatedPayment = await transaction.payment.update({
+          where: { id: existingPayment.id },
+          data: {
+            ...paymentData,
+            status,
+            refundedAmount,
+            balanceCreditedAt:
+              currentPayment.balanceCreditedAt ?? (isCapturedLifecycle ? new Date() : null)
+          }
         });
 
-        if (transition.count === 1 && paymentData.status === COMPLETED_STATUS) {
-          await tx.user.update({
+        if (balanceDelta.greaterThan(0)) {
+          await transaction.user.update({
             where: { id: userId },
-            data: { balance: { increment: paymentData.amount } }
+            data: { balance: { increment: balanceDelta } }
+          });
+        } else if (balanceDelta.lessThan(0)) {
+          await transaction.user.update({
+            where: { id: userId },
+            data: { balance: { decrement: balanceDelta.abs() } }
           });
         }
 
-        return tx.payment.findUniqueOrThrow({
-          where: { id: existingPayment.id }
-        });
+        return updatedPayment;
       });
     }
 
@@ -272,22 +353,45 @@ export const syncPaymentFromPayPal = async (params: {
     });
   }
 
+  const isInitialCapturedTopup =
+    paymentData.kind === 'TOPUP' && CAPTURED_PAYMENT_STATUSES.has(paymentData.status);
+  const initialRefundedAmount =
+    paymentData.kind === 'TOPUP' && FULL_REFUND_STATUSES.has(paymentData.status)
+      ? paymentData.amount
+      : new Prisma.Decimal(0);
   const createData = params.paymentId
     ? {
         id: params.paymentId,
-        ...paymentData
+        ...paymentData,
+        ...(paymentData.kind === 'TOPUP'
+          ? {
+              balanceCreditedAt: isInitialCapturedTopup ? new Date() : null,
+              refundedAmount: initialRefundedAmount
+            }
+          : {})
       }
-    : paymentData;
+    : {
+        ...paymentData,
+        ...(paymentData.kind === 'TOPUP'
+          ? {
+              balanceCreditedAt: isInitialCapturedTopup ? new Date() : null,
+              refundedAmount: initialRefundedAmount
+            }
+          : {})
+      };
 
   try {
     if (paymentData.kind === 'TOPUP') {
-      return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-        const createdPayment = await tx.payment.create({ data: createData });
+      return await runSerializablePaymentTransaction(async transaction => {
+        const createdPayment = await transaction.payment.create({ data: createData });
+        const creditAmount = isInitialCapturedTopup
+          ? paymentData.amount.minus(initialRefundedAmount)
+          : new Prisma.Decimal(0);
 
-        if (paymentData.status === COMPLETED_STATUS) {
-          await tx.user.update({
+        if (creditAmount.greaterThan(0)) {
+          await transaction.user.update({
             where: { id: userId },
-            data: { balance: { increment: paymentData.amount } }
+            data: { balance: { increment: creditAmount } }
           });
         }
 
@@ -338,6 +442,13 @@ export const syncPaymentWithPayPal = async (payment: PaymentReference): Promise<
 };
 
 /**
+ * Проверяет, что webhook подтверждает состоявшийся возврат или reversal.
+ */
+const isRefundAdjustmentEventType = (eventType: string): boolean => {
+  return REFUND_EVENT_TYPES.has(eventType);
+};
+
+/**
  * Извлекает основные идентификаторы из webhook-события PayPal.
  */
 const extractWebhookReferences = (event: PayPalWebhookEvent) => {
@@ -345,10 +456,23 @@ const extractWebhookReferences = (event: PayPalWebhookEvent) => {
     ? getNestedString(event.resource, ['id'])
     : getNestedString(event.resource, ['supplementary_data', 'related_ids', 'order_id']);
 
-  const captureId = event.event_type.startsWith('PAYMENT.CAPTURE.')
-    ? getNestedString(event.resource, ['id'])
-    : (getNestedString(event.resource, ['supplementary_data', 'related_ids', 'capture_id']) ??
-      getNestedString(event.resource, ['disputed_transactions', '0', 'seller_transaction_id']));
+  const relatedCaptureId = getNestedString(event.resource, [
+    'supplementary_data',
+    'related_ids',
+    'capture_id'
+  ]);
+  const isRefundResource =
+    isRefundAdjustmentEventType(event.event_type) ||
+    event.event_type.startsWith('PAYMENT.REFUND.') ||
+    event.resource_type === 'refund';
+  const captureId = isRefundResource
+    ? (relatedCaptureId ??
+      getNestedString(event.resource, ['capture_id']) ??
+      (event.resource_type === 'capture' ? getNestedString(event.resource, ['id']) : undefined))
+    : event.event_type.startsWith('PAYMENT.CAPTURE.')
+      ? getNestedString(event.resource, ['id'])
+      : (relatedCaptureId ??
+        getNestedString(event.resource, ['disputed_transactions', '0', 'seller_transaction_id']));
 
   const subscriptionId = event.event_type.startsWith('BILLING.SUBSCRIPTION.')
     ? getNestedString(event.resource, ['id'])
@@ -505,6 +629,99 @@ const claimPayPalWebhookEvent = async (
 };
 
 /**
+ * Атомарно применяет подтверждённый refund/reversal к платежу и балансу.
+ * Claim webhook, накопленная сумма возврата и корректировка баланса фиксируются
+ * в одной serializable-транзакции, поэтому повторная доставка не меняет баланс дважды.
+ */
+const applyRefundAdjustmentFromWebhook = async (params: {
+  event: PayPalWebhookEvent;
+  references: ReturnType<typeof extractWebhookReferences>;
+  money: PayPalMoney | undefined;
+  payment: PaymentReference;
+  claim: WebhookClaim;
+}): Promise<void> => {
+  const refundMoney = parsePayPalMoney(params.money);
+
+  if (!refundMoney || !refundMoney.amount.greaterThan(0)) {
+    throw new Error(`PayPal refund ${params.event.id} does not contain a positive amount`);
+  }
+
+  await runSerializablePaymentTransaction(async transaction => {
+    const eventClaim = await transaction.paymentEvent.updateMany({
+      where: {
+        id: params.claim.id,
+        isProcessed: false,
+        processedAt: params.claim.claimedAt
+      },
+      data: {
+        paymentId: params.payment.id
+      }
+    });
+
+    if (eventClaim.count === 0) {
+      return;
+    }
+
+    const currentPayment = await transaction.payment.findUniqueOrThrow({
+      where: { id: params.payment.id },
+      select: paymentReferenceSelect
+    });
+
+    if (currentPayment.currency.toUpperCase() !== refundMoney.currency.toUpperCase()) {
+      throw new Error(
+        `PayPal refund ${params.event.id} currency does not match payment ${currentPayment.id}`
+      );
+    }
+
+    const currentRefundedAmount = currentPayment.refundedAmount.greaterThan(currentPayment.amount)
+      ? currentPayment.amount
+      : currentPayment.refundedAmount;
+    const remainingAmount = currentPayment.amount.minus(currentRefundedAmount);
+    const adjustmentAmount = refundMoney.amount.greaterThan(remainingAmount)
+      ? remainingAmount
+      : refundMoney.amount;
+    const refundedAmount = currentRefundedAmount.plus(adjustmentAmount);
+    const refundStatus =
+      params.event.event_type === 'PAYMENT.CAPTURE.REVERSED' ? 'REVERSED' : 'REFUNDED';
+    const status = getRefundAwarePaymentStatus(currentPayment.amount, refundedAmount, refundStatus);
+
+    if (
+      currentPayment.kind === 'TOPUP' &&
+      currentPayment.balanceCreditedAt &&
+      adjustmentAmount.greaterThan(0)
+    ) {
+      await transaction.user.update({
+        where: { id: currentPayment.userId },
+        data: {
+          balance: {
+            decrement: adjustmentAmount
+          }
+        }
+      });
+    }
+
+    await transaction.payment.update({
+      where: { id: currentPayment.id },
+      data: {
+        refundedAmount,
+        status,
+        lastSyncedAt: new Date()
+      }
+    });
+
+    await transaction.paymentEvent.update({
+      where: { id: params.claim.id },
+      data: {
+        ...getWebhookEventData(params.event, params.references, params.money),
+        paymentId: currentPayment.id,
+        isProcessed: true,
+        processedAt: new Date()
+      }
+    });
+  });
+};
+
+/**
  * Создаёт или обновляет запись о споре из webhook-события PayPal.
  */
 const upsertDisputeFromWebhook = async (params: {
@@ -560,6 +777,17 @@ export const processPayPalWebhookEvent = async (event: PayPalWebhookEvent): Prom
 
   try {
     const payment = await findPaymentByReferences(references);
+
+    if (payment && isRefundAdjustmentEventType(event.event_type)) {
+      await applyRefundAdjustmentFromWebhook({
+        event,
+        references,
+        money,
+        payment,
+        claim
+      });
+      return;
+    }
 
     if (
       payment &&

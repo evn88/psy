@@ -1,4 +1,3 @@
-import { start } from 'workflow/api';
 import { runCreateSiteBackupWorkflow } from '@/workflows/create-site-backup-workflow';
 import { runRestoreSiteBackupWorkflow } from '@/workflows/restore-site-backup-workflow';
 
@@ -8,6 +7,7 @@ import { runRestoreSiteBackupWorkflow } from '@/workflows/restore-site-backup-wo
  * @returns Идентификатор workflow run.
  */
 export const startCreateSiteBackupWorkflow = async (jobId: string): Promise<string> => {
+  const { start } = await import('workflow/api');
   const run = await start(runCreateSiteBackupWorkflow, [{ jobId }]);
   return run.runId;
 };
@@ -22,6 +22,7 @@ export const startRestoreSiteBackupWorkflow = async (params: {
   databaseArchivePathname: string;
   databaseArchiveFileName?: string;
 }): Promise<string> => {
+  const { start } = await import('workflow/api');
   const run = await start(runRestoreSiteBackupWorkflow, [params]);
   return run.runId;
 };

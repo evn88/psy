@@ -61,7 +61,13 @@ const findDirectDatabaseUrl = (environment: DatabaseEnvironment): string | undef
     'POSTGRES_URL_NON_POOLING'
   ]);
   if (explicitDirectUrl) {
-    return isDirectPostgresUrl(explicitDirectUrl) ? explicitDirectUrl : undefined;
+    if (!isDirectPostgresUrl(explicitDirectUrl)) {
+      throw new Error(
+        'DIRECT_DATABASE_URL or POSTGRES_URL_NON_POOLING has an unsupported protocol'
+      );
+    }
+
+    return explicitDirectUrl;
   }
 
   const hasSeparateRuntimeUrl = Boolean(
@@ -73,6 +79,34 @@ const findDirectDatabaseUrl = (environment: DatabaseEnvironment): string | undef
 
   const databaseUrl = environment.DATABASE_URL?.trim();
   return isDirectPostgresUrl(databaseUrl) ? databaseUrl : undefined;
+};
+
+/**
+ * Возвращает direct URL, только если он безопасно доступен в текущем окружении.
+ * `undefined` допустим для build-time команд вроде `prisma generate`, которым
+ * подключение к БД не требуется. Административные операции обязаны использовать
+ * строгий `resolveDirectDatabaseUrl`.
+ * @param environment - переменные окружения.
+ * @returns Прямой PostgreSQL URL или `undefined` для runtime-only окружения.
+ */
+export const resolveDirectDatabaseUrlIfConfigured = (
+  environment: DatabaseEnvironment = process.env
+): string | undefined => {
+  const directUrl = findDirectDatabaseUrl(environment);
+  if (!directUrl) {
+    return undefined;
+  }
+
+  const runtimeUrl = getFirstDefinedValue(environment, [
+    'PRISMA_DATABASE_URL',
+    'DATABASE_URL',
+    'POSTGRES_URL'
+  ]);
+  if (runtimeUrl) {
+    assertCompatibleDatabaseUrls(runtimeUrl, directUrl);
+  }
+
+  return directUrl;
 };
 
 /**
@@ -109,20 +143,11 @@ export const resolvePrismaRuntimeDatabaseUrl = (
 export const resolveDirectDatabaseUrl = (
   environment: DatabaseEnvironment = process.env
 ): string => {
-  const directUrl = findDirectDatabaseUrl(environment);
+  const directUrl = resolveDirectDatabaseUrlIfConfigured(environment);
   if (!directUrl) {
     throw new Error(
       'DIRECT_DATABASE_URL or POSTGRES_URL_NON_POOLING must contain a direct PostgreSQL URL when a separate runtime URL is configured; DATABASE_URL fallback is allowed only in local direct mode'
     );
-  }
-
-  const runtimeUrl = getFirstDefinedValue(environment, [
-    'PRISMA_DATABASE_URL',
-    'DATABASE_URL',
-    'POSTGRES_URL'
-  ]);
-  if (runtimeUrl) {
-    assertCompatibleDatabaseUrls(runtimeUrl, directUrl);
   }
 
   return directUrl;

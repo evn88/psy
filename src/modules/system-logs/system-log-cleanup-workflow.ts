@@ -1,4 +1,3 @@
-import { start } from 'workflow/api';
 import { runSystemLogCleanupWorkflow } from '@/workflows/system-log-cleanup-workflow';
 
 /**
@@ -7,6 +6,7 @@ import { runSystemLogCleanupWorkflow } from '@/workflows/system-log-cleanup-work
  */
 export const startSystemLogCleanupWorkflow = async (): Promise<string | null> => {
   try {
+    const { start } = await import('workflow/api');
     const run = await start(runSystemLogCleanupWorkflow, [{ triggeredBy: 'cron' }]);
     return run.runId;
   } catch (error) {

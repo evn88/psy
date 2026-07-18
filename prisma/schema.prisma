@@ -549,17 +549,17 @@ model ClientProfile {
 }
 
 model IntakeResponse {
-  id              String        @id @default(cuid())
+  id              String         @id @default(cuid())
   clientProfileId String
-  consentId       String?       @unique
+  consentId       String?        @unique
   formId          String
   formVersion     Int?
   formSnapshot    Json?
-  status          String        @default("COMPLETED")
+  status          String         @default("COMPLETED")
   answers         String
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  clientProfile   ClientProfile @relation(fields: [clientProfileId], references: [id], onDelete: Cascade)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  clientProfile   ClientProfile  @relation(fields: [clientProfileId], references: [id], onDelete: Cascade)
   consent         ClientConsent? @relation("IntakeConsentResponse", fields: [consentId], references: [id], onDelete: SetNull)
 }
 
@@ -616,30 +616,32 @@ model ServicePackage {
 }
 
 model Payment {
-  id               String           @id @default(cuid())
-  provider         PaymentProvider  @default(PAYPAL)
-  kind             PaymentKind      @default(CHECKOUT)
-  userId           String
-  orderId          String           @unique
-  captureId        String?          @unique
-  subscriptionId   String?
-  invoiceId        String?
-  amount           Decimal          @db.Decimal(12, 2)
-  currency         String
-  status           String
-  description      String?
-  payerEmail       String?
-  rawOrder         Json?
-  rawCapture       Json?
-  capturedAt       DateTime?
-  lastSyncedAt     DateTime?
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  servicePackageId String?
-  servicePackage   ServicePackage?  @relation(fields: [servicePackageId], references: [id])
-  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  disputes         PaymentDispute[]
-  events           PaymentEvent[]
+  id                String           @id @default(cuid())
+  provider          PaymentProvider  @default(PAYPAL)
+  kind              PaymentKind      @default(CHECKOUT)
+  userId            String
+  orderId           String           @unique
+  captureId         String?          @unique
+  subscriptionId    String?
+  invoiceId         String?
+  amount            Decimal          @db.Decimal(12, 2)
+  currency          String
+  status            String
+  description       String?
+  payerEmail        String?
+  rawOrder          Json?
+  rawCapture        Json?
+  capturedAt        DateTime?
+  balanceCreditedAt DateTime?
+  refundedAmount    Decimal          @default(0) @db.Decimal(12, 2)
+  lastSyncedAt      DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  servicePackageId  String?
+  servicePackage    ServicePackage?  @relation(fields: [servicePackageId], references: [id])
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  disputes          PaymentDispute[]
+  events            PaymentEvent[]
 
   @@index([userId, createdAt(sort: Desc)])
   @@index([status])

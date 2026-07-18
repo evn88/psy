@@ -54,6 +54,7 @@ const privatePageHeaders = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  serverExternalPackages: ['@vercel/cli-config', '@vercel/oidc'],
   devIndicators: {
     position: 'bottom-right'
   },

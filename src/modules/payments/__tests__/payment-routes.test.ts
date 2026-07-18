@@ -81,7 +81,7 @@ describe('payment routes', () => {
           description: 'Подменённое описание'
         })
       }),
-      {}
+      { params: Promise.resolve({}) }
     );
 
     expect(response.status).toBe(200);
@@ -121,7 +121,7 @@ describe('payment routes', () => {
           servicePackageId: 'package-disabled'
         })
       }),
-      {}
+      { params: Promise.resolve({}) }
     );
 
     expect(response.status).toBe(404);
@@ -143,7 +143,7 @@ describe('payment routes', () => {
           description: 'Пополнение'
         })
       }),
-      {}
+      { params: Promise.resolve({}) }
     );
 
     expect(response.status).toBe(200);
@@ -169,7 +169,7 @@ describe('payment routes', () => {
           amount: '0.00'
         })
       }),
-      {}
+      { params: Promise.resolve({}) }
     );
 
     expect(response.status).toBe(400);

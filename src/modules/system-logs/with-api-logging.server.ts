@@ -5,7 +5,9 @@ import { logApiRequest, readResponsePreview } from './system-log-service.server'
 
 const REQUEST_BODY_MAX_BYTES = 16_000;
 
-type ApiRouteContext = Record<string, unknown>;
+type ApiRouteContext = {
+  params: Promise<Record<string, string | string[] | undefined>>;
+};
 type ApiRouteHandler<TContext = ApiRouteContext, TRequest extends Request = Request> = (
   request: TRequest,
   context: TContext

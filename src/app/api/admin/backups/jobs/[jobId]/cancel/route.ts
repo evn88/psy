@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { getRun } from 'workflow/api';
 import { requireAdminSession } from '@/modules/backup/auth';
 import { normalizeBackupRouteError } from '@/modules/backup/http';
 import { readBackupJobSnapshot, requestBackupJobCancellation } from '@/modules/backup/jobs';
@@ -47,6 +46,7 @@ async function postHandler(request: Request, { params }: RouteContext) {
     const updatedSnapshot = await requestBackupJobCancellation(jobId);
 
     if (snapshot.workflowRunId) {
+      const { getRun } = await import('workflow/api');
       await getRun(snapshot.workflowRunId).cancel();
     }
 

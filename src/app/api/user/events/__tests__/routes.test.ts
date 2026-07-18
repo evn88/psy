@@ -138,7 +138,9 @@ describe('GET /api/user/events', () => {
     });
 
     // Act
-    const response = await GET(new Request('http://localhost/api/user/events'), {});
+    const response = await GET(new Request('http://localhost/api/user/events'), {
+      params: Promise.resolve({})
+    });
 
     // Assert
     expect(response.status).toBe(403);
@@ -207,7 +209,7 @@ describe('GET /api/user/events', () => {
       new Request(
         'http://localhost/api/user/events?start=2099-07-01T00:00:00.000Z&end=2099-08-01T00:00:00.000Z'
       ),
-      {}
+      { params: Promise.resolve({}) }
     );
     const events = (await response.json()) as Array<Record<string, unknown>>;
 

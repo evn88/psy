@@ -1,5 +1,4 @@
 import { randomUUID } from 'node:crypto';
-import { start } from 'workflow/api';
 
 import { runPilloIntakeReminderWorkflow } from '@/workflows/pillo-intake-reminder-workflow';
 import prisma from '@/lib/prisma';
@@ -25,6 +24,7 @@ export const startPilloIntakeReminderRunnerWorkflow = async (
       return false;
     }
 
+    const { start } = await import('workflow/api');
     await start(runPilloIntakeReminderWorkflow, [{ holderId, nowIso: now.toISOString() }]);
 
     try {

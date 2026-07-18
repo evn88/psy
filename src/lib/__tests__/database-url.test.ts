@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { resolveDirectDatabaseUrl, resolvePrismaRuntimeDatabaseUrl } from '../database-url';
+import {
+  resolveDirectDatabaseUrl,
+  resolveDirectDatabaseUrlIfConfigured,
+  resolvePrismaRuntimeDatabaseUrl
+} from '../database-url';
 
 describe('database URL policy', () => {
   it('использует отдельные runtime и direct URL по назначению', () => {
@@ -86,5 +90,27 @@ describe('database URL policy', () => {
     expect(() => resolveDirectDatabaseUrl(environment)).toThrow(
       'DIRECT_DATABASE_URL or POSTGRES_URL_NON_POOLING'
     );
+  });
+
+  it('разрешает prisma generate без direct URL в runtime-only окружении', () => {
+    // Arrange
+    const environment = {
+      PRISMA_DATABASE_URL: 'prisma://accelerate.example.test/?api_key=test',
+      DATABASE_URL: 'postgresql://user:pass@pool.example.test:5432/app'
+    };
+
+    // Act + Assert
+    expect(resolveDirectDatabaseUrlIfConfigured(environment)).toBeUndefined();
+  });
+
+  it('не скрывает ошибочный протокол явно настроенного direct URL', () => {
+    // Arrange
+    const environment = {
+      PRISMA_DATABASE_URL: 'prisma://accelerate.example.test/?api_key=test',
+      DIRECT_DATABASE_URL: 'https://db.example.test/app'
+    };
+
+    // Act + Assert
+    expect(() => resolveDirectDatabaseUrlIfConfigured(environment)).toThrow('unsupported protocol');
   });
 });
