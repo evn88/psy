@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowRight, CheckCircle2, CreditCard, Wallet } from 'lucide-react';
+import { ArrowRight, CheckCircle2, CreditCard, Wallet, Loader2 } from 'lucide-react';
 import { useState, useTransition } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -59,6 +59,7 @@ export const PaymentCheckoutCard = ({
   const [isBalancePurchasePending, startBalancePurchaseTransition] = useTransition();
   const [selectionType, setSelectionType] = useState<SelectionType>('package');
   const [providerId, setProviderId] = useState(providerConfigs[0]?.id ?? '');
+  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
 
   const form = useForm<PaymentCheckoutValues>({
     resolver: zodResolver(paymentCheckoutSchema),
@@ -107,33 +108,40 @@ export const PaymentCheckoutCard = ({
   const validateCheckout = async () => form.trigger();
 
   const handleCreateOrder = async () => {
-    const isValid = await validateCheckout();
+    setIsCreatingOrder(true);
+    try {
+      const isValid = await validateCheckout();
 
-    if (!isValid) {
-      throw new Error('FORM_INVALID');
+      if (!isValid) {
+        throw new Error('FORM_INVALID');
+      }
+
+      const response = await fetch('/api/payments/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: form.getValues('amount'),
+          description: form.getValues('description'),
+          kind: selectionType === 'topup' ? 'TOPUP' : 'CHECKOUT',
+          provider: activeProvider?.id,
+          servicePackageId: form.getValues('packageId') || undefined
+        })
+      });
+      const payload = (await response.json()) as Partial<OrderResponse> & { message?: string };
+
+      if (!response.ok || !payload.id || !payload.checkoutKind || !payload.status) {
+        throw new Error(payload.message || 'Не удалось создать платёжный order');
+      }
+      if (payload.checkoutKind === 'stripe-elements' && !payload.clientSecret) {
+        throw new Error('Платёжный провайдер не вернул client secret');
+      }
+
+      return payload as OrderResponse;
+    } finally {
+      // Оставляем лоадер видимым еще на 1.5 секунды, так как PayPal SDK загружает iframe асинхронно
+      // уже после получения ID ордера. Это создаст плавный переход для пользователя.
+      setTimeout(() => setIsCreatingOrder(false), 1500);
     }
-
-    const response = await fetch('/api/payments/orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        amount: form.getValues('amount'),
-        description: form.getValues('description'),
-        kind: selectionType === 'topup' ? 'TOPUP' : 'CHECKOUT',
-        provider: activeProvider?.id,
-        servicePackageId: form.getValues('packageId') || undefined
-      })
-    });
-    const payload = (await response.json()) as Partial<OrderResponse> & { message?: string };
-
-    if (!response.ok || !payload.id || !payload.checkoutKind || !payload.status) {
-      throw new Error(payload.message || 'Не удалось создать платёжный order');
-    }
-    if (payload.checkoutKind === 'stripe-elements' && !payload.clientSecret) {
-      throw new Error('Платёжный провайдер не вернул client secret');
-    }
-
-    return payload as OrderResponse;
   };
 
   const handleApprove = async (orderId: string) => {
@@ -394,6 +402,12 @@ export const PaymentCheckoutCard = ({
                       onError={handleCheckoutError}
                       validate={validateCheckout}
                     />
+                    {isCreatingOrder ? (
+                      <div className="mt-4 flex animate-pulse items-center justify-center gap-2 rounded-xl bg-primary/5 px-4 py-3 text-sm font-medium text-primary">
+                        <Loader2 className="size-4 animate-spin" aria-hidden />
+                        Загрузка формы...
+                      </div>
+                    ) : null}
                   </TabsContent>
                 </Tabs>
               ) : activeProvider ? (

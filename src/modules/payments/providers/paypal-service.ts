@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Prisma } from '@prisma/client';
+import prisma from '@/lib/prisma';
 
 import { applyConfirmedProviderRefund } from '@/modules/payments/financial/financial-service.server';
 import type {
@@ -38,13 +39,21 @@ export class PayPalService implements IPaymentService {
       customId: params.userId
     });
 
-    // Сохраняем начальный статус в БД
-    await syncPaymentFromPayPal({
-      order,
-      userId: params.userId,
-      paymentId,
-      kind: params.kind,
-      servicePackageId: params.servicePackageId
+    // Быстро сохраняем начальный статус в БД без сложных транзакций,
+    // так как это абсолютно новый платеж с гарантированно уникальным ID.
+    await prisma.payment.create({
+      data: {
+        id: paymentId,
+        userId: params.userId,
+        amount: new Prisma.Decimal(params.amount),
+        currency: params.currency,
+        status: order.status,
+        kind: params.kind ?? 'TOPUP',
+        provider: this.providerName,
+        orderId: order.id,
+        servicePackageId: params.servicePackageId,
+        refundedAmount: new Prisma.Decimal(0)
+      }
     });
 
     return {

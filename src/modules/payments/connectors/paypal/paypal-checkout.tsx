@@ -25,6 +25,38 @@ interface PayPalCheckoutProps {
   validate: () => Promise<boolean>;
 }
 
+const PAYMENT_METHODS = [
+  { key: 'paypal', fundingSource: FUNDING.PAYPAL },
+  { key: 'card', fundingSource: FUNDING.CARD }
+] as const;
+
+/**
+ * Возвращает стили для кнопки PayPal в зависимости от темы и метода.
+ */
+const getPayPalButtonStyle = (fundingSource: string, isDarkTheme: boolean) => {
+  const baseStyle = {
+    borderRadius: 12,
+    disableMaxWidth: true,
+    height: 48,
+    layout: 'horizontal' as const,
+    shape: 'rect' as const,
+    tagline: false
+  };
+
+  if (fundingSource === FUNDING.PAYPAL) {
+    return {
+      ...baseStyle,
+      color: isDarkTheme ? ('black' as const) : ('blue' as const),
+      label: 'paypal' as const
+    };
+  }
+
+  return {
+    ...baseStyle,
+    color: 'black' as const
+  };
+};
+
 const PayPalCurrencySync = ({ currency }: { currency: string }) => {
   const [{ options }, dispatch] = usePayPalScriptReducer();
 
@@ -35,10 +67,7 @@ const PayPalCurrencySync = ({ currency }: { currency: string }) => {
 
     dispatch({
       type: DISPATCH_ACTION.RESET_OPTIONS,
-      value: {
-        ...options,
-        currency
-      }
+      value: { ...options, currency }
     });
   }, [currency, dispatch, options]);
 
@@ -56,40 +85,26 @@ export const PayPalCheckout = ({
   disabled,
   createOrder,
   onApprove,
-  onError,
-  validate
+  onError
 }: PayPalCheckoutProps) => {
   const { resolvedTheme } = useTheme();
   const isDarkTheme = resolvedTheme === 'dark';
-  const paymentMethods = [
-    {
-      key: 'paypal',
-      fundingSource: FUNDING.PAYPAL,
-      style: {
-        color: isDarkTheme ? 'black' : 'blue',
-        borderRadius: 12,
-        disableMaxWidth: true,
-        height: 48,
-        label: 'paypal' as const,
-        layout: 'horizontal' as const,
-        shape: 'rect' as const,
-        tagline: false
-      }
-    },
-    {
-      key: 'card',
-      fundingSource: FUNDING.CARD,
-      style: {
-        color: 'black' as const,
-        borderRadius: 12,
-        disableMaxWidth: true,
-        height: 48,
-        layout: 'horizontal' as const,
-        shape: 'rect' as const,
-        tagline: false
-      }
+
+  const handleCreateOrder = async () => {
+    const order = await createOrder();
+
+    if (order.checkoutKind !== 'paypal') {
+      throw new Error('Unexpected checkout response for PayPal');
     }
-  ] as const;
+
+    return order.id;
+  };
+
+  const handleApprove = async (data: Record<string, unknown>) => {
+    if (typeof data.orderID === 'string') {
+      await onApprove(data.orderID);
+    }
+  };
 
   return (
     <PayPalScriptProvider
@@ -101,29 +116,22 @@ export const PayPalCheckout = ({
       }}
     >
       <PayPalCurrencySync currency={currency} />
-      <div className="relative z-0 grid gap-3">
-        {paymentMethods.map(method => (
+
+      <div className="relative z-0 isolate grid gap-3">
+        {PAYMENT_METHODS.map(({ key, fundingSource }) => (
           <div
-            key={method.key}
+            key={key}
             aria-busy={disabled}
-            className={cn(disabled && 'pointer-events-none opacity-70')}
+            className={cn('relative z-0 isolate', disabled && 'pointer-events-none opacity-70')}
           >
             <PayPalButtons
-              fundingSource={method.fundingSource}
+              fundingSource={fundingSource}
               className="w-full overflow-hidden rounded-xl [&_.paypal-buttons]:overflow-hidden [&_iframe]:rounded-xl [&_iframe]:[clip-path:inset(1px_round_11px)]"
-              style={method.style}
+              style={getPayPalButtonStyle(fundingSource, isDarkTheme)}
               disabled={disabled}
-              forceReRender={[currency, amount, description, isDarkTheme, method.key, config.id]}
-              createOrder={async () => {
-                const order = await createOrder();
-
-                if (order.checkoutKind !== 'paypal') {
-                  throw new Error('Unexpected checkout response for PayPal');
-                }
-
-                return order.id;
-              }}
-              onApprove={async data => onApprove(data.orderID)}
+              forceReRender={[currency, amount, description, isDarkTheme, key, config.id]}
+              createOrder={handleCreateOrder}
+              onApprove={handleApprove}
               onError={onError}
             />
           </div>
