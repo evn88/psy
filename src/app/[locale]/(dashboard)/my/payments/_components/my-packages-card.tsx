@@ -21,6 +21,7 @@ export interface PurchasedPackageView {
   remainingMinutes: number;
   status: PurchasedPackageStatus;
   totalMinutes: number;
+  amountLabel: string;
 }
 
 interface MyPackagesCardProps {
@@ -41,7 +42,7 @@ const PackageRow = ({ purchasedPackage }: { purchasedPackage: PurchasedPackageVi
     <div className="min-w-0">
       <p className="font-medium">{purchasedPackage.title}</p>
       <p className="mt-1 text-sm text-muted-foreground">
-        Куплен {purchasedPackage.purchasedAtLabel}
+        Куплен {purchasedPackage.purchasedAtLabel} &middot; {purchasedPackage.amountLabel}
       </p>
     </div>
     <div className="flex items-center gap-3 sm:justify-end">

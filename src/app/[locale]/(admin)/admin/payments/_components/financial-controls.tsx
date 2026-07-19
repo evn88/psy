@@ -57,6 +57,7 @@ export interface PurchasedPackageItem {
   totalMinutes: number;
   remainingMinutes: number;
   purchasedAt: string;
+  amountLabel: string;
 }
 
 export const ConsultationRateCard = ({ initialAmount }: { initialAmount: string }) => {
@@ -291,6 +292,7 @@ export const PurchasedPackagesTable = ({ items }: { items: PurchasedPackageItem[
             <TableHead>Клиент</TableHead>
             <TableHead>Пакет</TableHead>
             <TableHead>Остаток</TableHead>
+            <TableHead>Стоимость</TableHead>
             <TableHead>Статус</TableHead>
             <TableHead>Куплен</TableHead>
             <TableHead className="text-right">Управление</TableHead>
@@ -299,14 +301,14 @@ export const PurchasedPackagesTable = ({ items }: { items: PurchasedPackageItem[
         <TableBody>
           {items.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="h-28 text-center text-muted-foreground">
+              <TableCell colSpan={7} className="h-28 text-center text-muted-foreground">
                 Купленных пакетов пока нет
               </TableCell>
             </TableRow>
           ) : (
             items.map(item => (
               <TableRow key={item.id}>
-                <TableCell>
+                 <TableCell>
                   <p className="font-medium">{item.clientName}</p>
                   <p className="text-xs text-muted-foreground">{item.clientEmail}</p>
                 </TableCell>
@@ -314,6 +316,7 @@ export const PurchasedPackagesTable = ({ items }: { items: PurchasedPackageItem[
                 <TableCell className="font-medium tabular-nums">
                   {item.remainingMinutes} / {item.totalMinutes} мин.
                 </TableCell>
+                <TableCell className="tabular-nums text-muted-foreground">{item.amountLabel}</TableCell>
                 <TableCell>{item.status}</TableCell>
                 <TableCell>{item.purchasedAt}</TableCell>
                 <TableCell className="text-right">

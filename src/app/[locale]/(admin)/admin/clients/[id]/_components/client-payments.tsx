@@ -14,6 +14,7 @@ import {
 } from '@/modules/payments/financial/financial-history-table';
 import { getFinancialHistory } from '@/modules/payments/financial/financial-history.server';
 import { PaymentsSyncButton } from '@/modules/payments/components/payments-sync-button';
+import { formatPaymentAmount } from '@/modules/payments';
 
 interface ClientPaymentsProps {
   clientId: string;
@@ -74,7 +75,8 @@ export const ClientPayments = async ({ clientId }: ClientPaymentsProps) => {
     status: purchasedPackage.status,
     totalMinutes: purchasedPackage.totalMinutes,
     remainingMinutes: purchasedPackage.remainingMinutes,
-    purchasedAt: purchasedPackage.purchasedAt.toLocaleDateString('ru-RU')
+    purchasedAt: purchasedPackage.purchasedAt.toLocaleDateString('ru-RU'),
+    amountLabel: formatPaymentAmount(purchasedPackage.priceSnapshot, purchasedPackage.currencySnapshot)
   }));
   const paymentIds = Array.from(
     new Set(history.flatMap(item => (item.paymentId ? [item.paymentId] : [])))

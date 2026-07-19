@@ -117,7 +117,8 @@ export default async function MyPaymentsPage({ params }: Readonly<MyPaymentsPage
     purchasedAtLabel: purchasedPackage.purchasedAt.toLocaleDateString('ru-RU'),
     remainingMinutes: purchasedPackage.remainingMinutes,
     status: getPackageDisplayStatus(purchasedPackage),
-    totalMinutes: purchasedPackage.totalMinutes
+    totalMinutes: purchasedPackage.totalMinutes,
+    amountLabel: formatPaymentAmount(purchasedPackage.priceSnapshot, purchasedPackage.currencySnapshot)
   });
   const isAvailablePackage = (purchasedPackage: PurchasedPackageRecord): boolean =>
     getPackageDisplayStatus(purchasedPackage) === 'ACTIVE';
