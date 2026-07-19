@@ -49,6 +49,11 @@ const consultationRateSchema = z.object({
     .refine(value => new Prisma.Decimal(value).greaterThan(0))
 });
 const refundSchema = z.object({
+  amount: z
+    .string()
+    .trim()
+    .regex(/^\d{1,10}(\.\d{1,2})?$/)
+    .refine(value => new Prisma.Decimal(value).greaterThan(0)),
   idempotencyKey: idempotencyKeySchema,
   paymentId: z.string().trim().min(1).max(128)
 });
@@ -196,20 +201,21 @@ export async function adjustPurchasedPackageAction(input: {
 }
 
 /**
- * Возвращает весь ещё не возвращённый остаток внешнего платежа.
+ * Возвращает указанную часть внешнего пополнения через исходный платёжный шлюз.
  */
 export async function refundPaymentAction(
   paymentId: string,
+  amount: string,
   idempotencyKey: string
 ): Promise<AdminFinancialActionResult> {
   const admin = await requireAdmin();
-  const payload = refundSchema.safeParse({ paymentId, idempotencyKey });
+  const payload = refundSchema.safeParse({ paymentId, amount, idempotencyKey });
 
   if (!admin) {
     return { success: false, message: 'Недостаточно прав' };
   }
   if (!payload.success) {
-    return { success: false, message: 'Некорректный ID платежа' };
+    return { success: false, message: 'Укажите корректную сумму возврата' };
   }
 
   const payment = await prisma.payment.findUnique({
@@ -243,11 +249,19 @@ export async function refundPaymentAction(
     return { success: false, message: 'Платёж уже полностью возвращён' };
   }
 
+  const requestedAmount = new Prisma.Decimal(payload.data.amount);
+  if (requestedAmount.greaterThan(refundableAmount)) {
+    return {
+      success: false,
+      message: `Сумма возврата превышает доступный остаток ${refundableAmount.toFixed(2)} EUR`
+    };
+  }
+
   try {
     const paymentService = await getPaymentService(payment.provider);
     await paymentService.refundPayment({
       payment,
-      amount: refundableAmount.toFixed(2),
+      amount: requestedAmount.toFixed(2),
       idempotencyKey: `admin-refund:${payment.id}:${payload.data.idempotencyKey}`
     });
     revalidateFinancialPages(payment.userId);

@@ -11,7 +11,7 @@ import {
 } from './_components/financial-controls';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Link } from '@/i18n/navigation';
 import prisma from '@/lib/prisma';
@@ -176,6 +176,10 @@ const AdminPaymentsPage = async () => {
           <Card className="overflow-hidden">
             <CardHeader className="border-b">
               <CardTitle>История операций</CardTitle>
+              <CardDescription>
+                Откройте завершённое пополнение, чтобы вернуть полную сумму или её часть на исходный
+                способ оплаты.
+              </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
               <FinancialHistoryTable

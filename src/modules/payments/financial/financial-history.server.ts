@@ -328,6 +328,7 @@ export const getFinancialHistory = async (params?: {
       createdAtIso: transaction.createdAt.toISOString(),
       title: getOperationTitle(transaction.operation.type),
       refundable,
+      refundableAmountValue: refundableAmount?.greaterThan(0) ? refundableAmount.toNumber() : null,
       refundableAmountLabel: refundableAmount?.greaterThan(0)
         ? `${refundableAmount.toFixed(2)} EUR`
         : null,
@@ -416,6 +417,7 @@ export const getFinancialHistory = async (params?: {
       createdAtIso: transaction.createdAt.toISOString(),
       title: getOperationTitle(transaction.operation.type),
       refundable: false,
+      refundableAmountValue: null,
       refundableAmountLabel: null,
       deletable: false,
       details: [
@@ -490,6 +492,7 @@ export const getFinancialHistory = async (params?: {
       createdAtIso: payment.createdAt.toISOString(),
       title: payment.kind === 'TOPUP' ? 'Попытка пополнения' : 'Попытка покупки пакета',
       refundable: false,
+      refundableAmountValue: null,
       refundableAmountLabel: null,
       deletable:
         !payment.balanceCreditedAt &&

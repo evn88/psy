@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { type FormEvent, useEffect, useState, useTransition } from 'react';
 import { ExternalLink, RotateCcw, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -28,6 +28,7 @@ import {
   DialogTitle
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -72,13 +73,25 @@ export interface FinancialHistoryItem {
   createdAtIso: string;
   title: string;
   refundable: boolean;
+  refundableAmountValue: number | null;
   refundableAmountLabel: string | null;
   deletable: boolean;
   details: Array<{ label: string; value: string }>;
 }
 
-interface PendingFinancialAction {
-  type: 'DELETE_ORPHAN' | 'REFUND';
+type PendingFinancialAction =
+  | {
+      type: 'DELETE_ORPHAN';
+      item: FinancialHistoryItem;
+    }
+  | {
+      type: 'REFUND';
+      item: FinancialHistoryItem;
+      amount: string;
+    };
+
+interface RefundFormState {
+  amount: string;
   item: FinancialHistoryItem;
 }
 
@@ -133,6 +146,7 @@ export const FinancialHistoryTable = ({
   const [filters, setFilters] = useState<PersistedFilters>(DEFAULT_FILTERS);
   const [selectedItem, setSelectedItem] = useState<FinancialHistoryItem | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingFinancialAction | null>(null);
+  const [refundForm, setRefundForm] = useState<RefundFormState | null>(null);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -190,7 +204,7 @@ export const FinancialHistoryTable = ({
     startTransition(async () => {
       const result =
         action.type === 'REFUND'
-          ? await refundPaymentAction(action.item.paymentId!, crypto.randomUUID())
+          ? await refundPaymentAction(action.item.paymentId!, action.amount, crypto.randomUUID())
           : await deleteOrphanPaymentAction(action.item.paymentId!);
 
       if (result.success) {
@@ -202,6 +216,38 @@ export const FinancialHistoryTable = ({
         toast.error(result.message);
       }
     });
+  };
+
+  const handleRefundAmountSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!refundForm || refundForm.item.refundableAmountValue === null) {
+      return;
+    }
+
+    const normalizedAmount = refundForm.amount.trim();
+    const parsedAmount = Number(normalizedAmount);
+
+    if (
+      !/^\d{1,10}(\.\d{1,2})?$/.test(normalizedAmount) ||
+      !Number.isFinite(parsedAmount) ||
+      parsedAmount <= 0
+    ) {
+      toast.error('Укажите положительную сумму в EUR с точностью до цента');
+      return;
+    }
+
+    if (parsedAmount > refundForm.item.refundableAmountValue) {
+      toast.error(`Доступно для возврата: ${refundForm.item.refundableAmountValue.toFixed(2)} EUR`);
+      return;
+    }
+
+    setPendingAction({
+      type: 'REFUND',
+      item: refundForm.item,
+      amount: parsedAmount.toFixed(2)
+    });
+    setRefundForm(null);
   };
 
   return (
@@ -417,10 +463,20 @@ export const FinancialHistoryTable = ({
                     <Button
                       variant="destructive"
                       disabled={isPending}
-                      onClick={() => setPendingAction({ type: 'REFUND', item: selectedItem })}
+                      onClick={() => {
+                        if (selectedItem.refundableAmountValue === null) {
+                          return;
+                        }
+
+                        setRefundForm({
+                          item: selectedItem,
+                          amount: selectedItem.refundableAmountValue.toFixed(2)
+                        });
+                        setSelectedItem(null);
+                      }}
                     >
                       <RotateCcw />
-                      Вернуть {selectedItem.refundableAmountLabel ?? 'платёж'}
+                      Возврат на карту
                     </Button>
                   )}
                   {selectedItem.deletable && (
@@ -443,6 +499,68 @@ export const FinancialHistoryTable = ({
         </DialogContent>
       </Dialog>
 
+      <Dialog
+        open={Boolean(refundForm)}
+        onOpenChange={open => {
+          if (!open && !isPending) {
+            setRefundForm(null);
+          }
+        }}
+      >
+        <DialogContent>
+          {refundForm && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Возврат на карту клиента</DialogTitle>
+                <DialogDescription>
+                  Деньги будут возвращены через {refundForm.item.provider ?? 'платёжный шлюз'} на
+                  исходный способ оплаты. Доступно: {refundForm.item.refundableAmountLabel}.
+                </DialogDescription>
+              </DialogHeader>
+
+              <form onSubmit={handleRefundAmountSubmit} className="space-y-5">
+                <div className="space-y-2">
+                  <Label htmlFor="provider-refund-amount">Сумма возврата, EUR</Label>
+                  <Input
+                    id="provider-refund-amount"
+                    type="number"
+                    inputMode="decimal"
+                    min="0.01"
+                    max={refundForm.item.refundableAmountValue ?? undefined}
+                    step="0.01"
+                    value={refundForm.amount}
+                    onChange={event =>
+                      setRefundForm(current =>
+                        current ? { ...current, amount: event.target.value } : current
+                      )
+                    }
+                    aria-describedby="provider-refund-help"
+                    autoFocus
+                  />
+                  <p id="provider-refund-help" className="text-sm leading-5 text-muted-foreground">
+                    Можно вернуть часть платежа. Внутренний баланс уменьшится на ту же сумму и может
+                    стать отрицательным.
+                  </p>
+                </div>
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setRefundForm(null)}
+                    disabled={isPending}
+                  >
+                    Отмена
+                  </Button>
+                  <Button type="submit" variant="destructive" disabled={isPending}>
+                    Продолжить
+                  </Button>
+                </DialogFooter>
+              </form>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <AlertDialog
         open={Boolean(pendingAction)}
         onOpenChange={open => !open && !isPending && setPendingAction(null)}
@@ -458,7 +576,7 @@ export const FinancialHistoryTable = ({
               {pendingAction?.type === 'REFUND'
                 ? `Провайдер ${
                     pendingAction.item.provider ?? ''
-                  } вернёт клиенту ${pendingAction.item.refundableAmountLabel ?? 'доступную сумму'}. На внутреннем балансе будет создано встречное списание на ту же сумму, баланс может стать отрицательным.`
+                  } вернёт клиенту ${pendingAction.amount} EUR. На внутреннем балансе будет создано встречное списание на ту же сумму, баланс может стать отрицательным.`
                 : `Система запросит ${
                     pendingAction?.item.provider ?? 'платёжный шлюз'
                   }. Запись будет удалена только если Order ID ${
