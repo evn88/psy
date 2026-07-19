@@ -1,6 +1,9 @@
+import { loadEnvConfig } from '@next/env';
 import { defineConfig } from 'prisma/config';
-import 'dotenv/config';
+
 import { resolveDirectDatabaseUrlIfConfigured } from './src/lib/database-url';
+
+loadEnvConfig(process.cwd());
 
 /**
  * Конфигурация Prisma для CLI инструментов.

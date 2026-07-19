@@ -1,9 +1,12 @@
 import { pathToFileURL } from 'node:url';
 
+import { loadEnvConfig } from '@next/env';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 import { withAccelerate } from '@prisma/extension-accelerate';
 import { Pool } from 'pg';
+
+loadEnvConfig(process.cwd());
 
 const DATABASE_IDENTITY_KEY = 'primary';
 
@@ -46,12 +49,6 @@ const resolveDirectDatabaseUrl = () => {
     }
 
     throw new Error('Явный direct URL имеет неподдерживаемый протокол.');
-  }
-
-  if (getFirstConfiguredValue(['PRISMA_DATABASE_URL', 'POSTGRES_URL'])) {
-    throw new Error(
-      'При отдельном runtime URL требуется DIRECT_DATABASE_URL или POSTGRES_URL_NON_POOLING.'
-    );
   }
 
   const databaseUrl = process.env.DATABASE_URL?.trim();

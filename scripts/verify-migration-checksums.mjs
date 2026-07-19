@@ -3,10 +3,13 @@ import { readFile, readdir } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { loadEnvConfig } from '@next/env';
 import { Pool } from 'pg';
 
 const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const migrationsDirectory = join(projectRoot, 'prisma', 'migrations');
+
+loadEnvConfig(projectRoot);
 
 // До 2026-05-02 проект имел развёрнутую историю, затем она была сведена в 0_init.
 // Разрешены только точные checksum обеих уже опубликованных веток истории.
@@ -75,12 +78,6 @@ const resolveDirectDatabaseUrl = () => {
     }
 
     throw new Error('Явный direct URL для проверки миграций имеет неверный протокол.');
-  }
-
-  if (process.env.PRISMA_DATABASE_URL?.trim() || process.env.POSTGRES_URL?.trim()) {
-    throw new Error(
-      'При отдельном runtime URL требуется DIRECT_DATABASE_URL или POSTGRES_URL_NON_POOLING.'
-    );
   }
 
   const databaseUrl = process.env.DATABASE_URL?.trim();

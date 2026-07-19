@@ -70,13 +70,6 @@ const findDirectDatabaseUrl = (environment: DatabaseEnvironment): string | undef
     return explicitDirectUrl;
   }
 
-  const hasSeparateRuntimeUrl = Boolean(
-    getFirstDefinedValue(environment, ['PRISMA_DATABASE_URL', 'POSTGRES_URL'])
-  );
-  if (hasSeparateRuntimeUrl) {
-    return undefined;
-  }
-
   const databaseUrl = environment.DATABASE_URL?.trim();
   return isDirectPostgresUrl(databaseUrl) ? databaseUrl : undefined;
 };
@@ -146,7 +139,7 @@ export const resolveDirectDatabaseUrl = (
   const directUrl = resolveDirectDatabaseUrlIfConfigured(environment);
   if (!directUrl) {
     throw new Error(
-      'DIRECT_DATABASE_URL or POSTGRES_URL_NON_POOLING must contain a direct PostgreSQL URL when a separate runtime URL is configured; DATABASE_URL fallback is allowed only in local direct mode'
+      'DIRECT_DATABASE_URL, POSTGRES_URL_NON_POOLING or DATABASE_URL must contain a direct PostgreSQL URL'
     );
   }
 

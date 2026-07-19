@@ -54,7 +54,7 @@ describe('database URL policy', () => {
     );
   });
 
-  it('не использует потенциально pooled POSTGRES_URL для direct-операций', () => {
+  it('предпочитает прямой DATABASE_URL потенциально pooled POSTGRES_URL', () => {
     // Arrange
     const environment = {
       POSTGRES_URL: 'postgresql://user:pass@pool.example.test:5432/app',
@@ -62,9 +62,7 @@ describe('database URL policy', () => {
     };
 
     // Act + Assert
-    expect(() => resolveDirectDatabaseUrl(environment)).toThrow(
-      'DIRECT_DATABASE_URL or POSTGRES_URL_NON_POOLING'
-    );
+    expect(resolveDirectDatabaseUrl(environment)).toBe(environment.DATABASE_URL);
   });
 
   it('останавливает direct-операцию, если настроен только POSTGRES_URL', () => {
@@ -79,28 +77,26 @@ describe('database URL policy', () => {
     );
   });
 
-  it('не использует DATABASE_URL как direct fallback рядом с Prisma runtime URL', () => {
+  it('использует прямой DATABASE_URL рядом с Prisma runtime URL', () => {
     // Arrange
     const environment = {
       PRISMA_DATABASE_URL: 'prisma://accelerate.example.test/?api_key=test',
-      DATABASE_URL: 'postgresql://user:pass@pool.example.test:5432/app'
+      DATABASE_URL: 'postgresql://user:pass@db.example.test:5432/app'
     };
 
     // Act + Assert
-    expect(() => resolveDirectDatabaseUrl(environment)).toThrow(
-      'DIRECT_DATABASE_URL or POSTGRES_URL_NON_POOLING'
-    );
+    expect(resolveDirectDatabaseUrl(environment)).toBe(environment.DATABASE_URL);
   });
 
-  it('разрешает prisma generate без direct URL в runtime-only окружении', () => {
+  it('возвращает DATABASE_URL для Prisma CLI рядом с runtime URL', () => {
     // Arrange
     const environment = {
       PRISMA_DATABASE_URL: 'prisma://accelerate.example.test/?api_key=test',
-      DATABASE_URL: 'postgresql://user:pass@pool.example.test:5432/app'
+      DATABASE_URL: 'postgresql://user:pass@db.example.test:5432/app'
     };
 
     // Act + Assert
-    expect(resolveDirectDatabaseUrlIfConfigured(environment)).toBeUndefined();
+    expect(resolveDirectDatabaseUrlIfConfigured(environment)).toBe(environment.DATABASE_URL);
   });
 
   it('не скрывает ошибочный протокол явно настроенного direct URL', () => {
