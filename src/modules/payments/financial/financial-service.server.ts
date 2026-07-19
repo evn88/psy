@@ -1078,7 +1078,7 @@ export const reverseConsultationInTransaction = async (
         ? getLocalizedTitle(allocation.purchasedPackage.titleSnapshot)
         : undefined,
       reason: params.reason,
-      eventStart: allocation.event.start.toISOString()
+      eventStart: allocation.event?.start.toISOString()
     }
   });
 

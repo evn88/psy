@@ -6,6 +6,7 @@ import prisma from '@/lib/prisma';
 import { sendEventNotificationEmail } from '@/lib/email';
 import { fetchGoogleEvents, syncEventWithGoogle } from '@/lib/google-sync';
 import { doesDateRangeOverlap, isValidDateRange } from '@/lib/event-utils';
+import { startFinancialEmailOutboxWorkflow } from '@/lib/financial-email-workflow';
 import { optionalMeetingUrlSchema } from '@/lib/safe-url';
 import { startSessionReminderWorkflow } from '@/lib/session-reminder-workflow';
 import {
@@ -281,6 +282,10 @@ async function postHandler(req: Request) {
 
       return createdEvent;
     });
+
+    if (shouldChargeConsultation) {
+      await startFinancialEmailOutboxWorkflow();
+    }
 
     if (newEvent.user && newEvent.user.email) {
       await sendEventNotificationEmail({

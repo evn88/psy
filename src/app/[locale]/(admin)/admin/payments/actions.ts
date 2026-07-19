@@ -5,6 +5,7 @@ import { Prisma, SystemLogCategory, SystemLogLevel } from '@prisma/client';
 import { z } from 'zod';
 
 import { auth } from '@/auth';
+import { startFinancialEmailOutboxWorkflow } from '@/lib/financial-email-workflow';
 import prisma from '@/lib/prisma';
 import { getPaymentService } from '@/modules/payments/factory';
 import {
@@ -149,6 +150,7 @@ export async function adjustWalletBalanceAction(input: {
       reason: payload.data.reason,
       idempotencyKey: `admin-wallet-adjustment:${payload.data.userId}:${payload.data.idempotencyKey}`
     });
+    await startFinancialEmailOutboxWorkflow();
     revalidateFinancialPages(payload.data.userId);
 
     return { success: true, message: 'Баланс скорректирован' };
@@ -189,6 +191,7 @@ export async function adjustPurchasedPackageAction(input: {
       reason: payload.data.reason,
       idempotencyKey: `admin-package-adjustment:${payload.data.purchasedPackageId}:${payload.data.idempotencyKey}`
     });
+    await startFinancialEmailOutboxWorkflow();
     revalidateFinancialPages(payload.data.userId);
 
     return { success: true, message: 'Остаток пакета скорректирован' };

@@ -763,7 +763,7 @@ model PackageTransaction {
 /// Источник и снимок оплаты консультации.
 model EventBillingAllocation {
   id                 String                  @id @default(cuid())
-  eventId            String                  @unique
+  eventId            String?                 @unique
   userId             String
   chargeOperationId  String                  @unique
   source             EventBillingSource
@@ -775,7 +775,7 @@ model EventBillingAllocation {
   pricingSnapshot    Json?
   createdAt          DateTime                @default(now())
   updatedAt          DateTime                @updatedAt
-  event              Event                   @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  event              Event?                  @relation(fields: [eventId], references: [id], onDelete: SetNull)
   user               User                    @relation(fields: [userId], references: [id], onDelete: Restrict)
   chargeOperation    FinancialOperation      @relation("BillingChargeOperation", fields: [chargeOperationId], references: [id], onDelete: Restrict)
   purchasedPackage   PurchasedPackage?       @relation(fields: [purchasedPackageId], references: [id], onDelete: Restrict)

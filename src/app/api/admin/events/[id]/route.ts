@@ -1,11 +1,18 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { EventBillingSource, EventStatus, EventType, Prisma } from '@prisma/client';
+import {
+  BillingAllocationStatus,
+  EventBillingSource,
+  EventStatus,
+  EventType,
+  Prisma
+} from '@prisma/client';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { sendEventCancellationEmail, sendEventNotificationEmail } from '@/lib/email';
 import { syncEventWithGoogle } from '@/lib/google-sync';
 import { doesDateRangeOverlap, isValidDateRange } from '@/lib/event-utils';
+import { startFinancialEmailOutboxWorkflow } from '@/lib/financial-email-workflow';
 import { optionalMeetingUrlSchema } from '@/lib/safe-url';
 import { startSessionReminderWorkflow } from '@/lib/session-reminder-workflow';
 import {
@@ -313,6 +320,10 @@ async function patchHandler(req: Request, props: { params: Promise<{ id: string 
       return nextEvent;
     });
 
+    if (shouldReverseBilling || shouldChargeConsultation) {
+      await startFinancialEmailOutboxWorkflow();
+    }
+
     if (isRejectingPendingRequest && event.user?.email) {
       await sendEventCancellationEmail({
         email: event.user.email,
@@ -435,10 +446,10 @@ async function deleteHandler(req: Request, props: { params: Promise<{ id: string
 
     const billingAllocation = await prisma.eventBillingAllocation.findUnique({
       where: { eventId },
-      select: { id: true }
+      select: { status: true }
     });
 
-    if (billingAllocation) {
+    if (billingAllocation && billingAllocation.status !== BillingAllocationStatus.REVERSED) {
       return NextResponse.json(
         {
           message:

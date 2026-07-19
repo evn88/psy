@@ -2,6 +2,8 @@ import { PaymentKind, Prisma } from '@prisma/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
+  adjustPurchasedPackage: vi.fn(),
+  adjustWalletBalance: vi.fn(),
   auth: vi.fn(),
   deleteMany: vi.fn(),
   findUnique: vi.fn(),
@@ -9,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   paymentExists: vi.fn(),
   refundPayment: vi.fn(),
   revalidatePath: vi.fn(),
+  startFinancialEmailOutboxWorkflow: vi.fn(),
   writeSystemLogEntry: vi.fn()
 }));
 
@@ -36,9 +39,13 @@ vi.mock('@/modules/payments/factory', () => ({
   getPaymentService: mocks.getPaymentService
 }));
 
+vi.mock('@/lib/financial-email-workflow', () => ({
+  startFinancialEmailOutboxWorkflow: mocks.startFinancialEmailOutboxWorkflow
+}));
+
 vi.mock('@/modules/payments/financial/financial-service.server', () => ({
-  adjustPurchasedPackage: vi.fn(),
-  adjustWalletBalance: vi.fn()
+  adjustPurchasedPackage: mocks.adjustPurchasedPackage,
+  adjustWalletBalance: mocks.adjustWalletBalance
 }));
 
 vi.mock('@/modules/system-logs/system-log-service.server', () => ({
@@ -46,6 +53,8 @@ vi.mock('@/modules/system-logs/system-log-service.server', () => ({
 }));
 
 import {
+  adjustPurchasedPackageAction,
+  adjustWalletBalanceAction,
   deleteOrphanPaymentAction,
   refundPaymentAction
 } from '@/app/[locale]/(admin)/admin/payments/actions';
@@ -80,6 +89,34 @@ describe('административные действия с платежам�
       paymentExists: mocks.paymentExists,
       refundPayment: mocks.refundPayment
     });
+    mocks.startFinancialEmailOutboxWorkflow.mockResolvedValue(true);
+  });
+
+  it('запускает доставку письма после корректировки денежного баланса', async () => {
+    const result = await adjustWalletBalanceAction({
+      userId: 'user-1',
+      amount: '-10.00',
+      reason: 'Корректировка администратора',
+      idempotencyKey
+    });
+
+    expect(result.success).toBe(true);
+    expect(mocks.adjustWalletBalance).toHaveBeenCalledOnce();
+    expect(mocks.startFinancialEmailOutboxWorkflow).toHaveBeenCalledOnce();
+  });
+
+  it('запускает доставку письма после корректировки пакета минут', async () => {
+    const result = await adjustPurchasedPackageAction({
+      userId: 'user-1',
+      purchasedPackageId: 'package-1',
+      minutes: -30,
+      reason: 'Корректировка администратора',
+      idempotencyKey
+    });
+
+    expect(result.success).toBe(true);
+    expect(mocks.adjustPurchasedPackage).toHaveBeenCalledOnce();
+    expect(mocks.startFinancialEmailOutboxWorkflow).toHaveBeenCalledOnce();
   });
 
   it('возвращает завершённое пополнение через исходного провайдера', async () => {
