@@ -100,7 +100,8 @@ const AdminPaymentsPage = async () => {
     status: purchasedPackage.status,
     totalMinutes: purchasedPackage.totalMinutes,
     remainingMinutes: purchasedPackage.remainingMinutes,
-    purchasedAt: purchasedPackage.purchasedAt.toLocaleDateString('ru-RU')
+    purchasedAt: purchasedPackage.purchasedAt.toLocaleDateString('ru-RU'),
+    amountLabel: `${purchasedPackage.priceSnapshot.toFixed(2)} ${purchasedPackage.currencySnapshot}`
   }));
   const monthIncome = monthTransactions
     .filter(transaction => transaction.amount.greaterThan(0))
