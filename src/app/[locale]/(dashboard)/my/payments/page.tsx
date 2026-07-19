@@ -1,5 +1,5 @@
 import { auth } from '@/auth';
-import { PackageCheck, Wallet } from 'lucide-react';
+import { Wallet } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 import type { Prisma } from '@prisma/client';
 
@@ -17,6 +17,7 @@ import type { FinancialHistoryItem } from '@/modules/payments/financial/financia
 import type { PaymentConnectorMetadata } from '@/modules/payments/connectors/types';
 
 import { MyPaymentsHistory } from './_components/my-payments-history';
+import { MyPackagesCard, type PurchasedPackageView } from './_components/my-packages-card';
 import { PaymentCheckoutCard } from './_components/payment-checkout-card';
 import type {
   LocalizedPaymentText,
@@ -90,13 +91,40 @@ export default async function MyPaymentsPage({ params }: Readonly<MyPaymentsPage
     }
     return 'Пакет консультаций';
   };
-  const packageStatusLabels = {
-    ACTIVE: 'Активен',
-    EXHAUSTED: 'Использован',
-    EXPIRED: 'Срок истёк',
-    SUSPENDED: 'Приостановлен',
-    REVOKED: 'Отменён'
-  } as const;
+  const now = new Date();
+  const getPackageDisplayStatus = (
+    purchasedPackage: PurchasedPackageRecord
+  ): PurchasedPackageView['status'] => {
+    if (purchasedPackage.status !== 'ACTIVE') {
+      return purchasedPackage.status;
+    }
+
+    if (purchasedPackage.remainingMinutes <= 0) {
+      return 'EXHAUSTED';
+    }
+
+    if (purchasedPackage.expiresAt && purchasedPackage.expiresAt <= now) {
+      return 'EXPIRED';
+    }
+
+    return 'ACTIVE';
+  };
+  const toPurchasedPackageView = (
+    purchasedPackage: PurchasedPackageRecord
+  ): PurchasedPackageView => ({
+    id: purchasedPackage.id,
+    title: getPackageTitle(purchasedPackage.titleSnapshot),
+    purchasedAtLabel: purchasedPackage.purchasedAt.toLocaleDateString('ru-RU'),
+    remainingMinutes: purchasedPackage.remainingMinutes,
+    status: getPackageDisplayStatus(purchasedPackage),
+    totalMinutes: purchasedPackage.totalMinutes
+  });
+  const isAvailablePackage = (purchasedPackage: PurchasedPackageRecord): boolean =>
+    getPackageDisplayStatus(purchasedPackage) === 'ACTIVE';
+  const activePackages = purchasedPackages.filter(isAvailablePackage).map(toPurchasedPackageView);
+  const historyPackages = purchasedPackages
+    .filter(purchasedPackage => !isAvailablePackage(purchasedPackage))
+    .map(toPurchasedPackageView);
 
   return (
     <div className="mx-auto w-full max-w-[1280px] space-y-9 px-4 pb-12 sm:px-6 lg:px-8">
@@ -130,50 +158,7 @@ export default async function MyPaymentsPage({ params }: Readonly<MyPaymentsPage
         </section>
 
         {purchasedPackages.length > 0 ? (
-          <section
-            className="overflow-hidden rounded-2xl border bg-card shadow-sm"
-            aria-labelledby="my-packages-title"
-          >
-            <div className="flex items-center gap-3 px-5 py-5 sm:px-6">
-              <span className="flex size-9 items-center justify-center rounded-full bg-primary/15 text-primary">
-                <PackageCheck className="size-4" aria-hidden />
-              </span>
-              <div>
-                <h2 id="my-packages-title" className="font-semibold">
-                  Мои пакеты
-                </h2>
-                <p className="mt-0.5 text-sm text-muted-foreground">
-                  Оставшееся время консультаций
-                </p>
-              </div>
-            </div>
-            <ul className="border-t divide-y">
-              {purchasedPackages.map(purchasedPackage => (
-                <li
-                  key={purchasedPackage.id}
-                  className="grid gap-2 px-5 py-3.5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-6"
-                >
-                  <div className="min-w-0">
-                    <p className="font-medium">{getPackageTitle(purchasedPackage.titleSnapshot)}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Куплен {purchasedPackage.purchasedAt.toLocaleDateString('ru-RU')}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3 sm:justify-end">
-                    <span className="w-fit rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
-                      {packageStatusLabels[purchasedPackage.status]}
-                    </span>
-                    <p className="text-sm font-semibold tabular-nums">
-                      {purchasedPackage.remainingMinutes}{' '}
-                      <span className="font-normal text-muted-foreground">
-                        из {purchasedPackage.totalMinutes} мин.
-                      </span>
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
+          <MyPackagesCard activePackages={activePackages} historyPackages={historyPackages} />
         ) : null}
       </div>
 

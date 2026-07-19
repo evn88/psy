@@ -1,5 +1,9 @@
-import { ChevronDown, ReceiptText } from 'lucide-react';
+'use client';
 
+import { useState } from 'react';
+import { ChevronDown, ChevronLeft, ChevronRight, ReceiptText } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -31,10 +35,26 @@ interface MyPaymentsHistoryProps {
   payments: MyPaymentHistoryItem[];
 }
 
+const PAYMENTS_PER_PAGE = 10;
+
 /**
- * Сворачиваемая история финансовых операций без пользовательских действий.
+ * Сворачиваемая история финансовых операций с клиентской пагинацией.
  */
 export const MyPaymentsHistory = ({ payments }: MyPaymentsHistoryProps) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(payments.length / PAYMENTS_PER_PAGE));
+  const visiblePage = Math.min(currentPage, totalPages);
+  const pageStart = (visiblePage - 1) * PAYMENTS_PER_PAGE;
+  const visiblePayments = payments.slice(pageStart, pageStart + PAYMENTS_PER_PAGE);
+
+  const goToPreviousPage = () => {
+    setCurrentPage(page => Math.max(1, page - 1));
+  };
+
+  const goToNextPage = () => {
+    setCurrentPage(page => Math.min(totalPages, page + 1));
+  };
+
   return (
     <details className="group overflow-hidden rounded-2xl border bg-card shadow-sm">
       <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-5 transition-colors hover:bg-muted/30 [&::-webkit-details-marker]:hidden sm:px-6">
@@ -64,7 +84,7 @@ export const MyPaymentsHistory = ({ payments }: MyPaymentsHistoryProps) => {
               Финансовых операций пока нет
             </p>
           ) : (
-            payments.map(payment => (
+            visiblePayments.map(payment => (
               <article key={payment.id} className="rounded-xl border bg-muted/15 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -116,7 +136,7 @@ export const MyPaymentsHistory = ({ payments }: MyPaymentsHistoryProps) => {
                   </TableCell>
                 </TableRow>
               ) : (
-                payments.map(payment => (
+                visiblePayments.map(payment => (
                   <TableRow key={payment.id}>
                     <TableCell>
                       <p className="font-medium">{payment.title}</p>
@@ -152,6 +172,36 @@ export const MyPaymentsHistory = ({ payments }: MyPaymentsHistoryProps) => {
             </TableBody>
           </Table>
         </div>
+
+        {payments.length > PAYMENTS_PER_PAGE ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3 sm:px-6">
+            <p className="text-sm text-muted-foreground">
+              Страница {visiblePage} из {totalPages}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={goToPreviousPage}
+                disabled={visiblePage === 1}
+              >
+                <ChevronLeft aria-hidden />
+                Назад
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={goToNextPage}
+                disabled={visiblePage === totalPages}
+              >
+                Вперёд
+                <ChevronRight aria-hidden />
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </div>
     </details>
   );

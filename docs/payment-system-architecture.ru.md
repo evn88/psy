@@ -91,8 +91,9 @@ Connector не должен:
 
 Worker читает `FinancialEmailOutbox`, отправляет письмо, сохраняет provider message ID и выполняет retry. Он не изменяет финансовые остатки.
 
-В коде сущность называется `FinancialEmailOutbox`, а worker запускается маршрутом
-`/api/cron/financial-emails`. Отказ Resend не откатывает проводку.
+В коде сущность называется `FinancialEmailOutbox`. Ежедневный cron запускает маршрутом
+`/api/cron/financial-emails` один durable worker, который проверяет очередь каждую минуту в
+течение суток. Отказ Resend не откатывает проводку.
 
 ### 3.5. Read model
 
