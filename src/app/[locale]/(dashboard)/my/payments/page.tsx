@@ -91,20 +91,40 @@ export default async function MyPaymentsPage({ params }: Readonly<MyPaymentsPage
     }
     return 'Пакет консультаций';
   };
-  const purchasedPackageViews: PurchasedPackageView[] = purchasedPackages.map(purchasedPackage => ({
+  const now = new Date();
+  const getPackageDisplayStatus = (
+    purchasedPackage: PurchasedPackageRecord
+  ): PurchasedPackageView['status'] => {
+    if (purchasedPackage.status !== 'ACTIVE') {
+      return purchasedPackage.status;
+    }
+
+    if (purchasedPackage.remainingMinutes <= 0) {
+      return 'EXHAUSTED';
+    }
+
+    if (purchasedPackage.expiresAt && purchasedPackage.expiresAt <= now) {
+      return 'EXPIRED';
+    }
+
+    return 'ACTIVE';
+  };
+  const toPurchasedPackageView = (
+    purchasedPackage: PurchasedPackageRecord
+  ): PurchasedPackageView => ({
     id: purchasedPackage.id,
     title: getPackageTitle(purchasedPackage.titleSnapshot),
     purchasedAtLabel: purchasedPackage.purchasedAt.toLocaleDateString('ru-RU'),
     remainingMinutes: purchasedPackage.remainingMinutes,
-    status: purchasedPackage.status,
+    status: getPackageDisplayStatus(purchasedPackage),
     totalMinutes: purchasedPackage.totalMinutes
-  }));
-  const activePackages = purchasedPackageViews.filter(
-    purchasedPackage => purchasedPackage.status === 'ACTIVE'
-  );
-  const historyPackages = purchasedPackageViews.filter(
-    purchasedPackage => purchasedPackage.status !== 'ACTIVE'
-  );
+  });
+  const isAvailablePackage = (purchasedPackage: PurchasedPackageRecord): boolean =>
+    getPackageDisplayStatus(purchasedPackage) === 'ACTIVE';
+  const activePackages = purchasedPackages.filter(isAvailablePackage).map(toPurchasedPackageView);
+  const historyPackages = purchasedPackages
+    .filter(purchasedPackage => !isAvailablePackage(purchasedPackage))
+    .map(toPurchasedPackageView);
 
   return (
     <div className="mx-auto w-full max-w-[1280px] space-y-9 px-4 pb-12 sm:px-6 lg:px-8">
