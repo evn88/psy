@@ -71,6 +71,7 @@ export default async function MyPaymentsPage({ params }: Readonly<MyPaymentsPage
   );
   const paymentHistory = history.map(item => ({
     id: item.id,
+    orderId: item.orderId,
     amountLabel: item.amountLabel,
     amountValue: item.amountValue,
     direction: item.direction,

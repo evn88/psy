@@ -119,7 +119,15 @@ export default async function AdminClientProfilePage({
     }),
     prisma.event.findMany({
       where: { userId: id },
-      orderBy: { start: 'desc' }
+      orderBy: { start: 'desc' },
+      include: {
+        billingAllocation: {
+          select: {
+            purchasedPackageId: true,
+            source: true
+          }
+        }
+      }
     })
   ]);
 

@@ -1,4 +1,5 @@
 import {
+  EventBillingSource,
   FinancialOperationStatus,
   FinancialOperationType,
   Prisma,
@@ -12,14 +13,22 @@ vi.mock('@/lib/prisma', () => ({
   default: {}
 }));
 
-import { fulfillDirectPackagePurchase, recordTopupCredit } from '../financial-service.server';
+import {
+  chargeConsultationInTransaction,
+  fulfillDirectPackagePurchase,
+  recordTopupCredit
+} from '../financial-service.server';
 
-const createTransaction = (initialBalance: string) => {
+const createTransaction = (
+  initialBalance: string,
+  initialPackageMinutes = 0,
+  packageTotalMinutes = 120
+) => {
   let balance = new Prisma.Decimal(initialBalance);
   let packageState = {
     id: 'purchased-package-1',
-    remainingMinutes: 0,
-    totalMinutes: 120,
+    remainingMinutes: initialPackageMinutes,
+    totalMinutes: packageTotalMinutes,
     status: PurchasedPackageStatus.ACTIVE
   };
   const walletEntries: Array<Record<string, unknown>> = [];
@@ -96,6 +105,10 @@ const createTransaction = (initialBalance: string) => {
         };
         return packageState;
       }),
+      findFirst: vi.fn().mockImplementation(() => ({
+        id: packageState.id,
+        titleSnapshot: { ru: 'Пакет консультаций' }
+      })),
       findUniqueOrThrow: vi.fn().mockImplementation(() => packageState),
       update: vi.fn().mockImplementation(({ data }) => {
         packageState = { ...packageState, ...data };
@@ -107,6 +120,12 @@ const createTransaction = (initialBalance: string) => {
         packageEntries.push(data);
         return { id: `package-entry-${packageEntries.length}`, ...data };
       })
+    },
+    eventBillingAllocation: {
+      create: vi.fn().mockImplementation(({ data }) => ({
+        id: 'allocation-1',
+        ...data
+      }))
     }
   };
 
@@ -184,5 +203,46 @@ describe('financial service', () => {
       })
     ]);
     expect(state.outboxEntries).toHaveLength(2);
+  });
+
+  it('списывает всю длительность консультации из пакета при создании встречи', async () => {
+    const state = createTransaction('0.00', 60, 60);
+
+    await chargeConsultationInTransaction(state.transaction as never, {
+      eventId: 'event-1',
+      userId: 'user-1',
+      initiatedById: 'admin-1',
+      durationMinutes: 60,
+      eventStart: new Date('2026-07-20T10:00:00.000Z'),
+      billing: {
+        source: EventBillingSource.PACKAGE,
+        purchasedPackageId: 'purchased-package-1'
+      }
+    });
+
+    expect(state.getPackageState()).toEqual(
+      expect.objectContaining({
+        remainingMinutes: 0,
+        totalMinutes: 60,
+        status: PurchasedPackageStatus.EXHAUSTED
+      })
+    );
+    expect(state.packageEntries).toEqual([
+      expect.objectContaining({
+        eventId: 'event-1',
+        minutes: -60,
+        remainingBefore: 60,
+        remainingAfter: 0,
+        type: 'CONSULTATION_DEBIT'
+      })
+    ]);
+    expect(state.transaction.eventBillingAllocation.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        eventId: 'event-1',
+        purchasedPackageId: 'purchased-package-1',
+        source: EventBillingSource.PACKAGE,
+        chargedMinutes: 60
+      })
+    });
   });
 });

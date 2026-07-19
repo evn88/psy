@@ -108,6 +108,11 @@ export interface IPaymentService {
   refundPayment(params: RefundPaymentParams): Promise<Payment>;
 
   /**
+   * Проверяет существование платежа у провайдера без изменения локальной записи.
+   */
+  paymentExists(payment: SyncPaymentParams): Promise<boolean>;
+
+  /**
    * Проверяет поддержку валюты до создания внешней операции.
    */
   supportsCurrency(currency: string): boolean;

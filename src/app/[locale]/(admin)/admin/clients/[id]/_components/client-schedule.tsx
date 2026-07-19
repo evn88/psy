@@ -1,36 +1,18 @@
 'use client';
 
 import * as React from 'react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { Plus, Edit, Trash2, CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Edit, Plus, Trash2 } from 'lucide-react';
+import { useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
-import { deleteClientEvent } from '../../_actions/clients.actions';
-import { useTransition } from 'react';
-import { useRouter } from '@/i18n/navigation';
-
-interface ClientEvent {
-  id: string;
-  title: string | null;
-  start: Date;
-  end: Date;
-  type: string;
-  status: string;
-}
-
+import useSWR from 'swr';
 import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
   Dialog,
   DialogContent,
@@ -42,13 +24,13 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { DatePicker } from '@/components/ui/date-picker';
 import {
   Select,
   SelectContent,
@@ -56,26 +38,107 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@/components/ui/table';
 import { TimePicker } from '@/components/ui/time-picker';
-import { addClientEvent, updateClientEvent } from '../../_actions/clients.actions';
-import type { EventStatus, EventType } from '@prisma/client';
+import { useRouter } from '@/i18n/navigation';
+
+interface ClientEvent {
+  id: string;
+  title: string | null;
+  start: Date | string;
+  end: Date | string;
+  type: string;
+  status: string;
+  billingAllocation: {
+    purchasedPackageId: string | null;
+    source: 'PACKAGE' | 'WALLET' | 'FREE';
+  } | null;
+}
+
+interface FinancialSummary {
+  balance: string;
+  consultationPrice: string;
+  packages: Array<{
+    id: string;
+    title: string;
+    totalMinutes: number;
+    remainingMinutes: number;
+  }>;
+}
 
 const eventTypeOptions = ['CONSULTATION', 'OTHER'] as const;
 const eventStatusOptions = ['SCHEDULED', 'CANCELLED', 'COMPLETED', 'PENDING_CONFIRMATION'] as const;
 
-const eventSchema = z.object({
-  title: z.string().optional(),
-  type: z.enum(eventTypeOptions),
-  status: z.enum(eventStatusOptions),
-  date: z.string().min(1, 'Обязательно'),
-  startTime: z.string().min(1, 'Обязательно'),
-  duration: z.number().min(15, 'Минимум 15 минут')
-});
+const eventSchema = z
+  .object({
+    title: z.string().optional(),
+    type: z.enum(eventTypeOptions),
+    status: z.enum(eventStatusOptions),
+    date: z.string().min(1, 'Обязательно'),
+    startTime: z.string().min(1, 'Обязательно'),
+    duration: z.number().int().min(15, 'Минимум 15 минут'),
+    billingSource: z.enum(['WALLET', 'PACKAGE']).optional(),
+    purchasedPackageId: z.string().optional()
+  })
+  .superRefine((values, context) => {
+    const requiresBilling = values.type === 'CONSULTATION' && values.status === 'SCHEDULED';
+
+    if (requiresBilling && !values.billingSource) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Выберите источник оплаты',
+        path: ['billingSource']
+      });
+    }
+
+    if (requiresBilling && values.billingSource === 'PACKAGE' && !values.purchasedPackageId) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Выберите пакет',
+        path: ['purchasedPackageId']
+      });
+    }
+  });
 
 type EventFormValues = z.infer<typeof eventSchema>;
 
-export function ClientSchedule({ userId, events }: { userId: string; events: ClientEvent[] }) {
-  const [isPending, startTransition] = useTransition();
+const fetchFinancialSummary = async (url: string): Promise<FinancialSummary> => {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error('Не удалось загрузить баланс и пакеты клиента');
+  }
+  return response.json() as Promise<FinancialSummary>;
+};
+
+/**
+ * Выполняет мутацию встречи через единый финансово-безопасный API расписания.
+ */
+const mutateEvent = async (
+  url: string,
+  method: 'DELETE' | 'PATCH' | 'POST',
+  body?: Record<string, unknown>
+): Promise<void> => {
+  const response = await fetch(url, {
+    method,
+    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const payload = (await response.json()) as { message?: string };
+
+  if (!response.ok) {
+    throw new Error(payload.message || 'Не удалось сохранить запись');
+  }
+};
+
+export const ClientSchedule = ({ userId, events }: { userId: string; events: ClientEvent[] }) => {
+  const [isPending, startTransition] = React.useTransition();
   const router = useRouter();
 
   const [dialogOpen, setDialogOpen] = React.useState(false);
@@ -89,9 +152,20 @@ export function ClientSchedule({ userId, events }: { userId: string; events: Cli
       status: 'SCHEDULED',
       date: '',
       startTime: '',
-      duration: 60
+      duration: 60,
+      billingSource: 'WALLET',
+      purchasedPackageId: undefined
     }
   });
+  const [selectedType, selectedStatus, selectedBillingSource, selectedDuration] = useWatch({
+    control: form.control,
+    name: ['type', 'status', 'billingSource', 'duration']
+  });
+  const shouldShowBilling = selectedType === 'CONSULTATION' && selectedStatus === 'SCHEDULED';
+  const { data: financialSummary, isLoading: financialSummaryLoading } = useSWR<FinancialSummary>(
+    dialogOpen && shouldShowBilling ? `/api/admin/users/${userId}/financial-summary` : null,
+    fetchFinancialSummary
+  );
 
   const openAddDialog = () => {
     form.reset({
@@ -100,13 +174,15 @@ export function ClientSchedule({ userId, events }: { userId: string; events: Cli
       status: 'SCHEDULED',
       date: format(new Date(), 'yyyy-MM-dd'),
       startTime: format(new Date(), 'HH:mm'),
-      duration: 60
+      duration: 60,
+      billingSource: 'WALLET',
+      purchasedPackageId: undefined
     });
     setEditingEvent(null);
     setDialogOpen(true);
   };
 
-  const openEditDialog = (event: ClientEvent) => {
+  const openEditDialog = (event: ClientEvent, statusOverride?: EventFormValues['status']) => {
     const d = new Date(event.start);
     const e = new Date(event.end);
     const diffMins = Math.round((e.getTime() - d.getTime()) / 60000);
@@ -116,10 +192,12 @@ export function ClientSchedule({ userId, events }: { userId: string; events: Cli
       type: (['CONSULTATION', 'OTHER'].includes(event.type) ? event.type : 'OTHER') as
         | 'CONSULTATION'
         | 'OTHER',
-      status: event.status as EventStatus,
+      status: statusOverride ?? (event.status as EventFormValues['status']),
       date: format(d, 'yyyy-MM-dd'),
       startTime: format(d, 'HH:mm'),
-      duration: diffMins > 0 ? diffMins : 60
+      duration: diffMins > 0 ? diffMins : 60,
+      billingSource: event.billingAllocation?.source === 'PACKAGE' ? 'PACKAGE' : 'WALLET',
+      purchasedPackageId: event.billingAllocation?.purchasedPackageId ?? undefined
     });
     setEditingEvent(event);
     setDialogOpen(true);
@@ -133,33 +211,31 @@ export function ClientSchedule({ userId, events }: { userId: string; events: Cli
 
         const payload = {
           title: data.title || '',
-          type: data.type as EventType,
-          status: data.status as EventStatus,
-          start: startDate,
-          end: endDate
+          type: data.type,
+          status: data.status,
+          start: startDate.toISOString(),
+          end: endDate.toISOString(),
+          userId,
+          ...(shouldShowBilling && data.billingSource
+            ? {
+                billingSource: data.billingSource,
+                purchasedPackageId:
+                  data.billingSource === 'PACKAGE' ? data.purchasedPackageId : undefined
+              }
+            : {})
         };
 
         if (editingEvent) {
-          const res = await updateClientEvent(editingEvent.id, userId, payload);
-          if (res.success) {
-            toast.success('Запись обновлена');
-            setDialogOpen(false);
-            router.refresh();
-          } else {
-            toast.error('Ошибка при обновлении записи');
-          }
+          await mutateEvent(`/api/admin/events/${editingEvent.id}`, 'PATCH', payload);
+          toast.success('Запись обновлена');
         } else {
-          const res = await addClientEvent(userId, payload);
-          if (res.success) {
-            toast.success('Запись добавлена');
-            setDialogOpen(false);
-            router.refresh();
-          } else {
-            toast.error('Ошибка при добавлении записи');
-          }
+          await mutateEvent('/api/admin/events', 'POST', payload);
+          toast.success('Запись добавлена');
         }
-      } catch (err) {
-        toast.error('Произошла непредвиденная ошибка');
+        setDialogOpen(false);
+        router.refresh();
+      } catch (error: unknown) {
+        toast.error(error instanceof Error ? error.message : 'Не удалось сохранить запись');
       }
     });
   };
@@ -168,33 +244,18 @@ export function ClientSchedule({ userId, events }: { userId: string; events: Cli
     if (!confirm('Вы действительно хотите удалить эту запись?')) return;
 
     startTransition(async () => {
-      const res = await deleteClientEvent(id, userId);
-      if (res.success) {
+      try {
+        await mutateEvent(`/api/admin/events/${id}`, 'DELETE');
         toast.success('Запись удалена');
         router.refresh();
-      } else {
-        toast.error('Ошибка при удалении записи');
+      } catch (error: unknown) {
+        toast.error(error instanceof Error ? error.message : 'Не удалось удалить запись');
       }
     });
   };
 
   const handleApprove = (event: ClientEvent) => {
-    startTransition(async () => {
-      const payload = {
-        title: event.title || '',
-        type: event.type as EventType,
-        status: 'SCHEDULED' as EventStatus,
-        start: new Date(event.start),
-        end: new Date(event.end)
-      };
-      const res = await updateClientEvent(event.id, userId, payload);
-      if (res.success) {
-        toast.success('Запись подтверждена');
-        router.refresh();
-      } else {
-        toast.error('Ошибка при подтверждении записи');
-      }
-    });
+    openEditDialog(event, 'SCHEDULED');
   };
 
   const getStatusBadge = (status: string) => {
@@ -304,7 +365,27 @@ export function ClientSchedule({ userId, events }: { userId: string; events: Cli
                   </TableCell>
                   <TableCell>{getTypeLabel(event.type)}</TableCell>
                   <TableCell>{event.title || '-'}</TableCell>
-                  <TableCell>{getStatusBadge(event.status)}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-col items-start gap-1.5">
+                      {getStatusBadge(event.status)}
+                      {event.type === 'CONSULTATION' && event.status === 'SCHEDULED' && (
+                        <Badge
+                          variant="outline"
+                          className={
+                            event.billingAllocation
+                              ? 'text-muted-foreground'
+                              : 'border-amber-400 bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200'
+                          }
+                        >
+                          {event.billingAllocation
+                            ? event.billingAllocation.source === 'PACKAGE'
+                              ? 'Списано из пакета'
+                              : 'Списано с баланса'
+                            : 'Оплата не зафиксирована'}
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       {event.status === 'PENDING_CONFIRMATION' && (
@@ -316,7 +397,7 @@ export function ClientSchedule({ userId, events }: { userId: string; events: Cli
                           disabled={isPending}
                         >
                           <CheckCircle2 className="h-4 w-4 mr-1" />
-                          Подтвердить
+                          Подтвердить и выбрать оплату
                         </Button>
                       )}
                       <Button
@@ -346,7 +427,7 @@ export function ClientSchedule({ userId, events }: { userId: string; events: Cli
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[560px]">
           <DialogHeader>
             <DialogTitle>{editingEvent ? 'Редактировать запись' : 'Добавить запись'}</DialogTitle>
             <DialogDescription>
@@ -498,6 +579,108 @@ export function ClientSchedule({ userId, events }: { userId: string; events: Cli
                 />
               </div>
 
+              {shouldShowBilling && (
+                <div className="space-y-4 rounded-xl border bg-muted/20 p-4">
+                  <div>
+                    <p className="font-medium">Оплата консультации</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {financialSummaryLoading
+                        ? 'Загружаем баланс и пакеты…'
+                        : `Баланс: ${financialSummary?.balance ?? '0.00'} EUR · Тариф: ${
+                            financialSummary?.consultationPrice ?? '0.00'
+                          } EUR`}
+                    </p>
+                  </div>
+
+                  {editingEvent?.billingAllocation ? (
+                    <div className="rounded-lg border bg-background p-3 text-sm">
+                      Источник уже зафиксирован:{' '}
+                      <span className="font-medium">
+                        {editingEvent.billingAllocation.source === 'PACKAGE'
+                          ? 'купленный пакет'
+                          : 'денежный баланс'}
+                      </span>
+                      . Для возврата отмените встречу.
+                    </div>
+                  ) : (
+                    <>
+                      <FormField
+                        control={form.control}
+                        name="billingSource"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Источник списания</FormLabel>
+                            <Select
+                              onValueChange={value => {
+                                field.onChange(value);
+                                if (value !== 'PACKAGE') {
+                                  form.setValue('purchasedPackageId', undefined);
+                                }
+                              }}
+                              value={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Выберите источник" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="WALLET">Денежный баланс (EUR)</SelectItem>
+                                <SelectItem
+                                  value="PACKAGE"
+                                  disabled={!financialSummary?.packages.length}
+                                >
+                                  Купленный пакет
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {selectedBillingSource === 'PACKAGE' && (
+                        <FormField
+                          control={form.control}
+                          name="purchasedPackageId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Пакет клиента</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Выберите пакет" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {financialSummary?.packages.map(purchasedPackage => (
+                                    <SelectItem
+                                      key={purchasedPackage.id}
+                                      value={purchasedPackage.id}
+                                      disabled={
+                                        purchasedPackage.remainingMinutes < selectedDuration
+                                      }
+                                    >
+                                      {purchasedPackage.title} · {purchasedPackage.remainingMinutes}{' '}
+                                      мин.
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormDescription>
+                                Будет списано {selectedDuration} минут. Пакеты с меньшим остатком
+                                недоступны.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
               <DialogFooter className="mt-6 flex justify-end gap-2">
                 <Button
                   type="button"
@@ -517,4 +700,4 @@ export function ClientSchedule({ userId, events }: { userId: string; events: Cli
       </Dialog>
     </div>
   );
-}
+};

@@ -104,6 +104,25 @@ export class StripeService implements IPaymentService {
     return syncPaymentWithStripe(params.payment);
   }
 
+  async paymentExists(payment: Parameters<IPaymentService['paymentExists']>[0]): Promise<boolean> {
+    try {
+      await getStripeClient().paymentIntents.retrieve(payment.orderId);
+      return true;
+    } catch (error: unknown) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'statusCode' in error &&
+        'code' in error &&
+        error.statusCode === 404 &&
+        error.code === 'resource_missing'
+      ) {
+        return false;
+      }
+      throw error;
+    }
+  }
+
   supportsCurrency(currency: string): boolean {
     return STRIPE_SUPPORTED_CURRENCIES.includes(currency.toUpperCase());
   }

@@ -1,6 +1,11 @@
 import 'server-only';
 
-import { FinancialOperationType, FinancialOperationStatus, Prisma } from '@prisma/client';
+import {
+  FinancialOperationType,
+  FinancialOperationStatus,
+  PaymentKind,
+  Prisma
+} from '@prisma/client';
 
 import prisma from '@/lib/prisma';
 
@@ -85,8 +90,10 @@ export const getFinancialHistory = async (params?: {
               payment: {
                 select: {
                   amount: true,
+                  balanceCreditedAt: true,
                   captureId: true,
                   description: true,
+                  fulfilledAt: true,
                   id: true,
                   kind: true,
                   orderId: true,
@@ -134,6 +141,7 @@ export const getFinancialHistory = async (params?: {
               payment: {
                 select: {
                   id: true,
+                  orderId: true,
                   provider: true
                 }
               }
@@ -163,6 +171,13 @@ export const getFinancialHistory = async (params?: {
           ]
         },
         include: {
+          _count: {
+            select: {
+              disputes: true,
+              events: true,
+              financialOperations: true
+            }
+          },
           user: {
             select: {
               email: true,
@@ -194,8 +209,10 @@ export const getFinancialHistory = async (params?: {
           payment: {
             select: {
               amount: true;
+              balanceCreditedAt: true;
               captureId: true;
               description: true;
+              fulfilledAt: true;
               id: true;
               kind: true;
               orderId: true;
@@ -217,6 +234,13 @@ export const getFinancialHistory = async (params?: {
   }>;
   type ProviderAttemptRecord = Prisma.PaymentGetPayload<{
     include: {
+      _count: {
+        select: {
+          disputes: true;
+          events: true;
+          financialOperations: true;
+        };
+      };
       user: {
         select: {
           email: true;
@@ -245,6 +269,7 @@ export const getFinancialHistory = async (params?: {
           payment: {
             select: {
               id: true;
+              orderId: true;
               provider: true;
             };
           };
@@ -278,12 +303,16 @@ export const getFinancialHistory = async (params?: {
     const refundableAmount = payment?.amount.minus(payment.refundedAmount);
     const refundable =
       isTopupTransaction &&
-      Boolean(payment?.captureId) &&
+      payment?.kind === PaymentKind.TOPUP &&
+      transaction.operation.status === FinancialOperationStatus.COMPLETED &&
+      Boolean(payment.balanceCreditedAt) &&
+      Boolean(payment.fulfilledAt) &&
       Boolean(refundableAmount?.greaterThan(0));
 
     return {
       id: transaction.id,
       paymentId: payment?.id ?? null,
+      orderId: payment?.orderId ?? null,
       clientId: transaction.user.id,
       clientName: transaction.user.name || 'Без имени',
       clientEmail: transaction.user.email,
@@ -299,6 +328,10 @@ export const getFinancialHistory = async (params?: {
       createdAtIso: transaction.createdAt.toISOString(),
       title: getOperationTitle(transaction.operation.type),
       refundable,
+      refundableAmountLabel: refundableAmount?.greaterThan(0)
+        ? `${refundableAmount.toFixed(2)} EUR`
+        : null,
+      deletable: false,
       details: [
         {
           label: 'Источник',
@@ -362,6 +395,7 @@ export const getFinancialHistory = async (params?: {
     return {
       id: transaction.id,
       paymentId: transaction.operation.payment?.id ?? null,
+      orderId: transaction.operation.payment?.orderId ?? null,
       clientId: user.id,
       clientName: user.name || 'Без имени',
       clientEmail: user.email,
@@ -382,6 +416,8 @@ export const getFinancialHistory = async (params?: {
       createdAtIso: transaction.createdAt.toISOString(),
       title: getOperationTitle(transaction.operation.type),
       refundable: false,
+      refundableAmountLabel: null,
+      deletable: false,
       details: [
         {
           label: 'Источник',
@@ -438,6 +474,7 @@ export const getFinancialHistory = async (params?: {
     return {
       id: payment.id,
       paymentId: payment.id,
+      orderId: payment.orderId,
       clientId: payment.user.id,
       clientName: payment.user.name || 'Без имени',
       clientEmail: payment.user.email,
@@ -453,6 +490,16 @@ export const getFinancialHistory = async (params?: {
       createdAtIso: payment.createdAt.toISOString(),
       title: payment.kind === 'TOPUP' ? 'Попытка пополнения' : 'Попытка покупки пакета',
       refundable: false,
+      refundableAmountLabel: null,
+      deletable:
+        !payment.balanceCreditedAt &&
+        !payment.captureId &&
+        !payment.capturedAt &&
+        !payment.fulfilledAt &&
+        payment.refundedAmount.equals(0) &&
+        payment._count.disputes === 0 &&
+        payment._count.events === 0 &&
+        payment._count.financialOperations === 0,
       details: [
         {
           label: 'Источник',

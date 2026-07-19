@@ -1,10 +1,23 @@
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
-import { ExternalLink, RotateCcw, Search } from 'lucide-react';
+import { ExternalLink, RotateCcw, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { refundPaymentAction } from '@/app/[locale]/(admin)/admin/payments/actions';
+import {
+  deleteOrphanPaymentAction,
+  refundPaymentAction
+} from '@/app/[locale]/(admin)/admin/payments/actions';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -43,6 +56,7 @@ export type FinancialHistoryDirection = 'INCOME' | 'EXPENSE' | 'REFUND' | 'NEUTR
 export interface FinancialHistoryItem {
   id: string;
   paymentId: string | null;
+  orderId: string | null;
   clientId: string;
   clientName: string;
   clientEmail: string;
@@ -58,7 +72,14 @@ export interface FinancialHistoryItem {
   createdAtIso: string;
   title: string;
   refundable: boolean;
+  refundableAmountLabel: string | null;
+  deletable: boolean;
   details: Array<{ label: string; value: string }>;
+}
+
+interface PendingFinancialAction {
+  type: 'DELETE_ORPHAN' | 'REFUND';
+  item: FinancialHistoryItem;
 }
 
 interface PersistedFilters {
@@ -111,6 +132,7 @@ export const FinancialHistoryTable = ({
   const router = useRouter();
   const [filters, setFilters] = useState<PersistedFilters>(DEFAULT_FILTERS);
   const [selectedItem, setSelectedItem] = useState<FinancialHistoryItem | null>(null);
+  const [pendingAction, setPendingAction] = useState<PendingFinancialAction | null>(null);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -142,7 +164,9 @@ export const FinancialHistoryTable = ({
     }
     if (
       normalizedQuery &&
-      !`${item.id} ${item.clientName} ${item.clientEmail} ${item.title} ${item.source}`
+      !`${item.id} ${item.orderId ?? ''} ${item.clientName} ${item.clientEmail} ${item.title} ${
+        item.source
+      }`
         .toLowerCase()
         .includes(normalizedQuery)
     ) {
@@ -159,15 +183,20 @@ export const FinancialHistoryTable = ({
     setFilters(current => ({ ...current, [key]: value }));
   };
 
-  const handleRefund = (item: FinancialHistoryItem) => {
-    if (!item.paymentId) return;
+  const handleConfirmedAction = () => {
+    const action = pendingAction;
+    if (!action?.item.paymentId) return;
 
     startTransition(async () => {
-      const result = await refundPaymentAction(item.paymentId!, crypto.randomUUID());
+      const result =
+        action.type === 'REFUND'
+          ? await refundPaymentAction(action.item.paymentId!, crypto.randomUUID())
+          : await deleteOrphanPaymentAction(action.item.paymentId!);
 
       if (result.success) {
         toast.success(result.message);
         setSelectedItem(null);
+        setPendingAction(null);
         router.refresh();
       } else {
         toast.error(result.message);
@@ -258,6 +287,7 @@ export const FinancialHistoryTable = ({
               <TableHead>Сумма</TableHead>
               <TableHead>Статус</TableHead>
               <TableHead>ID</TableHead>
+              <TableHead>Order ID</TableHead>
               <TableHead>Дата</TableHead>
             </TableRow>
           </TableHeader>
@@ -265,7 +295,7 @@ export const FinancialHistoryTable = ({
             {filteredItems.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={showClient ? 5 : 4}
+                  colSpan={showClient ? 6 : 5}
                   className="h-28 text-center text-muted-foreground"
                 >
                   Операции не найдены
@@ -312,6 +342,9 @@ export const FinancialHistoryTable = ({
                     <PaymentStatusBadge status={item.status} />
                   </TableCell>
                   <TableCell className="max-w-48 truncate font-mono text-xs">{item.id}</TableCell>
+                  <TableCell className="max-w-48 truncate font-mono text-xs">
+                    {item.orderId || '—'}
+                  </TableCell>
                   <TableCell className="whitespace-nowrap">{item.createdAtLabel}</TableCell>
                 </TableRow>
               ))
@@ -384,10 +417,23 @@ export const FinancialHistoryTable = ({
                     <Button
                       variant="destructive"
                       disabled={isPending}
-                      onClick={() => handleRefund(selectedItem)}
+                      onClick={() => setPendingAction({ type: 'REFUND', item: selectedItem })}
                     >
                       <RotateCcw />
-                      {isPending ? 'Оформляем…' : 'Вернуть платёж'}
+                      Вернуть {selectedItem.refundableAmountLabel ?? 'платёж'}
+                    </Button>
+                  )}
+                  {selectedItem.deletable && (
+                    <Button
+                      variant="outline"
+                      className="text-destructive hover:text-destructive"
+                      disabled={isPending}
+                      onClick={() =>
+                        setPendingAction({ type: 'DELETE_ORPHAN', item: selectedItem })
+                      }
+                    >
+                      <Trash2 />
+                      Проверить и удалить
                     </Button>
                   )}
                 </div>
@@ -396,6 +442,46 @@ export const FinancialHistoryTable = ({
           )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={Boolean(pendingAction)}
+        onOpenChange={open => !open && !isPending && setPendingAction(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingAction?.type === 'REFUND'
+                ? 'Подтвердить возврат клиенту?'
+                : 'Проверить и удалить локальную запись?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingAction?.type === 'REFUND'
+                ? `Провайдер ${
+                    pendingAction.item.provider ?? ''
+                  } вернёт клиенту ${pendingAction.item.refundableAmountLabel ?? 'доступную сумму'}. На внутреннем балансе будет создано встречное списание на ту же сумму, баланс может стать отрицательным.`
+                : `Система запросит ${
+                    pendingAction?.item.provider ?? 'платёжный шлюз'
+                  }. Запись будет удалена только если Order ID ${
+                    pendingAction?.item.orderId ?? 'не указан'
+                  } отсутствует у провайдера и у платежа нет финансовых проводок. Удаление необратимо.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isPending}>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isPending}
+              onClick={handleConfirmedAction}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isPending
+                ? 'Выполняем…'
+                : pendingAction?.type === 'REFUND'
+                  ? 'Вернуть деньги'
+                  : 'Проверить и удалить'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

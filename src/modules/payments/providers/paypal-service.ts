@@ -9,8 +9,15 @@ import type {
   OrderResponse,
   RefundPaymentParams
 } from '../types';
-import { capturePayPalOrder, createPayPalOrder, refundPayPalCapture } from '../paypal/client';
+import {
+  capturePayPalOrder,
+  createPayPalOrder,
+  getPayPalCapture,
+  getPayPalOrder,
+  refundPayPalCapture
+} from '../paypal/client';
 import { syncPaymentFromPayPal, syncPaymentWithPayPal } from '../paypal/service';
+import { PayPalApiError } from '../paypal/types';
 import { PAYPAL_PROVIDER_ID } from '../types';
 import { PAYPAL_SUPPORTED_CURRENCIES } from '../connectors/paypal/constants';
 
@@ -74,6 +81,31 @@ export class PayPalService implements IPaymentService {
     }
 
     return syncPaymentWithPayPal(params.payment);
+  }
+
+  async paymentExists(payment: Parameters<IPaymentService['paymentExists']>[0]): Promise<boolean> {
+    try {
+      await getPayPalOrder(payment.orderId);
+      return true;
+    } catch (error: unknown) {
+      if (!(error instanceof PayPalApiError) || error.status !== 404) {
+        throw error;
+      }
+    }
+
+    if (!payment.captureId) {
+      return false;
+    }
+
+    try {
+      await getPayPalCapture(payment.captureId);
+      return true;
+    } catch (error: unknown) {
+      if (error instanceof PayPalApiError && error.status === 404) {
+        return false;
+      }
+      throw error;
+    }
   }
 
   supportsCurrency(currency: string): boolean {

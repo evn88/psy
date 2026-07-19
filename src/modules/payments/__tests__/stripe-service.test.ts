@@ -1,4 +1,4 @@
-import { PaymentKind } from '@prisma/client';
+import { PaymentKind, Prisma } from '@prisma/client';
 import type Stripe from 'stripe';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -125,5 +125,52 @@ describe('StripeService', () => {
     expect(mocks.syncPaymentFromStripe).toHaveBeenCalledWith({
       paymentIntent: completedPaymentIntent
     });
+  });
+
+  it('подтверждает существование PaymentIntent у Stripe', async () => {
+    mocks.retrieve.mockResolvedValue(createPaymentIntent('succeeded'));
+    const service = new StripeService();
+
+    const exists = await service.paymentExists({
+      amount: new Prisma.Decimal('50.25'),
+      balanceCreditedAt: null,
+      captureId: null,
+      currency: 'EUR',
+      fulfilledAt: null,
+      id: 'payment-1',
+      kind: PaymentKind.TOPUP,
+      orderId: 'pi_1',
+      refundedAmount: new Prisma.Decimal(0),
+      servicePackageId: null,
+      status: 'CREATED',
+      userId: 'user-1'
+    });
+
+    expect(exists).toBe(true);
+  });
+
+  it('считает платёж отсутствующим только при resource_missing от Stripe', async () => {
+    mocks.retrieve.mockRejectedValue({
+      code: 'resource_missing',
+      statusCode: 404
+    });
+    const service = new StripeService();
+
+    const exists = await service.paymentExists({
+      amount: new Prisma.Decimal('50.25'),
+      balanceCreditedAt: null,
+      captureId: null,
+      currency: 'EUR',
+      fulfilledAt: null,
+      id: 'payment-1',
+      kind: PaymentKind.TOPUP,
+      orderId: 'pi_missing',
+      refundedAmount: new Prisma.Decimal(0),
+      servicePackageId: null,
+      status: 'CREATED',
+      userId: 'user-1'
+    });
+
+    expect(exists).toBe(false);
   });
 });

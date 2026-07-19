@@ -17,6 +17,7 @@ import type { FinancialHistorySource } from '@/modules/payments/financial/financ
 
 interface MyPaymentHistoryItem {
   id: string;
+  orderId: string | null;
   amountLabel: string;
   amountValue: number;
   direction: 'INCOME' | 'EXPENSE' | 'REFUND' | 'NEUTRAL';
@@ -84,6 +85,9 @@ export const MyPaymentsHistory = ({ payments }: MyPaymentsHistoryProps) => {
                     <PaymentStatusBadge status={payment.status} />
                   </div>
                   <p className="mt-3 text-xs text-muted-foreground">{payment.createdAtLabel}</p>
+                  <p className="mt-1 break-all font-mono text-xs text-muted-foreground">
+                    Order ID: {payment.orderId || '—'}
+                  </p>
                 </article>
               ))
             )}
@@ -97,13 +101,14 @@ export const MyPaymentsHistory = ({ payments }: MyPaymentsHistoryProps) => {
                   <TableHead>Сумма</TableHead>
                   <TableHead>Статус</TableHead>
                   <TableHead>ID</TableHead>
+                  <TableHead>Order ID</TableHead>
                   <TableHead>Дата</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {payments.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-28 text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="h-28 text-center text-muted-foreground">
                       Финансовых операций пока нет
                     </TableCell>
                   </TableRow>
@@ -133,6 +138,9 @@ export const MyPaymentsHistory = ({ payments }: MyPaymentsHistoryProps) => {
                       </TableCell>
                       <TableCell className="max-w-48 truncate font-mono text-xs">
                         {payment.id}
+                      </TableCell>
+                      <TableCell className="max-w-48 truncate font-mono text-xs">
+                        {payment.orderId || '—'}
                       </TableCell>
                       <TableCell className="whitespace-nowrap">{payment.createdAtLabel}</TableCell>
                     </TableRow>

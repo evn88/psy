@@ -99,7 +99,8 @@ export const ClientPayments = async ({ clientId }: ClientPaymentsProps) => {
         <CardHeader className="border-b">
           <CardTitle className="text-xl">История платежей и списаний</CardTitle>
           <CardDescription>
-            В строке оставлены сумма, статус, ID и дата. Детали и возврат открываются по нажатию.
+            В строке оставлены сумма, статус, ID, Order ID и дата. Возврат и проверка ошибочной
+            записи открываются по нажатию.
           </CardDescription>
         </CardHeader>
         <CardContent className="min-w-0 pt-6">
