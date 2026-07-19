@@ -14,7 +14,7 @@ const contentSecurityPolicy = [
   "img-src 'self' data: blob: https: https://www.google-analytics.com https://ssl.google-analytics.com https://www.googletagmanager.com",
   "font-src 'self' data: https://fonts.gstatic.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  `script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com https://www.paypal.com https://www.sandbox.paypal.com https://www.paypalobjects.com https://www.googletagmanager.com https://www.google-analytics.com https://ssl.google-analytics.com${isDevelopment ? " 'unsafe-eval'" : ''}`,
+  `script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com https://www.paypal.com https://www.sandbox.paypal.com https://www.paypalobjects.com https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com https://ssl.google-analytics.com${isDevelopment ? " 'unsafe-eval'" : ''}`,
   "connect-src 'self' https: wss: https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net",
   "frame-src 'self' https:",
   "object-src 'none'",

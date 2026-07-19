@@ -5,7 +5,7 @@ import type { PayPalWebhookEvent } from '@/modules/payments/paypal/types';
 import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 /**
- * POST /api/paypal/webhooks
+ * POST /api/payments/webhooks/paypal
  * Принимает PayPal webhook, проверяет подпись и синхронизирует локальные сущности.
  */
 async function postHandler(request: Request) {

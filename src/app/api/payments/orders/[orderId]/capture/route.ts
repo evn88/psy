@@ -5,7 +5,12 @@ import { getPaymentService } from '@/modules/payments/factory';
 import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 import { z } from 'zod';
 
-const CAPTURABLE_PAYMENT_STATUSES = new Set(['CREATED', 'SAVED', 'APPROVED']);
+const CAPTURABLE_PAYMENT_STATUSES = new Set([
+  'CREATED',
+  'SAVED',
+  'APPROVED',
+  'PAYER_ACTION_REQUIRED'
+]);
 const captureRequestSchema = z.object({
   provider: z.string().trim().min(1).max(64).optional()
 });
