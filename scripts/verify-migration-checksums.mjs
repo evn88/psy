@@ -3,11 +3,12 @@ import { readFile, readdir } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { loadEnvConfig } from '@next/env';
+import nextEnv from '@next/env';
 import { Pool } from 'pg';
 
 const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const migrationsDirectory = join(projectRoot, 'prisma', 'migrations');
+const { loadEnvConfig } = nextEnv;
 
 loadEnvConfig(projectRoot);
 

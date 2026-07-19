@@ -1,10 +1,12 @@
 import { pathToFileURL } from 'node:url';
 
-import { loadEnvConfig } from '@next/env';
+import nextEnv from '@next/env';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 import { withAccelerate } from '@prisma/extension-accelerate';
 import { Pool } from 'pg';
+
+const { loadEnvConfig } = nextEnv;
 
 loadEnvConfig(process.cwd());
 
