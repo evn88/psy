@@ -152,7 +152,8 @@ export const PaymentCheckoutCard = ({
   };
 
   const handleCheckoutError = (error: unknown) => {
-    if (error instanceof Error && error.message === 'FORM_INVALID') {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('FORM_INVALID')) {
       return;
     }
     toast.error('Не удалось завершить оплату. Попробуйте ещё раз.');

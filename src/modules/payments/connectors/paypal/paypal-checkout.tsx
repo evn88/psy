@@ -97,11 +97,11 @@ export const PayPalCheckout = ({
         clientId: config.clientId,
         currency,
         intent: 'capture',
-        components: 'buttons,funding-eligibility'
+        components: 'buttons,funding-eligibility,card-fields'
       }}
     >
       <PayPalCurrencySync currency={currency} />
-      <div className="grid gap-3">
+      <div className="relative z-0 grid gap-3">
         {paymentMethods.map(method => (
           <div
             key={method.key}
@@ -114,9 +114,6 @@ export const PayPalCheckout = ({
               style={method.style}
               disabled={disabled}
               forceReRender={[currency, amount, description, isDarkTheme, method.key, config.id]}
-              onClick={async (_data, actions) =>
-                (await validate()) ? actions.resolve() : actions.reject()
-              }
               createOrder={async () => {
                 const order = await createOrder();
 

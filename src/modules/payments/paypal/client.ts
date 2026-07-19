@@ -24,7 +24,15 @@ type PayPalAccessTokenCache = {
   expiresAt: number;
 };
 
-let payPalAccessTokenCache: PayPalAccessTokenCache | null = null;
+const CACHE_KEY = Symbol.for('paypal_access_token_cache');
+
+const getCache = (): PayPalAccessTokenCache | null => {
+  return (globalThis as any)[CACHE_KEY] || null;
+};
+
+const setCache = (cache: PayPalAccessTokenCache) => {
+  (globalThis as any)[CACHE_KEY] = cache;
+};
 
 /**
  * Безопасно читает JSON-ответ PayPal API.
@@ -46,9 +54,10 @@ const readJsonResponse = async <T>(response: Response): Promise<T | null> => {
  */
 export const getPayPalAccessToken = async (): Promise<string> => {
   const now = Date.now();
+  const cache = getCache();
 
-  if (payPalAccessTokenCache && payPalAccessTokenCache.expiresAt > now) {
-    return payPalAccessTokenCache.accessToken;
+  if (cache && cache.expiresAt > now) {
+    return cache.accessToken;
   }
 
   const credentials = Buffer.from(
@@ -105,10 +114,10 @@ export const getPayPalAccessToken = async (): Promise<string> => {
     throw error;
   }
 
-  payPalAccessTokenCache = {
+  setCache({
     accessToken: payload.access_token,
     expiresAt: now + Math.max((payload.expires_in ?? 0) - 60, 60) * 1000
-  };
+  });
 
   return payload.access_token;
 };
