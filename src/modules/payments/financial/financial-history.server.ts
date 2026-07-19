@@ -14,6 +14,7 @@ import {
   resolveFinancialHistorySource
 } from './financial-history-source';
 import type { FinancialHistoryDirection, FinancialHistoryItem } from './financial-history-table';
+import { formatPaymentAmount } from '@/modules/payments';
 
 const FAILED_PAYMENT_STATUSES = new Set(['DECLINED', 'DENIED', 'FAILED', 'CANCELLED']);
 const PENDING_PAYMENT_STATUSES = new Set(['CREATED', 'SAVED', 'APPROVED', 'PENDING']);
@@ -412,7 +413,13 @@ export const getFinancialHistory = async (params?: {
             : 'EXPENSE',
       unit: 'MINUTES',
       amountValue,
-      amountLabel: `${amountValue > 0 ? '+' : ''}${amountValue} мин`,
+      amountLabel:
+        transaction.type === 'PURCHASE_CREDIT'
+          ? `+${amountValue} мин (${formatPaymentAmount(
+              transaction.purchasedPackage.priceSnapshot,
+              transaction.purchasedPackage.currencySnapshot
+            )})`
+          : `${amountValue > 0 ? '+' : ''}${amountValue} мин`,
       createdAtLabel: formatDate(transaction.createdAt),
       createdAtIso: transaction.createdAt.toISOString(),
       title: getOperationTitle(transaction.operation.type),
