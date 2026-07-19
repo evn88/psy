@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { processFinancialEmailOutbox } from '@/modules/payments/financial/financial-email-outbox.server';
+import { startFinancialEmailOutboxWorkflow } from '@/lib/financial-email-workflow';
 import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 export const runtime = 'nodejs';
@@ -15,7 +15,7 @@ const isAuthorizedCronRequest = (request: Request): boolean => {
 };
 
 /**
- * Доставляет обязательные финансовые письма из транзакционного outbox.
+ * Ежедневно запускает durable worker доставки финансовых писем из транзакционного outbox.
  */
 async function getHandler(request: Request) {
   if (!process.env.CRON_SECRET) {
@@ -26,8 +26,12 @@ async function getHandler(request: Request) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  const result = await processFinancialEmailOutbox();
-  return NextResponse.json({ success: true, ...result });
+  const workerStarted = await startFinancialEmailOutboxWorkflow();
+
+  return NextResponse.json({
+    success: true,
+    workerStarted
+  });
 }
 
 export const GET = withApiLogging(getHandler);

@@ -15,7 +15,7 @@
     },
     {
       "path": "/api/cron/financial-emails",
-      "schedule": "* * * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }
