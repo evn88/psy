@@ -31,7 +31,8 @@ async function getHandler() {
           select: {
             id: true,
             name: true,
-            email: true
+            email: true,
+            timezone: true
           }
         }
       },
