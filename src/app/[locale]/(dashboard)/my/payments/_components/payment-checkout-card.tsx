@@ -13,7 +13,9 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useRouter } from '@/i18n/navigation';
 import { formatPaymentAmount } from '@/modules/payments';
+import { PaymentProcessingLoader } from '@/modules/payments/components/payment-processing-loader';
 import { PaymentProviderCheckout } from '@/modules/payments/components/payment-provider-checkout';
+import { PaymentSuccessView } from '@/modules/payments/components/payment-success-view';
 import type { OrderResponse, PaymentProviderCheckoutConfig } from '@/modules/payments/types';
 
 import { purchasePackageFromBalanceAction } from '../actions';
@@ -60,6 +62,7 @@ export const PaymentCheckoutCard = ({
   const [selectionType, setSelectionType] = useState<SelectionType>('package');
   const [providerId, setProviderId] = useState(providerConfigs[0]?.id ?? '');
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+  const [checkoutStatus, setCheckoutStatus] = useState<'idle' | 'processing' | 'success'>('idle');
 
   const form = useForm<PaymentCheckoutValues>({
     resolver: zodResolver(paymentCheckoutSchema),
@@ -145,18 +148,25 @@ export const PaymentCheckoutCard = ({
   };
 
   const handleApprove = async (orderId: string) => {
-    const response = await fetch(`/api/payments/orders/${orderId}/capture`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ provider: activeProvider?.id })
-    });
+    setCheckoutStatus('processing');
+    try {
+      const response = await fetch(`/api/payments/orders/${orderId}/capture`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: activeProvider?.id })
+      });
 
-    if (!response.ok) {
-      const payload = (await response.json()) as { message?: string };
-      throw new Error(payload.message || 'Не удалось завершить платёж');
+      if (!response.ok) {
+        const payload = (await response.json()) as { message?: string };
+        throw new Error(payload.message || 'Не удалось завершить платёж');
+      }
+
+      setCheckoutStatus('success');
+      handleSuccessfulCapture();
+    } catch (error) {
+      handleCheckoutError(error);
+      setCheckoutStatus('idle');
     }
-
-    handleSuccessfulCapture();
   };
 
   const handleCheckoutError = (error: unknown) => {
@@ -391,23 +401,31 @@ export const PaymentCheckoutCard = ({
                     ))}
                   </TabsList>
                   <TabsContent value={activeProvider.id} className="mt-4 max-w-xl">
-                    <PaymentProviderCheckout
-                      amount={watchedAmount ?? ''}
-                      config={activeProvider}
-                      currency={currency}
-                      description={watchedDescription ?? ''}
-                      disabled={isRefreshing}
-                      createOrder={handleCreateOrder}
-                      onApprove={handleApprove}
-                      onError={handleCheckoutError}
-                      validate={validateCheckout}
-                    />
-                    {isCreatingOrder ? (
-                      <div className="mt-4 flex animate-pulse items-center justify-center gap-2 rounded-xl bg-primary/5 px-4 py-3 text-sm font-medium text-primary">
-                        <Loader2 className="size-4 animate-spin" aria-hidden />
-                        Загрузка формы...
-                      </div>
-                    ) : null}
+                    {checkoutStatus === 'processing' ? (
+                      <PaymentProcessingLoader />
+                    ) : checkoutStatus === 'success' ? (
+                      <PaymentSuccessView onReset={() => setCheckoutStatus('idle')} />
+                    ) : (
+                      <>
+                        <PaymentProviderCheckout
+                          amount={watchedAmount ?? ''}
+                          config={activeProvider}
+                          currency={currency}
+                          description={watchedDescription ?? ''}
+                          disabled={isRefreshing}
+                          createOrder={handleCreateOrder}
+                          onApprove={handleApprove}
+                          onError={handleCheckoutError}
+                          validate={validateCheckout}
+                        />
+                        {isCreatingOrder ? (
+                          <div className="mt-4 flex animate-pulse items-center justify-center gap-2 rounded-xl bg-primary/5 px-4 py-3 text-sm font-medium text-primary">
+                            <Loader2 className="size-4 animate-spin" aria-hidden />
+                            Загрузка формы...
+                          </div>
+                        ) : null}
+                      </>
+                    )}
                   </TabsContent>
                 </Tabs>
               ) : activeProvider ? (
