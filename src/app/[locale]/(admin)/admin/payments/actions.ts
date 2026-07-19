@@ -88,7 +88,7 @@ const revalidateFinancialPages = (userId?: string): void => {
 };
 
 /**
- * Сохраняет фиксированную EUR-стоимость консультации.
+ * Сохраняет EUR-стоимость 60 минут консультации.
  */
 export async function updateConsultationRateAction(
   amount: string
@@ -119,7 +119,7 @@ export async function updateConsultationRateAction(
   });
   revalidateFinancialPages();
 
-  return { success: true, message: 'Стоимость консультации обновлена' };
+  return { success: true, message: 'Стоимость 60 минут консультации обновлена' };
 }
 
 /**

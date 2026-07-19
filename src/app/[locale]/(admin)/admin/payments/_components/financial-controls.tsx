@@ -74,14 +74,14 @@ export const ConsultationRateCard = ({ initialAmount }: { initialAmount: string 
 
   return (
     <div className="rounded-xl border bg-card p-5">
-      <p className="text-sm font-medium">Фиксированная стоимость консультации</p>
+      <p className="text-sm font-medium">Стоимость 60 минут консультации</p>
       <p className="mt-1 text-sm text-muted-foreground">
-        Списывается с внутреннего счёта при создании встречи.
+        Списывается с внутреннего счёта пропорционально длительности встречи.
       </p>
       <div className="mt-4 flex max-w-sm gap-2">
         <div className="relative flex-1">
           <Input
-            aria-label="Стоимость консультации"
+            aria-label="Стоимость 60 минут консультации"
             type="number"
             min="0.01"
             step="0.01"

@@ -1,6 +1,8 @@
 import { addMinutes } from 'date-fns';
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 
+import { CONSULTATION_RATE_DURATION_MINUTES } from '@/modules/payments/financial/constants';
+
 export type EventTemporalValues = {
   date: string;
   startTime: string;
@@ -39,4 +41,38 @@ export const getEventDateRange = (values: EventTemporalValues & { timeZone: stri
     start,
     end: addMinutes(start, values.duration)
   };
+};
+
+/**
+ * Вычисляет отображаемую стоимость консультации по длительности встречи.
+ * Тариф задаётся за 60 минут и на клиенте используется только как предварительный расчёт.
+ * @param hourlyRate - строковое значение тарифа в EUR за 60 минут.
+ * @param durationMinutes - длительность консультации в минутах.
+ * @returns Сумма в EUR с двумя десятичными знаками или `null` для некорректных данных.
+ */
+export const calculateConsultationChargePreview = (
+  hourlyRate: string,
+  durationMinutes: number
+): string | null => {
+  const rate = Number(hourlyRate);
+
+  if (
+    !Number.isFinite(rate) ||
+    rate < 0 ||
+    !Number.isInteger(durationMinutes) ||
+    durationMinutes <= 0
+  ) {
+    return null;
+  }
+
+  const rateInCents = Math.round(rate * 100);
+  const chargeInCents = Math.round(
+    (rateInCents * durationMinutes) / CONSULTATION_RATE_DURATION_MINUTES
+  );
+
+  if (!Number.isSafeInteger(rateInCents) || !Number.isSafeInteger(chargeInCents)) {
+    return null;
+  }
+
+  return (chargeInCents / 100).toFixed(2);
 };

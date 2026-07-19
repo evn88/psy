@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { getEventDateRange, getEventTemporalValues } from './event-form-utils';
+import {
+  calculateConsultationChargePreview,
+  getEventDateRange,
+  getEventTemporalValues
+} from './event-form-utils';
 
 describe('утилиты времени формы расписания', () => {
   it('преобразует локальное время клиента в UTC-интервал', () => {
@@ -27,5 +31,15 @@ describe('утилиты времени формы расписания', () => 
       startTime: '10:15',
       duration: 90
     });
+  });
+
+  it('рассчитывает стоимость консультации пропорционально длительности', () => {
+    expect(calculateConsultationChargePreview('60.00', 30)).toBe('30.00');
+    expect(calculateConsultationChargePreview('49.99', 45)).toBe('37.49');
+  });
+
+  it('не рассчитывает стоимость для некорректных значений', () => {
+    expect(calculateConsultationChargePreview('invalid', 30)).toBeNull();
+    expect(calculateConsultationChargePreview('60.00', 0)).toBeNull();
   });
 });

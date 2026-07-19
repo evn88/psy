@@ -3,7 +3,8 @@ import {
   FinancialOperationStatus,
   FinancialOperationType,
   Prisma,
-  PurchasedPackageStatus
+  PurchasedPackageStatus,
+  WalletTransactionType
 } from '@prisma/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -93,6 +94,12 @@ const createTransaction = (
         currency: 'EUR',
         includedMinutes: 120,
         title: { ru: 'Две консультации' }
+      })
+    },
+    consultationRate: {
+      findUnique: vi.fn().mockResolvedValue({
+        amount: new Prisma.Decimal('60.00'),
+        currency: 'EUR'
       })
     },
     purchasedPackage: {
@@ -242,6 +249,41 @@ describe('financial service', () => {
         purchasedPackageId: 'purchased-package-1',
         source: EventBillingSource.PACKAGE,
         chargedMinutes: 60
+      })
+    });
+  });
+
+  it('списывает с денежного баланса сумму пропорционально длительности консультации', async () => {
+    // Arrange
+    const state = createTransaction('100.00');
+
+    // Act
+    await chargeConsultationInTransaction(state.transaction as never, {
+      eventId: 'event-1',
+      userId: 'user-1',
+      initiatedById: 'admin-1',
+      durationMinutes: 30,
+      eventStart: new Date('2026-07-20T10:00:00.000Z'),
+      billing: {
+        source: EventBillingSource.WALLET
+      }
+    });
+
+    // Assert
+    expect(state.getBalance().equals('70.00')).toBe(true);
+    expect(state.walletEntries).toEqual([
+      expect.objectContaining({
+        amount: new Prisma.Decimal('-30.00'),
+        balanceBefore: new Prisma.Decimal('100.00'),
+        balanceAfter: new Prisma.Decimal('70.00'),
+        type: WalletTransactionType.CONSULTATION_CHARGE
+      })
+    ]);
+    expect(state.transaction.eventBillingAllocation.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        chargedAmount: new Prisma.Decimal('30.00'),
+        chargedMinutes: 30,
+        source: EventBillingSource.WALLET
       })
     });
   });

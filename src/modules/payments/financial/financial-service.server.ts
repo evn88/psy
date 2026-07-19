@@ -15,7 +15,11 @@ import {
 
 import prisma from '@/lib/prisma';
 
-import { DEFAULT_CONSULTATION_RATE_ID, FINANCIAL_CURRENCY } from './constants';
+import {
+  CONSULTATION_RATE_DURATION_MINUTES,
+  DEFAULT_CONSULTATION_RATE_ID,
+  FINANCIAL_CURRENCY
+} from './constants';
 import { FinancialDomainError } from './errors';
 
 const FINANCIAL_TRANSACTION_RETRY_LIMIT = 3;
@@ -828,6 +832,20 @@ export const getConsultationRate = async (
 };
 
 /**
+ * Рассчитывает стоимость консультации пропорционально её длительности.
+ * Настроенный тариф всегда задаётся за 60 минут, а результат округляется до центов.
+ */
+const calculateConsultationChargeAmount = (
+  hourlyRate: Prisma.Decimal,
+  durationMinutes: number
+): Prisma.Decimal => {
+  return hourlyRate
+    .times(durationMinutes)
+    .dividedBy(CONSULTATION_RATE_DURATION_MINUTES)
+    .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+};
+
+/**
  * Создаёт финансовое списание и allocation для консультации внутри транзакции события.
  */
 export const chargeConsultationInTransaction = async (
@@ -878,12 +896,12 @@ export const chargeConsultationInTransaction = async (
 
   if (params.billing.source === EventBillingSource.WALLET) {
     const rate = await getConsultationRate(transaction);
-    chargedAmount = rate.amount;
+    chargedAmount = calculateConsultationChargeAmount(rate.amount, params.durationMinutes);
     walletTransaction = await applyWalletTransaction(transaction, {
       userId: params.userId,
       operationId: operation.id,
       type: WalletTransactionType.CONSULTATION_CHARGE,
-      amount: rate.amount.negated()
+      amount: chargedAmount.negated()
     });
   } else if (params.billing.source === EventBillingSource.PACKAGE) {
     if (!params.billing.purchasedPackageId) {

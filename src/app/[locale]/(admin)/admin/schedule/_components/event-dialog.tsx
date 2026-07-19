@@ -50,8 +50,13 @@ import {
 import { optionalMeetingUrlSchema } from '@/lib/safe-url';
 import { formatUtcOffset, isValidTimeZone } from '@/lib/timezone';
 import { detectBrowserTimeZone } from '@/lib/browser-timezone';
+import { CONSULTATION_RATE_DURATION_MINUTES } from '@/modules/payments/financial/constants';
 
-import { getEventDateRange, getEventTemporalValues } from './event-form-utils';
+import {
+  calculateConsultationChargePreview,
+  getEventDateRange,
+  getEventTemporalValues
+} from './event-form-utils';
 import type { Event, EventMutationInput } from './use-events';
 import { useSavedMeetingLinks } from './use-saved-meeting-links';
 
@@ -268,6 +273,9 @@ export const EventDialog = ({
       : null,
     fetchFinancialSummary
   );
+  const consultationChargePreview = financialSummary
+    ? calculateConsultationChargePreview(financialSummary.consultationPrice, currentDuration)
+    : null;
 
   useEffect(() => {
     if (!open) {
@@ -524,6 +532,15 @@ export const EventDialog = ({
                     )}
                   />
                 )}
+
+                {selectedBillingSource === 'WALLET' &&
+                  !event?.billingAllocation &&
+                  currentDuration !== CONSULTATION_RATE_DURATION_MINUTES &&
+                  consultationChargePreview && (
+                    <p className="text-sm text-muted-foreground">
+                      За {currentDuration} минут будет списано {consultationChargePreview} EUR.
+                    </p>
+                  )}
               </div>
             )}
 

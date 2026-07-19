@@ -1,2 +1,3 @@
 export const FINANCIAL_CURRENCY = 'EUR';
 export const DEFAULT_CONSULTATION_RATE_ID = 'default';
+export const CONSULTATION_RATE_DURATION_MINUTES = 60;
