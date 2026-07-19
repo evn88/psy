@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import { Check } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { formatPaymentAmount } from '@/modules/payments';
@@ -31,48 +32,49 @@ export const PaymentPackageCard = ({
     <button
       type="button"
       onClick={() => onSelect(pkg)}
+      aria-pressed={isSelected}
       className={cn(
-        'rounded-2xl border p-4 cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md hover:border-primary/40 shrink-0 relative flex flex-col text-left',
+        'relative grid min-h-28 w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 rounded-xl border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
         isSelected
-          ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
-          : 'border-border/60 bg-muted/5 text-muted-foreground hover:bg-muted/10'
+          ? 'border-primary bg-primary/10'
+          : 'border-border/70 bg-card hover:border-primary/45 hover:bg-muted/30'
       )}
     >
       {pkg.coverImage && (
-        <div className="relative mb-3.5 h-28 w-full overflow-hidden rounded-xl bg-muted/30">
-          <Image
-            src={pkg.coverImage}
-            alt={title}
-            fill
-            sizes="(max-width: 768px) 100vw, 33vw"
-            className="object-cover transition-transform duration-500 hover:scale-105"
-          />
+        <div className="relative size-14 shrink-0 overflow-hidden rounded-lg bg-muted/50 sm:size-16">
+          <Image src={pkg.coverImage} alt={title} fill sizes="64px" className="object-cover" />
         </div>
       )}
-      <h4
-        className={cn(
-          'font-bold text-base mb-1.5 leading-snug',
-          isSelected ? 'text-primary' : 'text-foreground'
-        )}
-      >
-        {title}
-      </h4>
-      {description && (
-        <p className="text-xs text-muted-foreground/80 mb-4 flex-1 leading-relaxed">
-          {description}
-        </p>
-      )}
-      <p
-        className={cn(
-          'text-xl font-bold tracking-tight mt-auto',
-          isSelected ? 'text-primary' : 'text-foreground/90'
-        )}
-      >
+      <span className={cn('min-w-0', !pkg.coverImage && 'col-span-2')}>
+        <span className="block font-semibold leading-5 text-foreground">{title}</span>
+        <span className="mt-1 block text-sm leading-5 text-muted-foreground">
+          {description || `${pkg.includedMinutes} минут консультаций`}
+        </span>
+        {description ? (
+          <span className="mt-1 block text-xs font-medium text-muted-foreground">
+            {pkg.includedMinutes} минут консультаций
+          </span>
+        ) : null}
+      </span>
+      <span className="flex shrink-0 items-center gap-3 self-stretch">
+        <span className="hidden text-right text-sm font-semibold tabular-nums text-foreground sm:block">
+          {formatPaymentAmount(pkg.amount, pkg.currency)}
+        </span>
+        <span
+          className={cn(
+            'flex size-6 items-center justify-center rounded-full border',
+            isSelected
+              ? 'border-primary bg-primary text-primary-foreground'
+              : 'border-muted-foreground/35 bg-background'
+          )}
+          aria-hidden
+        >
+          {isSelected ? <Check className="size-4" strokeWidth={2.5} /> : null}
+        </span>
+      </span>
+      <span className="col-span-3 text-sm font-semibold tabular-nums text-foreground sm:hidden">
         {formatPaymentAmount(pkg.amount, pkg.currency)}
-      </p>
-      <p className="mt-1 text-xs font-medium text-muted-foreground">
-        {pkg.includedMinutes} минут консультаций
-      </p>
+      </span>
     </button>
   );
 };
