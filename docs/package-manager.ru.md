@@ -27,7 +27,7 @@ npm uninstall <package-name>
 npm run <script>
 ```
 
-Для CLI, который уже присутствует в зависимостях проекта, используйте `npx --no-install <command>`.
+Для CLI, который уже присутствует в зависимостях проекта, используйте `npm exec --no -- <command>`.
 
 ## Ограничения
 

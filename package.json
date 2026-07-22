@@ -12,6 +12,7 @@
     "postbuild": "node scripts/prepare-standalone.mjs",
     "prestart": "node scripts/verify-package-manager.mjs",
     "start": "next start",
+    "lint-staged": "lint-staged",
     "predatabase:verify-identity": "node scripts/verify-package-manager.mjs",
     "database:verify-identity": "node scripts/verify-database-identity.mjs",
     "prelint": "node scripts/verify-package-manager.mjs",
