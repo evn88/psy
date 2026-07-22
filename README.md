@@ -101,6 +101,10 @@
 
 ### Installation
 
+> This project uses npm only. Keep `package-lock.json` as the only lockfile: use `npm ci` for reproducible installs and
+> `npm install` when changing dependencies. Installs through pnpm, yarn, or bun are blocked. See the [package manager
+> policy](docs/package-manager.ru.md).
+
 ```bash
 # Clone the repository
 git clone https://github.com/evn88/psy.git
