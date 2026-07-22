@@ -36,6 +36,19 @@ describe('универсальный рендерер email-шаблонов', (
     expect(() => renderEmailTemplateDocument(content, 'ru')).toThrow('запрещённый тег');
   });
 
+  it('не растягивает текстовые информационные блоки за границы содержимого', () => {
+    const source = getDefaultEmailTemplateContent('ADMIN_MESSAGE', 'ru');
+    const content = renderEmailTemplateContent('ADMIN_MESSAGE', source, {
+      subject: 'Системное уведомление',
+      message: 'Текст уведомления'
+    });
+    const rendered = renderEmailTemplateDocument(content, 'ru');
+    const messageTag = rendered.html.match(/<div class="message"[^>]*>/)?.[0];
+
+    expect(messageTag).toBeDefined();
+    expect(messageTag).not.toContain('width: 100%');
+  });
+
   it('валидирует и рендерит все шаблоны на всех языках', () => {
     for (const definition of EMAIL_TEMPLATE_DEFINITIONS) {
       for (const locale of locales) {

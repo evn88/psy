@@ -213,11 +213,11 @@ src/
 │       └── settings/    # User preferences
 ├── components/
 │   ├── admin/           # Admin-specific components
-│   ├── email-templates/ # React Email templates
 │   ├── my/              # User dashboard components
 │   └── ui/              # Radix UI primitives
 ├── i18n/                # Internationalization config
 ├── shared/lib/          # Shared utilities (Prisma, email)
+├── modules/email-templates/ # Universal editable email templates
 └── middleware.ts         # Auth & locale middleware
 messages/
 ├── en.json              # English UI translations

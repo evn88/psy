@@ -16,7 +16,8 @@ body { background: #f6f3f8; color: #504a59; font-family: -apple-system, BlinkMac
 .email-content p { margin: 0 0 14px; }
 .email-content a { color: #5d447d; }
 .email-content .button { background: #684895; border-radius: 10px; color: #fefcff; display: inline-block; font-weight: 700; margin: 12px 0 8px; padding: 13px 22px; text-decoration: none; }
-.email-content .details, .email-content .message { background: #f7f4fa; border: 1px solid #e3ddea; border-radius: 12px; margin: 22px 0; padding: 14px 18px; width: 100%; }
+.email-content .details, .email-content .message { background: #f7f4fa; border: 1px solid #e3ddea; border-radius: 12px; margin: 22px 0; padding: 14px 18px; }
+.email-content table.details { width: 100%; }
 .email-content .details th { color: #5d447d; font-size: 14px; padding: 4px 12px 4px 0; text-align: left; vertical-align: top; }
 .email-content .details td { color: #504a59; font-size: 14px; padding: 4px 0; }
 .email-content .notice { background: #f1edf8; border: 1px solid #ded5eb; border-radius: 10px; margin: 18px 0; padding: 12px 16px; }
