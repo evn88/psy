@@ -53,10 +53,7 @@ import { createScheduleDateTime, resolveScheduleTimeZone } from '@/lib/schedule-
 import { useScheduleDateTime } from '@/lib/hooks/use-schedule-date-time';
 import { CONSULTATION_RATE_DURATION_MINUTES } from '@/modules/payments/financial/constants';
 
-import {
-  calculateConsultationChargePreview,
-  getEventTemporalValues
-} from './event-form-utils';
+import { calculateConsultationChargePreview, getEventTemporalValues } from './event-form-utils';
 import type { Event, EventMutationInput } from './use-events';
 import { useSavedMeetingLinks } from './use-saved-meeting-links';
 
@@ -90,7 +87,7 @@ const eventSchema = z
       .int()
       .min(MIN_SESSION_REMINDER_MINUTES)
       .max(MAX_SESSION_REMINDER_MINUTES),
-    billingSource: z.enum(['WALLET', 'PACKAGE']).optional(),
+    billingSource: z.enum(['WALLET', 'PACKAGE', 'COMPLIMENTARY']).optional(),
     purchasedPackageId: z.string().optional(),
     billingReason: z.string().trim().max(500).optional()
   })
@@ -111,6 +108,18 @@ const eventSchema = z
         code: 'custom',
         message: 'Выберите пакет',
         path: ['purchasedPackageId']
+      });
+    }
+
+    if (
+      requiresBilling &&
+      values.billingSource === 'COMPLIMENTARY' &&
+      !values.billingReason?.trim()
+    ) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Укажите причину бесплатной консультации',
+        path: ['billingReason']
       });
     }
   });
@@ -202,11 +211,14 @@ const getInitialValues = (params: {
     billingSource:
       event?.billingAllocation?.source === 'PACKAGE'
         ? 'PACKAGE'
-        : event?.billingAllocation?.source === 'WALLET'
-          ? 'WALLET'
-          : 'WALLET',
+        : event?.billingAllocation?.source === 'COMPLIMENTARY'
+          ? 'COMPLIMENTARY'
+          : event?.billingAllocation?.source === 'WALLET'
+            ? 'WALLET'
+            : 'WALLET',
     purchasedPackageId: event?.billingAllocation?.purchasedPackageId || undefined,
-    billingReason: '',
+    billingReason:
+      event?.billingAllocation?.source === 'COMPLIMENTARY' ? 'Бесплатная консультация' : '',
     reminderMinutesBeforeStart:
       event?.reminderMinutesBeforeStart ?? DEFAULT_SESSION_REMINDER_MINUTES
   };
@@ -504,6 +516,7 @@ export const EventDialog = ({
                           <SelectItem value="PACKAGE" disabled={!financialSummary?.packages.length}>
                             Купленный пакет
                           </SelectItem>
+                          <SelectItem value="COMPLIMENTARY">Без оплаты</SelectItem>
                         </SelectContent>
                       </Select>
                       {event?.billingAllocation && (
@@ -544,6 +557,26 @@ export const EventDialog = ({
                         <FormDescription>
                           Для встречи будет зарезервировано {currentDuration} минут.
                         </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {selectedBillingSource === 'COMPLIMENTARY' && !event?.billingAllocation && (
+                  <FormField
+                    control={form.control}
+                    name="billingReason"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Причина бесплатной консультации</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Например: перенос ранее оплаченной встречи"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription>Причина сохранится в финансовой истории.</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}

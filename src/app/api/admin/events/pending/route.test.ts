@@ -52,6 +52,13 @@ describe('GET /api/admin/events/pending', () => {
     expect(prismaMock.event.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         include: {
+          rescheduleFrom: {
+            select: {
+              id: true,
+              start: true,
+              end: true
+            }
+          },
           user: {
             select: {
               id: true,

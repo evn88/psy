@@ -42,6 +42,15 @@ describe('часовые пояса расписания', () => {
     expect(dateTime.getUtcOffset(instant)).toBe('UTC-4');
   });
 
+  it('определяет завершившийся момент независимо от timezone наблюдателя', () => {
+    const reference = new Date('2026-07-16T14:30:00.000Z');
+    const belgradeDateTime = createScheduleDateTime({ timeZone: 'Europe/Belgrade' });
+    const newYorkDateTime = createScheduleDateTime({ timeZone: 'America/New_York' });
+
+    expect(belgradeDateTime.isPast('2026-07-16T14:29:59.000Z', reference)).toBe(true);
+    expect(newYorkDateTime.isPast('2026-07-16T14:30:01.000Z', reference)).toBe(false);
+  });
+
   it('возвращает явный результат для несуществующего локального времени', () => {
     const dateTime = createScheduleDateTime({ timeZone: 'Europe/Belgrade' });
 

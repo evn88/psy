@@ -111,6 +111,15 @@ const getOwnedEventMutationError = (
   return new CalendarMutationError(409, 'Event is no longer available for this action');
 };
 
+const isPrismaUniqueConstraintError = (error: unknown): boolean => {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: unknown }).code === 'P2002'
+  );
+};
+
 /**
  * Создаёт задачу отправки email, которая считает пустой id ошибкой доставки.
  */
@@ -377,7 +386,8 @@ const cancelEvent = async (
       type: EventType.CONSULTATION,
       status: {
         in: [EventStatus.SCHEDULED, EventStatus.PENDING_CONFIRMATION]
-      }
+      },
+      end: { gt: new Date() }
     },
     data: {
       status: EventStatus.CANCELLED,
@@ -418,122 +428,104 @@ const cancelEvent = async (
 };
 
 interface RescheduleResult {
-  previousEvent: EventWithRecipients;
   updatedEvent: EventWithRecipients;
 }
 
 /**
- * Атомарно занимает новый слот и отменяет прежнее событие.
- * Ошибка любого compare-and-set откатывает обе операции.
+ * Атомарно занимает новый слот для запроса переноса, сохраняя прежнюю встречу активной
+ * до решения администратора.
  */
 const rescheduleEvent = async ({
   eventId,
   newEventId,
   userId,
-  reason,
   reminderMinutesBeforeStart
 }: {
   eventId: string;
   newEventId: string;
   userId: string;
-  reason?: string;
   reminderMinutesBeforeStart?: number;
 }): Promise<RescheduleResult> => {
-  const result = await prisma.$transaction(async (transaction: Prisma.TransactionClient) => {
-    const previousEvent = await transaction.event.findFirst({
-      where: {
-        id: eventId,
-        userId,
-        type: EventType.CONSULTATION,
-        status: {
-          in: [EventStatus.SCHEDULED, EventStatus.PENDING_CONFIRMATION]
-        }
-      },
-      include: eventRecipientsInclude
-    });
+  let result: RescheduleResult;
 
-    if (!previousEvent) {
-      const existingEvent = await transaction.event.findUnique({
-        where: { id: eventId },
-        select: { userId: true }
+  try {
+    result = await prisma.$transaction(async (transaction: Prisma.TransactionClient) => {
+      const previousEvent = await transaction.event.findFirst({
+        where: {
+          id: eventId,
+          userId,
+          type: EventType.CONSULTATION,
+          status: EventStatus.SCHEDULED,
+          end: { gt: new Date() }
+        },
+        include: eventRecipientsInclude
       });
-      throw getOwnedEventMutationError(existingEvent, userId);
-    }
 
-    const claimedNewSlot = await transaction.event.updateMany({
-      where: {
-        id: newEventId,
-        type: EventType.FREE_SLOT,
-        status: EventStatus.SCHEDULED,
-        userId: null,
-        start: { gt: new Date() }
-      },
-      data: {
-        userId,
-        status: EventStatus.PENDING_CONFIRMATION,
-        type: EventType.CONSULTATION,
-        cancelReason: null,
-        bookingReminderMinutesBeforeStart:
-          typeof reminderMinutesBeforeStart === 'number'
-            ? reminderMinutesBeforeStart
-            : previousEvent.bookingReminderMinutesBeforeStart,
-        reminderEmailSentAt: null,
-        reminderPushSentAt: null,
-        reminderWorkflowVersion: {
-          increment: 1
-        }
+      if (!previousEvent) {
+        const existingEvent = await transaction.event.findUnique({
+          where: { id: eventId },
+          select: { userId: true }
+        });
+        throw getOwnedEventMutationError(existingEvent, userId);
       }
-    });
 
-    if (claimedNewSlot.count !== 1) {
-      throw new CalendarMutationError(409, 'New slot is not available');
-    }
+      const claimedNewSlot = await transaction.event.updateMany({
+        where: {
+          id: newEventId,
+          type: EventType.FREE_SLOT,
+          status: EventStatus.SCHEDULED,
+          userId: null,
+          start: { gt: new Date() }
+        },
+        data: {
+          userId,
+          status: EventStatus.PENDING_CONFIRMATION,
+          type: EventType.CONSULTATION,
+          rescheduleFromEventId: previousEvent.id,
+          cancelReason: null,
+          bookingReminderMinutesBeforeStart:
+            typeof reminderMinutesBeforeStart === 'number'
+              ? reminderMinutesBeforeStart
+              : previousEvent.bookingReminderMinutesBeforeStart,
+          reminderEmailSentAt: null,
+          reminderPushSentAt: null,
+          reminderWorkflowVersion: {
+            increment: 1
+          }
+        }
+      });
 
-    const cancelledPreviousEvent = await transaction.event.updateMany({
-      where: {
-        id: eventId,
-        userId,
-        type: EventType.CONSULTATION,
-        status: {
-          in: [EventStatus.SCHEDULED, EventStatus.PENDING_CONFIRMATION]
-        }
-      },
-      data: {
-        status: EventStatus.CANCELLED,
-        cancelReason: `User requested reschedule. Reason: ${reason || 'Not specified'}`,
-        reminderWorkflowVersion: {
-          increment: 1
-        }
+      if (claimedNewSlot.count !== 1) {
+        throw new CalendarMutationError(409, 'New slot is not available');
       }
-    });
 
-    if (cancelledPreviousEvent.count !== 1) {
-      throw new CalendarMutationError(409, 'Event was already changed');
+      const updatedEvent = await transaction.event.findUnique({
+        where: { id: newEventId },
+        include: eventRecipientsInclude
+      });
+
+      if (!updatedEvent) {
+        throw new Error('Rescheduled event was not found');
+      }
+
+      return {
+        updatedEvent
+      };
+    });
+  } catch (error) {
+    if (isPrismaUniqueConstraintError(error)) {
+      throw new CalendarMutationError(409, 'Reschedule request already exists');
     }
 
-    const updatedEvent = await transaction.event.findUnique({
-      where: { id: newEventId },
-      include: eventRecipientsInclude
-    });
-
-    if (!updatedEvent) {
-      throw new Error('Rescheduled event was not found');
-    }
-
-    return {
-      previousEvent,
-      updatedEvent
-    };
-  });
+    throw error;
+  }
 
   await runCalendarPostCommitTasks({
     eventId: result.updatedEvent.id,
     userId,
     tasks: [
-      ...createCancellationNotificationTasks(result.previousEvent, 'Rescheduled'),
       ...createBookingNotificationTasks(result.updatedEvent),
       createReminderTask(result.updatedEvent),
-      createGoogleSyncTask(result.previousEvent.id, 'UPDATE'),
       createGoogleSyncTask(result.updatedEvent.id, 'UPDATE')
     ]
   });
@@ -582,7 +574,6 @@ async function patchHandler(req: Request, props: { params: Promise<{ id: string 
       eventId,
       newEventId: result.data.newEventId,
       userId: access.userId,
-      reason: result.data.reason,
       reminderMinutesBeforeStart: result.data.reminderMinutesBeforeStart
     });
 

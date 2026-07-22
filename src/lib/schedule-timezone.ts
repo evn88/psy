@@ -44,6 +44,7 @@ export interface ScheduleDateTimeService {
     locale?: Locale
   ) => string;
   getDateKey: (input: ScheduleDateTimeInput) => string;
+  isPast: (input: ScheduleDateTimeInput, reference?: ScheduleDateTimeInput) => boolean;
   toCalendarDate: (input: ScheduleDateTimeInput) => Date;
   fromCalendarDate: (calendarDate: Date) => Date;
   getLocalDateTimeFields: (
@@ -122,6 +123,9 @@ export const createScheduleDateTime = (options: {
     },
 
     getDateKey: input => formatInTimeZone(toDate(input), timeZone, 'yyyy-MM-dd'),
+
+    isPast: (input, reference = new Date()) =>
+      toDate(input).getTime() <= toDate(reference).getTime(),
 
     toCalendarDate: input => toZonedTime(toDate(input), timeZone),
 

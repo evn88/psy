@@ -218,6 +218,10 @@ export function UserCalendarView({
               {dayEvents.slice(0, 3).map(event => {
                 const isScheduled = event.type === 'CONSULTATION' && event.status === 'SCHEDULED';
                 const isFree = event.type === 'FREE_SLOT';
+                const eventLabel =
+                  event.userId === 'hidden'
+                    ? t('busyTime')
+                    : event.title || t(`eventTypes.${event.type}` as never);
 
                 return (
                   <div
@@ -228,10 +232,9 @@ export function UserCalendarView({
                       ${isFree ? 'bg-primary/10 text-primary-foreground border-primary/25 dark:bg-primary/20 dark:text-primary-foreground' : ''}
                       ${!isScheduled && !isFree ? 'bg-muted text-muted-foreground border-border/40' : ''}
                     `}
-                    title={event.title || t(`eventTypes.${event.type}` as never)}
+                    title={eventLabel}
                   >
-                    {dateTime.format(new Date(event.start), 'time')} -{' '}
-                    {event.title || t(`eventTypes.${event.type}` as never)}
+                    {dateTime.format(new Date(event.start), 'time')} - {eventLabel}
                   </div>
                 );
               })}

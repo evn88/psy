@@ -137,6 +137,7 @@ export const PendingRequestsPanel = ({
                 const requestClientName = request.user?.name || request.user?.email;
                 const shouldShowClientEmail = Boolean(request.user?.name && request.user.email);
                 const isActionPending = activeRequestId === request.id;
+                const isRescheduleRequest = Boolean(request.rescheduleFromEventId);
 
                 return (
                   <li key={request.id} className="px-5 py-5 sm:px-6">
@@ -149,13 +150,22 @@ export const PendingRequestsPanel = ({
                           <p className="truncate text-base font-semibold leading-5">
                             {requestTitle}
                           </p>
+                          <Badge
+                            variant={isRescheduleRequest ? 'default' : 'outline'}
+                            className="mt-2"
+                          >
+                            {isRescheduleRequest
+                              ? t('rescheduleRequestLabel')
+                              : t('bookingRequestLabel')}
+                          </Badge>
                           <p className="mt-1 text-xs leading-5 text-muted-foreground">
                             {dateTime.formatIntl(new Date(request.start), {
                               day: 'numeric',
                               month: 'long',
                               year: 'numeric'
                             })}{' '}
-                            · {dateTime.formatIntl(new Date(request.start), {
+                            ·{' '}
+                            {dateTime.formatIntl(new Date(request.start), {
                               hour: '2-digit',
                               minute: '2-digit',
                               hourCycle: 'h23'

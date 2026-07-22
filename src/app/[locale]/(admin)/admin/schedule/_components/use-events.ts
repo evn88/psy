@@ -4,6 +4,7 @@ import { createScheduleDateTime } from '@/lib/schedule-timezone';
 
 export type Event = PrismaEvent & {
   user?: { id: string; name: string | null; email: string; timezone: string | null } | null;
+  rescheduleFrom?: { id: string; start: Date | string; end: Date | string } | null;
   billingAllocation?: {
     source: EventBillingSource;
     purchasedPackageId: string | null;

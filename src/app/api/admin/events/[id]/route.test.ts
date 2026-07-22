@@ -13,7 +13,8 @@ const prismaMock = vi.hoisted(() => ({
 }));
 const transactionMock = vi.hoisted(() => ({
   event: {
-    update: vi.fn()
+    update: vi.fn(),
+    updateMany: vi.fn()
   }
 }));
 const runFinancialTransactionMock = vi.hoisted(() => vi.fn());
@@ -66,6 +67,8 @@ const createPaidEvent = () => ({
   meetLink: null,
   userId: 'user-1',
   reminderMinutesBeforeStart: 60,
+  rescheduleFromEventId: null,
+  rescheduleFrom: null,
   user: {
     id: 'user-1',
     name: 'Клиент',
@@ -93,6 +96,7 @@ describe('PATCH /api/admin/events/[id]', () => {
     );
     syncEventWithGoogleMock.mockResolvedValue({ success: true });
     startSessionReminderWorkflowMock.mockResolvedValue(undefined);
+    transactionMock.event.updateMany.mockResolvedValue({ count: 1 });
   });
 
   it('разрешает администратору перенести оплаченную встречу без повторного списания', async () => {
@@ -148,5 +152,132 @@ describe('PATCH /api/admin/events/[id]', () => {
         'У оплаченной консультации нельзя менять длительность. Для этого сначала отмените встречу, чтобы выполнить возврат.'
     });
     expect(runFinancialTransactionMock).not.toHaveBeenCalled();
+  });
+
+  it('подтверждает бесплатный перенос и освобождает исходный слот', async () => {
+    // Arrange
+    const sourceEvent = {
+      id: 'source-event',
+      status: EventStatus.SCHEDULED,
+      type: EventType.CONSULTATION,
+      userId: 'user-1',
+      billingAllocation: {
+        status: 'RESERVED'
+      }
+    };
+    const pendingEvent = {
+      ...createPaidEvent(),
+      id: 'reschedule-event',
+      status: EventStatus.PENDING_CONFIRMATION,
+      billingAllocation: null,
+      rescheduleFromEventId: sourceEvent.id,
+      rescheduleFrom: sourceEvent
+    };
+    const updatedEvent = {
+      ...pendingEvent,
+      status: EventStatus.SCHEDULED,
+      rescheduleFromEventId: null,
+      rescheduleFrom: null
+    };
+    prismaMock.event.findUnique.mockResolvedValue(pendingEvent);
+    transactionMock.event.update.mockResolvedValue(updatedEvent);
+
+    // Act
+    const response = await PATCH(
+      new Request('http://localhost/api/admin/events/reschedule-event', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: EventStatus.SCHEDULED,
+          billingSource: EventBillingSource.COMPLIMENTARY,
+          billingReason: 'Перенос ранее оплаченной встречи'
+        })
+      }),
+      { params: Promise.resolve({ id: 'reschedule-event' }) }
+    );
+
+    // Assert
+    expect(response.status).toBe(200);
+    expect(reverseConsultationMock).toHaveBeenCalledWith(
+      transactionMock,
+      expect.objectContaining({ eventId: 'source-event' })
+    );
+    expect(transactionMock.event.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: 'source-event' }),
+        data: expect.objectContaining({
+          type: EventType.FREE_SLOT,
+          status: EventStatus.SCHEDULED,
+          userId: null
+        })
+      })
+    );
+    expect(chargeConsultationMock).toHaveBeenCalledWith(
+      transactionMock,
+      expect.objectContaining({
+        eventId: 'reschedule-event',
+        billing: expect.objectContaining({
+          source: EventBillingSource.COMPLIMENTARY,
+          reason: 'Перенос ранее оплаченной встречи'
+        })
+      })
+    );
+    expect(syncEventWithGoogleMock).toHaveBeenCalledWith('source-event', 'UPDATE');
+    expect(syncEventWithGoogleMock).toHaveBeenCalledWith('reschedule-event', 'UPDATE');
+  });
+
+  it('отклоняет перенос, освобождает новый слот и сохраняет исходную встречу', async () => {
+    // Arrange
+    const pendingEvent = {
+      ...createPaidEvent(),
+      id: 'reschedule-event',
+      status: EventStatus.PENDING_CONFIRMATION,
+      billingAllocation: null,
+      rescheduleFromEventId: 'source-event',
+      rescheduleFrom: {
+        id: 'source-event',
+        status: EventStatus.SCHEDULED,
+        type: EventType.CONSULTATION,
+        userId: 'user-1',
+        billingAllocation: null
+      }
+    };
+    prismaMock.event.findUnique.mockResolvedValue(pendingEvent);
+    transactionMock.event.update.mockResolvedValue({
+      ...pendingEvent,
+      type: EventType.FREE_SLOT,
+      status: EventStatus.SCHEDULED,
+      userId: null,
+      rescheduleFromEventId: null,
+      rescheduleFrom: null
+    });
+
+    // Act
+    const response = await PATCH(
+      new Request('http://localhost/api/admin/events/reschedule-event', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: EventStatus.CANCELLED,
+          cancelReason: 'Новое время недоступно'
+        })
+      }),
+      { params: Promise.resolve({ id: 'reschedule-event' }) }
+    );
+
+    // Assert
+    expect(response.status).toBe(200);
+    expect(transactionMock.event.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          type: EventType.FREE_SLOT,
+          status: EventStatus.SCHEDULED,
+          userId: null,
+          rescheduleFromEventId: null
+        })
+      })
+    );
+    expect(transactionMock.event.updateMany).not.toHaveBeenCalled();
+    expect(reverseConsultationMock).not.toHaveBeenCalled();
   });
 });

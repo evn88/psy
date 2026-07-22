@@ -43,6 +43,7 @@ export function UserScheduleDetails({
   const [bookingEventId, setBookingEventId] = useState<string | null>(null);
   const [cancelingEventId, setCancelingEventId] = useState<string | null>(null);
   const [reschedulingEventId, setReschedulingEventId] = useState<string | null>(null);
+  const cancelingEvent = events.find(event => event.id === cancelingEventId);
 
   // Filter events for selected day or week
   const filteredEvents = events
@@ -115,10 +116,14 @@ export function UserScheduleDetails({
         eventId={cancelingEventId}
         onClose={() => setCancelingEventId(null)}
         onConfirm={onCancelEvent}
-        onRequestReschedule={eventId => {
-          setCancelingEventId(null);
-          setReschedulingEventId(eventId);
-        }}
+        onRequestReschedule={
+          cancelingEvent?.status === 'SCHEDULED'
+            ? eventId => {
+                setCancelingEventId(null);
+                setReschedulingEventId(eventId);
+              }
+            : undefined
+        }
       />
 
       <UserScheduleRescheduleDialog

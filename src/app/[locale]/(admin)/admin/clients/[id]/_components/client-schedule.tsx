@@ -58,7 +58,7 @@ interface ClientEvent {
   status: string;
   billingAllocation: {
     purchasedPackageId: string | null;
-    source: 'PACKAGE' | 'WALLET' | 'FREE';
+    source: 'PACKAGE' | 'WALLET' | 'COMPLIMENTARY';
   } | null;
 }
 
@@ -84,8 +84,9 @@ const eventSchema = z
     date: z.string().min(1, 'Обязательно'),
     startTime: z.string().min(1, 'Обязательно'),
     duration: z.number().int().min(15, 'Минимум 15 минут'),
-    billingSource: z.enum(['WALLET', 'PACKAGE']).optional(),
-    purchasedPackageId: z.string().optional()
+    billingSource: z.enum(['WALLET', 'PACKAGE', 'COMPLIMENTARY']).optional(),
+    purchasedPackageId: z.string().optional(),
+    billingReason: z.string().trim().max(500).optional()
   })
   .superRefine((values, context) => {
     const requiresBilling = values.type === 'CONSULTATION' && values.status === 'SCHEDULED';
@@ -103,6 +104,18 @@ const eventSchema = z
         code: 'custom',
         message: 'Выберите пакет',
         path: ['purchasedPackageId']
+      });
+    }
+
+    if (
+      requiresBilling &&
+      values.billingSource === 'COMPLIMENTARY' &&
+      !values.billingReason?.trim()
+    ) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Укажите причину бесплатной консультации',
+        path: ['billingReason']
       });
     }
   });
@@ -168,7 +181,8 @@ export const ClientSchedule = ({
       startTime: '',
       duration: 60,
       billingSource: 'WALLET',
-      purchasedPackageId: undefined
+      purchasedPackageId: undefined,
+      billingReason: ''
     }
   });
   const [
@@ -205,7 +219,8 @@ export const ClientSchedule = ({
       startTime: adminDateTime.format(new Date(), 'time'),
       duration: 60,
       billingSource: 'WALLET',
-      purchasedPackageId: undefined
+      purchasedPackageId: undefined,
+      billingReason: ''
     });
     setEditingEvent(null);
     setDialogOpen(true);
@@ -225,8 +240,15 @@ export const ClientSchedule = ({
       date: adminDateTime.format(d, 'date'),
       startTime: adminDateTime.format(d, 'time'),
       duration: diffMins > 0 ? diffMins : 60,
-      billingSource: event.billingAllocation?.source === 'PACKAGE' ? 'PACKAGE' : 'WALLET',
-      purchasedPackageId: event.billingAllocation?.purchasedPackageId ?? undefined
+      billingSource:
+        event.billingAllocation?.source === 'PACKAGE'
+          ? 'PACKAGE'
+          : event.billingAllocation?.source === 'COMPLIMENTARY'
+            ? 'COMPLIMENTARY'
+            : 'WALLET',
+      purchasedPackageId: event.billingAllocation?.purchasedPackageId ?? undefined,
+      billingReason:
+        event.billingAllocation?.source === 'COMPLIMENTARY' ? 'Бесплатная консультация' : ''
     });
     setEditingEvent(event);
     setDialogOpen(true);
@@ -251,7 +273,8 @@ export const ClientSchedule = ({
             ? {
                 billingSource: data.billingSource,
                 purchasedPackageId:
-                  data.billingSource === 'PACKAGE' ? data.purchasedPackageId : undefined
+                  data.billingSource === 'PACKAGE' ? data.purchasedPackageId : undefined,
+                billingReason: data.billingReason?.trim() || undefined
               }
             : {})
         };
@@ -649,7 +672,9 @@ export const ClientSchedule = ({
                       <span className="font-medium">
                         {editingEvent.billingAllocation.source === 'PACKAGE'
                           ? 'купленный пакет'
-                          : 'денежный баланс'}
+                          : editingEvent.billingAllocation.source === 'COMPLIMENTARY'
+                            ? 'без оплаты'
+                            : 'денежный баланс'}
                       </span>
                       . Для возврата отмените встречу.
                     </div>
@@ -683,6 +708,7 @@ export const ClientSchedule = ({
                                 >
                                   Купленный пакет
                                 </SelectItem>
+                                <SelectItem value="COMPLIMENTARY">Без оплаты</SelectItem>
                               </SelectContent>
                             </Select>
                             <FormMessage />
@@ -721,6 +747,28 @@ export const ClientSchedule = ({
                               <FormDescription>
                                 Будет списано {selectedDuration} минут. Пакеты с меньшим остатком
                                 недоступны.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
+
+                      {selectedBillingSource === 'COMPLIMENTARY' && (
+                        <FormField
+                          control={form.control}
+                          name="billingReason"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Причина бесплатной консультации</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Например: ознакомительная консультация"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Причина сохранится в финансовой истории.
                               </FormDescription>
                               <FormMessage />
                             </FormItem>

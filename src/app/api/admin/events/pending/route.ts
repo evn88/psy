@@ -34,6 +34,13 @@ async function getHandler() {
             email: true,
             timezone: true
           }
+        },
+        rescheduleFrom: {
+          select: {
+            id: true,
+            start: true,
+            end: true
+          }
         }
       },
       orderBy: {

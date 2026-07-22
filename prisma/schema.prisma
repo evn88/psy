@@ -460,6 +460,7 @@ model Event {
   authorId                          String
   userId                            String?
   groupId                           String?
+  rescheduleFromEventId             String?                 @unique
   createdAt                         DateTime                @default(now())
   updatedAt                         DateTime                @updatedAt
   bookingReminderMinutesBeforeStart Int?
@@ -469,6 +470,8 @@ model Event {
   reminderWorkflowVersion           Int                     @default(1)
   author                            User                    @relation("EventCreator", fields: [authorId], references: [id], onDelete: Cascade)
   user                              User?                   @relation("EventClient", fields: [userId], references: [id], onDelete: Cascade)
+  rescheduleFrom                    Event?                  @relation("EventReschedule", fields: [rescheduleFromEventId], references: [id], onDelete: SetNull)
+  rescheduleRequest                 Event?                  @relation("EventReschedule")
   billingAllocation                 EventBillingAllocation?
   financialOperations               FinancialOperation[]
   packageTransactions               PackageTransaction[]
