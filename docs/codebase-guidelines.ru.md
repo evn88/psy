@@ -12,6 +12,14 @@
 
 Документ опирается на текущую структуру проекта и на практики Next.js App Router.
 
+Для работы с датами и часовыми поясами расписания действует отдельный обязательный регламент:
+[`docs/schedule-timezone-guidelines.ru.md`](./schedule-timezone-guidelines.ru.md).
+
+Кратко: потребители расписания используют только `createScheduleDateTime()` из
+`src/lib/schedule-timezone.ts` или `useScheduleDateTime()` из
+`src/lib/hooks/use-schedule-date-time.ts`. Прямые timezone-расчёты через `date-fns-tz`, `Intl.DateTimeFormat`,
+`toLocale*` и ручную арифметику смещений запрещены.
+
 ---
 
 ## 1. Главный принцип
