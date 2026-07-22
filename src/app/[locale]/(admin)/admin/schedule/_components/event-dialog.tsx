@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { format } from 'date-fns';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Check, ChevronDown, Link2, Trash2 } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import useSWR from 'swr';
@@ -48,8 +49,8 @@ import {
   SESSION_REMINDER_PRESET_MINUTES
 } from '@/lib/session-reminders';
 import { optionalMeetingUrlSchema } from '@/lib/safe-url';
-import { formatUtcOffset, isValidTimeZone } from '@/lib/timezone';
-import { detectBrowserTimeZone } from '@/lib/browser-timezone';
+import { formatUtcOffset } from '@/lib/timezone';
+import { resolveScheduleTimeZone } from '@/lib/schedule-timezone';
 import { CONSULTATION_RATE_DURATION_MINUTES } from '@/modules/payments/financial/constants';
 
 import {
@@ -146,6 +147,7 @@ interface EventDialogProps {
   selectedEndDate?: Date;
   onSave: (data: EventMutationInput) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
+  adminTimezone: string;
 }
 
 const fetchUsers = async (url: string): Promise<UserOption[]> => {
@@ -166,22 +168,13 @@ const fetchFinancialSummary = async (url: string): Promise<FinancialSummary> => 
   return response.json() as Promise<FinancialSummary>;
 };
 
-const getBrowserTimezone = (): string => {
-  return detectBrowserTimeZone() || 'UTC';
-};
-
 const getInitialValues = (params: {
   event?: Event | null;
   selectedDate?: Date;
   selectedEndDate?: Date;
-  fallbackTimezone: string;
+  adminTimezone: string;
 }): EventFormValues => {
-  const { event, selectedDate, selectedEndDate, fallbackTimezone } = params;
-  const clientTimezone = event?.user
-    ? event.user.timezone && isValidTimeZone(event.user.timezone)
-      ? event.user.timezone
-      : 'UTC'
-    : fallbackTimezone;
+  const { event, selectedDate, selectedEndDate, adminTimezone } = params;
   const fallbackStart = selectedDate ? new Date(selectedDate) : new Date();
 
   if (selectedDate && selectedDate.getHours() === 0) {
@@ -189,11 +182,16 @@ const getInitialValues = (params: {
   }
 
   const fallbackEnd = selectedEndDate || new Date(fallbackStart.getTime() + 60 * 60 * 1000);
-  const temporalValues = getEventTemporalValues(
-    event?.start || fallbackStart,
-    event?.end || fallbackEnd,
-    clientTimezone
-  );
+  const temporalValues = event
+    ? getEventTemporalValues(event.start, event.end, adminTimezone)
+    : {
+        date: format(fallbackStart, 'yyyy-MM-dd'),
+        startTime: format(fallbackStart, 'HH:mm'),
+        duration: Math.max(
+          15,
+          Math.round((fallbackEnd.getTime() - fallbackStart.getTime()) / 60_000)
+        )
+      };
 
   return {
     title: event?.title || '',
@@ -222,12 +220,13 @@ export const EventDialog = ({
   selectedDate,
   selectedEndDate,
   onSave,
-  onDelete
+  onDelete,
+  adminTimezone
 }: EventDialogProps) => {
   const t = useTranslations('Schedule');
+  const locale = useLocale();
   const [loading, setLoading] = useState(false);
   const [meetingLinksOpen, setMeetingLinksOpen] = useState(false);
-  const [browserTimezone] = useState(getBrowserTimezone);
   const { links: savedMeetingLinks, saveLink, removeLink } = useSavedMeetingLinks();
   const { data: users, isLoading: usersLoading } = useSWR<UserOption[]>(
     open ? '/api/admin/users?roles=USER,ADMIN' : null,
@@ -239,7 +238,7 @@ export const EventDialog = ({
       event,
       selectedDate,
       selectedEndDate,
-      fallbackTimezone: browserTimezone
+      adminTimezone
     })
   });
   const currentDuration = form.watch('duration');
@@ -248,17 +247,11 @@ export const EventDialog = ({
   const selectedEventStatus = form.watch('status');
   const selectedBillingSource = form.watch('billingSource');
   const eventDate = form.watch('date');
+  const eventStartTime = form.watch('startTime');
   const selectedUserOption = users?.find(user => user.id === selectedUserId);
   const selectedUser =
     selectedUserOption ?? (event?.user && event.user.id === selectedUserId ? event.user : null);
-  const selectedUserHasTimezone = Boolean(
-    selectedUser?.timezone && isValidTimeZone(selectedUser.timezone)
-  );
-  const clientTimezone = selectedUserId
-    ? selectedUserHasTimezone
-      ? selectedUser?.timezone || 'UTC'
-      : 'UTC'
-    : browserTimezone;
+  const clientTimezone = resolveScheduleTimeZone(selectedUser?.timezone);
   const durationOptions = useMemo(
     () => Array.from(new Set([...defaultDurationOptions, currentDuration])).sort((a, b) => a - b),
     [currentDuration]
@@ -287,10 +280,34 @@ export const EventDialog = ({
         event,
         selectedDate,
         selectedEndDate,
-        fallbackTimezone: browserTimezone
+        adminTimezone
       })
     );
-  }, [browserTimezone, event, form, open, selectedDate, selectedEndDate]);
+  }, [adminTimezone, event, form, open, selectedDate, selectedEndDate]);
+
+  let clientTimePreview: string | null = null;
+  let scheduledStart: Date | null = null;
+  if (selectedUserId && eventDate && eventStartTime) {
+    try {
+      const range = getEventDateRange({
+        date: eventDate,
+        startTime: eventStartTime,
+        duration: currentDuration,
+        timeZone: adminTimezone
+      });
+      scheduledStart = range.start;
+      const formatter = new Intl.DateTimeFormat(locale, {
+        timeZone: clientTimezone,
+        dateStyle: 'medium',
+        timeStyle: 'short'
+      });
+      const endFormatter = new Intl.DateTimeFormat(locale, {
+        timeZone: clientTimezone,
+        timeStyle: 'short'
+      });
+      clientTimePreview = `${formatter.format(range.start)} – ${endFormatter.format(range.end)}`;
+    } catch {}
+  }
 
   const onSubmit = async (values: EventFormValues) => {
     setLoading(true);
@@ -299,7 +316,7 @@ export const EventDialog = ({
         date: values.date,
         startTime: values.startTime,
         duration: values.duration,
-        timeZone: clientTimezone
+        timeZone: adminTimezone
       });
       const payload: EventMutationInput = {
         type: values.type,
@@ -393,7 +410,7 @@ export const EventDialog = ({
                               <span className={badgeVariants({ variant: 'outline' })}>
                                 {formatUtcOffset(
                                   selectedUser.timezone,
-                                  eventDate ? new Date(`${eventDate}T12:00:00`) : new Date()
+                                  scheduledStart || new Date()
                                 )}
                               </span>
                             </span>
@@ -431,10 +448,7 @@ export const EventDialog = ({
                                   {user.email}
                                 </span>
                                 <span className={badgeVariants({ variant: 'outline' })}>
-                                  {formatUtcOffset(
-                                    user.timezone,
-                                    eventDate ? new Date(`${eventDate}T12:00:00`) : new Date()
-                                  )}
+                                  {formatUtcOffset(user.timezone, scheduledStart || new Date())}
                                 </span>
                               </span>
                             </span>
@@ -610,6 +624,23 @@ export const EventDialog = ({
                   </FormItem>
                 )}
               />
+            </div>
+
+            <div className="rounded-xl border bg-muted/30 px-4 py-3 text-sm">
+              <p className="font-medium">
+                {t('adminTime')}: {adminTimezone} (
+                {formatUtcOffset(adminTimezone, scheduledStart || new Date())})
+              </p>
+              {selectedUserId && (
+                <p className="mt-1 text-muted-foreground">
+                  {t('clientTimePreview')}:{' '}
+                  <span className="font-medium text-foreground">
+                    {clientTimePreview || t('clientTimezoneMissing')}
+                  </span>{' '}
+                  ({clientTimezone}, {formatUtcOffset(clientTimezone, scheduledStart || new Date())}
+                  )
+                </p>
+              )}
             </div>
 
             <FormField

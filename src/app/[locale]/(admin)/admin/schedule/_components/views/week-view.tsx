@@ -1,6 +1,13 @@
 import { eachDayOfInterval, endOfWeek, format, isSameDay, startOfWeek } from 'date-fns';
 import { useTranslations } from 'next-intl';
-import { BaseViewProps, getEventsForDay, getEventStyle } from '../calendar-utils';
+import { formatInTimeZone, toZonedTime } from 'date-fns-tz';
+import { toScheduleCalendarDate } from '@/lib/schedule-timezone';
+import {
+  BaseViewProps,
+  getClientTimeTooltip,
+  getEventsForDay,
+  getEventStyle
+} from '../calendar-utils';
 import { GridCell } from './grid-cell';
 
 interface WeekViewProps extends BaseViewProps {
@@ -22,12 +29,19 @@ export const WeekView = ({
   endH,
   workHourStart,
   workHourEnd,
-  setViewMode
+  setViewMode,
+  displayTimezone
 }: WeekViewProps) => {
   const t = useTranslations('Schedule');
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
   const daysInWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
+  const today = toScheduleCalendarDate(new Date(), displayTimezone);
+  const tooltipLabels = {
+    client: t('client'),
+    current: t('clientCurrentTime'),
+    scheduled: t('clientScheduledTime')
+  };
 
   return (
     <div
@@ -44,7 +58,7 @@ export const WeekView = ({
 
             {/* Days headers */}
             {daysInWeek.map(day => {
-              const isToday = isSameDay(day, new Date());
+              const isToday = isSameDay(day, today);
               return (
                 <div
                   key={day.toISOString()}
@@ -92,7 +106,7 @@ export const WeekView = ({
             {/* Days columns representing the actual grid */}
             <div className="flex flex-1">
               {daysInWeek.map(day => {
-                const dayEvents = getEventsForDay(events, day);
+                const dayEvents = getEventsForDay(events, day, displayTimezone);
 
                 return (
                   <div
@@ -119,8 +133,8 @@ export const WeekView = ({
                     {/* Events Layer */}
                     <div className="absolute inset-x-0 top-0 z-10 pointer-events-none">
                       {dayEvents.map(event => {
-                        const dStart = new Date(event.start);
-                        const dEnd = new Date(event.end);
+                        const dStart = toZonedTime(new Date(event.start), displayTimezone);
+                        const dEnd = toZonedTime(new Date(event.end), displayTimezone);
                         const startMin = dStart.getHours() * 60 + dStart.getMinutes();
                         const durationMins = (dEnd.getTime() - dStart.getTime()) / 60000;
 
@@ -149,6 +163,7 @@ export const WeekView = ({
                               if (onEventClick) onEventClick(event);
                             }}
                             className={`absolute left-0.5 right-0.5 sm:left-1 sm:right-1 rounded-md px-1.5 py-1 text-xs flex flex-col overflow-hidden cursor-pointer shadow-sm hover:shadow-md hover:ring-1 hover:ring-primary/50 transition-all border pointer-events-auto ${getEventStyle(event)}`}
+                            title={getClientTimeTooltip(event, tooltipLabels)}
                             style={{
                               top: `${top}rem`,
                               height: `${height}rem`
@@ -158,7 +173,8 @@ export const WeekView = ({
                               {event.title || eventTypeTitle}
                             </span>
                             <span className="text-[9px] opacity-80 leading-tight truncate mt-0.5">
-                              {format(dStart, 'HH:mm')} - {format(dEnd, 'HH:mm')}
+                              {formatInTimeZone(new Date(event.start), displayTimezone, 'HH:mm')} -{' '}
+                              {formatInTimeZone(new Date(event.end), displayTimezone, 'HH:mm')}
                             </span>
                             {event.user?.name && (
                               <span className="text-[9px] font-medium leading-tight truncate mt-0.5 opacity-90">

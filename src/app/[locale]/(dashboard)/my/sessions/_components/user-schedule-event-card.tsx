@@ -1,6 +1,6 @@
 'use client';
 
-import { format } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 import { useLocale, useTranslations } from 'next-intl';
 import { Clock, MessageSquare, Video } from 'lucide-react';
 
@@ -15,12 +15,14 @@ interface UserScheduleEventCardProps {
   event: UserEvent;
   onBookClick: (id: string) => void;
   onCancelClick: (id: string) => void;
+  userTimezone: string;
 }
 
 export function UserScheduleEventCard({
   event,
   onBookClick,
-  onCancelClick
+  onCancelClick,
+  userTimezone
 }: UserScheduleEventCardProps) {
   const t = useTranslations('My');
   const locale = useLocale() as AppLocale;
@@ -100,9 +102,10 @@ export function UserScheduleEventCard({
         <div className="flex items-center text-sm text-muted-foreground">
           <Clock className="w-4 h-4 mr-2 opacity-70" />
           <span>
-            {format(startDate, 'HH:mm')} - {format(endDate, 'HH:mm')}
+            {formatInTimeZone(startDate, userTimezone, 'HH:mm')} -{' '}
+            {formatInTimeZone(endDate, userTimezone, 'HH:mm')}
             <span className="ml-2 text-xs opacity-70">
-              ({format(startDate, 'd MMM', { locale: dateLocale })})
+              ({formatInTimeZone(startDate, userTimezone, 'd MMM', { locale: dateLocale })})
             </span>
           </span>
         </div>

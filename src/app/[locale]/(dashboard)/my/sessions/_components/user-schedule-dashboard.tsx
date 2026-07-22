@@ -1,17 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
 import { endOfMonth, startOfMonth } from 'date-fns';
 import { useUserEvents } from './use-user-events';
 import { UserCalendarView } from './user-calendar-view';
 import { UserScheduleDetails } from './user-schedule-details';
+import { fromScheduleCalendarDate, toScheduleCalendarDate } from '@/lib/schedule-timezone';
 
-export function UserScheduleDashboard() {
-  const t = useTranslations('My');
-
-  const [currentDate, setCurrentDate] = useState<Date>(new Date());
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+export function UserScheduleDashboard({ userTimezone }: { userTimezone: string }) {
+  const [currentDate, setCurrentDate] = useState<Date>(() =>
+    toScheduleCalendarDate(new Date(), userTimezone)
+  );
+  const [selectedDate, setSelectedDate] = useState<Date>(() =>
+    toScheduleCalendarDate(new Date(), userTimezone)
+  );
   const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
 
   // Load events for the current month +/- 1 month roughly
@@ -25,7 +27,10 @@ export function UserScheduleDashboard() {
   fetchEnd.setDate(fetchEnd.getDate() + 15);
 
   const { events, isLoading, isValidating, bookEvent, cancelEvent, rescheduleEvent } =
-    useUserEvents(fetchStart.toISOString(), fetchEnd.toISOString());
+    useUserEvents(
+      fromScheduleCalendarDate(fetchStart, userTimezone).toISOString(),
+      fromScheduleCalendarDate(fetchEnd, userTimezone).toISOString()
+    );
 
   return (
     <div className="flex flex-col md:flex-row gap-4 md:gap-6 md:h-[calc(100vh-10rem)] md:min-h-[500px]">
@@ -38,6 +43,7 @@ export function UserScheduleDashboard() {
           onDateSelect={setSelectedDate}
           onMonthChange={setCurrentDate}
           isFetching={isValidating}
+          userTimezone={userTimezone}
         />
       </div>
       {/* Details — second on mobile, first on desktop */}
@@ -51,6 +57,7 @@ export function UserScheduleDashboard() {
           onBookEvent={bookEvent}
           onCancelEvent={cancelEvent}
           onRescheduleEvent={rescheduleEvent}
+          userTimezone={userTimezone}
         />
       </div>
     </div>

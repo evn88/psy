@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { format } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 import { useLocale, useTranslations } from 'next-intl';
 import { Calendar as CalendarIcon, Clock, Loader2 } from 'lucide-react';
 import { getDateFnsLocale } from '@/lib/date-locale';
@@ -24,13 +24,15 @@ interface UserScheduleRescheduleDialogProps {
   events: UserEvent[];
   onClose: () => void;
   onConfirm: (oldId: string, newId: string) => Promise<void>;
+  userTimezone: string;
 }
 
 export function UserScheduleRescheduleDialog({
   eventId,
   events,
   onClose,
-  onConfirm
+  onConfirm,
+  userTimezone
 }: UserScheduleRescheduleDialogProps) {
   const t = useTranslations('My');
   const locale = useLocale() as AppLocale;
@@ -107,11 +109,14 @@ export function UserScheduleRescheduleDialog({
                           <p
                             className={`text-sm font-medium ${isSelected ? 'text-blue-700 dark:text-blue-300' : ''}`}
                           >
-                            {format(startDate, 'd MMMM, EEEE', { locale: dateLocale })}
+                            {formatInTimeZone(startDate, userTimezone, 'd MMMM, EEEE', {
+                              locale: dateLocale
+                            })}
                           </p>
                           <div className="flex items-center text-xs text-muted-foreground mt-1">
                             <Clock className="w-3 h-3 mr-1" />
-                            {format(startDate, 'HH:mm')} - {format(new Date(slot.end), 'HH:mm')}
+                            {formatInTimeZone(startDate, userTimezone, 'HH:mm')} -{' '}
+                            {formatInTimeZone(new Date(slot.end), userTimezone, 'HH:mm')}
                           </div>
                         </div>
                       </div>

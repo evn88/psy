@@ -1,5 +1,6 @@
 import useSWR from 'swr';
 import { Event as PrismaEvent, EventBillingSource, EventStatus, EventType } from '@prisma/client';
+import { fromScheduleCalendarDate } from '@/lib/schedule-timezone';
 
 export type Event = PrismaEvent & {
   user?: { id: string; name: string | null; email: string; timezone: string | null } | null;
@@ -88,9 +89,9 @@ const fetcher = async (url: string): Promise<Event[]> => {
  * @param end - конец активного диапазона календаря.
  * @returns Данные календаря, pending-запросы и методы мутаций.
  */
-export const useEvents = (start?: Date, end?: Date) => {
-  const startIso = start?.toISOString();
-  const endIso = end?.toISOString();
+export const useEvents = (start?: Date, end?: Date, timeZone = 'UTC') => {
+  const startIso = start ? fromScheduleCalendarDate(start, timeZone).toISOString() : undefined;
+  const endIso = end ? fromScheduleCalendarDate(end, timeZone).toISOString() : undefined;
   const key = startIso && endIso ? `/api/admin/events?start=${startIso}&end=${endIso}` : null;
   const pendingKey = '/api/admin/events/pending';
 

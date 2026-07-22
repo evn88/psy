@@ -19,6 +19,7 @@ interface PendingRequestsPanelProps {
   onApproveRequest: (id: string) => Promise<void>;
   onRejectRequest: (id: string, reason?: string) => Promise<void>;
   onRequestClick?: (event: Event) => void;
+  displayTimezone: string;
 }
 
 /**
@@ -44,8 +45,9 @@ const getLocaleTag = (locale: string): string => {
  * @param locale - locale интерфейса.
  * @returns Локализованная строка даты.
  */
-const formatRequestDate = (date: Date, locale: string): string => {
+const formatRequestDate = (date: Date, locale: string, timeZone: string): string => {
   return new Intl.DateTimeFormat(getLocaleTag(locale), {
+    timeZone,
     day: 'numeric',
     month: 'long',
     year: 'numeric'
@@ -59,8 +61,14 @@ const formatRequestDate = (date: Date, locale: string): string => {
  * @param locale - locale интерфейса.
  * @returns Локализованная строка диапазона времени.
  */
-const formatRequestTimeRange = (start: Date, end: Date, locale: string): string => {
+const formatRequestTimeRange = (
+  start: Date,
+  end: Date,
+  locale: string,
+  timeZone: string
+): string => {
   const formatter = new Intl.DateTimeFormat(getLocaleTag(locale), {
+    timeZone,
     hour: '2-digit',
     minute: '2-digit',
     hourCycle: 'h23'
@@ -79,7 +87,8 @@ export const PendingRequestsPanel = ({
   isLoading,
   onApproveRequest,
   onRejectRequest,
-  onRequestClick
+  onRequestClick,
+  displayTimezone
 }: PendingRequestsPanelProps) => {
   const locale = useLocale();
   const t = useTranslations('Schedule');
@@ -177,11 +186,12 @@ export const PendingRequestsPanel = ({
                             {requestTitle}
                           </p>
                           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                            {formatRequestDate(new Date(request.start), locale)} ·{' '}
+                            {formatRequestDate(new Date(request.start), locale, displayTimezone)} ·{' '}
                             {formatRequestTimeRange(
                               new Date(request.start),
                               new Date(request.end),
-                              locale
+                              locale,
+                              displayTimezone
                             )}
                           </p>
                         </div>

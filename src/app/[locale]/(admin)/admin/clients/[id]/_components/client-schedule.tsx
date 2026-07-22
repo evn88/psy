@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { format } from 'date-fns';
+import { addMinutes } from 'date-fns';
+import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 import { ru } from 'date-fns/locale';
 import { CheckCircle2, Edit, Plus, Trash2 } from 'lucide-react';
 import { useForm, useWatch } from 'react-hook-form';
@@ -137,7 +138,19 @@ const mutateEvent = async (
   }
 };
 
-export const ClientSchedule = ({ userId, events }: { userId: string; events: ClientEvent[] }) => {
+interface ClientScheduleProps {
+  userId: string;
+  events: ClientEvent[];
+  adminTimezone: string;
+  clientTimezone: string;
+}
+
+export const ClientSchedule = ({
+  userId,
+  events,
+  adminTimezone,
+  clientTimezone
+}: ClientScheduleProps) => {
   const [isPending, startTransition] = React.useTransition();
   const router = useRouter();
 
@@ -157,9 +170,16 @@ export const ClientSchedule = ({ userId, events }: { userId: string; events: Cli
       purchasedPackageId: undefined
     }
   });
-  const [selectedType, selectedStatus, selectedBillingSource, selectedDuration] = useWatch({
+  const [
+    selectedType,
+    selectedStatus,
+    selectedBillingSource,
+    selectedDuration,
+    selectedDate,
+    selectedStartTime
+  ] = useWatch({
     control: form.control,
-    name: ['type', 'status', 'billingSource', 'duration']
+    name: ['type', 'status', 'billingSource', 'duration', 'date', 'startTime']
   });
   const shouldShowBilling = selectedType === 'CONSULTATION' && selectedStatus === 'SCHEDULED';
   const { data: financialSummary, isLoading: financialSummaryLoading } = useSWR<FinancialSummary>(
@@ -172,8 +192,8 @@ export const ClientSchedule = ({ userId, events }: { userId: string; events: Cli
       title: '',
       type: 'CONSULTATION',
       status: 'SCHEDULED',
-      date: format(new Date(), 'yyyy-MM-dd'),
-      startTime: format(new Date(), 'HH:mm'),
+      date: formatInTimeZone(new Date(), adminTimezone, 'yyyy-MM-dd'),
+      startTime: formatInTimeZone(new Date(), adminTimezone, 'HH:mm'),
       duration: 60,
       billingSource: 'WALLET',
       purchasedPackageId: undefined
@@ -193,8 +213,8 @@ export const ClientSchedule = ({ userId, events }: { userId: string; events: Cli
         | 'CONSULTATION'
         | 'OTHER',
       status: statusOverride ?? (event.status as EventFormValues['status']),
-      date: format(d, 'yyyy-MM-dd'),
-      startTime: format(d, 'HH:mm'),
+      date: formatInTimeZone(d, adminTimezone, 'yyyy-MM-dd'),
+      startTime: formatInTimeZone(d, adminTimezone, 'HH:mm'),
       duration: diffMins > 0 ? diffMins : 60,
       billingSource: event.billingAllocation?.source === 'PACKAGE' ? 'PACKAGE' : 'WALLET',
       purchasedPackageId: event.billingAllocation?.purchasedPackageId ?? undefined
@@ -206,8 +226,15 @@ export const ClientSchedule = ({ userId, events }: { userId: string; events: Cli
   const onSubmit = (data: EventFormValues) => {
     startTransition(async () => {
       try {
-        const startDate = new Date(`${data.date}T${data.startTime}`);
-        const endDate = new Date(startDate.getTime() + data.duration * 60000);
+        const startDate = fromZonedTime(`${data.date}T${data.startTime}:00`, adminTimezone);
+        const endDate = addMinutes(startDate, data.duration);
+
+        if (
+          formatInTimeZone(startDate, adminTimezone, 'yyyy-MM-dd HH:mm') !==
+          `${data.date} ${data.startTime}`
+        ) {
+          throw new Error('Указанное время не существует из-за перехода часового пояса');
+        }
 
         const payload = {
           title: data.title || '',
@@ -357,10 +384,12 @@ export const ClientSchedule = ({ userId, events }: { userId: string; events: Cli
                   className={new Date(event.end) < new Date() ? 'opacity-60 bg-muted/30' : ''}
                 >
                   <TableCell>
-                    {format(new Date(event.start), 'd MMM yyyy, HH:mm', { locale: ru })}
+                    {formatInTimeZone(new Date(event.start), adminTimezone, 'd MMM yyyy, HH:mm', {
+                      locale: ru
+                    })}
                     <span className="text-muted-foreground text-xs ml-2">
-                      ({format(new Date(event.start), 'HH:mm')} -{' '}
-                      {format(new Date(event.end), 'HH:mm')})
+                      ({formatInTimeZone(new Date(event.start), adminTimezone, 'HH:mm')} -{' '}
+                      {formatInTimeZone(new Date(event.end), adminTimezone, 'HH:mm')})
                     </span>
                   </TableCell>
                   <TableCell>{getTypeLabel(event.type)}</TableCell>
@@ -578,6 +607,33 @@ export const ClientSchedule = ({ userId, events }: { userId: string; events: Cli
                   )}
                 />
               </div>
+
+              {selectedDate && selectedStartTime && (
+                <div className="rounded-xl border bg-muted/30 px-4 py-3 text-sm">
+                  <p className="font-medium">Время администратора: {adminTimezone}</p>
+                  <p className="mt-1 text-muted-foreground">
+                    У клиента:{' '}
+                    <span className="font-medium text-foreground">
+                      {formatInTimeZone(
+                        fromZonedTime(`${selectedDate}T${selectedStartTime}:00`, adminTimezone),
+                        clientTimezone,
+                        'd MMM yyyy, HH:mm',
+                        { locale: ru }
+                      )}
+                      {' – '}
+                      {formatInTimeZone(
+                        addMinutes(
+                          fromZonedTime(`${selectedDate}T${selectedStartTime}:00`, adminTimezone),
+                          selectedDuration
+                        ),
+                        clientTimezone,
+                        'HH:mm'
+                      )}
+                    </span>{' '}
+                    ({clientTimezone})
+                  </p>
+                </div>
+              )}
 
               {shouldShowBilling && (
                 <div className="space-y-4 rounded-xl border bg-muted/20 p-4">

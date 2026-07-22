@@ -37,6 +37,14 @@ export const getEventTemporalValues = (
  */
 export const getEventDateRange = (values: EventTemporalValues & { timeZone: string }) => {
   const start = fromZonedTime(`${values.date}T${values.startTime}:00`, values.timeZone);
+
+  if (
+    formatInTimeZone(start, values.timeZone, 'yyyy-MM-dd HH:mm') !==
+    `${values.date} ${values.startTime}`
+  ) {
+    throw new Error('Указанное локальное время не существует из-за перехода часового пояса');
+  }
+
   return {
     start,
     end: addMinutes(start, values.duration)

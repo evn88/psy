@@ -2,6 +2,7 @@ import { ScheduleDashboard } from './_components/schedule-dashboard';
 import { SyncSettingsDialog } from './_components/sync-settings-dialog';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
+import { resolveScheduleTimeZone } from '@/lib/schedule-timezone';
 import { getTranslations } from 'next-intl/server';
 
 export default async function SchedulePage({
@@ -19,6 +20,7 @@ export default async function SchedulePage({
   let googleCalendarSyncUrl: string | null = null;
   let workStart = 9;
   let workEnd = 20;
+  let adminTimezone = 'UTC';
 
   if (session?.user?.email) {
     const user = await prisma.user.findUnique({
@@ -29,7 +31,8 @@ export default async function SchedulePage({
         googleCalendarName: true,
         googleCalendarSyncUrl: true,
         workHourStart: true,
-        workHourEnd: true
+        workHourEnd: true,
+        timezone: true
       }
     });
     googleConnected = Boolean(user?.googleCalendarSyncEnabled && user.googleCalendarRefreshToken);
@@ -37,6 +40,7 @@ export default async function SchedulePage({
     googleCalendarSyncUrl = user?.googleCalendarSyncUrl || null;
     if (user?.workHourStart !== undefined) workStart = user.workHourStart;
     if (user?.workHourEnd !== undefined) workEnd = user.workHourEnd;
+    adminTimezone = resolveScheduleTimeZone(user?.timezone);
   }
 
   return (
@@ -52,7 +56,11 @@ export default async function SchedulePage({
           initialWorkEnd={workEnd}
         />
       </div>
-      <ScheduleDashboard workHourStart={workStart} workHourEnd={workEnd} />
+      <ScheduleDashboard
+        workHourStart={workStart}
+        workHourEnd={workEnd}
+        adminTimezone={adminTimezone}
+      />
     </div>
   );
 }

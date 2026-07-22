@@ -12,6 +12,7 @@ import { UserScheduleEventCard } from './user-schedule-event-card';
 import { UserScheduleBookDialog } from './user-schedule-book-dialog';
 import { UserScheduleCancelDialog } from './user-schedule-cancel-dialog';
 import { UserScheduleRescheduleDialog } from './user-schedule-reschedule-dialog';
+import { toScheduleCalendarDate } from '@/lib/schedule-timezone';
 
 interface UserScheduleDetailsProps {
   selectedDate: Date;
@@ -22,6 +23,7 @@ interface UserScheduleDetailsProps {
   onBookEvent: (id: string, reminderMinutesBeforeStart: number) => Promise<void>;
   onCancelEvent: (id: string, reason?: string) => Promise<void>;
   onRescheduleEvent: (oldId: string, newId: string) => Promise<void>;
+  userTimezone: string;
 }
 
 export function UserScheduleDetails({
@@ -32,7 +34,8 @@ export function UserScheduleDetails({
   isLoading,
   onBookEvent,
   onCancelEvent,
-  onRescheduleEvent
+  onRescheduleEvent,
+  userTimezone
 }: UserScheduleDetailsProps) {
   const t = useTranslations('My');
 
@@ -43,7 +46,7 @@ export function UserScheduleDetails({
   // Filter events for selected day or week
   const filteredEvents = events
     .filter(event => {
-      const eventDate = new Date(event.start);
+      const eventDate = toScheduleCalendarDate(new Date(event.start), userTimezone);
       if (viewMode === 'day') {
         return isSameDay(eventDate, selectedDate);
       }
@@ -93,6 +96,7 @@ export function UserScheduleDetails({
                   event={event}
                   onBookClick={setBookingEventId}
                   onCancelClick={setCancelingEventId}
+                  userTimezone={userTimezone}
                 />
               ))}
             </div>
@@ -121,6 +125,7 @@ export function UserScheduleDetails({
         events={events}
         onClose={() => setReschedulingEventId(null)}
         onConfirm={onRescheduleEvent}
+        userTimezone={userTimezone}
       />
     </>
   );
