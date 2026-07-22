@@ -287,4 +287,51 @@ describe('financial service', () => {
       })
     });
   });
+
+  it('разрешает администратору списать консультацию в отрицательный баланс', async () => {
+    // Arrange
+    const state = createTransaction('10.00');
+
+    // Act
+    await chargeConsultationInTransaction(state.transaction as never, {
+      eventId: 'event-1',
+      userId: 'user-1',
+      initiatedById: 'admin-1',
+      durationMinutes: 30,
+      eventStart: new Date('2026-07-20T10:00:00.000Z'),
+      allowNegativeBalance: true,
+      billing: {
+        source: EventBillingSource.WALLET
+      }
+    });
+
+    // Assert
+    expect(state.getBalance().equals('-20.00')).toBe(true);
+    expect(state.walletEntries).toEqual([
+      expect.objectContaining({
+        amount: new Prisma.Decimal('-30.00'),
+        balanceBefore: new Prisma.Decimal('10.00'),
+        balanceAfter: new Prisma.Decimal('-20.00')
+      })
+    ]);
+  });
+
+  it('отклоняет списание в отрицательный баланс без явного разрешения', async () => {
+    // Arrange
+    const state = createTransaction('10.00');
+
+    // Act и Assert
+    await expect(
+      chargeConsultationInTransaction(state.transaction as never, {
+        eventId: 'event-1',
+        userId: 'user-1',
+        initiatedById: 'user-1',
+        durationMinutes: 30,
+        eventStart: new Date('2026-07-20T10:00:00.000Z'),
+        billing: {
+          source: EventBillingSource.WALLET
+        }
+      })
+    ).rejects.toMatchObject({ code: 'INSUFFICIENT_BALANCE' });
+  });
 });

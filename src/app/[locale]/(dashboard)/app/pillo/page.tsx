@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import type { Prisma } from '@prisma/client';
 import { subDays } from 'date-fns';
-import { formatInTimeZone } from 'date-fns-tz';
 
+import { createScheduleDateTime } from '@/lib/schedule-timezone';
 import { requirePilloUser } from '@/modules/pillo/access';
 import { ensurePilloUserSettings, materializePilloIntakesForUser } from '@/modules/pillo/service';
 import { getPilloLocalDateKey } from '@/modules/pillo/schedule';
@@ -123,8 +123,9 @@ const PilloPage = async () => {
     lowStockWarningDays: 7
   };
   const timezone = dbUser.timezone || 'UTC';
+  const dateTime = createScheduleDateTime({ timeZone: timezone });
   const todayKey = getPilloLocalDateKey(new Date(), timezone);
-  const weekStartKey = formatInTimeZone(subDays(new Date(), 6), timezone, 'yyyy-MM-dd');
+  const weekStartKey = dateTime.getDateKey(subDays(new Date(), 6));
   const manualIntakeDelegate = getPilloManualIntakeDelegate();
   const [todayIntakes, takenHistoryIntakes, manualHistoryIntakes, weeklyScheduledIntakes] =
     await Promise.all([

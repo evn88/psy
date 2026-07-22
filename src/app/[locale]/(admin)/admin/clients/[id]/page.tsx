@@ -15,6 +15,8 @@ import { ClientSchedule } from './_components/client-schedule';
 import { ClientMessages } from './_components/client-messages';
 import { BreadcrumbSetter } from '@/components/breadcrumb-setter';
 import { intakeFormStepsSchema } from '@/modules/intake/form-definition';
+import { auth } from '@/auth';
+import { resolveScheduleTimeZone } from '@/lib/schedule-timezone';
 
 type ClientIntakeRow = {
   id: string;
@@ -57,9 +59,9 @@ export default async function AdminClientProfilePage({
   params: Promise<{ id: string; locale: string }>;
 }) {
   const { id } = await params;
-  const t = await getTranslations('Admin.clients.dashboard');
+  const [t, session] = await Promise.all([getTranslations('Admin.clients.dashboard'), auth()]);
 
-  const [user, documents, events] = await Promise.all([
+  const [user, documents, events, admin] = await Promise.all([
     prisma.user.findUnique({
       where: { id },
       select: {
@@ -128,7 +130,13 @@ export default async function AdminClientProfilePage({
           }
         }
       }
-    })
+    }),
+    session?.user?.id
+      ? prisma.user.findUnique({
+          where: { id: session.user.id },
+          select: { timezone: true }
+        })
+      : null
   ]);
 
   if (!user) {
@@ -281,7 +289,12 @@ export default async function AdminClientProfilePage({
         </TabsContent>
 
         <TabsContent value="schedule" className="mt-4">
-          <ClientSchedule userId={user.id} events={events} />
+          <ClientSchedule
+            userId={user.id}
+            events={events}
+            adminTimezone={resolveScheduleTimeZone(admin?.timezone)}
+            clientTimezone={resolveScheduleTimeZone(user.timezone)}
+          />
         </TabsContent>
 
         <TabsContent value="messages" className="mt-4">

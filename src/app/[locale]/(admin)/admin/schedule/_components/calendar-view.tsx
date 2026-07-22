@@ -21,6 +21,7 @@ import { useTranslations } from 'next-intl';
 import { MonthView } from './views/month-view';
 import { WeekView } from './views/week-view';
 import { DayView } from './views/day-view';
+import { useScheduleDateTime } from '@/lib/hooks/use-schedule-date-time';
 
 export interface CalendarViewProps {
   currentDate: Date;
@@ -35,6 +36,7 @@ export interface CalendarViewProps {
   setViewMode: (mode: 'month' | 'week' | 'day') => void;
   workHourStart?: number;
   workHourEnd?: number;
+  displayTimezone: string;
 }
 
 export const CalendarView = ({
@@ -48,9 +50,11 @@ export const CalendarView = ({
   viewMode,
   setViewMode,
   workHourStart = 9,
-  workHourEnd = 20
+  workHourEnd = 20,
+  displayTimezone
 }: CalendarViewProps) => {
   const t = useTranslations('Schedule');
+  const dateTime = useScheduleDateTime(displayTimezone);
   const [direction, setDirection] = useState<'next' | 'prev'>('next');
   const [dragStart, setDragStart] = useState<Date | null>(null);
   const [dragCurrent, setDragCurrent] = useState<Date | null>(null);
@@ -70,9 +74,10 @@ export const CalendarView = ({
   }, [currentDate, viewMode, setCurrentDate]);
 
   const handleToday = () => {
-    setDirection(currentDate > new Date() ? 'prev' : 'next');
-    setCurrentDate(new Date());
-    setSelectedDate(new Date());
+    const today = dateTime.toCalendarDate(new Date());
+    setDirection(currentDate > today ? 'prev' : 'next');
+    setCurrentDate(today);
+    setSelectedDate(today);
   };
 
   const accumulated = useRef(0);
@@ -148,16 +153,23 @@ export const CalendarView = ({
     workHourEnd,
     startH,
     endH,
-    displayHours
+    displayHours,
+    displayTimezone,
+    dateTime
   };
 
   return (
     <div className="space-y-4 h-full flex flex-col" onWheel={handleWheel}>
       {/* Header */}
       <div className="flex items-center justify-between gap-4 shrink-0 px-2 mt-2">
-        <h3 className="text-xl sm:text-2xl font-light capitalize truncate min-w-0">
-          {headerTitle}
-        </h3>
+        <div className="min-w-0">
+          <h3 className="truncate text-xl font-light capitalize sm:text-2xl">{headerTitle}</h3>
+          <p className="truncate text-xs text-muted-foreground">
+            {t('adminTime')}: {displayTimezone} (
+            {dateTime.getUtcOffset(dateTime.fromCalendarDate(currentDate))}
+            )
+          </p>
+        </div>
         <div className="flex items-center gap-2 shrink-0">
           <Button
             variant="outline"

@@ -61,6 +61,13 @@ type EventConflict = {
   end: Date;
 };
 
+class EventMutationConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'EventMutationConflictError';
+  }
+}
+
 /**
  * Возвращает причину отклонения запроса в стабильном виде для хранения и письма.
  * @param cancelReason - значение, переданное из формы отклонения.
@@ -114,6 +121,19 @@ async function patchHandler(req: Request, props: { params: Promise<{ id: string 
             source: true,
             status: true
           }
+        },
+        rescheduleFrom: {
+          select: {
+            id: true,
+            status: true,
+            type: true,
+            userId: true,
+            billingAllocation: {
+              select: {
+                status: true
+              }
+            }
+          }
         }
       }
     });
@@ -142,6 +162,11 @@ async function patchHandler(req: Request, props: { params: Promise<{ id: string 
     const targetUserId = hasUserField ? result.data.userId : event.userId;
     const isStartChanged = Boolean(start) && nextStart.getTime() !== event.start.getTime();
     const isEndChanged = Boolean(end) && nextEnd.getTime() !== event.end.getTime();
+    const previousDurationMinutes = Math.round(
+      (event.end.getTime() - event.start.getTime()) / 60_000
+    );
+    const nextDurationMinutes = Math.round((nextEnd.getTime() - nextStart.getTime()) / 60_000);
+    const isDurationChanged = nextDurationMinutes !== previousDurationMinutes;
     const isStatusChanged = typeof status === 'string' && status !== event.status;
     const isReminderMinutesChanged =
       typeof result.data.reminderMinutesBeforeStart === 'number' &&
@@ -157,6 +182,8 @@ async function patchHandler(req: Request, props: { params: Promise<{ id: string 
       nextStatus === 'SCHEDULED' &&
       Boolean(event.userId) &&
       Boolean(event.user);
+    const isApprovingRescheduleRequest =
+      isApprovingPendingRequest && Boolean(event.rescheduleFromEventId && event.rescheduleFrom);
     const effectiveNextStatus = isRejectingPendingRequest ? 'SCHEDULED' : nextStatus;
     const shouldResetReminderSentAt =
       isStartChanged ||
@@ -171,20 +198,22 @@ async function patchHandler(req: Request, props: { params: Promise<{ id: string 
         nextType !== EventType.CONSULTATION ||
         isUserChanged);
     const shouldChargeConsultation =
+      !isRejectingPendingRequest &&
       !event.billingAllocation &&
       nextType === EventType.CONSULTATION &&
       effectiveNextStatus === EventStatus.SCHEDULED &&
       Boolean(targetUserId);
+    const shouldReverseRescheduleSourceBilling = Boolean(
+      isApprovingRescheduleRequest &&
+        event.rescheduleFrom?.billingAllocation &&
+        event.rescheduleFrom.billingAllocation.status !== BillingAllocationStatus.REVERSED
+    );
 
-    if (
-      event.billingAllocation &&
-      !shouldReverseBilling &&
-      (isStartChanged || isEndChanged || isUserChanged)
-    ) {
+    if (event.billingAllocation && !shouldReverseBilling && isDurationChanged) {
       return NextResponse.json(
         {
           message:
-            'У оплаченной консультации нельзя менять время или клиента. Сначала отмените встречу, чтобы выполнить возврат.'
+            'У оплаченной консультации нельзя менять длительность. Для этого сначала отмените встречу, чтобы выполнить возврат.'
         },
         { status: 409 }
       );
@@ -272,11 +301,13 @@ async function patchHandler(req: Request, props: { params: Promise<{ id: string 
       updateData.type = EventType.FREE_SLOT;
       updateData.status = EventStatus.SCHEDULED;
       updateData.userId = null;
+      updateData.rescheduleFromEventId = null;
       updateData.cancelReason = normalizedCancelReason;
       updateData.meetLink = null;
     }
     if (isApprovingPendingRequest) {
       updateData.cancelReason = null;
+      updateData.rescheduleFromEventId = null;
     }
 
     const updatedEvent = await runFinancialTransaction(async transaction => {
@@ -286,6 +317,45 @@ async function patchHandler(req: Request, props: { params: Promise<{ id: string 
           initiatedById: session.user.id!,
           reason: normalizedCancelReason || 'Изменение или отмена консультации'
         });
+      }
+
+      if (isApprovingRescheduleRequest && event.rescheduleFrom) {
+        if (shouldReverseRescheduleSourceBilling) {
+          await reverseConsultationInTransaction(transaction, {
+            eventId: event.rescheduleFrom.id,
+            initiatedById: session.user.id!,
+            reason: 'Перенос консультации на новое время'
+          });
+        }
+
+        const releasedSourceEvent = await transaction.event.updateMany({
+          where: {
+            id: event.rescheduleFrom.id,
+            userId: targetUserId,
+            type: EventType.CONSULTATION,
+            status: EventStatus.SCHEDULED
+          },
+          data: {
+            type: EventType.FREE_SLOT,
+            status: EventStatus.SCHEDULED,
+            userId: null,
+            title: null,
+            meetLink: null,
+            cancelReason: null,
+            bookingReminderMinutesBeforeStart: null,
+            reminderEmailSentAt: null,
+            reminderPushSentAt: null,
+            reminderWorkflowVersion: {
+              increment: 1
+            }
+          }
+        });
+
+        if (releasedSourceEvent.count !== 1) {
+          throw new EventMutationConflictError(
+            'Исходная встреча уже изменена. Обновите расписание и повторите действие.'
+          );
+        }
       }
 
       const nextEvent = await transaction.event.update({
@@ -309,6 +379,7 @@ async function patchHandler(req: Request, props: { params: Promise<{ id: string 
           initiatedById: session.user.id!,
           durationMinutes: Math.round((nextEnd.getTime() - nextStart.getTime()) / 60_000),
           eventStart: nextStart,
+          allowNegativeBalance: true,
           billing: {
             source: billingSource,
             purchasedPackageId,
@@ -320,7 +391,7 @@ async function patchHandler(req: Request, props: { params: Promise<{ id: string 
       return nextEvent;
     });
 
-    if (shouldReverseBilling || shouldChargeConsultation) {
+    if (shouldReverseBilling || shouldChargeConsultation || shouldReverseRescheduleSourceBilling) {
       await startFinancialEmailOutboxWorkflow();
     }
 
@@ -403,10 +474,18 @@ async function patchHandler(req: Request, props: { params: Promise<{ id: string 
       reminderWorkflowVersion: updatedEvent.reminderWorkflowVersion
     });
 
+    if (isApprovingRescheduleRequest && event.rescheduleFrom) {
+      await syncEventWithGoogle(event.rescheduleFrom.id, 'UPDATE');
+    }
+
     const googleSyncResult = await syncEventWithGoogle(updatedEvent.id, 'UPDATE');
 
     return NextResponse.json({ ...updatedEvent, isGoogleSynced: googleSyncResult.success });
   } catch (error) {
+    if (error instanceof EventMutationConflictError) {
+      return NextResponse.json({ message: error.message }, { status: 409 });
+    }
+
     if (error instanceof FinancialDomainError) {
       return NextResponse.json({ message: error.message, code: error.code }, { status: 409 });
     }

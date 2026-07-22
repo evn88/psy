@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { CheckCircle2, Edit, Plus, Trash2 } from 'lucide-react';
 import { useForm, useWatch } from 'react-hook-form';
@@ -47,6 +46,7 @@ import {
   TableRow
 } from '@/components/ui/table';
 import { TimePicker } from '@/components/ui/time-picker';
+import { useScheduleDateTime } from '@/lib/hooks/use-schedule-date-time';
 import { useRouter } from '@/i18n/navigation';
 
 interface ClientEvent {
@@ -58,7 +58,7 @@ interface ClientEvent {
   status: string;
   billingAllocation: {
     purchasedPackageId: string | null;
-    source: 'PACKAGE' | 'WALLET' | 'FREE';
+    source: 'PACKAGE' | 'WALLET' | 'COMPLIMENTARY';
   } | null;
 }
 
@@ -84,8 +84,9 @@ const eventSchema = z
     date: z.string().min(1, 'Обязательно'),
     startTime: z.string().min(1, 'Обязательно'),
     duration: z.number().int().min(15, 'Минимум 15 минут'),
-    billingSource: z.enum(['WALLET', 'PACKAGE']).optional(),
-    purchasedPackageId: z.string().optional()
+    billingSource: z.enum(['WALLET', 'PACKAGE', 'COMPLIMENTARY']).optional(),
+    purchasedPackageId: z.string().optional(),
+    billingReason: z.string().trim().max(500).optional()
   })
   .superRefine((values, context) => {
     const requiresBilling = values.type === 'CONSULTATION' && values.status === 'SCHEDULED';
@@ -103,6 +104,18 @@ const eventSchema = z
         code: 'custom',
         message: 'Выберите пакет',
         path: ['purchasedPackageId']
+      });
+    }
+
+    if (
+      requiresBilling &&
+      values.billingSource === 'COMPLIMENTARY' &&
+      !values.billingReason?.trim()
+    ) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Укажите причину бесплатной консультации',
+        path: ['billingReason']
       });
     }
   });
@@ -137,9 +150,23 @@ const mutateEvent = async (
   }
 };
 
-export const ClientSchedule = ({ userId, events }: { userId: string; events: ClientEvent[] }) => {
+interface ClientScheduleProps {
+  userId: string;
+  events: ClientEvent[];
+  adminTimezone: string;
+  clientTimezone: string;
+}
+
+export const ClientSchedule = ({
+  userId,
+  events,
+  adminTimezone,
+  clientTimezone
+}: ClientScheduleProps) => {
   const [isPending, startTransition] = React.useTransition();
   const router = useRouter();
+  const adminDateTime = useScheduleDateTime(adminTimezone);
+  const clientDateTime = useScheduleDateTime(clientTimezone);
 
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editingEvent, setEditingEvent] = React.useState<ClientEvent | null>(null);
@@ -154,14 +181,30 @@ export const ClientSchedule = ({ userId, events }: { userId: string; events: Cli
       startTime: '',
       duration: 60,
       billingSource: 'WALLET',
-      purchasedPackageId: undefined
+      purchasedPackageId: undefined,
+      billingReason: ''
     }
   });
-  const [selectedType, selectedStatus, selectedBillingSource, selectedDuration] = useWatch({
+  const [
+    selectedType,
+    selectedStatus,
+    selectedBillingSource,
+    selectedDuration,
+    selectedDate,
+    selectedStartTime
+  ] = useWatch({
     control: form.control,
-    name: ['type', 'status', 'billingSource', 'duration']
+    name: ['type', 'status', 'billingSource', 'duration', 'date', 'startTime']
   });
   const shouldShowBilling = selectedType === 'CONSULTATION' && selectedStatus === 'SCHEDULED';
+  const clientPreviewRange =
+    selectedDate && selectedStartTime
+      ? adminDateTime.fromLocalDateTime({
+          date: selectedDate,
+          startTime: selectedStartTime,
+          duration: selectedDuration
+        })
+      : null;
   const { data: financialSummary, isLoading: financialSummaryLoading } = useSWR<FinancialSummary>(
     dialogOpen && shouldShowBilling ? `/api/admin/users/${userId}/financial-summary` : null,
     fetchFinancialSummary
@@ -172,11 +215,12 @@ export const ClientSchedule = ({ userId, events }: { userId: string; events: Cli
       title: '',
       type: 'CONSULTATION',
       status: 'SCHEDULED',
-      date: format(new Date(), 'yyyy-MM-dd'),
-      startTime: format(new Date(), 'HH:mm'),
+      date: adminDateTime.format(new Date(), 'date'),
+      startTime: adminDateTime.format(new Date(), 'time'),
       duration: 60,
       billingSource: 'WALLET',
-      purchasedPackageId: undefined
+      purchasedPackageId: undefined,
+      billingReason: ''
     });
     setEditingEvent(null);
     setDialogOpen(true);
@@ -193,11 +237,18 @@ export const ClientSchedule = ({ userId, events }: { userId: string; events: Cli
         | 'CONSULTATION'
         | 'OTHER',
       status: statusOverride ?? (event.status as EventFormValues['status']),
-      date: format(d, 'yyyy-MM-dd'),
-      startTime: format(d, 'HH:mm'),
+      date: adminDateTime.format(d, 'date'),
+      startTime: adminDateTime.format(d, 'time'),
       duration: diffMins > 0 ? diffMins : 60,
-      billingSource: event.billingAllocation?.source === 'PACKAGE' ? 'PACKAGE' : 'WALLET',
-      purchasedPackageId: event.billingAllocation?.purchasedPackageId ?? undefined
+      billingSource:
+        event.billingAllocation?.source === 'PACKAGE'
+          ? 'PACKAGE'
+          : event.billingAllocation?.source === 'COMPLIMENTARY'
+            ? 'COMPLIMENTARY'
+            : 'WALLET',
+      purchasedPackageId: event.billingAllocation?.purchasedPackageId ?? undefined,
+      billingReason:
+        event.billingAllocation?.source === 'COMPLIMENTARY' ? 'Бесплатная консультация' : ''
     });
     setEditingEvent(event);
     setDialogOpen(true);
@@ -206,21 +257,24 @@ export const ClientSchedule = ({ userId, events }: { userId: string; events: Cli
   const onSubmit = (data: EventFormValues) => {
     startTransition(async () => {
       try {
-        const startDate = new Date(`${data.date}T${data.startTime}`);
-        const endDate = new Date(startDate.getTime() + data.duration * 60000);
+        const range = adminDateTime.fromLocalDateTime(data);
+        if (!range.success) {
+          throw new Error('Указанное время не существует из-за перехода часового пояса');
+        }
 
         const payload = {
           title: data.title || '',
           type: data.type,
           status: data.status,
-          start: startDate.toISOString(),
-          end: endDate.toISOString(),
+          start: range.start.toISOString(),
+          end: range.end.toISOString(),
           userId,
           ...(shouldShowBilling && data.billingSource
             ? {
                 billingSource: data.billingSource,
                 purchasedPackageId:
-                  data.billingSource === 'PACKAGE' ? data.purchasedPackageId : undefined
+                  data.billingSource === 'PACKAGE' ? data.purchasedPackageId : undefined,
+                billingReason: data.billingReason?.trim() || undefined
               }
             : {})
         };
@@ -357,10 +411,10 @@ export const ClientSchedule = ({ userId, events }: { userId: string; events: Cli
                   className={new Date(event.end) < new Date() ? 'opacity-60 bg-muted/30' : ''}
                 >
                   <TableCell>
-                    {format(new Date(event.start), 'd MMM yyyy, HH:mm', { locale: ru })}
+                    {adminDateTime.format(new Date(event.start), 'dateTime', ru)}
                     <span className="text-muted-foreground text-xs ml-2">
-                      ({format(new Date(event.start), 'HH:mm')} -{' '}
-                      {format(new Date(event.end), 'HH:mm')})
+                      ({adminDateTime.format(new Date(event.start), 'time')} -{' '}
+                      {adminDateTime.format(new Date(event.end), 'time')})
                     </span>
                   </TableCell>
                   <TableCell>{getTypeLabel(event.type)}</TableCell>
@@ -579,6 +633,26 @@ export const ClientSchedule = ({ userId, events }: { userId: string; events: Cli
                 />
               </div>
 
+              {selectedDate && selectedStartTime && (
+                <div className="rounded-xl border bg-muted/30 px-4 py-3 text-sm">
+                  <p className="font-medium">Время администратора: {adminTimezone}</p>
+                  <p className="mt-1 text-muted-foreground">
+                    У клиента:{' '}
+                    <span className="font-medium text-foreground">
+                      {clientPreviewRange?.success
+                        ? clientDateTime.formatRange(
+                            clientPreviewRange.start,
+                            clientPreviewRange.end,
+                            'dateTime',
+                            ru
+                          )
+                        : '—'}
+                    </span>{' '}
+                    ({clientTimezone})
+                  </p>
+                </div>
+              )}
+
               {shouldShowBilling && (
                 <div className="space-y-4 rounded-xl border bg-muted/20 p-4">
                   <div>
@@ -598,7 +672,9 @@ export const ClientSchedule = ({ userId, events }: { userId: string; events: Cli
                       <span className="font-medium">
                         {editingEvent.billingAllocation.source === 'PACKAGE'
                           ? 'купленный пакет'
-                          : 'денежный баланс'}
+                          : editingEvent.billingAllocation.source === 'COMPLIMENTARY'
+                            ? 'без оплаты'
+                            : 'денежный баланс'}
                       </span>
                       . Для возврата отмените встречу.
                     </div>
@@ -632,6 +708,7 @@ export const ClientSchedule = ({ userId, events }: { userId: string; events: Cli
                                 >
                                   Купленный пакет
                                 </SelectItem>
+                                <SelectItem value="COMPLIMENTARY">Без оплаты</SelectItem>
                               </SelectContent>
                             </Select>
                             <FormMessage />
@@ -670,6 +747,28 @@ export const ClientSchedule = ({ userId, events }: { userId: string; events: Cli
                               <FormDescription>
                                 Будет списано {selectedDuration} минут. Пакеты с меньшим остатком
                                 недоступны.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
+
+                      {selectedBillingSource === 'COMPLIMENTARY' && (
+                        <FormField
+                          control={form.control}
+                          name="billingReason"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Причина бесплатной консультации</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Например: ознакомительная консультация"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Причина сохранится в финансовой истории.
                               </FormDescription>
                               <FormMessage />
                             </FormItem>

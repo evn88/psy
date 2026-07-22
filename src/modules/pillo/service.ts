@@ -1,6 +1,5 @@
 import { PilloIntakeStatus, Role, type Prisma } from '@prisma/client';
-import { fromZonedTime } from 'date-fns-tz';
-
+import { createScheduleDateTime } from '@/lib/schedule-timezone';
 import {
   generatePilloIntakesForRule,
   getPilloLocalDateKey,
@@ -510,7 +509,17 @@ export const takePilloMedicationNow = async (
     const timezone = medication.user.timezone || 'UTC';
     const now = new Date();
     const localTime = getPilloLocalTimeKey(now, timezone);
-    const takenAt = fromZonedTime(`${takenDate}T${localTime}:00`, timezone);
+    const takenResult = createScheduleDateTime({ timeZone: timezone }).fromLocalDateTime({
+      date: takenDate,
+      startTime: localTime,
+      duration: 15
+    });
+
+    if (!takenResult.success) {
+      throw new Error('Некорректная локальная дата приёма');
+    }
+
+    const takenAt = takenResult.start;
     const nextStock = subtractPilloDoseFromStock({
       stockUnits: medication.stockUnits,
       doseUnits
@@ -697,12 +706,10 @@ export const checkPilloCourseEndNotifications = async (): Promise<{ notified: nu
 
     const copy = getPilloNotificationCopy(user.language);
     const actionUrl = getPilloAppUrl(user.language);
+    // Даты правил хранятся как date-only sentinel в полдень UTC, поэтому
+    // форматируем её в UTC и не допускаем сдвига календарного дня.
     const endDateText = rule.endDate
-      ? rule.endDate.toLocaleDateString('ru-RU', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric'
-        })
+      ? createScheduleDateTime({ timeZone: 'UTC' }).format(rule.endDate, 'numericDate')
       : '';
 
     // Email-уведомление

@@ -1,9 +1,19 @@
 import { getTranslations } from 'next-intl/server';
 import { UserScheduleDashboard } from './_components/user-schedule-dashboard';
 import { CalendarDays, Sparkles } from 'lucide-react';
+import { auth } from '@/auth';
+import prisma from '@/lib/prisma';
+import { resolveScheduleTimeZone } from '@/lib/schedule-timezone';
 
 export default async function MySessionsPage() {
-  const t = await getTranslations('My');
+  const [t, session] = await Promise.all([getTranslations('My'), auth()]);
+  const dbUser = session?.user?.id
+    ? await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { timezone: true }
+      })
+    : null;
+  const userTimezone = resolveScheduleTimeZone(dbUser?.timezone);
 
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-8 pb-12 px-4 sm:px-6 lg:px-8 animate-in fade-in duration-300">
@@ -33,7 +43,7 @@ export default async function MySessionsPage() {
         </div>
       </div>
 
-      <UserScheduleDashboard />
+      <UserScheduleDashboard userTimezone={userTimezone} />
     </div>
   );
 }

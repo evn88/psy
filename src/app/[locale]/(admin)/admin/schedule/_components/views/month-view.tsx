@@ -17,6 +17,7 @@ import {
   getEventDotStyle,
   getEventsForDay,
   getEventStyle,
+  getClientTimeTooltip,
   weekDaysFull,
   weekDaysMobile
 } from '../calendar-utils';
@@ -30,7 +31,9 @@ export const MonthView = ({
   direction,
   setDragStart,
   setDragCurrent,
-  startH
+  startH,
+  displayTimezone,
+  dateTime
 }: BaseViewProps) => {
   const t = useTranslations('Schedule');
   const monthStart = startOfMonth(currentDate);
@@ -38,7 +41,12 @@ export const MonthView = ({
   const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
   const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
   const daysInMonth = eachDayOfInterval({ start: startDate, end: endDate });
-  const now = new Date();
+  const now = dateTime.toCalendarDate(new Date());
+  const tooltipLabels = {
+    client: t('client'),
+    current: t('clientCurrentTime'),
+    scheduled: t('clientScheduledTime')
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -61,7 +69,7 @@ export const MonthView = ({
           const isCurrentMonth = isSameMonth(day, monthStart);
           const isToday = isSameDay(day, now);
           const isPastDay = isBefore(day, startOfDay(now));
-          const dayEvents = getEventsForDay(events, day);
+          const dayEvents = getEventsForDay(events, day, displayTimezone);
 
           const disabledStyle = isPastDay
             ? {
@@ -118,14 +126,16 @@ export const MonthView = ({
                     <div
                       key={event.id}
                       className={`text-[10px] xl:text-xs truncate px-1.5 py-0.5 rounded-md text-left transition-opacity hover:opacity-80 border ${getEventStyle(event)}`}
-                      title={`${event.title || eventTypeTitle}${event.user?.name ? `\nКлиент: ${event.user.name}` : ''}`}
+                      title={
+                        getClientTimeTooltip(event, tooltipLabels) || event.title || eventTypeTitle
+                      }
                       onMouseDown={e => {
                         e.stopPropagation();
                         if (onEventClick) onEventClick(event);
                       }}
                     >
                       <span className="font-semibold mr-1">
-                        {format(new Date(event.start), 'HH:mm')}
+                        {dateTime.format(new Date(event.start), 'time')}
                       </span>
                       {event.title || eventTypeTitle}
                     </div>

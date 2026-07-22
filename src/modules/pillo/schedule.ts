@@ -1,6 +1,6 @@
 import { addDays, format, isAfter, isBefore, parseISO } from 'date-fns';
-import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 
+import { createScheduleDateTime } from '@/lib/schedule-timezone';
 import { PILLO_REMINDER_WINDOW_HOURS, type PilloIsoWeekDay } from './constants';
 import { toNumber } from './stock';
 
@@ -44,7 +44,7 @@ export const getPilloReminderWindowEnd = (now: Date): Date => {
  * @returns Строка `yyyy-MM-dd`.
  */
 export const getPilloLocalDateKey = (date: Date, timezone: string): string => {
-  return formatInTimeZone(date, timezone, 'yyyy-MM-dd');
+  return createScheduleDateTime({ timeZone: timezone }).getDateKey(date);
 };
 
 /**
@@ -54,7 +54,7 @@ export const getPilloLocalDateKey = (date: Date, timezone: string): string => {
  * @returns Строка `HH:mm`.
  */
 export const getPilloLocalTimeKey = (date: Date, timezone: string): string => {
-  return formatInTimeZone(date, timezone, 'HH:mm');
+  return createScheduleDateTime({ timeZone: timezone }).format(date, 'time');
 };
 
 /**
@@ -64,8 +64,14 @@ export const getPilloLocalTimeKey = (date: Date, timezone: string): string => {
  * @returns День недели 1..7, где 1 - понедельник.
  */
 export const getPilloIsoWeekDay = (localDate: string, timezone: string): PilloIsoWeekDay => {
-  const localNoon = fromZonedTime(`${localDate}T12:00:00`, timezone);
-  return Number(formatInTimeZone(localNoon, timezone, 'i')) as PilloIsoWeekDay;
+  const dateTime = createScheduleDateTime({ timeZone: timezone });
+  const localNoon = dateTime.fromLocalDateTime({ date: localDate, startTime: '12:00', duration: 15 });
+
+  if (!localNoon.success) {
+    throw new Error('Некорректная локальная дата расписания');
+  }
+
+  return Number(dateTime.format(localNoon.start, 'isoWeekday')) as PilloIsoWeekDay;
 };
 
 /**
@@ -129,6 +135,7 @@ export const generatePilloIntakesForRule = (params: {
 
   const localStartKey = getPilloLocalDateKey(windowStart, timezone);
   const localEndKey = getPilloLocalDateKey(windowEnd, timezone);
+  const dateTime = createScheduleDateTime({ timeZone: timezone });
   const allowedDays = new Set(rule.daysOfWeek);
   const result: PilloGeneratedIntake[] = [];
   let cursor = parseISO(localStartKey);
@@ -140,7 +147,18 @@ export const generatePilloIntakesForRule = (params: {
 
     if (allowedDays.has(isoWeekDay) && isLocalDateInsideRuleRange({ rule, localDate, timezone })) {
       const localTime = normalizePilloTime(rule.time);
-      const scheduledFor = fromZonedTime(`${localDate}T${localTime}:00`, timezone);
+      const scheduledResult = dateTime.fromLocalDateTime({
+        date: localDate,
+        startTime: localTime,
+        duration: 15
+      });
+
+      if (!scheduledResult.success) {
+        cursor = addDays(cursor, 1);
+        continue;
+      }
+
+      const scheduledFor = scheduledResult.start;
 
       if (!isBefore(scheduledFor, windowStart) && !isAfter(scheduledFor, windowEnd)) {
         result.push({

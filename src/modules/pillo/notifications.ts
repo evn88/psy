@@ -1,6 +1,5 @@
-import { formatInTimeZone } from 'date-fns-tz';
-
 import { defaultLocale, isLocale, type AppLocale } from '@/i18n/config';
+import { createScheduleDateTime } from '@/lib/schedule-timezone';
 
 type PilloNotificationCopy = {
   intakeSubject: string;
@@ -215,9 +214,10 @@ export const formatPilloIntakeDateTime = (params: {
   const locale = normalizePilloLocale(params.locale);
   const date = new Date(params.scheduledFor);
 
-  return formatInTimeZone(date, params.timezone, 'dd.MM.yyyy HH:mm', {
-    locale: undefined
-  }).replace(' ', locale === 'en' ? ', ' : ' ');
+  return createScheduleDateTime({ timeZone: params.timezone }).format(date, 'numericDateTime').replace(
+    ' ',
+    locale === 'en' ? ', ' : ' '
+  );
 };
 
 /**

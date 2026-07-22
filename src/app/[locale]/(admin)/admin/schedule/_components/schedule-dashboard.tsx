@@ -7,34 +7,56 @@ import { CalendarView } from './calendar-view';
 import { type Event, type EventMutationInput, useEvents } from './use-events';
 import { EventDialog } from './event-dialog';
 import { PendingRequestsPanel } from './pending-requests-panel';
-import { endOfMonth, endOfWeek, startOfMonth, startOfWeek } from 'date-fns';
+import { endOfMonth, endOfWeek, format, parseISO, startOfMonth, startOfWeek } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useScheduleDateTime } from '@/lib/hooks/use-schedule-date-time';
 
 export type ViewMode = 'month' | 'week' | 'day';
 
 interface ScheduleDashboardProps {
   workHourStart?: number;
   workHourEnd?: number;
+  adminTimezone: string;
 }
 
-export function ScheduleDashboard({ workHourStart = 9, workHourEnd = 20 }: ScheduleDashboardProps) {
+/** Восстанавливает календарную дату и мигрирует старое ISO-значение из localStorage. */
+const parseStoredCalendarDate = (
+  value: string,
+  dateTime: ReturnType<typeof useScheduleDateTime>
+): Date => {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return parseISO(value);
+  }
+
+  const storedInstant = new Date(value);
+  return Number.isNaN(storedInstant.getTime())
+    ? dateTime.toCalendarDate(new Date())
+    : dateTime.toCalendarDate(storedInstant);
+};
+
+export function ScheduleDashboard({
+  workHourStart = 9,
+  workHourEnd = 20,
+  adminTimezone
+}: ScheduleDashboardProps) {
   const t = useTranslations('Schedule');
+  const dateTime = useScheduleDateTime(adminTimezone);
   const [currentDate, setCurrentDate] = useState<Date>(() => {
     if (typeof window !== 'undefined') {
       const savedDate = localStorage.getItem('schedule_currentDate');
-      if (savedDate) return new Date(savedDate);
+      if (savedDate) return parseStoredCalendarDate(savedDate, dateTime);
     }
-    return new Date();
+    return dateTime.toCalendarDate(new Date());
   });
 
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
     if (typeof window !== 'undefined') {
       const savedSelected = localStorage.getItem('schedule_selectedDate');
-      if (savedSelected) return new Date(savedSelected);
+      if (savedSelected) return parseStoredCalendarDate(savedSelected, dateTime);
     }
-    return new Date();
+    return dateTime.toCalendarDate(new Date());
   });
 
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
@@ -55,11 +77,12 @@ export function ScheduleDashboard({ workHourStart = 9, workHourEnd = 20 }: Sched
   }, []);
 
   useEffect(() => {
-    if (isMounted) localStorage.setItem('schedule_currentDate', currentDate.toISOString());
+    if (isMounted) localStorage.setItem('schedule_currentDate', format(currentDate, 'yyyy-MM-dd'));
   }, [currentDate, isMounted]);
 
   useEffect(() => {
-    if (isMounted) localStorage.setItem('schedule_selectedDate', selectedDate.toISOString());
+    if (isMounted)
+      localStorage.setItem('schedule_selectedDate', format(selectedDate, 'yyyy-MM-dd'));
   }, [selectedDate, isMounted]);
 
   useEffect(() => {
@@ -89,7 +112,7 @@ export function ScheduleDashboard({ workHourStart = 9, workHourEnd = 20 }: Sched
     deleteEvent,
     approvePendingEvent,
     rejectPendingEvent
-  } = useEvents(startDate, endDate);
+  } = useEvents(startDate, endDate, adminTimezone);
 
   const handleAddEvent = (date?: Date, endDate?: Date) => {
     setDialogDate(date || selectedDate || new Date());
@@ -122,8 +145,9 @@ export function ScheduleDashboard({ workHourStart = 9, workHourEnd = 20 }: Sched
    * @param event - событие, выбранное в панели pending-запросов.
    */
   const handleRequestClick = (event: Event) => {
-    setCurrentDate(new Date(event.start));
-    setSelectedDate(new Date(event.start));
+    const eventDate = dateTime.toCalendarDate(new Date(event.start));
+    setCurrentDate(eventDate);
+    setSelectedDate(eventDate);
     handleEditEvent({
       ...event,
       status:
@@ -189,6 +213,7 @@ export function ScheduleDashboard({ workHourStart = 9, workHourEnd = 20 }: Sched
               setViewMode={setViewMode}
               workHourStart={workHourStart}
               workHourEnd={workHourEnd}
+              displayTimezone={adminTimezone}
             />
           </CardContent>
         </Card>
@@ -199,6 +224,7 @@ export function ScheduleDashboard({ workHourStart = 9, workHourEnd = 20 }: Sched
           onApproveRequest={approvePendingEvent}
           onRejectRequest={rejectPendingEvent}
           onRequestClick={handleRequestClick}
+          displayTimezone={adminTimezone}
         />
       </div>
 
@@ -211,6 +237,7 @@ export function ScheduleDashboard({ workHourStart = 9, workHourEnd = 20 }: Sched
           selectedEndDate={dialogEndDate}
           onSave={handleSaveEvent}
           onDelete={handleDeleteEvent}
+          adminTimezone={adminTimezone}
         />
       )}
     </>

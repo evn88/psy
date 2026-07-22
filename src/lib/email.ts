@@ -1,38 +1,15 @@
-import * as React from 'react';
 import { Resend } from 'resend';
-import { render } from '@react-email/render';
 import type { BlogPost, BlogPostTranslation } from '@prisma/client';
-import { VerificationEmailTemplate } from '@/emails/verification-email-template';
-import { WelcomeGoogleEmailTemplate } from '@/emails/welcome-google-email-template';
-import { EventNotificationTemplate } from '@/emails/event-notification-template';
-import { EventCancellationTemplate } from '@/emails/event-cancellation-template';
-import {
-  AdminEventBookingTemplate,
-  type AdminEventBookingTranslationData
-} from '@/emails/admin-event-booking-template';
-import {
-  AdminEventCancellationTemplate,
-  type AdminEventCancellationTranslationData
-} from '@/emails/admin-event-cancellation-template';
-import { AdminMessageTemplate } from '@/emails/admin-message-template';
-import { BlogNotificationEmail } from '@/emails/blog-notification-template';
-import { AccountDeletionRequestTemplate } from '@/emails/account-deletion-request-template';
-import { AccountDeletedUserTemplate } from '@/emails/account-deleted-user-template';
-import { AccountDeletedAdminTemplate } from '@/emails/account-deleted-admin-template';
-import { AdminIntakeNotificationTemplate } from '@/emails/admin-intake-notification-template';
-import { PilloNotificationTemplate } from '@/emails/pillo-notification-template';
-import { FinancialNotificationTemplate } from '@/emails/financial-notification-template';
-import {
-  formatPilloIntakeDateTime,
-  getPilloNotificationCopy,
-  interpolatePilloCopy
-} from '@/modules/pillo/notifications';
+import { formatPilloIntakeDateTime } from '@/modules/pillo/notifications';
 import { formatBlogDate } from '@/lib/blog-utils';
 import {
+  getEmailTemplateContent,
+  renderStoredEmailTemplate
+} from '@/modules/email-templates/email-template-service.server';
+import { renderEmailTemplateContent } from '@/modules/email-templates/email-template-token-service';
+import { renderEmailTemplateDocument } from '@/modules/email-templates/email-template-renderer.server';
+import {
   formatEmailEventDateTime,
-  getAdminEventBookingTranslations,
-  getAdminEventCancellationTranslations,
-  getEmailTranslations,
   getLocalizedEventTitle,
   getLocalizedEventTypeLabel,
   normalizeEmailLocale
@@ -54,17 +31,21 @@ const getBaseUrl = (): string => {
   return 'http://localhost:3000';
 };
 
-/**
- * Подставляет переменные в строку перевода.
- * Формат переменных: {name}, {url} и т.д.
- * @param template - строка с плейсхолдерами
- * @param vars - объект с переменными
- */
-const interpolate = (template: string, vars: Record<string, string>): string => {
-  return Object.entries(vars).reduce(
-    (result, [key, value]) => result.replace(new RegExp(`\\{${key}\\}`, 'g'), value),
-    template
-  );
+const escapeEmailHtml = (value: string): string =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+
+const renderDetailsHtml = (details: Array<{ label: string; value: string }>): string => {
+  return details
+    .map(
+      detail =>
+        `<p><strong>${escapeEmailHtml(detail.label)}:</strong> ${escapeEmailHtml(detail.value)}</p>`
+    )
+    .join('');
 };
 
 interface SendFinancialNotificationEmailParams {
@@ -76,6 +57,7 @@ interface SendFinancialNotificationEmailParams {
   details: Array<{ label: string; value: string }>;
   actionUrl: string;
   actionText: string;
+  locale?: string;
 }
 
 /**
@@ -89,21 +71,27 @@ export const sendFinancialNotificationEmail = async ({
   message,
   details,
   actionUrl,
-  actionText
+  actionText,
+  locale = 'ru'
 }: SendFinancialNotificationEmailParams): Promise<string | null> => {
-  const { data, error } = await resend.emails.send({
-    from: FROM_ADDRESS,
-    to: [email],
-    subject,
-    react: FinancialNotificationTemplate({
-      preview: subject,
+  const rendered = await renderStoredEmailTemplate(
+    'FINANCIAL_NOTIFICATION',
+    normalizeEmailLocale(locale),
+    {
+      subject,
       heading,
       greeting,
       message,
-      details,
-      actionUrl,
-      actionText
-    })
+      detailsHtml: renderDetailsHtml(details),
+      actionText,
+      actionUrl
+    }
+  );
+  const { data, error } = await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: [email],
+    subject: rendered.subject,
+    html: rendered.html
   });
 
   if (error) {
@@ -117,52 +105,6 @@ export const sendFinancialNotificationEmail = async ({
 type EventNotificationVariant = 'default' | 'bookingPending' | 'bookingConfirmed';
 
 type EventCancellationVariant = 'default' | 'bookingRejected';
-
-/**
- * Возвращает тексты письма для уведомления о событии в зависимости от сценария.
- * @param locale - locale пользователя.
- * @param variant - сценарий письма.
- * @returns Локализованный набор строк для шаблона уведомления.
- */
-const getEventNotificationCopy = (
-  locale: string,
-  variant: EventNotificationVariant
-): (typeof getEmailTranslations extends (locale?: string | null) => infer TResult
-  ? TResult
-  : never)['eventNotification'] => {
-  const translations = getEmailTranslations(locale);
-
-  if (variant === 'bookingPending') {
-    return translations.bookingPending ?? translations.eventNotification;
-  }
-
-  if (variant === 'bookingConfirmed') {
-    return translations.bookingConfirmed ?? translations.eventNotification;
-  }
-
-  return translations.eventNotification;
-};
-
-/**
- * Возвращает тексты письма об отмене события в зависимости от сценария.
- * @param locale - locale пользователя.
- * @param variant - сценарий письма.
- * @returns Локализованный набор строк для шаблона отмены.
- */
-const getEventCancellationCopy = (
-  locale: string,
-  variant: EventCancellationVariant
-): (typeof getEmailTranslations extends (locale?: string | null) => infer TResult
-  ? TResult
-  : never)['eventCancellation'] => {
-  const translations = getEmailTranslations(locale);
-
-  if (variant === 'bookingRejected') {
-    return translations.bookingRejected ?? translations.eventCancellation;
-  }
-
-  return translations.eventCancellation;
-};
 
 interface SendVerificationEmailParams {
   email: string;
@@ -182,27 +124,18 @@ export const sendVerificationEmail = async ({
   token,
   locale
 }: SendVerificationEmailParams): Promise<string | null> => {
-  const translations = getEmailTranslations(locale);
   const normalizedLocale = normalizeEmailLocale(locale);
   const verificationUrl = `${getBaseUrl()}/${normalizedLocale}/auth/verify-email?token=${encodeURIComponent(token)}`;
+  const rendered = await renderStoredEmailTemplate('VERIFICATION', normalizedLocale, {
+    name,
+    verificationUrl
+  });
 
   const { data, error } = await resend.emails.send({
     from: FROM_ADDRESS,
     to: [email],
-    subject: translations.verification.subject,
-    react: VerificationEmailTemplate({
-      name,
-      verificationUrl,
-      translations: {
-        heading: translations.verification.heading,
-        greeting: interpolate(translations.verification.greeting, { name }),
-        message: translations.verification.message,
-        button: translations.verification.button,
-        linkHint: translations.verification.linkHint,
-        expiry: translations.verification.expiry,
-        footer: translations.verification.footer
-      }
-    })
+    subject: rendered.subject,
+    html: rendered.html
   });
 
   if (error) {
@@ -229,24 +162,17 @@ export const sendWelcomeGoogleEmail = async ({
   name,
   locale
 }: SendWelcomeGoogleEmailParams): Promise<string | null> => {
-  const translations = getEmailTranslations(locale);
   const dashboardUrl = `${getBaseUrl()}/my`;
+  const rendered = await renderStoredEmailTemplate('WELCOME_GOOGLE', normalizeEmailLocale(locale), {
+    name,
+    dashboardUrl
+  });
 
   const { data, error } = await resend.emails.send({
     from: FROM_ADDRESS,
     to: [email],
-    subject: translations.welcomeGoogle.subject,
-    react: WelcomeGoogleEmailTemplate({
-      name,
-      dashboardUrl,
-      translations: {
-        heading: translations.welcomeGoogle.heading,
-        greeting: interpolate(translations.welcomeGoogle.greeting, { name }),
-        message: translations.welcomeGoogle.message,
-        button: translations.welcomeGoogle.button,
-        footer: translations.welcomeGoogle.footer
-      }
-    })
+    subject: rendered.subject,
+    html: rendered.html
   });
 
   if (error) {
@@ -284,7 +210,6 @@ export const sendAdminEventBookingEmail = async ({
   locale = 'ru',
   timezone = 'UTC'
 }: AdminEventBookingEmailParams) => {
-  const translations: AdminEventBookingTranslationData = getAdminEventBookingTranslations(locale);
   const localizedTitle = getLocalizedEventTitle(title, eventType, locale);
   const { dateText, timeText } = formatEmailEventDateTime({
     start,
@@ -292,24 +217,26 @@ export const sendAdminEventBookingEmail = async ({
     locale,
     timeZone: timezone
   });
-  const subject = interpolate(translations.subject || 'Новая запись: {title}', {
-    title: localizedTitle
-  });
+  const rendered = await renderStoredEmailTemplate(
+    'ADMIN_EVENT_BOOKING',
+    normalizeEmailLocale(locale),
+    {
+      name: adminName,
+      userName,
+      userEmail,
+      title: localizedTitle,
+      date: dateText,
+      time: timeText,
+      reason: '',
+      manageUrl
+    }
+  );
 
   const { data, error } = await resend.emails.send({
     from: FROM_ADDRESS,
     to: [adminEmail],
-    subject,
-    react: AdminEventBookingTemplate({
-      adminName,
-      userName,
-      userEmail,
-      title: localizedTitle,
-      dateText,
-      timeText,
-      manageUrl,
-      t: translations
-    })
+    subject: rendered.subject,
+    html: rendered.html
   });
 
   if (error) {
@@ -349,8 +276,6 @@ export const sendAdminEventCancellationEmail = async ({
   locale = 'ru',
   timezone = 'UTC'
 }: AdminEventCancellationEmailParams) => {
-  const translations: AdminEventCancellationTranslationData =
-    getAdminEventCancellationTranslations(locale);
   const localizedTitle = getLocalizedEventTitle(title, eventType, locale);
   const { dateText, timeText } = formatEmailEventDateTime({
     start,
@@ -358,25 +283,26 @@ export const sendAdminEventCancellationEmail = async ({
     locale,
     timeZone: timezone
   });
-  const subject = interpolate(translations.subject || 'Отмена записи: {title}', {
-    title: localizedTitle
-  });
+  const rendered = await renderStoredEmailTemplate(
+    'ADMIN_EVENT_CANCELLATION',
+    normalizeEmailLocale(locale),
+    {
+      name: adminName,
+      userName,
+      userEmail,
+      title: localizedTitle,
+      date: dateText,
+      time: timeText,
+      reason: reason ?? '',
+      manageUrl
+    }
+  );
 
   const { data, error } = await resend.emails.send({
     from: FROM_ADDRESS,
     to: [adminEmail],
-    subject,
-    react: AdminEventCancellationTemplate({
-      adminName,
-      userName,
-      userEmail,
-      title: localizedTitle,
-      dateText,
-      timeText,
-      reason,
-      manageUrl,
-      t: translations
-    })
+    subject: rendered.subject,
+    html: rendered.html
   });
 
   if (error) {
@@ -422,12 +348,16 @@ export const sendWorkflowStepsThresholdAlertEmail = async ({
     '',
     'Рекомендуется проверить usage в Vercel и при необходимости снизить частоту/объём напоминаний.'
   ].join('\n');
+  const rendered = await renderStoredEmailTemplate('ADMIN_MESSAGE', 'ru', {
+    subject,
+    message
+  });
 
   const { data, error } = await resend.emails.send({
     from: FROM_ADDRESS,
     to: [email],
-    subject,
-    react: AdminMessageTemplate({ subject, message })
+    subject: rendered.subject,
+    html: rendered.html
   });
 
   if (error) {
@@ -469,7 +399,12 @@ export const sendEventNotificationEmail = async ({
   timezone,
   variant = 'default'
 }: SendEventNotificationEmailParams): Promise<string | null> => {
-  const copy = getEventNotificationCopy(locale, variant);
+  const template =
+    variant === 'bookingPending'
+      ? 'BOOKING_PENDING'
+      : variant === 'bookingConfirmed'
+        ? 'BOOKING_CONFIRMED'
+        : 'EVENT_NOTIFICATION';
   const localizedTitle = getLocalizedEventTitle(title, eventType, locale);
   const eventTypeLabel = getLocalizedEventTypeLabel(eventType, locale);
   const { dateText, timeText } = formatEmailEventDateTime({
@@ -478,33 +413,21 @@ export const sendEventNotificationEmail = async ({
     locale,
     timeZone: timezone
   });
+  const rendered = await renderStoredEmailTemplate(template, normalizeEmailLocale(locale), {
+    name,
+    title: localizedTitle,
+    eventType: eventTypeLabel,
+    date: dateText,
+    time: timeText,
+    meetLink: meetLink ?? '',
+    manageUrl
+  });
 
   const { data, error } = await resend.emails.send({
     from: FROM_ADDRESS,
     to: [email],
-    subject: copy?.subject || 'Schedule Update',
-    react: EventNotificationTemplate({
-      name,
-      title: localizedTitle,
-      eventTypeLabel,
-      dateText,
-      timeText,
-      meetLink,
-      manageUrl,
-      translations: {
-        heading: copy?.heading || '',
-        greeting: interpolate(copy?.greeting || '', { name }),
-        message: interpolate(copy?.message || '', {
-          title: localizedTitle
-        }),
-        dateLabel: copy?.dateLabel || '',
-        timeLabel: copy?.timeLabel || '',
-        typeLabel: copy?.typeLabel || '',
-        meetLinkLabel: copy?.meetLinkLabel || '',
-        button: copy?.button || '',
-        footer: copy?.footer || ''
-      }
-    })
+    subject: rendered.subject,
+    html: rendered.html
   });
 
   if (error) {
@@ -546,8 +469,6 @@ export const sendSessionReminderEmail = async ({
   timezone,
   reminderMinutes
 }: SendSessionReminderEmailParams): Promise<string | null> => {
-  const translations = getEmailTranslations(locale);
-  const sessionReminder = translations.sessionReminder;
   const isStartsNow = reminderMinutes === 0;
   const localizedTitle = getLocalizedEventTitle(title, eventType, locale);
   const eventTypeLabel = getLocalizedEventTypeLabel(eventType, locale);
@@ -557,55 +478,26 @@ export const sendSessionReminderEmail = async ({
     locale,
     timeZone: timezone
   });
-  const subjectTemplate = isStartsNow
-    ? sessionReminder?.subjectNow || 'Session starts now - Vershkov.com'
-    : sessionReminder?.subjectInMinutes || 'Session starts in {minutes} min - Vershkov.com';
+  const rendered = await renderStoredEmailTemplate(
+    isStartsNow ? 'SESSION_REMINDER_NOW' : 'SESSION_REMINDER_SOON',
+    normalizeEmailLocale(locale),
+    {
+      name,
+      title: localizedTitle,
+      eventType: eventTypeLabel,
+      date: dateText,
+      time: timeText,
+      minutes: String(reminderMinutes),
+      meetLink: meetLink ?? '',
+      manageUrl
+    }
+  );
 
   const { data, error } = await resend.emails.send({
     from: FROM_ADDRESS,
     to: [email],
-    subject: interpolate(subjectTemplate, {
-      minutes: String(reminderMinutes)
-    }),
-    react: EventNotificationTemplate({
-      name,
-      title: localizedTitle,
-      eventTypeLabel,
-      dateText,
-      timeText,
-      meetLink,
-      manageUrl,
-      translations: {
-        heading:
-          (isStartsNow ? sessionReminder?.headingNow : sessionReminder?.headingInMinutes) ||
-          'Session Reminder',
-        greeting: interpolate(sessionReminder?.greeting || 'Hello, {name}!', { name }),
-        message: interpolate(
-          (isStartsNow ? sessionReminder?.messageNow : sessionReminder?.messageInMinutes) ||
-            'Your session "{title}" starts in {minutes} minutes.',
-          {
-            title: localizedTitle,
-            minutes: String(reminderMinutes)
-          }
-        ),
-        dateLabel:
-          sessionReminder?.dateLabel || translations.eventNotification?.dateLabel || 'Date',
-        timeLabel:
-          sessionReminder?.timeLabel || translations.eventNotification?.timeLabel || 'Time',
-        typeLabel:
-          sessionReminder?.typeLabel || translations.eventNotification?.typeLabel || 'Event Type',
-        meetLinkLabel:
-          sessionReminder?.meetLinkLabel ||
-          translations.eventNotification?.meetLinkLabel ||
-          'Meeting Link',
-        button:
-          sessionReminder?.button || translations.eventNotification?.button || 'View My Schedule',
-        footer:
-          sessionReminder?.footer ||
-          translations.eventNotification?.footer ||
-          'This is an automated reminder. Please do not reply.'
-      }
-    })
+    subject: rendered.subject,
+    html: rendered.html
   });
 
   if (error) {
@@ -646,30 +538,22 @@ export const sendPilloIntakeReminderEmail = async ({
   timezone,
   idempotencyKey
 }: SendPilloIntakeReminderEmailParams): Promise<string | null> => {
-  const copy = getPilloNotificationCopy(locale);
   const timeText = formatPilloIntakeDateTime({ scheduledFor, timezone, locale });
+  const rendered = await renderStoredEmailTemplate('PILLO_INTAKE', normalizeEmailLocale(locale), {
+    name,
+    medicationName,
+    dose: doseText,
+    time: timeText,
+    actionUrl,
+    skipUrl
+  });
 
   const { data, error } = await resend.emails.send(
     {
       from: FROM_ADDRESS,
       to: [email],
-      subject: copy.intakeSubject,
-      react: PilloNotificationTemplate({
-        preview: copy.intakeHeading,
-        heading: copy.intakeHeading,
-        greeting: interpolatePilloCopy(copy.greeting, { name }),
-        message: copy.intakeMessage,
-        details: [
-          { label: copy.medicationLabel, value: medicationName },
-          { label: copy.doseLabel, value: doseText },
-          { label: copy.timeLabel, value: timeText }
-        ],
-        buttonText: copy.takeButton,
-        actionUrl,
-        secondaryButtonText: copy.skipButton,
-        secondaryActionUrl: skipUrl,
-        footer: copy.footer
-      })
+      subject: rendered.subject,
+      html: rendered.html
     },
     { idempotencyKey }
   );
@@ -704,25 +588,17 @@ export const sendPilloLowStockEmail = async ({
   actionUrl,
   locale
 }: SendPilloLowStockEmailParams): Promise<string | null> => {
-  const copy = getPilloNotificationCopy(locale);
+  const rendered = await renderStoredEmailTemplate(
+    'PILLO_LOW_STOCK',
+    normalizeEmailLocale(locale),
+    { name, medicationName, stock: stockText, actionUrl }
+  );
 
   const { data, error } = await resend.emails.send({
     from: FROM_ADDRESS,
     to: [email],
-    subject: copy.lowStockSubject,
-    react: PilloNotificationTemplate({
-      preview: copy.lowStockHeading,
-      heading: copy.lowStockHeading,
-      greeting: interpolatePilloCopy(copy.greeting, { name }),
-      message: copy.lowStockMessage,
-      details: [
-        { label: copy.medicationLabel, value: medicationName },
-        { label: copy.stockLabel, value: stockText }
-      ],
-      buttonText: copy.openButton,
-      actionUrl,
-      footer: copy.footer
-    })
+    subject: rendered.subject,
+    html: rendered.html
   });
 
   if (error) {
@@ -746,25 +622,17 @@ export const sendPilloEmptyStockEmail = async ({
   actionUrl,
   locale
 }: SendPilloLowStockEmailParams): Promise<string | null> => {
-  const copy = getPilloNotificationCopy(locale);
+  const rendered = await renderStoredEmailTemplate(
+    'PILLO_EMPTY_STOCK',
+    normalizeEmailLocale(locale),
+    { name, medicationName, stock: stockText, actionUrl }
+  );
 
   const { data, error } = await resend.emails.send({
     from: FROM_ADDRESS,
     to: [email],
-    subject: copy.emptyStockSubject,
-    react: PilloNotificationTemplate({
-      preview: copy.emptyStockHeading,
-      heading: copy.emptyStockHeading,
-      greeting: interpolatePilloCopy(copy.greeting, { name }),
-      message: copy.emptyStockMessage,
-      details: [
-        { label: copy.medicationLabel, value: medicationName },
-        { label: copy.stockLabel, value: stockText }
-      ],
-      buttonText: copy.openButton,
-      actionUrl,
-      footer: copy.footer
-    })
+    subject: rendered.subject,
+    html: rendered.html
   });
 
   if (error) {
@@ -797,25 +665,17 @@ export const sendPilloCourseEndEmail = async ({
   actionUrl,
   locale
 }: SendPilloCourseEndEmailParams): Promise<string | null> => {
-  const copy = getPilloNotificationCopy(locale);
+  const rendered = await renderStoredEmailTemplate(
+    'PILLO_COURSE_END',
+    normalizeEmailLocale(locale),
+    { name, medicationName, courseEnd: endDateText, actionUrl }
+  );
 
   const { data, error } = await resend.emails.send({
     from: FROM_ADDRESS,
     to: [email],
-    subject: copy.courseEndSubject,
-    react: PilloNotificationTemplate({
-      preview: copy.courseEndHeading,
-      heading: copy.courseEndHeading,
-      greeting: interpolatePilloCopy(copy.greeting, { name }),
-      message: copy.courseEndMessage,
-      details: [
-        { label: copy.medicationLabel, value: medicationName },
-        { label: copy.courseLabel, value: endDateText }
-      ],
-      buttonText: copy.openButton,
-      actionUrl,
-      footer: copy.footer
-    })
+    subject: rendered.subject,
+    html: rendered.html
   });
 
   if (error) {
@@ -857,7 +717,7 @@ export const sendEventCancellationEmail = async ({
   timezone,
   variant = 'default'
 }: SendEventCancellationEmailParams): Promise<string | null> => {
-  const copy = getEventCancellationCopy(locale, variant);
+  const template = variant === 'bookingRejected' ? 'BOOKING_REJECTED' : 'EVENT_CANCELLATION';
   const localizedTitle = getLocalizedEventTitle(title, eventType, locale);
   const eventTypeLabel = getLocalizedEventTypeLabel(eventType, locale);
   const { dateText, timeText } = formatEmailEventDateTime({
@@ -866,33 +726,22 @@ export const sendEventCancellationEmail = async ({
     locale,
     timeZone: timezone
   });
+  const rendered = await renderStoredEmailTemplate(template, normalizeEmailLocale(locale), {
+    name,
+    title: localizedTitle,
+    eventType: eventTypeLabel,
+    date: dateText,
+    time: timeText,
+    reason: reason ?? '',
+    meetLink: '',
+    manageUrl
+  });
 
   const { data, error } = await resend.emails.send({
     from: FROM_ADDRESS,
     to: [email],
-    subject: copy?.subject || 'Event Cancelled',
-    react: EventCancellationTemplate({
-      name,
-      title: localizedTitle,
-      eventTypeLabel,
-      dateText,
-      timeText,
-      reason,
-      manageUrl,
-      translations: {
-        heading: copy?.heading || '',
-        greeting: interpolate(copy?.greeting || '', { name }),
-        message: interpolate(copy?.message || '', {
-          title: localizedTitle
-        }),
-        dateLabel: copy?.dateLabel || '',
-        timeLabel: copy?.timeLabel || '',
-        typeLabel: copy?.typeLabel || '',
-        reasonLabel: copy?.reasonLabel || '',
-        button: copy?.button || '',
-        footer: copy?.footer || ''
-      }
-    })
+    subject: rendered.subject,
+    html: rendered.html
   });
 
   if (error) {
@@ -905,7 +754,6 @@ export const sendEventCancellationEmail = async ({
 
 interface BlogSubscriberInfo {
   email: string;
-  name?: string;
   locale: string;
   unsubscribeToken?: string;
 }
@@ -914,7 +762,7 @@ interface BlogSubscriberInfo {
  * Отправляет email-уведомления подписчикам блога при публикации новой статьи.
  */
 export const sendBlogNotificationEmail = async (
-  post: BlogPost,
+  post: BlogPost & { author: { name: string | null } },
   translation: BlogPostTranslation,
   subscribers: BlogSubscriberInfo[]
 ): Promise<void> => {
@@ -922,35 +770,50 @@ export const sendBlogNotificationEmail = async (
 
   const baseUrl = getBaseUrl();
   const articleUrl = `${baseUrl}/blog/${post.slug}`;
+  const subscriberLocales = [
+    ...new Set(subscribers.map(subscriber => normalizeEmailLocale(subscriber.locale)))
+  ];
+  const blogNotificationCopies = new Map(
+    await Promise.all(
+      subscriberLocales.map(
+        async locale =>
+          [locale, await getEmailTemplateContent('BLOG_NOTIFICATION', locale)] as const
+      )
+    )
+  );
 
   const results = await Promise.allSettled(
     subscribers.map(async subscriber => {
       const locale = normalizeEmailLocale(subscriber.locale);
       const publishedAt = post.publishedAt ? formatBlogDate(post.publishedAt, locale) : '';
+      const rawLabels = blogNotificationCopies.get(locale);
+
+      if (!rawLabels) {
+        throw new Error(`Не найдены тексты шаблона блога для locale: ${locale}`);
+      }
 
       const unsubscribeUrl = subscriber.unsubscribeToken
         ? `${baseUrl}/${locale}/blog/unsubscribe?token=${encodeURIComponent(subscriber.unsubscribeToken)}`
-        : undefined;
-
-      const html = await render(
-        BlogNotificationEmail({
-          recipientName: subscriber.name,
-          title: translation.title,
-          description: translation.description,
-          coverImage: post.coverImage ?? undefined,
-          readingTime: post.readingTime,
-          publishedAt,
-          articleUrl,
-          unsubscribeUrl,
-          locale
-        })
-      );
+        : '';
+      const coverImage = post.coverImage ? new URL(post.coverImage, baseUrl).toString() : '';
+      const resolved = renderEmailTemplateContent('BLOG_NOTIFICATION', rawLabels, {
+        title: translation.title,
+        description: translation.description,
+        authorName: post.author.name ?? '',
+        readingTime: String(post.readingTime),
+        publishedAt,
+        coverImage,
+        articleUrl,
+        unsubscribeUrl,
+        settingsUrl: `${baseUrl}/${locale}/my/settings`
+      });
+      const rendered = renderEmailTemplateDocument(resolved, locale);
 
       return resend.emails.send({
         from: FROM_ADDRESS,
         to: subscriber.email,
-        subject: translation.title,
-        html
+        subject: rendered.subject,
+        html: rendered.html
       });
     })
   );
@@ -980,24 +843,19 @@ export const sendAccountDeletionRequestEmail = async ({
   token,
   language
 }: SendAccountDeletionRequestEmailParams): Promise<void> => {
-  const t = getEmailTranslations(language);
   const baseUrl = getBaseUrl();
   const locale = normalizeEmailLocale(language);
   const deletionUrl = `${baseUrl}/${locale}/account/delete?token=${encodeURIComponent(token)}`;
-
-  const html = await render(
-    AccountDeletionRequestTemplate({
-      name,
-      deletionUrl,
-      translations: t.accountDeletionRequest
-    })
-  );
+  const rendered = await renderStoredEmailTemplate('ACCOUNT_DELETION_REQUEST', locale, {
+    name,
+    deletionUrl
+  });
 
   await resend.emails.send({
     from: FROM_ADDRESS,
     to,
-    subject: t.accountDeletionRequest.subject,
-    html
+    subject: rendered.subject,
+    html: rendered.html
   });
 };
 
@@ -1015,20 +873,17 @@ export const sendAccountDeletedUserEmail = async ({
   name,
   language
 }: SendAccountDeletedUserEmailParams): Promise<void> => {
-  const t = getEmailTranslations(language);
-
-  const html = await render(
-    AccountDeletedUserTemplate({
-      name,
-      translations: t.accountDeleted
-    })
+  const rendered = await renderStoredEmailTemplate(
+    'ACCOUNT_DELETED_USER',
+    normalizeEmailLocale(language),
+    { name }
   );
 
   await resend.emails.send({
     from: FROM_ADDRESS,
     to,
-    subject: t.accountDeleted.subject,
-    html
+    subject: rendered.subject,
+    html: rendered.html
   });
 };
 
@@ -1046,7 +901,6 @@ export const sendAccountDeletedAdminEmail = async ({
   name,
   email
 }: SendAccountDeletedAdminEmailParams): Promise<void> => {
-  const t = getEmailTranslations('ru');
   const deletedAt = new Date().toLocaleString('ru-RU', {
     day: '2-digit',
     month: '2-digit',
@@ -1054,21 +908,17 @@ export const sendAccountDeletedAdminEmail = async ({
     hour: '2-digit',
     minute: '2-digit'
   });
-
-  const html = await render(
-    AccountDeletedAdminTemplate({
-      name,
-      email,
-      deletedAt,
-      translations: t.adminAccountDeleted
-    })
-  );
+  const rendered = await renderStoredEmailTemplate('ACCOUNT_DELETED_ADMIN', 'ru', {
+    name,
+    email,
+    deletedAt
+  });
 
   await resend.emails.send({
     from: FROM_ADDRESS,
     to,
-    subject: t.adminAccountDeleted.subject,
-    html
+    subject: rendered.subject,
+    html: rendered.html
   });
 };
 
@@ -1081,15 +931,16 @@ export const sendAdminIntakeNotificationToAdmin = async (
   formId: string
 ): Promise<void> => {
   const dashboardUrl = `${getBaseUrl()}/ru/admin/clients`;
+  const rendered = await renderStoredEmailTemplate('ADMIN_INTAKE', 'ru', {
+    userId,
+    formId,
+    dashboardUrl
+  });
 
   await resend.emails.send({
     from: FROM_ADDRESS,
     to: adminEmail,
-    subject: `Новая анкета клиента: ${formId}`,
-    react: React.createElement(AdminIntakeNotificationTemplate, {
-      userId,
-      formId,
-      dashboardUrl
-    })
+    subject: rendered.subject,
+    html: rendered.html
   });
 };

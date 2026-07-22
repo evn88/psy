@@ -9,7 +9,13 @@ import {
   startOfWeek
 } from 'date-fns';
 import { useTranslations } from 'next-intl';
-import { BaseViewProps, getEventsForDay, getEventStyle, weekDaysMobile } from '../calendar-utils';
+import {
+  BaseViewProps,
+  getClientTimeTooltip,
+  getEventsForDay,
+  getEventStyle,
+  weekDaysMobile
+} from '../calendar-utils';
 import { GridCell } from './grid-cell';
 
 export const DayView = ({
@@ -26,10 +32,18 @@ export const DayView = ({
   startH,
   endH,
   workHourStart,
-  workHourEnd
+  workHourEnd,
+  displayTimezone,
+  dateTime
 }: BaseViewProps) => {
   const t = useTranslations('Schedule');
-  const dayEvents = getEventsForDay(events, currentDate);
+  const dayEvents = getEventsForDay(events, currentDate, displayTimezone);
+  const today = dateTime.toCalendarDate(new Date());
+  const tooltipLabels = {
+    client: t('client'),
+    current: t('clientCurrentTime'),
+    scheduled: t('clientScheduledTime')
+  };
 
   // Mini calendar for the right side
   const monthStart = startOfMonth(currentDate);
@@ -89,8 +103,8 @@ export const DayView = ({
             {/* Events Layer */}
             <div className="absolute inset-x-0 right-4 lg:right-6 top-0 z-10 pointer-events-none">
               {dayEvents.map(event => {
-                const dStart = new Date(event.start);
-                const dEnd = new Date(event.end);
+                const dStart = dateTime.toCalendarDate(new Date(event.start));
+                const dEnd = dateTime.toCalendarDate(new Date(event.end));
                 const startMin = dStart.getHours() * 60 + dStart.getMinutes();
                 const durationMins = (dEnd.getTime() - dStart.getTime()) / 60000;
 
@@ -113,6 +127,7 @@ export const DayView = ({
                       if (onEventClick) onEventClick(event);
                     }}
                     className={`absolute left-2 right-2 rounded-md p-2 text-sm overflow-hidden cursor-pointer shadow-sm hover:shadow-md hover:ring-1 hover:ring-primary/50 transition-all border pointer-events-auto ${getEventStyle(event)}`}
+                    title={getClientTimeTooltip(event, tooltipLabels)}
                     style={{
                       top: `${top}rem`,
                       height: `${height}rem`
@@ -120,7 +135,8 @@ export const DayView = ({
                   >
                     <div className="font-semibold truncate">{event.title || eventTypeTitle}</div>
                     <div className="text-xs opacity-80 mt-1 truncate">
-                      {format(dStart, 'HH:mm')} - {format(dEnd, 'HH:mm')}
+                      {dateTime.format(new Date(event.start), 'time')} -{' '}
+                      {dateTime.format(new Date(event.end), 'time')}
                     </div>
                     {event.user?.name && (
                       <div className="text-xs font-medium opacity-90 truncate mt-0.5">
@@ -151,8 +167,8 @@ export const DayView = ({
           {daysInMonth.map((day, idx) => {
             const isSelected = isSameDay(day, currentDate);
             const isCurrentMonth = isSameMonth(day, monthStart);
-            const isToday = isSameDay(day, new Date());
-            const hasEvents = getEventsForDay(events, day).length > 0;
+            const isToday = isSameDay(day, today);
+            const hasEvents = getEventsForDay(events, day, displayTimezone).length > 0;
 
             return (
               <div

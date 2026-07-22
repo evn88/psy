@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { format } from 'date-fns';
 import { useLocale, useTranslations } from 'next-intl';
 import { Calendar as CalendarIcon, Clock, Loader2 } from 'lucide-react';
 import { getDateFnsLocale } from '@/lib/date-locale';
 import type { AppLocale } from '@/i18n/config';
+import { useScheduleDateTime } from '@/lib/hooks/use-schedule-date-time';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -24,17 +24,20 @@ interface UserScheduleRescheduleDialogProps {
   events: UserEvent[];
   onClose: () => void;
   onConfirm: (oldId: string, newId: string) => Promise<void>;
+  userTimezone: string;
 }
 
 export function UserScheduleRescheduleDialog({
   eventId,
   events,
   onClose,
-  onConfirm
+  onConfirm,
+  userTimezone
 }: UserScheduleRescheduleDialogProps) {
   const t = useTranslations('My');
   const locale = useLocale() as AppLocale;
   const dateLocale = getDateFnsLocale(locale);
+  const dateTime = useScheduleDateTime(userTimezone);
 
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -107,11 +110,12 @@ export function UserScheduleRescheduleDialog({
                           <p
                             className={`text-sm font-medium ${isSelected ? 'text-blue-700 dark:text-blue-300' : ''}`}
                           >
-                            {format(startDate, 'd MMMM, EEEE', { locale: dateLocale })}
+                            {dateTime.format(startDate, 'weekdayDate', dateLocale)}
                           </p>
                           <div className="flex items-center text-xs text-muted-foreground mt-1">
                             <Clock className="w-3 h-3 mr-1" />
-                            {format(startDate, 'HH:mm')} - {format(new Date(slot.end), 'HH:mm')}
+                            {dateTime.format(startDate, 'time')} -{' '}
+                            {dateTime.format(new Date(slot.end), 'time')}
                           </div>
                         </div>
                       </div>

@@ -1,6 +1,5 @@
 'use client';
 
-import { format } from 'date-fns';
 import { useLocale, useTranslations } from 'next-intl';
 import { Clock, MessageSquare, Video } from 'lucide-react';
 
@@ -8,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { getDateFnsLocale } from '@/lib/date-locale';
 import { getSafeMeetingUrl } from '@/lib/safe-url';
+import { useScheduleDateTime } from '@/lib/hooks/use-schedule-date-time';
 import type { AppLocale } from '@/i18n/config';
 import { UserEvent } from './use-user-events';
 
@@ -15,16 +15,19 @@ interface UserScheduleEventCardProps {
   event: UserEvent;
   onBookClick: (id: string) => void;
   onCancelClick: (id: string) => void;
+  userTimezone: string;
 }
 
 export function UserScheduleEventCard({
   event,
   onBookClick,
-  onCancelClick
+  onCancelClick,
+  userTimezone
 }: UserScheduleEventCardProps) {
   const t = useTranslations('My');
   const locale = useLocale() as AppLocale;
   const dateLocale = getDateFnsLocale(locale);
+  const dateTime = useScheduleDateTime(userTimezone);
 
   const startDate = new Date(event.start);
   const endDate = new Date(event.end);
@@ -33,8 +36,10 @@ export function UserScheduleEventCard({
   const isScheduled = event.type === 'CONSULTATION' && event.status === 'SCHEDULED';
   const isPending = event.type === 'CONSULTATION' && event.status === 'PENDING_CONFIRMATION';
   const isCancelled = event.status === 'CANCELLED';
-  const isPast = startDate < new Date();
+  const isBusySlot = event.userId === 'hidden';
+  const isPast = dateTime.isPast(endDate);
   const safeMeetLink = getSafeMeetingUrl(event.meetLink);
+  const eventTypeLabel = isBusySlot ? t('busyTime') : t(`eventTypes.${event.type}` as never);
 
   return (
     <div
@@ -47,62 +52,62 @@ export function UserScheduleEventCard({
         ${!isFreeSlot && !isScheduled && !isPending && !isCancelled ? 'bg-card border-border/60 shadow-sm' : ''}
       `}
     >
-      <div className="flex justify-between items-start gap-4 mb-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge
-            variant={isFreeSlot ? 'outline' : isCancelled ? 'secondary' : 'default'}
-            className={`
-              font-bold text-[10px] px-2 py-0.5 rounded-lg border uppercase tracking-wider
-              ${isFreeSlot ? 'text-primary border-primary/30 bg-primary/5' : ''}
-              ${isScheduled ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/15' : ''}
-              ${isPending ? 'bg-orange-500/10 text-orange-600 border-orange-500/20 hover:bg-orange-500/15' : ''}
-            `}
-          >
-            {t(`eventTypes.${event.type}` as never)}
-          </Badge>
-          {isCancelled && (
+      {!isBusySlot && (
+        <div className="flex justify-between items-start gap-4 mb-3">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge
-              variant="destructive"
-              className="text-[10px] px-2 py-0.5 rounded-lg border border-destructive/20 uppercase tracking-wider h-auto"
+              variant={isFreeSlot ? 'outline' : isCancelled ? 'secondary' : 'default'}
+              className={`
+                font-bold text-[10px] px-2 py-0.5 rounded-lg border uppercase tracking-wider
+                ${isFreeSlot ? 'text-primary border-primary/30 bg-primary/5' : ''}
+                ${isScheduled ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/15' : ''}
+                ${isPending ? 'bg-orange-500/10 text-orange-600 border-orange-500/20 hover:bg-orange-500/15' : ''}
+              `}
             >
-              {t(`eventStatuses.${event.status}` as never)}
+              {eventTypeLabel}
             </Badge>
-          )}
-        </div>
+            {isCancelled && (
+              <Badge
+                variant="destructive"
+                className="text-[10px] px-2 py-0.5 rounded-lg border border-destructive/20 uppercase tracking-wider h-auto"
+              >
+                {t(`eventStatuses.${event.status}` as never)}
+              </Badge>
+            )}
+          </div>
 
-        <div className="flex gap-2 shrink-0">
-          {isFreeSlot && !isPast && !isCancelled && (
-            <Button
-              variant="outline"
-              onClick={() => onBookClick(event.id)}
-              className="h-11 sm:h-9 px-4 sm:px-4 text-xs rounded-xl font-bold shadow-sm hover:bg-background"
-            >
-              {t('bookButton')}
-            </Button>
-          )}
-          {(isScheduled || isPending) && (
-            <Button
-              variant="destructive"
-              onClick={() => onCancelClick(event.id)}
-              className="h-11 sm:h-9 px-4 sm:px-4 text-xs rounded-xl font-bold shadow-sm"
-            >
-              {t('cancelButton')}
-            </Button>
-          )}
+          <div className="flex gap-2 shrink-0">
+            {isFreeSlot && !isPast && !isCancelled && (
+              <Button
+                variant="outline"
+                onClick={() => onBookClick(event.id)}
+                className="h-11 sm:h-9 px-4 sm:px-4 text-xs rounded-xl font-bold shadow-sm hover:bg-background"
+              >
+                {t('bookButton')}
+              </Button>
+            )}
+            {(isScheduled || isPending) && !isPast && (
+              <Button
+                variant="destructive"
+                onClick={() => onCancelClick(event.id)}
+                className="h-11 sm:h-9 px-4 sm:px-4 text-xs rounded-xl font-bold shadow-sm"
+              >
+                {t('cancelButton')}
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
-      <h4 className="font-semibold text-base mb-1">
-        {event.title || t(`eventTypes.${event.type}` as never)}
-      </h4>
+      <h4 className="font-semibold text-base mb-1">{event.title || eventTypeLabel}</h4>
 
       <div className="space-y-2 mt-3">
         <div className="flex items-center text-sm text-muted-foreground">
           <Clock className="w-4 h-4 mr-2 opacity-70" />
           <span>
-            {format(startDate, 'HH:mm')} - {format(endDate, 'HH:mm')}
+            {dateTime.format(startDate, 'time')} - {dateTime.format(endDate, 'time')}
             <span className="ml-2 text-xs opacity-70">
-              ({format(startDate, 'd MMM', { locale: dateLocale })})
+              ({dateTime.format(startDate, 'monthDay', dateLocale)})
             </span>
           </span>
         </div>

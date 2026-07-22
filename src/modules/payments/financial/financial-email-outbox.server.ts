@@ -197,7 +197,8 @@ export const processFinancialEmailOutbox = async (): Promise<{
         message: copy.message,
         details: copy.details,
         actionUrl: `${baseUrl}/${item.locale || 'ru'}/${isAdminTemplate ? 'admin/payments' : 'my/payments'}`,
-        actionText: isAdminTemplate ? 'Открыть платежи' : 'Открыть мой баланс'
+        actionText: isAdminTemplate ? 'Открыть платежи' : 'Открыть мой баланс',
+        locale: item.locale
       });
 
       if (!providerMessageId) {

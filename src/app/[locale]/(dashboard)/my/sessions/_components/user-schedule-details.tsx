@@ -12,6 +12,7 @@ import { UserScheduleEventCard } from './user-schedule-event-card';
 import { UserScheduleBookDialog } from './user-schedule-book-dialog';
 import { UserScheduleCancelDialog } from './user-schedule-cancel-dialog';
 import { UserScheduleRescheduleDialog } from './user-schedule-reschedule-dialog';
+import { useScheduleDateTime } from '@/lib/hooks/use-schedule-date-time';
 
 interface UserScheduleDetailsProps {
   selectedDate: Date;
@@ -22,6 +23,7 @@ interface UserScheduleDetailsProps {
   onBookEvent: (id: string, reminderMinutesBeforeStart: number) => Promise<void>;
   onCancelEvent: (id: string, reason?: string) => Promise<void>;
   onRescheduleEvent: (oldId: string, newId: string) => Promise<void>;
+  userTimezone: string;
 }
 
 export function UserScheduleDetails({
@@ -32,18 +34,21 @@ export function UserScheduleDetails({
   isLoading,
   onBookEvent,
   onCancelEvent,
-  onRescheduleEvent
+  onRescheduleEvent,
+  userTimezone
 }: UserScheduleDetailsProps) {
   const t = useTranslations('My');
+  const dateTime = useScheduleDateTime(userTimezone);
 
   const [bookingEventId, setBookingEventId] = useState<string | null>(null);
   const [cancelingEventId, setCancelingEventId] = useState<string | null>(null);
   const [reschedulingEventId, setReschedulingEventId] = useState<string | null>(null);
+  const cancelingEvent = events.find(event => event.id === cancelingEventId);
 
   // Filter events for selected day or week
   const filteredEvents = events
     .filter(event => {
-      const eventDate = new Date(event.start);
+      const eventDate = dateTime.toCalendarDate(new Date(event.start));
       if (viewMode === 'day') {
         return isSameDay(eventDate, selectedDate);
       }
@@ -93,6 +98,7 @@ export function UserScheduleDetails({
                   event={event}
                   onBookClick={setBookingEventId}
                   onCancelClick={setCancelingEventId}
+                  userTimezone={userTimezone}
                 />
               ))}
             </div>
@@ -110,10 +116,14 @@ export function UserScheduleDetails({
         eventId={cancelingEventId}
         onClose={() => setCancelingEventId(null)}
         onConfirm={onCancelEvent}
-        onRequestReschedule={eventId => {
-          setCancelingEventId(null);
-          setReschedulingEventId(eventId);
-        }}
+        onRequestReschedule={
+          cancelingEvent?.status === 'SCHEDULED'
+            ? eventId => {
+                setCancelingEventId(null);
+                setReschedulingEventId(eventId);
+              }
+            : undefined
+        }
       />
 
       <UserScheduleRescheduleDialog
@@ -121,6 +131,7 @@ export function UserScheduleDetails({
         events={events}
         onClose={() => setReschedulingEventId(null)}
         onConfirm={onRescheduleEvent}
+        userTimezone={userTimezone}
       />
     </>
   );

@@ -1,8 +1,8 @@
 import { Resend } from 'resend';
-import { AdminMessageTemplate } from '@/emails/admin-message-template';
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
+import { renderStoredEmailTemplate } from '@/modules/email-templates/email-template-service.server';
 import { withApiLogging } from '@/modules/system-logs/with-api-logging.server';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -61,6 +61,10 @@ async function postHandler(request: Request) {
 
     // 2. Prepare batches
     const emailBatches = chunkArray(emails, MAX_BATCH_SIZE);
+    const rendered = await renderStoredEmailTemplate('ADMIN_MESSAGE', 'ru', {
+      subject,
+      message
+    });
 
     interface DeliveryStatus {
       id?: string;
@@ -77,8 +81,8 @@ async function postHandler(request: Request) {
       const payload = batch.map(email => ({
         from: 'Admin <noreply@vershkov.com>',
         to: [email],
-        subject: subject,
-        react: AdminMessageTemplate({ subject, message })
+        subject: rendered.subject,
+        html: rendered.html
       }));
 
       const { data, error } = await resend.batch.send(payload);

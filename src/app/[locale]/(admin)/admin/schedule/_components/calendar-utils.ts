@@ -1,4 +1,9 @@
-import { isSameDay } from 'date-fns';
+import { format } from 'date-fns';
+import {
+  createScheduleDateTime,
+  getScheduleDateKey,
+  resolveScheduleTimeZone
+} from '@/lib/schedule-timezone';
 import { Event } from './use-events';
 
 export const weekDaysFull = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -72,8 +77,24 @@ export const getEventDotStyle = (event: Pick<Event, 'type' | 'status'>) => {
  * @param day - день, для которого нужна фильтрация.
  * @returns События выбранного дня.
  */
-export const getEventsForDay = (events: Event[], day: Date) => {
-  return events.filter(event => isSameDay(new Date(event.start), day));
+export const getEventsForDay = (events: Event[], day: Date, displayTimezone: string) => {
+  const dayKey = format(day, 'yyyy-MM-dd');
+  return events.filter(
+    event => getScheduleDateKey(new Date(event.start), displayTimezone) === dayKey
+  );
+};
+
+/** Формирует подсказку с текущим и запланированным временем клиента. */
+export const getClientTimeTooltip = (
+  event: Event,
+  labels: { client: string; current: string; scheduled: string }
+): string | undefined => {
+  if (!event.user) return undefined;
+  const timeZone = resolveScheduleTimeZone(event.user.timezone);
+  const dateTime = createScheduleDateTime({ timeZone });
+  const now = dateTime.format(new Date(), 'dateTime');
+  const scheduled = dateTime.formatRange(new Date(event.start), new Date(event.end));
+  return `${labels.client}: ${event.user.name || event.user.email}\n${labels.current}: ${now}\n${labels.scheduled}: ${scheduled} (${timeZone})`;
 };
 
 export interface BaseViewProps {
@@ -94,4 +115,6 @@ export interface BaseViewProps {
   startH: number;
   endH: number;
   displayHours: number[];
+  displayTimezone: string;
+  dateTime: ReturnType<typeof createScheduleDateTime>;
 }

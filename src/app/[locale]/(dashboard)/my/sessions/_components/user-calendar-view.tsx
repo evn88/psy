@@ -21,6 +21,7 @@ import { UserEvent } from './use-user-events';
 import { useLocale, useTranslations } from 'next-intl';
 import { getDateFnsLocale } from '@/lib/date-locale';
 import type { AppLocale } from '@/i18n/config';
+import { useScheduleDateTime } from '@/lib/hooks/use-schedule-date-time';
 
 interface UserCalendarViewProps {
   currentDate: Date;
@@ -29,6 +30,7 @@ interface UserCalendarViewProps {
   onDateSelect: (date: Date) => void;
   onMonthChange: (date: Date) => void;
   isFetching?: boolean;
+  userTimezone: string;
 }
 
 export function UserCalendarView({
@@ -37,11 +39,13 @@ export function UserCalendarView({
   events,
   onDateSelect,
   onMonthChange,
-  isFetching = false
+  isFetching = false,
+  userTimezone
 }: UserCalendarViewProps) {
   const t = useTranslations('My');
   const locale = useLocale() as AppLocale;
   const dateLocale = getDateFnsLocale(locale);
+  const dateTime = useScheduleDateTime(userTimezone);
 
   const [direction, setDirection] = useState<'next' | 'prev'>('next');
 
@@ -54,18 +58,24 @@ export function UserCalendarView({
     onMonthChange(subMonths(currentDate, 1));
   };
   const goToToday = () => {
-    setDirection(currentDate > new Date() ? 'prev' : 'next');
-    onDateSelect(new Date());
-    onMonthChange(new Date());
+    const today = dateTime.toCalendarDate(new Date());
+    setDirection(currentDate > today ? 'prev' : 'next');
+    onDateSelect(today);
+    onMonthChange(today);
   };
 
   const renderHeader = () => {
     return (
       <div className="flex justify-between items-center p-3 sm:p-4 border-b border-border/50 gap-2 bg-muted/5">
         <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-          <h2 className="text-base sm:text-lg font-bold capitalize truncate">
-            {format(currentDate, 'LLLL yyyy', { locale: dateLocale })}
-          </h2>
+          <div className="min-w-0">
+            <h2 className="truncate text-base font-bold capitalize sm:text-lg">
+              {format(currentDate, 'LLLL yyyy', { locale: dateLocale })}
+            </h2>
+            <p className="truncate text-[10px] text-muted-foreground sm:text-xs">
+              {t('timezoneLabel')}: {userTimezone}
+            </p>
+          </div>
           <div className="flex items-center gap-1 shrink-0">
             <Button
               variant="outline"
@@ -129,6 +139,7 @@ export function UserCalendarView({
     let days = [];
     let day = startDate;
     let formattedDate = '';
+    const today = dateTime.toCalendarDate(new Date());
 
     while (day <= endDate) {
       for (let i = 0; i < 7; i++) {
@@ -136,12 +147,15 @@ export function UserCalendarView({
         const cloneDay = day;
 
         // Find events for this day
-        const dayEvents = events.filter(e => isSameDay(new Date(e.start), cloneDay));
+        const dayKey = format(cloneDay, 'yyyy-MM-dd');
+        const dayEvents = events.filter(
+          event => dateTime.getDateKey(new Date(event.start)) === dayKey
+        );
 
         const isSelected = isSameDay(day, selectedDate);
         const isCurrentMonth = isSameMonth(day, monthStart);
-        const isToday = isSameDay(day, new Date());
-        const isPastDay = isBefore(day, startOfDay(new Date()));
+        const isToday = isSameDay(day, today);
+        const isPastDay = isBefore(day, startOfDay(today));
 
         const disabledStyle = isPastDay
           ? {
@@ -204,6 +218,10 @@ export function UserCalendarView({
               {dayEvents.slice(0, 3).map(event => {
                 const isScheduled = event.type === 'CONSULTATION' && event.status === 'SCHEDULED';
                 const isFree = event.type === 'FREE_SLOT';
+                const eventLabel =
+                  event.userId === 'hidden'
+                    ? t('busyTime')
+                    : event.title || t(`eventTypes.${event.type}` as never);
 
                 return (
                   <div
@@ -214,10 +232,9 @@ export function UserCalendarView({
                       ${isFree ? 'bg-primary/10 text-primary-foreground border-primary/25 dark:bg-primary/20 dark:text-primary-foreground' : ''}
                       ${!isScheduled && !isFree ? 'bg-muted text-muted-foreground border-border/40' : ''}
                     `}
-                    title={event.title || t(`eventTypes.${event.type}` as never)}
+                    title={eventLabel}
                   >
-                    {format(new Date(event.start), 'HH:mm')} -{' '}
-                    {event.title || t(`eventTypes.${event.type}` as never)}
+                    {dateTime.format(new Date(event.start), 'time')} - {eventLabel}
                   </div>
                 );
               })}

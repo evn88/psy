@@ -395,15 +395,73 @@ describe('PATCH /api/user/events/[id]', () => {
     expect(writeSystemLogEntryMock).toHaveBeenCalledTimes(2);
   });
 
-  it('при параллельном переносе отменяет исходное событие только один раз', async () => {
+  it('не позволяет отменить завершившуюся консультацию', async () => {
     // Arrange
-    let previousEventCancelled = false;
-    const claimedSlots = new Set<string>();
-    let previousReads = 0;
-    let releasePreviousReads: () => void = () => undefined;
-    const bothTransactionsReadPreviousEvent = new Promise<void>(resolve => {
-      releasePreviousReads = resolve;
+    prismaMock.event.updateMany.mockResolvedValue({ count: 0 });
+    prismaMock.event.findUnique.mockResolvedValue({ userId: 'user-1' });
+
+    // Act
+    const response = await createPatchRequest('past-event', {
+      action: 'cancel',
+      reason: 'Попытка изменить прошлую встречу'
     });
+
+    // Assert
+    expect(response.status).toBe(409);
+    expect(prismaMock.event.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: 'past-event',
+          end: { gt: expect.any(Date) }
+        })
+      })
+    );
+    expect(sendEventCancellationEmailMock).not.toHaveBeenCalled();
+    expect(syncEventWithGoogleMock).not.toHaveBeenCalled();
+  });
+
+  it('не позволяет перенести завершившуюся консультацию', async () => {
+    // Arrange
+    const findFirst = vi.fn().mockResolvedValue(null);
+    const findUnique = vi.fn().mockResolvedValue({ userId: 'user-1' });
+    const updateMany = vi.fn();
+    prismaMock.$transaction.mockImplementation(
+      async (
+        callback: (transaction: {
+          event: {
+            findFirst: typeof findFirst;
+            findUnique: typeof findUnique;
+            updateMany: typeof updateMany;
+          };
+        }) => Promise<unknown>
+      ) => callback({ event: { findFirst, findUnique, updateMany } })
+    );
+
+    // Act
+    const response = await createPatchRequest('past-event', {
+      action: 'reschedule',
+      newEventId: 'future-slot'
+    });
+
+    // Assert
+    expect(response.status).toBe(409);
+    expect(findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: 'past-event',
+          end: { gt: expect.any(Date) }
+        })
+      })
+    );
+    expect(updateMany).not.toHaveBeenCalled();
+    expect(sendEventNotificationEmailMock).not.toHaveBeenCalled();
+    expect(syncEventWithGoogleMock).not.toHaveBeenCalled();
+  });
+
+  it('при параллельном переносе сохраняет только один активный запрос и не отменяет исходную встречу', async () => {
+    // Arrange
+    let hasActiveRescheduleRequest = false;
+    const claimedSlots = new Set<string>();
 
     prismaMock.$transaction.mockImplementation(
       async (
@@ -415,39 +473,28 @@ describe('PATCH /api/user/events/[id]', () => {
           };
         }) => Promise<unknown>
       ) => {
-        const localClaims: string[] = [];
         let claimedEventId = '';
         const transaction = {
           event: {
-            findFirst: vi.fn(async () => {
-              previousReads += 1;
-              if (previousReads === 2) {
-                releasePreviousReads();
-              }
-              await bothTransactionsReadPreviousEvent;
-              return createEvent({
+            findFirst: vi.fn(async () =>
+              createEvent({
                 id: 'old-event',
-                status: EventStatus.PENDING_CONFIRMATION,
+                status: EventStatus.SCHEDULED,
                 userId: 'user-1'
-              });
-            }),
-            updateMany: vi.fn(async ({ where }: { where: { id: string } }) => {
-              if (where.id !== 'old-event') {
-                if (claimedSlots.has(where.id)) {
-                  return { count: 0 };
+              })
+            ),
+            updateMany: vi.fn(
+              async ({ where, data }: { where: { id: string }; data: Record<string, unknown> }) => {
+                if (hasActiveRescheduleRequest && data.rescheduleFromEventId === 'old-event') {
+                  throw { code: 'P2002' };
                 }
+
+                hasActiveRescheduleRequest = true;
                 claimedSlots.add(where.id);
-                localClaims.push(where.id);
                 claimedEventId = where.id;
                 return { count: 1 };
               }
-
-              if (previousEventCancelled) {
-                return { count: 0 };
-              }
-              previousEventCancelled = true;
-              return { count: 1 };
-            }),
+            ),
             findUnique: vi.fn(async () =>
               createEvent({
                 id: claimedEventId,
@@ -458,14 +505,7 @@ describe('PATCH /api/user/events/[id]', () => {
           }
         };
 
-        try {
-          return await callback(transaction);
-        } catch (error) {
-          for (const claimedSlot of localClaims) {
-            claimedSlots.delete(claimedSlot);
-          }
-          throw error;
-        }
+        return callback(transaction);
       }
     );
 
@@ -483,11 +523,10 @@ describe('PATCH /api/user/events/[id]', () => {
 
     // Assert
     expect(responses.map(response => response.status).sort()).toEqual([200, 409]);
-    expect(previousEventCancelled).toBe(true);
     expect(claimedSlots.size).toBe(1);
-    expect(sendEventCancellationEmailMock).toHaveBeenCalledTimes(1);
+    expect(sendEventCancellationEmailMock).not.toHaveBeenCalled();
     expect(sendEventNotificationEmailMock).toHaveBeenCalledTimes(1);
     expect(startSessionReminderWorkflowMock).toHaveBeenCalledTimes(1);
-    expect(syncEventWithGoogleMock).toHaveBeenCalledTimes(2);
+    expect(syncEventWithGoogleMock).toHaveBeenCalledTimes(1);
   });
 });

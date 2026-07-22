@@ -3,6 +3,7 @@ import { type AiModelId, ALL_AI_MODEL_IDS } from './ai-model-catalog';
 
 export const AI_SKILL_IDS = [
   'blog-article-translation',
+  'email-template-translation',
   'article-summary',
   'text-translation'
 ] as const;
@@ -55,6 +56,20 @@ export const AI_SKILL_MANIFEST: Record<AiSkillId, AiSkillDescriptor> = {
         label: 'Перевод контента',
         description: 'Полный перевод markdown-статьи с сохранением форматирования.',
         defaultModelId: 'gpt-5.4'
+      }
+    }
+  },
+  'email-template-translation': {
+    id: 'email-template-translation',
+    label: 'Перевод email-шаблона',
+    description: 'Переводит все поля письма с русского языка, сохраняя зарегистрированные токены.',
+    defaultModelId: 'gpt-5.4-mini',
+    availableModelIds: ALL_AI_MODEL_IDS,
+    promptSlots: {
+      translation: {
+        label: 'Перевод поля письма',
+        description: 'Plain-text перевод одного поля с неизменными токенами.',
+        defaultModelId: 'gpt-5.4-mini'
       }
     }
   },
