@@ -1,13 +1,20 @@
-import * as React from 'react';
+import { EmailFooter, EmailFrame, EmailHeading, EmailParagraph } from '@/emails/email-layout';
 
 interface EmailTemplateProps {
   firstName: string;
 }
 
-export function EmailTemplate({ firstName }: EmailTemplateProps) {
+/**
+ * Минимальный шаблон для ручной проверки почтовой инфраструктуры.
+ */
+export const EmailTemplate = ({ firstName }: EmailTemplateProps) => {
   return (
-    <div>
-      <h1>Welcome, {firstName}!</h1>
-    </div>
+    <EmailFrame
+      preview={`Добро пожаловать, ${firstName}!`}
+      footer={<EmailFooter>Это тестовое письмо Vershkov.</EmailFooter>}
+    >
+      <EmailHeading>Добро пожаловать!</EmailHeading>
+      <EmailParagraph>{firstName}, почтовые уведомления Vershkov готовы к работе.</EmailParagraph>
+    </EmailFrame>
   );
-}
+};

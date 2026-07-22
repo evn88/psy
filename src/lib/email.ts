@@ -905,7 +905,6 @@ export const sendEventCancellationEmail = async ({
 
 interface BlogSubscriberInfo {
   email: string;
-  name?: string;
   locale: string;
   unsubscribeToken?: string;
 }
@@ -934,7 +933,6 @@ export const sendBlogNotificationEmail = async (
 
       const html = await render(
         BlogNotificationEmail({
-          recipientName: subscriber.name,
           title: translation.title,
           description: translation.description,
           coverImage: post.coverImage ?? undefined,

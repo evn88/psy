@@ -72,7 +72,7 @@ async function postHandler(req: Request, { params }: { params: Promise<{ id: str
   const [registeredUsers, anonymousSubscribers] = await Promise.all([
     prisma.user.findMany({
       where: { blogNotifications: true, isDisabled: false },
-      select: { email: true, name: true, language: true }
+      select: { email: true, language: true }
     }),
     prisma.blogSubscription.findMany({ select: { email: true, token: true } })
   ]);
@@ -80,19 +80,15 @@ async function postHandler(req: Request, { params }: { params: Promise<{ id: str
   // Дедупликация по email
   const registeredEmails = new Set(registeredUsers.map((u: { email: string }) => u.email));
   const allSubscribers = [
-    ...registeredUsers.map(
-      (u: { email: string; name: string | null; language: string | null }) => ({
-        email: u.email,
-        name: u.name ?? undefined,
-        locale: u.language ?? 'ru',
-        unsubscribeToken: undefined as string | undefined
-      })
-    ),
+    ...registeredUsers.map((u: { email: string; language: string | null }) => ({
+      email: u.email,
+      locale: u.language ?? 'ru',
+      unsubscribeToken: undefined as string | undefined
+    })),
     ...anonymousSubscribers
       .filter((s: { email: string }) => !registeredEmails.has(s.email))
       .map((s: { email: string; token: string }) => ({
         email: s.email,
-        name: undefined as string | undefined,
         locale: 'ru',
         unsubscribeToken: s.token
       }))

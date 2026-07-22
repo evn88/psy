@@ -1,15 +1,11 @@
-import * as React from 'react';
 import {
-  Body,
-  Container,
-  Head,
-  Heading,
-  Html,
-  Link,
-  Preview,
-  Text,
-  Section
-} from '@react-email/components';
+  EmailAction,
+  EmailDetails,
+  EmailFooter,
+  EmailFrame,
+  EmailHeading,
+  EmailParagraph
+} from '@/emails/email-layout';
 
 interface AdminIntakeNotificationTemplateProps {
   userId: string;
@@ -17,64 +13,35 @@ interface AdminIntakeNotificationTemplateProps {
   dashboardUrl: string;
 }
 
-const main = {
-  backgroundColor: '#ffffff',
-  fontFamily:
-    '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif'
+/**
+ * Рендерит уведомление администратору о заполненной клиентом анкете.
+ */
+export const AdminIntakeNotificationTemplate = ({
+  userId,
+  formId,
+  dashboardUrl
+}: AdminIntakeNotificationTemplateProps) => {
+  return (
+    <EmailFrame
+      preview="Новая анкета заполнена клиентом"
+      footer={
+        <EmailFooter>
+          Это автоматическое уведомление. Управлять такими сообщениями можно в настройках
+          уведомлений.
+        </EmailFooter>
+      }
+    >
+      <EmailHeading>Новая анкета</EmailHeading>
+      <EmailParagraph>
+        Клиент только что заполнил анкету. Ответы доступны в панели администратора.
+      </EmailParagraph>
+      <EmailDetails
+        details={[
+          { label: 'Анкета', value: formId },
+          { label: 'ID клиента', value: userId }
+        ]}
+      />
+      <EmailAction href={dashboardUrl}>Открыть ответы</EmailAction>
+    </EmailFrame>
+  );
 };
-
-const container = {
-  margin: '0 auto',
-  padding: '20px 0 48px',
-  maxWidth: '560px'
-};
-
-const heading = {
-  fontSize: '24px',
-  letterSpacing: '-0.5px',
-  lineHeight: '1.3',
-  fontWeight: '400',
-  color: '#484848',
-  padding: '17px 0 0'
-};
-
-const paragraph = {
-  margin: '0 0 15px',
-  fontSize: '15px',
-  lineHeight: '1.4',
-  color: '#3c4149'
-};
-
-const link = {
-  color: '#067df7',
-  textDecoration: 'none',
-  fontWeight: '500'
-};
-
-export const AdminIntakeNotificationTemplate: React.FC<
-  Readonly<AdminIntakeNotificationTemplateProps>
-> = ({ userId, formId, dashboardUrl }) => (
-  <Html>
-    <Head />
-    <Preview>Новая анкета заполнена клиентом</Preview>
-    <Body style={main}>
-      <Container style={container}>
-        <Heading style={heading}>Новая анкета ({formId})</Heading>
-        <Text style={paragraph}>Клиент (ID: {userId}) только что заполнил анкету.</Text>
-        <Section>
-          <Text style={paragraph}>
-            Вы можете просмотреть зашифрованные ответы в{' '}
-            <Link href={dashboardUrl} style={link}>
-              Панели Администратора
-            </Link>
-            .
-          </Text>
-        </Section>
-        <Text style={{ ...paragraph, color: '#898989', fontSize: '13px', marginTop: '24px' }}>
-          Это автоматическое уведомление, настроенное в вашем профиле администратора. Вы можете
-          отключить его в настройках уведомлений.
-        </Text>
-      </Container>
-    </Body>
-  </Html>
-);
