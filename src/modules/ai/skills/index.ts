@@ -4,10 +4,12 @@ import type { AiSkillId } from '../ai-skill-manifest';
 import type { AnyAiSkillDefinition } from '../ai-skill-factory';
 import { articleSummarySkill } from './article-summary-skill';
 import { blogArticleTranslationSkill } from './blog-article-translation-skill';
+import { emailTemplateTranslationSkill } from './email-template-translation-skill';
 import { textTranslationSkill } from './text-translation-skill';
 
 const AI_SKILLS: Record<AiSkillId, AnyAiSkillDefinition> = {
   'blog-article-translation': blogArticleTranslationSkill,
+  'email-template-translation': emailTemplateTranslationSkill,
   'article-summary': articleSummarySkill,
   'text-translation': textTranslationSkill
 };

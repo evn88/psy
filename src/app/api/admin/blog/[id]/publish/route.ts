@@ -65,7 +65,8 @@ async function postHandler(req: Request, { params }: { params: Promise<{ id: str
 
   const published = await prisma.blogPost.update({
     where: { id },
-    data: { status: 'PUBLISHED', publishedAt: new Date() }
+    data: { status: 'PUBLISHED', publishedAt: new Date() },
+    include: { author: { select: { name: true } } }
   });
 
   // Получаем всех подписчиков (зарегистрированные + анонимные)

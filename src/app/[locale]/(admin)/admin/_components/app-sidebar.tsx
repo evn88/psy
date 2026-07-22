@@ -12,6 +12,7 @@ import {
   Home,
   LayoutDashboard,
   LogOut,
+  Mail,
   Package,
   ScrollText,
   Send,
@@ -142,6 +143,12 @@ export function AppSidebar({ user, unreadSurveysCount = 0, ...props }: AppSideba
       icon: Send,
       isActive: pathname.startsWith('/admin/send-email')
     },
+    emailTemplates: {
+      title: tItems('emailTemplates'),
+      url: '/admin/email-templates',
+      icon: Mail,
+      isActive: pathname.startsWith('/admin/email-templates')
+    },
     backups: {
       title: tItems('backups'),
       url: '/admin/backups',
@@ -181,7 +188,8 @@ export function AppSidebar({ user, unreadSurveysCount = 0, ...props }: AppSideba
         routes.payments,
         routes.packages,
         routes.paymentProviders,
-        routes.sendEmail
+        routes.sendEmail,
+        routes.emailTemplates
       ]
     },
     { label: tItems('groupContent'), routes: [routes.blog, routes.apps] },
