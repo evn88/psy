@@ -858,6 +858,7 @@ export const chargeConsultationInTransaction = async (
     eventStart: Date;
     billing: EventBillingInput;
     billingRevision?: number;
+    allowNegativeBalance?: boolean;
   }
 ) => {
   const idempotencyKey = `event-charge:${params.eventId}:${params.billingRevision ?? 1}`;
@@ -901,7 +902,8 @@ export const chargeConsultationInTransaction = async (
       userId: params.userId,
       operationId: operation.id,
       type: WalletTransactionType.CONSULTATION_CHARGE,
-      amount: chargedAmount.negated()
+      amount: chargedAmount.negated(),
+      allowNegative: params.allowNegativeBalance === true
     });
   } else if (params.billing.source === EventBillingSource.PACKAGE) {
     if (!params.billing.purchasedPackageId) {

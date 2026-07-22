@@ -142,6 +142,11 @@ async function patchHandler(req: Request, props: { params: Promise<{ id: string 
     const targetUserId = hasUserField ? result.data.userId : event.userId;
     const isStartChanged = Boolean(start) && nextStart.getTime() !== event.start.getTime();
     const isEndChanged = Boolean(end) && nextEnd.getTime() !== event.end.getTime();
+    const previousDurationMinutes = Math.round(
+      (event.end.getTime() - event.start.getTime()) / 60_000
+    );
+    const nextDurationMinutes = Math.round((nextEnd.getTime() - nextStart.getTime()) / 60_000);
+    const isDurationChanged = nextDurationMinutes !== previousDurationMinutes;
     const isStatusChanged = typeof status === 'string' && status !== event.status;
     const isReminderMinutesChanged =
       typeof result.data.reminderMinutesBeforeStart === 'number' &&
@@ -179,12 +184,12 @@ async function patchHandler(req: Request, props: { params: Promise<{ id: string 
     if (
       event.billingAllocation &&
       !shouldReverseBilling &&
-      (isStartChanged || isEndChanged || isUserChanged)
+      isDurationChanged
     ) {
       return NextResponse.json(
         {
           message:
-            'У оплаченной консультации нельзя менять время или клиента. Сначала отмените встречу, чтобы выполнить возврат.'
+            'У оплаченной консультации нельзя менять длительность. Для этого сначала отмените встречу, чтобы выполнить возврат.'
         },
         { status: 409 }
       );
@@ -309,6 +314,7 @@ async function patchHandler(req: Request, props: { params: Promise<{ id: string 
           initiatedById: session.user.id!,
           durationMinutes: Math.round((nextEnd.getTime() - nextStart.getTime()) / 60_000),
           eventStart: nextStart,
+          allowNegativeBalance: true,
           billing: {
             source: billingSource,
             purchasedPackageId,

@@ -272,6 +272,7 @@ async function postHandler(req: Request) {
           initiatedById: session.user.id!,
           durationMinutes: Math.round((endDate.getTime() - startDate.getTime()) / 60_000),
           eventStart: startDate,
+          allowNegativeBalance: true,
           billing: {
             source: billingSource,
             purchasedPackageId,
