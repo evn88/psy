@@ -2,8 +2,6 @@
 
 import * as React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { addMinutes } from 'date-fns';
-import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 import { ru } from 'date-fns/locale';
 import { CheckCircle2, Edit, Plus, Trash2 } from 'lucide-react';
 import { useForm, useWatch } from 'react-hook-form';
@@ -48,6 +46,7 @@ import {
   TableRow
 } from '@/components/ui/table';
 import { TimePicker } from '@/components/ui/time-picker';
+import { useScheduleDateTime } from '@/lib/hooks/use-schedule-date-time';
 import { useRouter } from '@/i18n/navigation';
 
 interface ClientEvent {
@@ -153,6 +152,8 @@ export const ClientSchedule = ({
 }: ClientScheduleProps) => {
   const [isPending, startTransition] = React.useTransition();
   const router = useRouter();
+  const adminDateTime = useScheduleDateTime(adminTimezone);
+  const clientDateTime = useScheduleDateTime(clientTimezone);
 
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editingEvent, setEditingEvent] = React.useState<ClientEvent | null>(null);
@@ -182,6 +183,14 @@ export const ClientSchedule = ({
     name: ['type', 'status', 'billingSource', 'duration', 'date', 'startTime']
   });
   const shouldShowBilling = selectedType === 'CONSULTATION' && selectedStatus === 'SCHEDULED';
+  const clientPreviewRange =
+    selectedDate && selectedStartTime
+      ? adminDateTime.fromLocalDateTime({
+          date: selectedDate,
+          startTime: selectedStartTime,
+          duration: selectedDuration
+        })
+      : null;
   const { data: financialSummary, isLoading: financialSummaryLoading } = useSWR<FinancialSummary>(
     dialogOpen && shouldShowBilling ? `/api/admin/users/${userId}/financial-summary` : null,
     fetchFinancialSummary
@@ -192,8 +201,8 @@ export const ClientSchedule = ({
       title: '',
       type: 'CONSULTATION',
       status: 'SCHEDULED',
-      date: formatInTimeZone(new Date(), adminTimezone, 'yyyy-MM-dd'),
-      startTime: formatInTimeZone(new Date(), adminTimezone, 'HH:mm'),
+      date: adminDateTime.format(new Date(), 'date'),
+      startTime: adminDateTime.format(new Date(), 'time'),
       duration: 60,
       billingSource: 'WALLET',
       purchasedPackageId: undefined
@@ -213,8 +222,8 @@ export const ClientSchedule = ({
         | 'CONSULTATION'
         | 'OTHER',
       status: statusOverride ?? (event.status as EventFormValues['status']),
-      date: formatInTimeZone(d, adminTimezone, 'yyyy-MM-dd'),
-      startTime: formatInTimeZone(d, adminTimezone, 'HH:mm'),
+      date: adminDateTime.format(d, 'date'),
+      startTime: adminDateTime.format(d, 'time'),
       duration: diffMins > 0 ? diffMins : 60,
       billingSource: event.billingAllocation?.source === 'PACKAGE' ? 'PACKAGE' : 'WALLET',
       purchasedPackageId: event.billingAllocation?.purchasedPackageId ?? undefined
@@ -226,13 +235,8 @@ export const ClientSchedule = ({
   const onSubmit = (data: EventFormValues) => {
     startTransition(async () => {
       try {
-        const startDate = fromZonedTime(`${data.date}T${data.startTime}:00`, adminTimezone);
-        const endDate = addMinutes(startDate, data.duration);
-
-        if (
-          formatInTimeZone(startDate, adminTimezone, 'yyyy-MM-dd HH:mm') !==
-          `${data.date} ${data.startTime}`
-        ) {
+        const range = adminDateTime.fromLocalDateTime(data);
+        if (!range.success) {
           throw new Error('Указанное время не существует из-за перехода часового пояса');
         }
 
@@ -240,8 +244,8 @@ export const ClientSchedule = ({
           title: data.title || '',
           type: data.type,
           status: data.status,
-          start: startDate.toISOString(),
-          end: endDate.toISOString(),
+          start: range.start.toISOString(),
+          end: range.end.toISOString(),
           userId,
           ...(shouldShowBilling && data.billingSource
             ? {
@@ -384,12 +388,10 @@ export const ClientSchedule = ({
                   className={new Date(event.end) < new Date() ? 'opacity-60 bg-muted/30' : ''}
                 >
                   <TableCell>
-                    {formatInTimeZone(new Date(event.start), adminTimezone, 'd MMM yyyy, HH:mm', {
-                      locale: ru
-                    })}
+                    {adminDateTime.format(new Date(event.start), 'dateTime', ru)}
                     <span className="text-muted-foreground text-xs ml-2">
-                      ({formatInTimeZone(new Date(event.start), adminTimezone, 'HH:mm')} -{' '}
-                      {formatInTimeZone(new Date(event.end), adminTimezone, 'HH:mm')})
+                      ({adminDateTime.format(new Date(event.start), 'time')} -{' '}
+                      {adminDateTime.format(new Date(event.end), 'time')})
                     </span>
                   </TableCell>
                   <TableCell>{getTypeLabel(event.type)}</TableCell>
@@ -614,21 +616,14 @@ export const ClientSchedule = ({
                   <p className="mt-1 text-muted-foreground">
                     У клиента:{' '}
                     <span className="font-medium text-foreground">
-                      {formatInTimeZone(
-                        fromZonedTime(`${selectedDate}T${selectedStartTime}:00`, adminTimezone),
-                        clientTimezone,
-                        'd MMM yyyy, HH:mm',
-                        { locale: ru }
-                      )}
-                      {' – '}
-                      {formatInTimeZone(
-                        addMinutes(
-                          fromZonedTime(`${selectedDate}T${selectedStartTime}:00`, adminTimezone),
-                          selectedDuration
-                        ),
-                        clientTimezone,
-                        'HH:mm'
-                      )}
+                      {clientPreviewRange?.success
+                        ? clientDateTime.formatRange(
+                            clientPreviewRange.start,
+                            clientPreviewRange.end,
+                            'dateTime',
+                            ru
+                          )
+                        : '—'}
                     </span>{' '}
                     ({clientTimezone})
                   </p>

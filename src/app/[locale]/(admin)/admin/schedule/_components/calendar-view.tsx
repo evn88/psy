@@ -21,8 +21,7 @@ import { useTranslations } from 'next-intl';
 import { MonthView } from './views/month-view';
 import { WeekView } from './views/week-view';
 import { DayView } from './views/day-view';
-import { fromScheduleCalendarDate, toScheduleCalendarDate } from '@/lib/schedule-timezone';
-import { formatUtcOffset } from '@/lib/timezone';
+import { useScheduleDateTime } from '@/lib/hooks/use-schedule-date-time';
 
 export interface CalendarViewProps {
   currentDate: Date;
@@ -55,6 +54,7 @@ export const CalendarView = ({
   displayTimezone
 }: CalendarViewProps) => {
   const t = useTranslations('Schedule');
+  const dateTime = useScheduleDateTime(displayTimezone);
   const [direction, setDirection] = useState<'next' | 'prev'>('next');
   const [dragStart, setDragStart] = useState<Date | null>(null);
   const [dragCurrent, setDragCurrent] = useState<Date | null>(null);
@@ -74,7 +74,7 @@ export const CalendarView = ({
   }, [currentDate, viewMode, setCurrentDate]);
 
   const handleToday = () => {
-    const today = toScheduleCalendarDate(new Date(), displayTimezone);
+    const today = dateTime.toCalendarDate(new Date());
     setDirection(currentDate > today ? 'prev' : 'next');
     setCurrentDate(today);
     setSelectedDate(today);
@@ -154,7 +154,8 @@ export const CalendarView = ({
     startH,
     endH,
     displayHours,
-    displayTimezone
+    displayTimezone,
+    dateTime
   };
 
   return (
@@ -165,10 +166,7 @@ export const CalendarView = ({
           <h3 className="truncate text-xl font-light capitalize sm:text-2xl">{headerTitle}</h3>
           <p className="truncate text-xs text-muted-foreground">
             {t('adminTime')}: {displayTimezone} (
-            {formatUtcOffset(
-              displayTimezone,
-              fromScheduleCalendarDate(currentDate, displayTimezone)
-            )}
+            {dateTime.getUtcOffset(dateTime.fromCalendarDate(currentDate))}
             )
           </p>
         </div>

@@ -9,8 +9,6 @@ import {
   startOfWeek
 } from 'date-fns';
 import { useTranslations } from 'next-intl';
-import { formatInTimeZone, toZonedTime } from 'date-fns-tz';
-import { toScheduleCalendarDate } from '@/lib/schedule-timezone';
 import {
   BaseViewProps,
   getClientTimeTooltip,
@@ -35,11 +33,12 @@ export const DayView = ({
   endH,
   workHourStart,
   workHourEnd,
-  displayTimezone
+  displayTimezone,
+  dateTime
 }: BaseViewProps) => {
   const t = useTranslations('Schedule');
   const dayEvents = getEventsForDay(events, currentDate, displayTimezone);
-  const today = toScheduleCalendarDate(new Date(), displayTimezone);
+  const today = dateTime.toCalendarDate(new Date());
   const tooltipLabels = {
     client: t('client'),
     current: t('clientCurrentTime'),
@@ -104,8 +103,8 @@ export const DayView = ({
             {/* Events Layer */}
             <div className="absolute inset-x-0 right-4 lg:right-6 top-0 z-10 pointer-events-none">
               {dayEvents.map(event => {
-                const dStart = toZonedTime(new Date(event.start), displayTimezone);
-                const dEnd = toZonedTime(new Date(event.end), displayTimezone);
+                const dStart = dateTime.toCalendarDate(new Date(event.start));
+                const dEnd = dateTime.toCalendarDate(new Date(event.end));
                 const startMin = dStart.getHours() * 60 + dStart.getMinutes();
                 const durationMins = (dEnd.getTime() - dStart.getTime()) / 60000;
 
@@ -136,8 +135,8 @@ export const DayView = ({
                   >
                     <div className="font-semibold truncate">{event.title || eventTypeTitle}</div>
                     <div className="text-xs opacity-80 mt-1 truncate">
-                      {formatInTimeZone(new Date(event.start), displayTimezone, 'HH:mm')} -{' '}
-                      {formatInTimeZone(new Date(event.end), displayTimezone, 'HH:mm')}
+                      {dateTime.format(new Date(event.start), 'time')} -{' '}
+                      {dateTime.format(new Date(event.end), 'time')}
                     </div>
                     {event.user?.name && (
                       <div className="text-xs font-medium opacity-90 truncate mt-0.5">

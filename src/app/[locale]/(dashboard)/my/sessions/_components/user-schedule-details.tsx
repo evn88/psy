@@ -12,7 +12,7 @@ import { UserScheduleEventCard } from './user-schedule-event-card';
 import { UserScheduleBookDialog } from './user-schedule-book-dialog';
 import { UserScheduleCancelDialog } from './user-schedule-cancel-dialog';
 import { UserScheduleRescheduleDialog } from './user-schedule-reschedule-dialog';
-import { toScheduleCalendarDate } from '@/lib/schedule-timezone';
+import { useScheduleDateTime } from '@/lib/hooks/use-schedule-date-time';
 
 interface UserScheduleDetailsProps {
   selectedDate: Date;
@@ -38,6 +38,7 @@ export function UserScheduleDetails({
   userTimezone
 }: UserScheduleDetailsProps) {
   const t = useTranslations('My');
+  const dateTime = useScheduleDateTime(userTimezone);
 
   const [bookingEventId, setBookingEventId] = useState<string | null>(null);
   const [cancelingEventId, setCancelingEventId] = useState<string | null>(null);
@@ -46,7 +47,7 @@ export function UserScheduleDetails({
   // Filter events for selected day or week
   const filteredEvents = events
     .filter(event => {
-      const eventDate = toScheduleCalendarDate(new Date(event.start), userTimezone);
+      const eventDate = dateTime.toCalendarDate(new Date(event.start));
       if (viewMode === 'day') {
         return isSameDay(eventDate, selectedDate);
       }

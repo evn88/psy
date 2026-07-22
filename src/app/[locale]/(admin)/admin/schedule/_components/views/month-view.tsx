@@ -12,8 +12,6 @@ import {
   startOfWeek
 } from 'date-fns';
 import { useTranslations } from 'next-intl';
-import { formatInTimeZone } from 'date-fns-tz';
-import { toScheduleCalendarDate } from '@/lib/schedule-timezone';
 import {
   BaseViewProps,
   getEventDotStyle,
@@ -34,7 +32,8 @@ export const MonthView = ({
   setDragStart,
   setDragCurrent,
   startH,
-  displayTimezone
+  displayTimezone,
+  dateTime
 }: BaseViewProps) => {
   const t = useTranslations('Schedule');
   const monthStart = startOfMonth(currentDate);
@@ -42,7 +41,7 @@ export const MonthView = ({
   const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
   const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
   const daysInMonth = eachDayOfInterval({ start: startDate, end: endDate });
-  const now = toScheduleCalendarDate(new Date(), displayTimezone);
+  const now = dateTime.toCalendarDate(new Date());
   const tooltipLabels = {
     client: t('client'),
     current: t('clientCurrentTime'),
@@ -136,7 +135,7 @@ export const MonthView = ({
                       }}
                     >
                       <span className="font-semibold mr-1">
-                        {formatInTimeZone(new Date(event.start), displayTimezone, 'HH:mm')}
+                        {dateTime.format(new Date(event.start), 'time')}
                       </span>
                       {event.title || eventTypeTitle}
                     </div>

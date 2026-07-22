@@ -1,6 +1,5 @@
 'use client';
 
-import { formatInTimeZone } from 'date-fns-tz';
 import { useLocale, useTranslations } from 'next-intl';
 import { Clock, MessageSquare, Video } from 'lucide-react';
 
@@ -8,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { getDateFnsLocale } from '@/lib/date-locale';
 import { getSafeMeetingUrl } from '@/lib/safe-url';
+import { useScheduleDateTime } from '@/lib/hooks/use-schedule-date-time';
 import type { AppLocale } from '@/i18n/config';
 import { UserEvent } from './use-user-events';
 
@@ -27,6 +27,7 @@ export function UserScheduleEventCard({
   const t = useTranslations('My');
   const locale = useLocale() as AppLocale;
   const dateLocale = getDateFnsLocale(locale);
+  const dateTime = useScheduleDateTime(userTimezone);
 
   const startDate = new Date(event.start);
   const endDate = new Date(event.end);
@@ -102,10 +103,9 @@ export function UserScheduleEventCard({
         <div className="flex items-center text-sm text-muted-foreground">
           <Clock className="w-4 h-4 mr-2 opacity-70" />
           <span>
-            {formatInTimeZone(startDate, userTimezone, 'HH:mm')} -{' '}
-            {formatInTimeZone(endDate, userTimezone, 'HH:mm')}
+            {dateTime.format(startDate, 'time')} - {dateTime.format(endDate, 'time')}
             <span className="ml-2 text-xs opacity-70">
-              ({formatInTimeZone(startDate, userTimezone, 'd MMM', { locale: dateLocale })})
+              ({dateTime.format(startDate, 'monthDay', dateLocale)})
             </span>
           </span>
         </div>

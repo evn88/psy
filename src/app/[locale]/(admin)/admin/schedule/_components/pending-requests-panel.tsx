@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { useScheduleDateTime } from '@/lib/hooks/use-schedule-date-time';
 
 import { PendingRequestRejectionDialog } from './pending-request-rejection-dialog';
 import type { Event } from './use-events';
@@ -40,44 +41,6 @@ const getLocaleTag = (locale: string): string => {
 };
 
 /**
- * Форматирует дату события для панели запросов.
- * @param date - дата начала события.
- * @param locale - locale интерфейса.
- * @returns Локализованная строка даты.
- */
-const formatRequestDate = (date: Date, locale: string, timeZone: string): string => {
-  return new Intl.DateTimeFormat(getLocaleTag(locale), {
-    timeZone,
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  }).format(date);
-};
-
-/**
- * Форматирует диапазон времени события для панели запросов.
- * @param start - дата начала.
- * @param end - дата окончания.
- * @param locale - locale интерфейса.
- * @returns Локализованная строка диапазона времени.
- */
-const formatRequestTimeRange = (
-  start: Date,
-  end: Date,
-  locale: string,
-  timeZone: string
-): string => {
-  const formatter = new Intl.DateTimeFormat(getLocaleTag(locale), {
-    timeZone,
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23'
-  });
-
-  return `${formatter.format(start)} - ${formatter.format(end)}`;
-};
-
-/**
  * Отрисовывает боковую панель запросов на подтверждение с действиями approve/reject.
  * @param props - список pending-запросов и обработчики действий.
  * @returns Карточка панели запросов.
@@ -92,6 +55,7 @@ export const PendingRequestsPanel = ({
 }: PendingRequestsPanelProps) => {
   const locale = useLocale();
   const t = useTranslations('Schedule');
+  const dateTime = useScheduleDateTime(displayTimezone, getLocaleTag(locale));
   const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
   const [requestToReject, setRequestToReject] = useState<Event | null>(null);
 
@@ -186,13 +150,22 @@ export const PendingRequestsPanel = ({
                             {requestTitle}
                           </p>
                           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                            {formatRequestDate(new Date(request.start), locale, displayTimezone)} ·{' '}
-                            {formatRequestTimeRange(
-                              new Date(request.start),
-                              new Date(request.end),
-                              locale,
-                              displayTimezone
-                            )}
+                            {dateTime.formatIntl(new Date(request.start), {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric'
+                            })}{' '}
+                            · {dateTime.formatIntl(new Date(request.start), {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hourCycle: 'h23'
+                            })}{' '}
+                            -{' '}
+                            {dateTime.formatIntl(new Date(request.end), {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hourCycle: 'h23'
+                            })}
                           </p>
                         </div>
                         {onRequestClick && (

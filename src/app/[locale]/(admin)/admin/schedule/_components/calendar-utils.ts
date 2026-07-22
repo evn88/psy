@@ -1,6 +1,9 @@
 import { format } from 'date-fns';
-import { formatInTimeZone } from 'date-fns-tz';
-import { getScheduleDateKey, resolveScheduleTimeZone } from '@/lib/schedule-timezone';
+import {
+  createScheduleDateTime,
+  getScheduleDateKey,
+  resolveScheduleTimeZone
+} from '@/lib/schedule-timezone';
 import { Event } from './use-events';
 
 export const weekDaysFull = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -88,10 +91,10 @@ export const getClientTimeTooltip = (
 ): string | undefined => {
   if (!event.user) return undefined;
   const timeZone = resolveScheduleTimeZone(event.user.timezone);
-  const now = formatInTimeZone(new Date(), timeZone, 'dd.MM.yyyy HH:mm');
-  const start = formatInTimeZone(new Date(event.start), timeZone, 'dd.MM.yyyy HH:mm');
-  const end = formatInTimeZone(new Date(event.end), timeZone, 'HH:mm');
-  return `${labels.client}: ${event.user.name || event.user.email}\n${labels.current}: ${now}\n${labels.scheduled}: ${start}–${end} (${timeZone})`;
+  const dateTime = createScheduleDateTime({ timeZone });
+  const now = dateTime.format(new Date(), 'dateTime');
+  const scheduled = dateTime.formatRange(new Date(event.start), new Date(event.end));
+  return `${labels.client}: ${event.user.name || event.user.email}\n${labels.current}: ${now}\n${labels.scheduled}: ${scheduled} (${timeZone})`;
 };
 
 export interface BaseViewProps {
@@ -113,4 +116,5 @@ export interface BaseViewProps {
   endH: number;
   displayHours: number[];
   displayTimezone: string;
+  dateTime: ReturnType<typeof createScheduleDateTime>;
 }

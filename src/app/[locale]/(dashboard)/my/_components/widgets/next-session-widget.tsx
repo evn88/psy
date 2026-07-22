@@ -2,23 +2,22 @@
 
 import { useTranslations } from 'next-intl';
 import { CalendarDays } from 'lucide-react';
-import { formatInTimeZone } from 'date-fns-tz';
 import { enUS, ru } from 'date-fns/locale';
 import { WidgetComponentType } from '@/components/dashboard/dashboard-grid';
 import { MyStatCard } from './my-stat-card';
+import { useScheduleDateTime } from '@/lib/hooks/use-schedule-date-time';
 
 export const NextSessionWidget: WidgetComponentType = ({ data, isEditing }) => {
   const t = useTranslations('My');
   const userLocale = data?.userLanguage === 'en' ? enUS : ru;
+  const dateTime = useScheduleDateTime(data?.userTimezone || 'UTC');
 
   let formattedNextSession = '—';
   let description = t('nextSessionDesc');
 
   if (data?.nextSessionStart) {
     const start = new Date(data.nextSessionStart);
-    formattedNextSession = formatInTimeZone(start, data.userTimezone || 'UTC', 'd MMM, HH:mm', {
-      locale: userLocale
-    });
+    formattedNextSession = dateTime.format(start, 'shortDateTime', userLocale);
     description =
       data.nextSessionTitle ||
       (data.userLanguage === 'ru' ? 'Консультация запланирована' : 'Consultation scheduled');

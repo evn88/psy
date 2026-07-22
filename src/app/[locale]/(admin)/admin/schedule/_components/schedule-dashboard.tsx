@@ -11,7 +11,7 @@ import { endOfMonth, endOfWeek, format, parseISO, startOfMonth, startOfWeek } fr
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { toScheduleCalendarDate } from '@/lib/schedule-timezone';
+import { useScheduleDateTime } from '@/lib/hooks/use-schedule-date-time';
 
 export type ViewMode = 'month' | 'week' | 'day';
 
@@ -22,15 +22,18 @@ interface ScheduleDashboardProps {
 }
 
 /** Восстанавливает календарную дату и мигрирует старое ISO-значение из localStorage. */
-const parseStoredCalendarDate = (value: string, timeZone: string): Date => {
+const parseStoredCalendarDate = (
+  value: string,
+  dateTime: ReturnType<typeof useScheduleDateTime>
+): Date => {
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     return parseISO(value);
   }
 
   const storedInstant = new Date(value);
   return Number.isNaN(storedInstant.getTime())
-    ? toScheduleCalendarDate(new Date(), timeZone)
-    : toScheduleCalendarDate(storedInstant, timeZone);
+    ? dateTime.toCalendarDate(new Date())
+    : dateTime.toCalendarDate(storedInstant);
 };
 
 export function ScheduleDashboard({
@@ -39,20 +42,21 @@ export function ScheduleDashboard({
   adminTimezone
 }: ScheduleDashboardProps) {
   const t = useTranslations('Schedule');
+  const dateTime = useScheduleDateTime(adminTimezone);
   const [currentDate, setCurrentDate] = useState<Date>(() => {
     if (typeof window !== 'undefined') {
       const savedDate = localStorage.getItem('schedule_currentDate');
-      if (savedDate) return parseStoredCalendarDate(savedDate, adminTimezone);
+      if (savedDate) return parseStoredCalendarDate(savedDate, dateTime);
     }
-    return toScheduleCalendarDate(new Date(), adminTimezone);
+    return dateTime.toCalendarDate(new Date());
   });
 
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
     if (typeof window !== 'undefined') {
       const savedSelected = localStorage.getItem('schedule_selectedDate');
-      if (savedSelected) return parseStoredCalendarDate(savedSelected, adminTimezone);
+      if (savedSelected) return parseStoredCalendarDate(savedSelected, dateTime);
     }
-    return toScheduleCalendarDate(new Date(), adminTimezone);
+    return dateTime.toCalendarDate(new Date());
   });
 
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
@@ -141,7 +145,7 @@ export function ScheduleDashboard({
    * @param event - событие, выбранное в панели pending-запросов.
    */
   const handleRequestClick = (event: Event) => {
-    const eventDate = toScheduleCalendarDate(new Date(event.start), adminTimezone);
+    const eventDate = dateTime.toCalendarDate(new Date(event.start));
     setCurrentDate(eventDate);
     setSelectedDate(eventDate);
     handleEditEvent({

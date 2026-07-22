@@ -1,7 +1,5 @@
 import { eachDayOfInterval, endOfWeek, format, isSameDay, startOfWeek } from 'date-fns';
 import { useTranslations } from 'next-intl';
-import { formatInTimeZone, toZonedTime } from 'date-fns-tz';
-import { toScheduleCalendarDate } from '@/lib/schedule-timezone';
 import {
   BaseViewProps,
   getClientTimeTooltip,
@@ -30,13 +28,14 @@ export const WeekView = ({
   workHourStart,
   workHourEnd,
   setViewMode,
-  displayTimezone
+  displayTimezone,
+  dateTime
 }: WeekViewProps) => {
   const t = useTranslations('Schedule');
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
   const daysInWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
-  const today = toScheduleCalendarDate(new Date(), displayTimezone);
+  const today = dateTime.toCalendarDate(new Date());
   const tooltipLabels = {
     client: t('client'),
     current: t('clientCurrentTime'),
@@ -133,8 +132,8 @@ export const WeekView = ({
                     {/* Events Layer */}
                     <div className="absolute inset-x-0 top-0 z-10 pointer-events-none">
                       {dayEvents.map(event => {
-                        const dStart = toZonedTime(new Date(event.start), displayTimezone);
-                        const dEnd = toZonedTime(new Date(event.end), displayTimezone);
+                        const dStart = dateTime.toCalendarDate(new Date(event.start));
+                        const dEnd = dateTime.toCalendarDate(new Date(event.end));
                         const startMin = dStart.getHours() * 60 + dStart.getMinutes();
                         const durationMins = (dEnd.getTime() - dStart.getTime()) / 60000;
 
@@ -173,8 +172,8 @@ export const WeekView = ({
                               {event.title || eventTypeTitle}
                             </span>
                             <span className="text-[9px] opacity-80 leading-tight truncate mt-0.5">
-                              {formatInTimeZone(new Date(event.start), displayTimezone, 'HH:mm')} -{' '}
-                              {formatInTimeZone(new Date(event.end), displayTimezone, 'HH:mm')}
+                              {dateTime.format(new Date(event.start), 'time')} -{' '}
+                              {dateTime.format(new Date(event.end), 'time')}
                             </span>
                             {event.user?.name && (
                               <span className="text-[9px] font-medium leading-tight truncate mt-0.5 opacity-90">

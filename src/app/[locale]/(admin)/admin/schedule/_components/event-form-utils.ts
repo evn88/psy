@@ -1,7 +1,5 @@
-import { addMinutes } from 'date-fns';
-import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
-
 import { CONSULTATION_RATE_DURATION_MINUTES } from '@/modules/payments/financial/constants';
+import { createScheduleDateTime } from '@/lib/schedule-timezone';
 
 export type EventTemporalValues = {
   date: string;
@@ -21,13 +19,7 @@ export const getEventTemporalValues = (
   end: Date,
   timeZone: string
 ): EventTemporalValues => {
-  const duration = Math.max(15, Math.round((end.getTime() - start.getTime()) / 60_000));
-
-  return {
-    date: formatInTimeZone(start, timeZone, 'yyyy-MM-dd'),
-    startTime: formatInTimeZone(start, timeZone, 'HH:mm'),
-    duration
-  };
+  return createScheduleDateTime({ timeZone }).getLocalDateTimeFields(start, end);
 };
 
 /**
@@ -36,19 +28,13 @@ export const getEventTemporalValues = (
  * @returns Начало и окончание события как объекты Date.
  */
 export const getEventDateRange = (values: EventTemporalValues & { timeZone: string }) => {
-  const start = fromZonedTime(`${values.date}T${values.startTime}:00`, values.timeZone);
+  const result = createScheduleDateTime({ timeZone: values.timeZone }).fromLocalDateTime(values);
 
-  if (
-    formatInTimeZone(start, values.timeZone, 'yyyy-MM-dd HH:mm') !==
-    `${values.date} ${values.startTime}`
-  ) {
+  if (!result.success) {
     throw new Error('Указанное локальное время не существует из-за перехода часового пояса');
   }
 
-  return {
-    start,
-    end: addMinutes(start, values.duration)
-  };
+  return result;
 };
 
 /**

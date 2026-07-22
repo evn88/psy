@@ -49,13 +49,12 @@ import {
   SESSION_REMINDER_PRESET_MINUTES
 } from '@/lib/session-reminders';
 import { optionalMeetingUrlSchema } from '@/lib/safe-url';
-import { formatUtcOffset } from '@/lib/timezone';
-import { resolveScheduleTimeZone } from '@/lib/schedule-timezone';
+import { createScheduleDateTime, resolveScheduleTimeZone } from '@/lib/schedule-timezone';
+import { useScheduleDateTime } from '@/lib/hooks/use-schedule-date-time';
 import { CONSULTATION_RATE_DURATION_MINUTES } from '@/modules/payments/financial/constants';
 
 import {
   calculateConsultationChargePreview,
-  getEventDateRange,
   getEventTemporalValues
 } from './event-form-utils';
 import type { Event, EventMutationInput } from './use-events';
@@ -252,6 +251,8 @@ export const EventDialog = ({
   const selectedUser =
     selectedUserOption ?? (event?.user && event.user.id === selectedUserId ? event.user : null);
   const clientTimezone = resolveScheduleTimeZone(selectedUser?.timezone);
+  const adminDateTime = useScheduleDateTime(adminTimezone, locale);
+  const clientDateTime = useScheduleDateTime(clientTimezone, locale);
   const durationOptions = useMemo(
     () => Array.from(new Set([...defaultDurationOptions, currentDuration])).sort((a, b) => a - b),
     [currentDuration]
@@ -289,40 +290,42 @@ export const EventDialog = ({
   let scheduledStart: Date | null = null;
   if (selectedUserId && eventDate && eventStartTime) {
     try {
-      const range = getEventDateRange({
+      const range = adminDateTime.fromLocalDateTime({
         date: eventDate,
         startTime: eventStartTime,
-        duration: currentDuration,
-        timeZone: adminTimezone
+        duration: currentDuration
       });
+      if (!range.success) {
+        throw new Error('Указанное локальное время не существует');
+      }
       scheduledStart = range.start;
-      const formatter = new Intl.DateTimeFormat(locale, {
-        timeZone: clientTimezone,
+      const formatter: Intl.DateTimeFormatOptions = {
         dateStyle: 'medium',
         timeStyle: 'short'
-      });
-      const endFormatter = new Intl.DateTimeFormat(locale, {
-        timeZone: clientTimezone,
+      };
+      const endFormatter: Intl.DateTimeFormatOptions = {
         timeStyle: 'short'
-      });
-      clientTimePreview = `${formatter.format(range.start)} – ${endFormatter.format(range.end)}`;
+      };
+      clientTimePreview = `${clientDateTime.formatIntl(range.start, formatter)} – ${clientDateTime.formatIntl(range.end, endFormatter)}`;
     } catch {}
   }
 
   const onSubmit = async (values: EventFormValues) => {
     setLoading(true);
     try {
-      const { start, end } = getEventDateRange({
+      const range = adminDateTime.fromLocalDateTime({
         date: values.date,
         startTime: values.startTime,
-        duration: values.duration,
-        timeZone: adminTimezone
+        duration: values.duration
       });
+      if (!range.success) {
+        throw new Error('Указанное локальное время не существует из-за перехода часового пояса');
+      }
       const payload: EventMutationInput = {
         type: values.type,
         status: values.status,
-        start: start.toISOString(),
-        end: end.toISOString(),
+        start: range.start.toISOString(),
+        end: range.end.toISOString(),
         title: values.title?.trim() || '',
         meetLink: values.meetLink || undefined,
         userId: values.userId ?? null,
@@ -408,10 +411,7 @@ export const EventDialog = ({
                                 {selectedUser.email}
                               </span>
                               <span className={badgeVariants({ variant: 'outline' })}>
-                                {formatUtcOffset(
-                                  selectedUser.timezone,
-                                  scheduledStart || new Date()
-                                )}
+                                {clientDateTime.getUtcOffset(scheduledStart || new Date())}
                               </span>
                             </span>
                           </div>
@@ -448,7 +448,10 @@ export const EventDialog = ({
                                   {user.email}
                                 </span>
                                 <span className={badgeVariants({ variant: 'outline' })}>
-                                  {formatUtcOffset(user.timezone, scheduledStart || new Date())}
+                                  {createScheduleDateTime({
+                                    timeZone: user.timezone,
+                                    locale
+                                  }).getUtcOffset(scheduledStart || new Date())}
                                 </span>
                               </span>
                             </span>
@@ -629,7 +632,7 @@ export const EventDialog = ({
             <div className="rounded-xl border bg-muted/30 px-4 py-3 text-sm">
               <p className="font-medium">
                 {t('adminTime')}: {adminTimezone} (
-                {formatUtcOffset(adminTimezone, scheduledStart || new Date())})
+                {adminDateTime.getUtcOffset(scheduledStart || new Date())})
               </p>
               {selectedUserId && (
                 <p className="mt-1 text-muted-foreground">
@@ -637,8 +640,7 @@ export const EventDialog = ({
                   <span className="font-medium text-foreground">
                     {clientTimePreview || t('clientTimezoneMissing')}
                   </span>{' '}
-                  ({clientTimezone}, {formatUtcOffset(clientTimezone, scheduledStart || new Date())}
-                  )
+                  ({clientTimezone}, {clientDateTime.getUtcOffset(scheduledStart || new Date())})
                 </p>
               )}
             </div>

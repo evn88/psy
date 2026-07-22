@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  createScheduleDateTime,
   fromScheduleCalendarDate,
   getScheduleDateKey,
   resolveScheduleTimeZone,
@@ -29,5 +30,27 @@ describe('часовые пояса расписания', () => {
   it('использует UTC для отсутствующего или некорректного часового пояса', () => {
     expect(resolveScheduleTimeZone(null)).toBe('UTC');
     expect(resolveScheduleTimeZone('Invalid/Timezone')).toBe('UTC');
+  });
+
+  it('форматирует абсолютный момент в timezone наблюдателя', () => {
+    const dateTime = createScheduleDateTime({ timeZone: 'America/New_York' });
+    const instant = new Date('2026-07-16T14:30:00.000Z');
+
+    expect(dateTime.format(instant, 'date')).toBe('2026-07-16');
+    expect(dateTime.format(instant, 'time')).toBe('10:30');
+    expect(dateTime.format(instant, 'shortDateTime')).toBe('16 Jul, 10:30');
+    expect(dateTime.getUtcOffset(instant)).toBe('UTC-4');
+  });
+
+  it('возвращает явный результат для несуществующего локального времени', () => {
+    const dateTime = createScheduleDateTime({ timeZone: 'Europe/Belgrade' });
+
+    expect(
+      dateTime.fromLocalDateTime({
+        date: '2026-03-29',
+        startTime: '02:30',
+        duration: 60
+      })
+    ).toEqual({ success: false, reason: 'INVALID_LOCAL_TIME' });
   });
 });

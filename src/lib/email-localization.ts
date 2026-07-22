@@ -1,4 +1,5 @@
 import { type AppLocale, defaultLocale, isLocale } from '@/i18n/config';
+import { createScheduleDateTime, resolveScheduleTimeZone } from '@/lib/schedule-timezone';
 
 import emailEn from '../../messages/email-en.json';
 import emailRu from '../../messages/email-ru.json';
@@ -102,14 +103,7 @@ export const getAdminEventCancellationTranslations = (
  * @returns Валидный идентификатор часового пояса.
  */
 const resolveEmailTimeZone = (timezone?: string | null): string => {
-  const candidateTimeZone = timezone?.trim() || 'UTC';
-
-  try {
-    new Intl.DateTimeFormat('en-US', { timeZone: candidateTimeZone }).format(new Date());
-    return candidateTimeZone;
-  } catch {
-    return 'UTC';
-  }
+  return resolveScheduleTimeZone(timezone);
 };
 
 /**
@@ -173,22 +167,26 @@ export const formatEmailEventDateTime = ({
   const resolvedTimeZone = resolveEmailTimeZone(timeZone);
   const startDate = new Date(start);
   const endDate = new Date(end);
-  const dateFormatter = new Intl.DateTimeFormat(localeTag, {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    timeZone: resolvedTimeZone
-  });
-  const timeFormatter = new Intl.DateTimeFormat(localeTag, {
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-    timeZone: resolvedTimeZone
+  const dateTime = createScheduleDateTime({
+    timeZone: resolvedTimeZone,
+    locale: localeTag
   });
 
   return {
-    dateText: dateFormatter.format(startDate),
-    timeText: `${timeFormatter.format(startDate)} - ${timeFormatter.format(endDate)} (${resolvedTimeZone})`,
+    dateText: dateTime.formatIntl(startDate, {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    }),
+    timeText: `${dateTime.formatIntl(startDate, {
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23'
+    })} - ${dateTime.formatIntl(endDate, {
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23'
+    })} (${resolvedTimeZone})`,
     timeZone: resolvedTimeZone
   };
 };

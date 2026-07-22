@@ -21,12 +21,7 @@ import { UserEvent } from './use-user-events';
 import { useLocale, useTranslations } from 'next-intl';
 import { getDateFnsLocale } from '@/lib/date-locale';
 import type { AppLocale } from '@/i18n/config';
-import { formatInTimeZone } from 'date-fns-tz';
-import {
-  getCalendarDateKey,
-  getScheduleDateKey,
-  toScheduleCalendarDate
-} from '@/lib/schedule-timezone';
+import { useScheduleDateTime } from '@/lib/hooks/use-schedule-date-time';
 
 interface UserCalendarViewProps {
   currentDate: Date;
@@ -50,6 +45,7 @@ export function UserCalendarView({
   const t = useTranslations('My');
   const locale = useLocale() as AppLocale;
   const dateLocale = getDateFnsLocale(locale);
+  const dateTime = useScheduleDateTime(userTimezone);
 
   const [direction, setDirection] = useState<'next' | 'prev'>('next');
 
@@ -62,7 +58,7 @@ export function UserCalendarView({
     onMonthChange(subMonths(currentDate, 1));
   };
   const goToToday = () => {
-    const today = toScheduleCalendarDate(new Date(), userTimezone);
+    const today = dateTime.toCalendarDate(new Date());
     setDirection(currentDate > today ? 'prev' : 'next');
     onDateSelect(today);
     onMonthChange(today);
@@ -143,7 +139,7 @@ export function UserCalendarView({
     let days = [];
     let day = startDate;
     let formattedDate = '';
-    const today = toScheduleCalendarDate(new Date(), userTimezone);
+    const today = dateTime.toCalendarDate(new Date());
 
     while (day <= endDate) {
       for (let i = 0; i < 7; i++) {
@@ -151,9 +147,9 @@ export function UserCalendarView({
         const cloneDay = day;
 
         // Find events for this day
-        const dayKey = getCalendarDateKey(cloneDay);
+        const dayKey = format(cloneDay, 'yyyy-MM-dd');
         const dayEvents = events.filter(
-          event => getScheduleDateKey(new Date(event.start), userTimezone) === dayKey
+          event => dateTime.getDateKey(new Date(event.start)) === dayKey
         );
 
         const isSelected = isSameDay(day, selectedDate);
@@ -234,7 +230,7 @@ export function UserCalendarView({
                     `}
                     title={event.title || t(`eventTypes.${event.type}` as never)}
                   >
-                    {formatInTimeZone(new Date(event.start), userTimezone, 'HH:mm')} -{' '}
+                    {dateTime.format(new Date(event.start), 'time')} -{' '}
                     {event.title || t(`eventTypes.${event.type}` as never)}
                   </div>
                 );

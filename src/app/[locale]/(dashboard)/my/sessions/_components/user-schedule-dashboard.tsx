@@ -5,14 +5,15 @@ import { endOfMonth, startOfMonth } from 'date-fns';
 import { useUserEvents } from './use-user-events';
 import { UserCalendarView } from './user-calendar-view';
 import { UserScheduleDetails } from './user-schedule-details';
-import { fromScheduleCalendarDate, toScheduleCalendarDate } from '@/lib/schedule-timezone';
+import { useScheduleDateTime } from '@/lib/hooks/use-schedule-date-time';
 
 export function UserScheduleDashboard({ userTimezone }: { userTimezone: string }) {
+  const dateTime = useScheduleDateTime(userTimezone);
   const [currentDate, setCurrentDate] = useState<Date>(() =>
-    toScheduleCalendarDate(new Date(), userTimezone)
+    dateTime.toCalendarDate(new Date())
   );
   const [selectedDate, setSelectedDate] = useState<Date>(() =>
-    toScheduleCalendarDate(new Date(), userTimezone)
+    dateTime.toCalendarDate(new Date())
   );
   const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
 
@@ -28,8 +29,8 @@ export function UserScheduleDashboard({ userTimezone }: { userTimezone: string }
 
   const { events, isLoading, isValidating, bookEvent, cancelEvent, rescheduleEvent } =
     useUserEvents(
-      fromScheduleCalendarDate(fetchStart, userTimezone).toISOString(),
-      fromScheduleCalendarDate(fetchEnd, userTimezone).toISOString()
+      dateTime.fromCalendarDate(fetchStart).toISOString(),
+      dateTime.fromCalendarDate(fetchEnd).toISOString()
     );
 
   return (
